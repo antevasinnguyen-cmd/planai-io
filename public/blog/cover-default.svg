@@ -1,0 +1,20 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <g opacity="0.15">
+    <circle cx="200" cy="150" r="180" fill="white"/>
+    <circle cx="1000" cy="500" r="220" fill="white"/>
+  </g>
+  <g fill="white">
+    <rect x="180" y="260" width="840" height="8" rx="4"/>
+    <rect x="220" y="300" width="760" height="8" rx="4"/>
+    <rect x="260" y="340" width="680" height="8" rx="4"/>
+  </g>
+  <text x="50%" y="200" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial" font-size="48" font-weight="700" fill="#FFFFFF">PlanAI Blog</text>
+  <text x="50%" y="240" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial" font-size="22" font-weight="500" fill="#E0F2FE">Tài chính cá nhân • Đầu tư • Tăng thu nhập</text>
+</svg>
