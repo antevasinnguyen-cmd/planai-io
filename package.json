@@ -1,0 +1,50 @@
+{
+  "name": "planai-saas",
+  "version": "1.0.0",
+  "description": "AI Financial Planning SaaS - Webapp giúp lập kế hoạch tài chính cá nhân hóa",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.8.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "autoprefixer": "^10.4.16",
+    "docx": "^8.5.0",
+    "framer-motion": "^10.16.0",
+    "googleapis": "^128.0.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.292.0",
+    "next": "^14.0.0",
+    "notion-client": "^6.16.0",
+    "openai": "^4.20.0",
+    "postcss": "^8.4.31",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-markdown": "^9.0.0",
+    "tailwindcss": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "AI",
+    "Financial Planning",
+    "SaaS",
+    "Vietnam",
+    "Personal Finance"
+  ],
+  "author": "PlanAI Team",
+  "license": "MIT"
+}
