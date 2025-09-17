@@ -32,9 +32,9 @@ Webapp SaaS áp dụng AI giúp người dùng lập kế hoạch / xây dựng 
 ## Gói dịch vụ
 
 - **Free:** 5 Chat, 1 kế hoạch ngắn
-- **Gói 1 (169,000đ):** 30 Chat, 1 Ebook plan (5-8k từ)
-- **Gói 2 (289,000đ):** 70 Chat, 3 Ebook plan (9-12k từ)  
-- **Gói 3 (499,000đ):** 150 Chat, 6 Ebook plan (15-20k từ)
+- **Gói 1 (169,000đ):** 40 Chat, 1 Ebook plan (5-8k từ)
+- **Gói 2 (289,000đ):** 90 Chat, 3 Ebook plan (9-12k từ)  
+- **Gói 3 (499,000đ):** 160 Chat, 6 Ebook plan (15-20k từ)
 
 ## Tech Stack
 
