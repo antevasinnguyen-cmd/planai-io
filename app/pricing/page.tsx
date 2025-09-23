@@ -53,7 +53,7 @@ const pricingTiers = [
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
       '90 Chat với AI lập kế hoạch',
-      '3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ)',
+      '3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ / mỗi ebook)',
       'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
@@ -74,7 +74,7 @@ const pricingTiers = [
     description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
     features: [
       '160 Chat với AI lập kế hoạch',
-      '6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ)',
+      '6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ / mỗi ebook)',
       'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',

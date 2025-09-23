@@ -40,10 +40,18 @@ Webapp SaaS áp dụng AI giúp người dùng lập kế hoạch / xây dựng 
 
 - **Frontend:** Next.js + React + Tailwind CSS
 - **Backend:** Supabase (Database + Auth)
-- **AI:** OpenAI GPT-3.5
-- **Payment:** SePay
+- **AI:** 
+  - OpenAI GPT-3.5-turbo (chat thường - tiết kiệm tối đa)
+  - OpenAI GPT-4o-mini (kế hoạch phức tạp - cân bằng chi phí/chất lượng)
+  - Claude-3.5-Haiku (fallback)
+  - Chunking/RAG cho quản lý context
+  - Caching responses với Supabase
+- **Payment:** VietQR pro (Payos)
 - **Hosting:** Vercel
 - **Domain:** planai.io
+- **Tích hợp bổ sung:**
+  - Google Sheets API (miễn phí) để xuất dữ liệu kế hoạch
+  - Notion API (miễn phí với giới hạn) để đồng bộ hóa
 
 ## Cài đặt
 
@@ -73,13 +81,15 @@ npm run dev
 └── supabase/           # Database schemas và migrations
 ```
 
-## API Keys cần thiết
+## API Keys và Environment Variables cần thiết
 
-- Supabase Project URL và Keys
-- OpenAI API Key
-- SePay API Key
-- Google Sheets API Key
-- Notion API Key
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase Project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase Anonymous Key
+- `OPENAI_API_KEY`: OpenAI API Key
+- `ANTHROPIC_API_KEY`: Anthropic API Key (cho Claude)
+- `SEPAY_API_KEY`: SePay API Key
+- `GOOGLE_SHEETS_API_KEY`: Google Sheets API Key
+- `NOTION_API_KEY`: Notion API Key
 
 ## License
 

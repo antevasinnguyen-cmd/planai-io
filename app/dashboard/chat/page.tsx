@@ -23,6 +23,7 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [usage, setUsage] = useState<UsageInfo | null>(null)
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
   const [user, setUser] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -110,6 +111,13 @@ export default function ChatPage() {
       // Update usage info
       if (data.usage) {
         setUsage(data.usage)
+      }
+
+      // Update suggestions from analysis
+      if (data.analysis && Array.isArray(data.analysis.suggestedQuestions)) {
+        setSuggestedQuestions(data.analysis.suggestedQuestions)
+      } else {
+        setSuggestedQuestions([])
       }
 
       // Add AI response to UI
@@ -248,6 +256,22 @@ export default function ChatPage() {
 
           {/* Input Area */}
           <div className="border-t p-4">
+            {suggestedQuestions.length > 0 && (
+              <div className="mb-3">
+                <div className="text-sm text-gray-600 mb-2">Gợi ý bổ sung thông tin:</div>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setInputMessage((prev) => (prev ? `${prev}\n${q}` : q))}
+                      className="text-sm px-3 py-1.5 rounded-full border border-gray-300 hover:border-blue-400 hover:text-blue-700"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex space-x-4">
               <textarea
                 value={inputMessage}

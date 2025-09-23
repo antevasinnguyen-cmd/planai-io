@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, ArrowRight } from 'lucide-react'
+import { Sparkles, ArrowRight, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -9,19 +9,32 @@ export default function ChatDemo() {
   const [messages, setMessages] = useState([
     {
       type: 'ai',
-      message: 'Xin chào! Tôi là AI của PlanAI. Hãy chia sẻ mục tiêu tài chính của bạn để tôi có thể tạo kế hoạch phù hợp nhất.',
-      timestamp: '10:30'
-    }
+      message:
+        'Chào bạn! Để tạo kế hoạch tài chính cá nhân hóa chính xác nhất, hãy cung cấp thông tin chi tiết về mục tiêu tài chính, kỹ năng/nghề nghiệp, thu nhập, ngày sinh và thời gian mục tiêu. Càng chi tiết, kế hoạch càng thực tiễn và phù hợp! Tôi sẽ hướng dẫn từng bước.',
+      timestamp: '10:30',
+    },
   ])
-  
+
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [showInfoList, setShowInfoList] = useState(false)
   const router = useRouter()
 
   const demoResponses = [
     'Tuyệt vời! Để tạo kế hoạch chi tiết nhất, bạn có thể cho tôi biết thêm về thu nhập hiện tại và thời gian mong muốn đạt được mục tiêu không?',
     'Dựa trên thông tin bạn cung cấp, tôi sẽ phân tích và tạo một kế hoạch tài chính cá nhân hóa. Bạn có muốn tôi tạo kế hoạch chi tiết ngay bây giờ không?',
-    'Kế hoạch của bạn đã sẵn sàng! Bạn có thể xem preview và nâng cấp để nhận bản đầy đủ với lộ trình chi tiết, checklist hàng ngày và tài liệu học tập.'
+    'Kế hoạch của bạn đã sẵn sàng! Bạn có thể xem preview và nâng cấp để nhận bản đầy đủ với lộ trình chi tiết, checklist hàng ngày và tài liệu học tập.',
+  ]
+
+  const quickSuggestions = [
+    'Mục tiêu: mua nhà 3 tỷ',
+    'Thu nhập: 5 triệu/tháng',
+    'Kỹ năng: marketing',
+    'Sinh: 14/07/1996',
+    'Thời gian: 5 năm',
+    'Khu vực: Hà Nội',
+    'Tiết kiệm: chưa có',
+    'Mức độ sẵn sàng: sẵn sàng học kỹ năng mới',
   ]
 
   const handleSendMessage = () => {
@@ -43,14 +56,16 @@ export default function ChatDemo() {
     }
   }
 
+  const insertSuggestion = (text: string) => {
+    setInputValue((prev) => (prev ? `${prev}\n${text}` : text))
+  }
+
   return (
     <section id="demo" className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Trải Nghiệm Chat AI Ngay Bây Giờ
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto whitespace-nowrap">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trải Nghiệm Chat AI Ngay Bây Giờ</h2>
+          <p className="text-xl text-gray-700 max-w-3xl mx-auto">
             Thử ngay tính năng chat với AI để cảm nhận cách PlanAI tạo kế hoạch tài chính cho bạn
           </p>
         </div>
@@ -66,23 +81,67 @@ export default function ChatDemo() {
                   </div>
                   <div>
                     <h3 className="text-white font-semibold text-lg">PlanAI Assistant</h3>
-                    <p className="text-primary-200 text-sm">Sẵn sàng tạo kế hoạch cho bạn</p>
+                    <p className="text-primary-100 text-sm font-medium">Sẵn sàng tạo kế hoạch cho bạn</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                  <span className="text-primary-200 text-sm">Online</span>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => setShowInfoList((v) => !v)}
+                    className="inline-flex items-center text-primary-100 hover:text-white text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <HelpCircle className="w-4 h-4 mr-1.5" /> Xem danh sách thông tin cần cung cấp
+                  </button>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span className="text-primary-100 text-sm">Online</span>
+                  </div>
                 </div>
               </div>
             </div>
 
+            {/* Welcome banner */}
+            <div className="px-6 py-4 bg-primary-50 border-b border-gray-100 text-sm text-gray-700">
+              <span className="font-medium">Mẹo:</span> Bạn có thể cung cấp thông tin theo từng bước hoặc dùng gợi ý nhanh phía dưới.
+            </div>
+
+            {/* Info popover */}
+            {showInfoList && (
+              <div className="px-6 py-4 bg-white border-b border-gray-200 text-gray-800 text-sm">
+                <div className="grid gap-2">
+                  <p className="font-semibold">Danh sách thông tin nên cung cấp</p>
+                  <ul className="list-disc ml-5 space-y-1">
+                    <li>
+                      <span className="font-medium">Mục tiêu tài chính</span>: Số tiền và loại mục tiêu (nhà, xe, kinh doanh...)
+                    </li>
+                    <li>
+                      <span className="font-medium">Thông tin cá nhân</span>: Độ tuổi, ngày sinh, giới tính, khu vực sinh sống
+                    </li>
+                    <li>
+                      <span className="font-medium">Tài chính hiện tại</span>: Thu nhập/tháng, chi phí cố định, khoản tiết kiệm
+                    </li>
+                    <li>
+                      <span className="font-medium">Kỹ năng/nghề nghiệp</span>: Kỹ năng hiện tại (ví dụ: marketing), kinh nghiệm
+                    </li>
+                    <li>
+                      <span className="font-medium">Mức độ sẵn sàng</span>: Sẵn sàng học kiến thức mới, thời gian dành cho kế hoạch
+                    </li>
+                    <li>
+                      <span className="font-medium">Thời gian mục tiêu</span>: 6 tháng, 1 năm, 5 năm, v.v.
+                    </li>
+                  </ul>
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg border text-gray-700">
+                    <p className="text-sm">
+                      Mẹo: Cung cấp <span className="font-medium">ngày sinh</span> giúp AI phân tích tử vi/thần số học để đề xuất kế hoạch phù hợp.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Chat Messages */}
             <div className="h-96 overflow-y-auto p-6 space-y-4">
               {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+                <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-xs lg:max-w-md ${message.type === 'user' ? 'order-2' : 'order-1'}`}>
                     <div
                       className={`px-4 py-3 rounded-2xl ${
@@ -114,6 +173,21 @@ export default function ChatDemo() {
               )}
             </div>
 
+            {/* Quick suggestions */}
+            <div className="px-6 pb-2">
+              <div className="flex flex-wrap gap-2">
+                {quickSuggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => insertSuggestion(s)}
+                    className="text-sm px-3 py-1.5 rounded-full border border-gray-300 text-gray-800 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-700 transition-colors duration-200"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Chat Input */}
             <div className="border-t border-gray-200 p-6">
               <div className="flex items-end space-x-4">
@@ -135,7 +209,7 @@ export default function ChatDemo() {
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="mt-4 text-center">
                 <Link href="/start" className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
                   Bắt đầu tạo kế hoạch thực tế

@@ -25,6 +25,20 @@ export const signIn = async (email: string, password: string) => {
   return { data, error }
 }
 
+export const signInWithGoogle = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+      redirectTo: `${window.location.origin}/dashboard`
+    }
+  })
+  return { data, error }
+}
+
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut()
   return { error }
@@ -64,6 +78,21 @@ export const updateUserProfile = async (userId: string, updates: any) => {
     .update(updates)
     .eq('id', userId)
   return { data, error }
+}
+
+// Map AI analysis extracted info to profile columns and update
+export const updateProfileFromAnalysis = async (userId: string, extractedInfo: any) => {
+  if (!extractedInfo) return { data: null, error: null }
+  const updates: any = {}
+  if (extractedInfo.goal) updates.financial_goal = extractedInfo.goal
+  if (typeof extractedInfo.income === 'number') updates.current_income = extractedInfo.income
+  if (extractedInfo.timeline) updates.timeline = extractedInfo.timeline
+  if (typeof extractedInfo.age === 'number') updates.age = extractedInfo.age
+  if (extractedInfo.occupation) updates.occupation = extractedInfo.occupation
+  if (extractedInfo.location) updates.location = extractedInfo.location
+
+  if (Object.keys(updates).length === 0) return { data: null, error: null }
+  return await updateUserProfile(userId, updates)
 }
 
 // Chat helpers
@@ -217,5 +246,47 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') 
   }
   
   return { allowed: false, current: 0, limit: 0, tier }
+}
+
+// AI Response Cache helpers
+export const getCachedResponse = async (cacheKey: string) => {
+  const { data, error } = await supabase
+    .from('ai_response_cache')
+    .select('response')
+    .eq('cache_key', cacheKey)
+    .single()
+  
+  if (error || !data) {
+    return { data: null, error }
+  }
+  
+  return { data: data.response, error: null }
+}
+
+export const saveCachedResponse = async (cacheKey: string, response: string, expiresInDays = 7) => {
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + expiresInDays)
+  
+  const { data, error } = await supabase
+    .from('ai_response_cache')
+    .upsert([
+      {
+        cache_key: cacheKey,
+        response,
+        created_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString()
+      }
+    ])
+  
+  return { data, error }
+}
+
+export const deleteCachedResponse = async (cacheKey: string) => {
+  const { data, error } = await supabase
+    .from('ai_response_cache')
+    .delete()
+    .eq('cache_key', cacheKey)
+  
+  return { data, error }
 }
 

@@ -1,48 +1,75 @@
 import OpenAI from 'openai'
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+import { selectModel, TaskType, generateCacheKey, checkCache, saveToCache, chunkText } from './modelSelection'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
 }
 
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
 export const generateChatResponse = async (messages: ChatMessage[]): Promise<string> => {
   try {
+    const systemMessage = {
+      role: 'system' as const,
+      content: `Bạn là PlanAI - trợ lý AI tài chính cá nhân cho người Việt (độ tuổi mục tiêu 23-35, ngôn ngữ thân thiện, ngắn gọn, dễ hiểu).
+
+Mục tiêu:
+- Hướng dẫn người dùng cung cấp thông tin theo từng bước trong khung chat để tạo kế hoạch tài chính cá nhân hóa chính xác.
+
+Cách tương tác:
+- Trả lời ngắn gọn (tối đa 2-3 câu), rõ ràng, tránh liệt kê quá dài.
+- Mỗi lượt chỉ hỏi 1-2 thông tin còn thiếu; nếu người dùng đưa nhiều thông tin, hãy xác nhận lại ngắn gọn.
+- Nếu thông tin chưa đủ, gợi ý câu hỏi tiếp theo và nhắc người dùng có thể nhấn nút "Plan" để tạo bản kế hoạch sơ bộ khi đã đủ tối thiểu.
+
+Thông tin cần thu thập (ưu tiên theo thứ tự):
+1) Mục tiêu tài chính: loại mục tiêu (mua nhà/xe, kinh doanh, tiết kiệm, đầu tư...), số tiền mục tiêu
+2) Thu nhập hiện tại (VNĐ/tháng) và nguồn thu
+3) Kỹ năng/nghề nghiệp hiện tại
+4) Ngày sinh dd/mm/yyyy (để phân tích tử vi/thần số học). Nếu không muốn chia sẻ, hãy tôn trọng và bỏ qua
+5) Thời gian mục tiêu (6 tháng/1 năm/3 năm/5 năm...)
+6) Tiết kiệm hiện có (nếu có)
+7) Khu vực sinh sống (Hà Nội/TP.HCM/tỉnh khác)
+8) Mức độ sẵn sàng học hỏi/đầu tư thời gian (thấp/vừa/cao)
+
+Quy tắc phản hồi:
+- Luôn xác nhận lại thông tin người dùng vừa cung cấp theo dạng tóm tắt 1 câu.
+- Nếu thiếu trường quan trọng, ưu tiên hỏi các trường ở trên theo thứ tự.
+- Khi đã có: mục tiêu, thu nhập, nghề/kỹ năng, ngày sinh (nếu được), thời gian; thì gợi ý tạo kế hoạch sơ bộ.
+- Tông giọng tích cực: "Đừng lo, tôi sẽ hướng dẫn từng bước!"`
+    }
+    
+    const fullMessages = [systemMessage, ...messages]
+    
+    // Generate cache key for this conversation
+    const cacheKey = generateCacheKey(fullMessages)
+    
+    // Check if we have a cached response
+    const cachedResponse = await checkCache(cacheKey)
+    if (cachedResponse) {
+      console.log('Using cached response')
+      return cachedResponse
+    }
+    
+    // Select the appropriate model for regular chat
+    const model = selectModel(TaskType.REGULAR_CHAT)
+    
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: `Bạn là PlanAI - trợ lý AI chuyên về tài chính cá nhân cho người Việt Nam. 
-
-Nhiệm vụ của bạn:
-1. Thu thập thông tin tài chính cá nhân từ người dùng một cách tự nhiên
-2. Đưa ra lời khuyên tài chính phù hợp với văn hóa và thị trường Việt Nam
-3. Hướng dẫn người dùng về đầu tư, tiết kiệm, và lập kế hoạch tài chính
-4. Sử dụng tiếng Việt thân thiện, dễ hiểu
-
-Thông tin cần thu thập:
-- Mục tiêu tài chính cụ thể
-- Thu nhập hiện tại và nguồn thu
-- Chi tiêu hàng tháng
-- Khoản tiết kiệm hiện có
-- Kinh nghiệm đầu tư
-- Thời gian thực hiện mục tiêu
-- Mức độ chấp nhận rủi ro
-- Tình hình gia đình và công việc
-
-Hãy trả lời ngắn gọn (2-3 câu), thân thiện và hỏi từng thông tin một cách tự nhiên.`
-        },
-        ...messages
-      ],
+      model,
+      messages: fullMessages,
       max_tokens: 500,
       temperature: 0.7,
     })
 
-    return completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
+    const response = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
+    
+    // Save response to cache
+    await saveToCache(cacheKey, response)
+    
+    return response
   } catch (error) {
     console.error('OpenAI API Error:', error)
     return 'Có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.'
@@ -100,23 +127,47 @@ Yêu cầu tạo kế hoạch:
 
 QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế và có thể thực hiện được trong giới hạn này.`
 
+    // Generate a cache key based on user profile and prompt
+    const cacheKey = generateCacheKey([
+      { role: 'system', content: 'Financial Plan Generation' },
+      { role: 'user', content: JSON.stringify(userProfile) }
+    ])
+    
+    // Check if we have a cached response
+    const cachedResponse = await checkCache(cacheKey)
+    if (cachedResponse) {
+      console.log('Using cached financial plan')
+      return cachedResponse
+    }
+
+    // This is a complex planning task, so use the appropriate model
+    const model = selectModel(TaskType.COMPLEX_PLANNING)
+    
+    const messages = [
+      {
+        role: 'system' as const,
+        content: 'Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.'
+      },
+      {
+        role: 'user' as const,
+        content: prompt
+      }
+    ]
+
+    // For large responses, we'll use chunking to handle the response better
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+      model,
+      messages,
       max_tokens: 4000,
       temperature: 0.3,
     })
 
-    return completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
+    const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
+    
+    // Save response to cache
+    await saveToCache(cacheKey, response)
+    
+    return response
   } catch (error) {
     console.error('OpenAI Plan Generation Error:', error)
     return 'Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại sau.'
@@ -129,36 +180,72 @@ export const analyzeUserInput = async (input: string): Promise<{
   suggestedQuestions: string[]
 }> => {
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: `Phân tích input của người dùng về tài chính và trả về JSON với:
+    // Generate cache key for this analysis
+    const cacheKey = generateCacheKey([
+      { role: 'system', content: 'User Input Analysis' },
+      { role: 'user', content: input }
+    ])
+    
+    // Check if we have a cached response
+    const cachedResponse = await checkCache(cacheKey)
+    if (cachedResponse) {
+      try {
+        return JSON.parse(cachedResponse)
+      } catch {
+        // If cached response can't be parsed, continue with new request
+      }
+    }
+    
+    // This is a simple analysis, use the default chat model
+    const model = selectModel(TaskType.REGULAR_CHAT)
+    
+    const messages = [
+      {
+        role: 'system' as const,
+        content: `Phân tích input của người dùng (tiếng Việt) về tài chính và TRẢ VỀ DUY NHẤT MỘT JSON hợp lệ theo cấu trúc sau, không thêm mô tả hay văn bản khác:
 {
   "intent": "thông tin cá nhân" | "mục tiêu tài chính" | "tình hình hiện tại" | "câu hỏi" | "khác",
   "extractedInfo": {
-    "income": số_thu_nhập_nếu_có,
-    "goal": "mục_tiêu_nếu_có",
-    "timeline": "thời_gian_nếu_có",
-    "age": số_tuổi_nếu_có,
-    "occupation": "nghề_nghiệp_nếu_có"
+    "goal": string | null,
+    "income": number | null, // VNĐ/tháng
+    "timeline": string | null,
+    "age": number | null,
+    "occupation": string | null,
+    "skills": string[] | null,
+    "birth_date": string | null, // dd/mm/yyyy
+    "location": string | null, // Hà Nội/TP.HCM/khác
+    "savings": number | null,
+    "readiness": string | null // mức độ sẵn sàng học hỏi/đầu tư thời gian
   },
-  "suggestedQuestions": ["câu hỏi tiếp theo 1", "câu hỏi 2", "câu hỏi 3"]
-}`
-        },
-        {
-          role: 'user',
-          content: input
-        }
-      ],
+  "suggestedQuestions": ["câu hỏi ngắn gọn 1", "câu hỏi 2", "câu hỏi 3"]
+}
+
+Yêu cầu:
+- Nếu không chắc, đặt trường là null.
+- Hỏi tiếp tối đa 3 câu, tập trung vào các trường còn thiếu theo thứ tự ưu tiên: goal, income, occupation/skills, birth_date, timeline, savings, location, readiness.
+- Câu hỏi ngắn gọn, lịch sự, phù hợp người Việt 23-35.`
+      },
+      {
+        role: 'user' as const,
+        content: input
+      }
+    ]
+    
+    const completion = await openai.chat.completions.create({
+      model,
+      messages,
       max_tokens: 300,
       temperature: 0.1,
     })
 
     const response = completion.choices[0]?.message?.content
     try {
-      return JSON.parse(response || '{}')
+      const parsedResponse = JSON.parse(response || '{}')
+      
+      // Save response to cache
+      await saveToCache(cacheKey, response || '{}')
+      
+      return parsedResponse
     } catch {
       return {
         intent: 'khác',

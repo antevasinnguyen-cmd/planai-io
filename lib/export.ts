@@ -1,11 +1,14 @@
 import jsPDF from 'jspdf'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
+import { exportFinancialPlanToSheets } from './sheets'
+import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from './notion'
 
 export interface ExportOptions {
   title: string
   content: string
   format: 'pdf' | 'docx' | 'txt' | 'notion' | 'sheets'
   userId?: string
+  planData?: any
 }
 
 export const exportToPDF = async (options: ExportOptions): Promise<Blob> => {
@@ -124,6 +127,36 @@ export const generateNotionBlocks = (content: string) => {
   }
 
   return blocks
+}
+
+// Export to Google Sheets
+export const exportToSheets = async (options: ExportOptions): Promise<string> => {
+  if (!options.userId || !options.planData) {
+    throw new Error('User ID and plan data are required for Google Sheets export')
+  }
+  
+  return await exportFinancialPlanToSheets(
+    options.userId,
+    options.title,
+    options.planData
+  )
+}
+
+// Export to Notion
+export const exportToNotion = async (options: ExportOptions): Promise<string> => {
+  if (!options.userId || !options.planData) {
+    throw new Error('User ID and plan data are required for Notion export')
+  }
+  
+  // Get or create a database for financial plans
+  const databaseId = await getOrCreateFinancialPlanDatabase(options.userId)
+  
+  return await exportFinancialPlanToNotion(
+    options.userId,
+    options.title,
+    options.planData,
+    databaseId
+  )
 }
 
 export const downloadFile = (blob: Blob, filename: string) => {

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Zap } from 'lucide-react'
-import { signIn } from '@/lib/supabase'
+import { signIn, signInWithGoogle } from '@/lib/supabase'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -46,7 +46,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold gradient-text">PlanAI</span>
+            <span className="text-2xl font-bold text-gray-900">PlanAI</span>
           </Link>
           
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -168,7 +168,23 @@ export default function LoginPage() {
 
           {/* Social Login */}
           <div className="mt-6 space-y-3">
-            <button className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium">
+            <button 
+              type="button"
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  const { error } = await signInWithGoogle();
+                  if (error) throw error;
+                  router.push('/dashboard');
+                } catch (error) {
+                  setError('Đăng nhập bằng Google thất bại. Vui lòng thử lại.');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading}
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateChatResponse } from '@/lib/openai'
-import { getCurrentUser, saveChatMessage, checkUsageLimits, getUserSubscription, getSubscriptionLimits } from '@/lib/supabase'
+import { generateChatResponse, analyzeUserInput } from '@/lib/openai'
+import { getCurrentUser, saveChatMessage, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +45,17 @@ export async function POST(request: NextRequest) {
     // Generate AI response
     const aiResponse = await generateChatResponse(messages)
 
+    // Analyze user input to guide next questions and UI suggestions
+    const analysis = await analyzeUserInput(message)
+    // Persist any structured fields into the user's profile (best-effort, ignore errors)
+    try {
+      if (analysis?.extractedInfo) {
+        await updateProfileFromAnalysis(user.id, analysis.extractedInfo)
+      }
+    } catch (e) {
+      console.warn('Profile update from analysis failed', e)
+    }
+
     // Save user message
     await saveChatMessage(user.id, message, 'user')
     
@@ -62,7 +73,8 @@ export async function POST(request: NextRequest) {
         limit: updatedUsage.limit,
         tier: updatedUsage.tier,
         remaining: updatedUsage.limit - (updatedUsage.current + 1)
-      }
+      },
+      analysis
     })
 
   } catch (error) {
