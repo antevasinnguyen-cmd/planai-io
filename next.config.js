@@ -1,27 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Tắt xác minh TypeScript khi build
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  // Tắt xác minh ESLint khi build
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Tối ưu hóa cho Vercel
+  output: 'standalone',
+  reactStrictMode: true,
+  swcMinify: true,
+  productionBrowserSourceMaps: false,
+  poweredByHeader: false,
+  
+  // Tắt xác minh khi build
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
+  
+  // Cấu hình hình ảnh
   images: {
-    domains: ['localhost', 'planai.io'],
+    domains: ['localhost', 'planai.io', '*.supabase.co'],
+    minimumCacheTTL: 60,
+    formats: ['image/avif', 'image/webp'],
   },
-  // Sử dụng experimental để tắt webpack 5
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    },
-    // Tắt webpack 5
-    webpackBuildWorker: false,
-  },
-  // Cấu hình webpack
-  webpack: (config, { isServer }) => {
-    // Thêm fallbacks cho các module Node.js
+  
+  // Cấu hình Webpack
+  webpack: (config, { isServer, dev }) => {
+    // Fallback cho các module Node.js
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -43,22 +42,83 @@ const nextConfig = {
       url: require.resolve('url/')
     };
 
-    // Thêm rule để xử lý các file .node
+    // Xử lý file .node
     config.module.rules.push({
       test: /\.node$/,
       use: 'node-loader',
     });
 
+    // Tối ưu hóa kích thước bundle
+    if (!isServer && !dev) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        maxSize: 244 * 1024, // 244KB
+      };
+    }
+
     return config;
   },
-  // Cấu hình output
-  output: 'standalone',
-  productionBrowserSourceMaps: false,
-  poweredByHeader: false,
-  reactStrictMode: true,
-  swcMinify: true,
-  // Chỉ định các gói cần transpile
-  transpilePackages: ['@supabase/supabase-js'],
+  
+  // Cấu hình API
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+    responseLimit: '10mb',
+  },
+  
+  // Cấu hình headers bảo mật
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+    ];
+  },
+  
+  // Cấu hình redirects
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/dashboard',
+        permanent: true,
+      },
+    ];
+  },
+  
+  // Cấu hình rewrites
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ];
+  },
+};
+
+// Chỉ sử dụng các biến môi trường cần thiết trong môi trường production
+if (process.env.NODE_ENV === 'production') {
+  nextConfig.env = {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  };
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;
