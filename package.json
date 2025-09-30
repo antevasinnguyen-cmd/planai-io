@@ -40,7 +40,8 @@
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0",
     "supabase": "^2.40.7",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vercel": "^48.1.6"
   },
   "keywords": [
     "AI",
