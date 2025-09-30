@@ -46,7 +46,8 @@ export async function exportToNotion(
       children: createNotionBlocks(content)
     });
 
-    return response.url;
+    // Construct the URL manually since the API response doesn't include it directly
+    return `https://notion.so/${response.id.replace(/-/g, '')}`;
   } catch (error) {
     console.error('Notion export error:', error);
     throw new Error('Failed to export to Notion');
@@ -528,7 +529,7 @@ export async function getNotionAccessToken(code: string): Promise<string> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`
     },
     body: JSON.stringify({
       grant_type: 'authorization_code',
