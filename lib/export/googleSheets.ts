@@ -2,11 +2,13 @@ import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 
 // Initialize OAuth2 client
-const oauth2Client = new OAuth2Client(
-  process.env.GOOGLE_SHEETS_CLIENT_ID,
-  process.env.GOOGLE_SHEETS_CLIENT_SECRET,
-  `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`
-);
+const getOAuth2Client = () => {
+  return new OAuth2Client(
+    process.env.GOOGLE_SHEETS_CLIENT_ID,
+    process.env.GOOGLE_SHEETS_CLIENT_SECRET,
+    `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`
+  );
+};
 
 /**
  * Export financial plan to Google Sheets
@@ -21,6 +23,9 @@ export async function exportToGoogleSheets(
   refreshToken: string
 ): Promise<string> {
   try {
+    // Create OAuth2 client
+    const oauth2Client = getOAuth2Client();
+    
     // Set credentials using refresh token
     oauth2Client.setCredentials({
       refresh_token: refreshToken
@@ -223,6 +228,7 @@ export function getGoogleSheetsAuthUrl(): string {
     'https://www.googleapis.com/auth/drive.file'
   ];
 
+  const oauth2Client = getOAuth2Client();
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: scopes,
@@ -234,6 +240,7 @@ export function getGoogleSheetsAuthUrl(): string {
  * Exchange authorization code for refresh token
  */
 export async function getGoogleSheetsRefreshToken(code: string): Promise<string> {
+  const oauth2Client = getOAuth2Client();
   const { tokens } = await oauth2Client.getToken(code);
   return tokens.refresh_token || '';
 }
