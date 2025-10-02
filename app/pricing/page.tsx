@@ -237,7 +237,7 @@ export default function PricingPage() {
                   {/* CTA Button */}
                   <div className="mt-auto pt-6">
                     <Link
-                      href={tier.id === 'free' ? '/start' : `/checkout?plan=${tier.id}`}
+                      href={tier.id === 'free' ? '/start' : `/payment/checkout?plan=${tier.id}`}
                       className={`w-full inline-flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${tier.buttonStyle}`}
                     >
                       {tier.price === 0 ? 'Bắt đầu miễn phí' : billingCycle === 'yearly' ? `${tier.buttonText} (Tiết kiệm 10%)` : tier.buttonText}
