@@ -118,11 +118,12 @@ const nextConfig = {
   // Cấu hình redirects
   async redirects() {
     return [
-      {
-        source: '/',
-        destination: '/dashboard',
-        permanent: true,
-      },
+      // Bỏ redirect từ "/" đến "/dashboard" để user có thể xem homepage
+      // {
+      //   source: '/',
+      //   destination: '/dashboard',
+      //   permanent: true,
+      // },
     ];
   },
   
