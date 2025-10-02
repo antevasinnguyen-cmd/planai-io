@@ -173,11 +173,18 @@ export default function LoginPage() {
               onClick={async () => {
                 try {
                   setIsLoading(true);
-                  const { error } = await signInWithGoogle();
-                  if (error) throw error;
+                  console.log('Starting Google sign in...');
+                  const { data, error } = await signInWithGoogle();
+                  console.log('Google sign in response:', { data, error });
+                  if (error) {
+                    console.error('Google sign in error:', error);
+                    throw error;
+                  }
+                  console.log('Google sign in successful, redirecting...');
                   router.push('/dashboard');
-                } catch (error) {
-                  setError('Đăng nhập bằng Google thất bại. Vui lòng thử lại.');
+                } catch (error: any) {
+                  console.error('Google sign in failed:', error);
+                  setError(`Đăng nhập bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`);
                 } finally {
                   setIsLoading(false);
                 }
