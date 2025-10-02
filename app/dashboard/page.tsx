@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const initializeDashboard = async () => {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     if (!currentUser) {
-      router.push('/auth/login')
+      router.push('/login')
       return
     }
 

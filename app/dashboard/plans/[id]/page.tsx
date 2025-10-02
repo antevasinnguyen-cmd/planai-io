@@ -34,7 +34,7 @@ export default function PlanDetailPage() {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      router.push('/auth/login')
+      router.push('/login')
       return
     }
     setUser(user)
