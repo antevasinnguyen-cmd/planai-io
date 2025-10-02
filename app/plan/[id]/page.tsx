@@ -163,6 +163,48 @@ export default function PlanViewPage() {
     setIsExporting(false)
   }
 
+  const handleExportToSheets = async () => {
+    // For Google Sheets, we need to redirect to OAuth or use an existing token
+    // For now, let's use a simple approach - redirect to the Google Sheets API route
+    const confirmExport = confirm('Bạn muốn xuất kế hoạch này sang Google Sheets? Bạn cần đăng nhập Google để tiếp tục.')
+    
+    if (!confirmExport) return
+
+    setIsExporting(true)
+    
+    try {
+      // Redirect to Google OAuth for Sheets export
+      // This would typically involve OAuth flow, but for simplicity we'll use the API route
+      const response = await fetch('/api/export/google-sheets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId: plan.id,
+          // Note: In a real implementation, you'd get the refreshToken from user's OAuth session
+          refreshToken: 'user-refresh-token-here' // This needs to be handled properly
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert('Xuất thành công! Kiểm tra Google Sheets của bạn.')
+        if (data.url) {
+          window.open(data.url, '_blank')
+        }
+      } else {
+        alert(`Lỗi: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Google Sheets export error:', error)
+      alert('Có lỗi xảy ra khi xuất sang Google Sheets.')
+    }
+
+    setIsExporting(false)
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -266,6 +308,13 @@ export default function PlanViewPage() {
                           Xuất Text
                         </button>
                         <hr className="my-1" />
+                        <button
+                          onClick={handleExportToSheets}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <FileText className="w-4 h-4 mr-2 text-green-500" />
+                          Xuất Google Sheets
+                        </button>
                         <button
                           onClick={handleExportToNotion}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

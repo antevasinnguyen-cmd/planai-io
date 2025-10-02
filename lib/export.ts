@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
-import { exportFinancialPlanToSheets } from './sheets'
+// import { exportFinancialPlanToSheets } from './sheets'  // Removed to prevent client-side bundling
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from './notion'
 
 export interface ExportOptions {
@@ -129,18 +129,18 @@ export const generateNotionBlocks = (content: string) => {
   return blocks
 }
 
-// Export to Google Sheets
-export const exportToSheets = async (options: ExportOptions): Promise<string> => {
-  if (!options.userId || !options.planData) {
-    throw new Error('User ID and plan data are required for Google Sheets export')
-  }
+// Export to Google Sheets (handled via API route)
+// export const exportToSheets = async (options: ExportOptions): Promise<string> => {
+//   if (!options.userId || !options.planData) {
+//     throw new Error('User ID and plan data are required for Google Sheets export')
+//   }
   
-  return await exportFinancialPlanToSheets(
-    options.userId,
-    options.title,
-    options.planData
-  )
-}
+//   return await exportFinancialPlanToSheets(
+//     options.userId,
+//     options.title,
+//     options.planData
+//   )
+// }
 
 // Export to Notion
 export const exportToNotion = async (options: ExportOptions): Promise<string> => {

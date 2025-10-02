@@ -31,6 +31,7 @@ const nextConfig = {
       dgram: false,
       cluster: false,
       worker_threads: false,
+      http2: false,
       path: require.resolve('path-browserify'),
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
@@ -39,7 +40,39 @@ const nextConfig = {
       os: require.resolve('os-browserify/browser'),
       zlib: require.resolve('browserify-zlib'),
       querystring: require.resolve('querystring-es3'),
-      url: require.resolve('url/')
+      url: require.resolve('url/'),
+      // Fallbacks for node: prefixed modules
+      'node:events': require.resolve('events/'),
+      'node:process': false,
+      'node:util': require.resolve('util/'),
+      'node:buffer': require.resolve('buffer/'),
+      'node:path': require.resolve('path-browserify'),
+      'node:crypto': require.resolve('crypto-browserify'),
+      'node:stream': require.resolve('stream-browserify'),
+      'node:http': require.resolve('stream-http'),
+      'node:https': require.resolve('https-browserify'),
+      'node:os': require.resolve('os-browserify/browser'),
+      'node:zlib': require.resolve('browserify-zlib'),
+      'node:querystring': require.resolve('querystring-es3'),
+      'node:url': require.resolve('url/')
+    };
+
+    // Handle node: prefixed imports
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'node:events': 'events',
+      'node:process': false,
+      'node:util': 'util',
+      'node:buffer': 'buffer',
+      'node:path': 'path-browserify',
+      'node:crypto': 'crypto-browserify',
+      'node:stream': 'stream-browserify',
+      'node:http': 'stream-http',
+      'node:https': 'https-browserify',
+      'node:os': 'os-browserify/browser',
+      'node:zlib': 'browserify-zlib',
+      'node:querystring': 'querystring-es3',
+      'node:url': 'url'
     };
 
     // Xử lý file .node
@@ -57,14 +90,6 @@ const nextConfig = {
     }
 
     return config;
-  },
-  
-  // Cấu hình API
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-    responseLimit: '10mb',
   },
   
   // Cấu hình headers bảo mật
