@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleSheetsRefreshToken } from '@/lib/export/googleSheets';
 import { createClient } from '@supabase/supabase-js';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
