@@ -29,6 +29,8 @@ export default function LoginPage() {
       }
 
       if (data.user) {
+        // Store success message and redirect
+        localStorage.setItem('auth_success', 'true')
         router.push('/dashboard')
       }
     } catch (err) {
