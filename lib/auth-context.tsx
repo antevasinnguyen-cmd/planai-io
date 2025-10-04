@@ -39,8 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Handle OAuth callback
         if (event === 'SIGNED_IN' && session) {
-          // If we're on the login page and just signed in, redirect to dashboard
-          if (window.location.pathname === '/login' && window.location.hash.includes('access_token')) {
+          // If we're on the login or signup page and just signed in, redirect to dashboard
+          if ((window.location.pathname === '/login' || window.location.pathname === '/signup') && 
+              window.location.hash.includes('access_token')) {
+            // Show success message
+            localStorage.setItem('auth_success', 'true')
             window.location.href = '/dashboard'
           }
         }

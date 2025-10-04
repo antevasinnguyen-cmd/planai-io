@@ -6,6 +6,7 @@ import { Plus, FileText, MessageCircle, Sparkles, User, LogOut, BarChart3, Targe
 import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
+import SuccessAlert from '@/components/SuccessAlert'
 
 interface UsageStats {
   plans: number
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const [usage, setUsage] = useState<UsageStats | null>(null)
   const [plans, setPlans] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
 
@@ -30,6 +32,13 @@ export default function DashboardPage() {
 
     if (user) {
       initializeDashboard()
+      
+      // Check for auth success message
+      const hasAuthSuccess = localStorage.getItem('auth_success')
+      if (hasAuthSuccess === 'true') {
+        setShowSuccessMessage(true)
+        localStorage.removeItem('auth_success')
+      }
     }
   }, [user, authLoading, router])
 
@@ -113,6 +122,12 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showSuccessMessage && (
+        <SuccessAlert 
+          message={`Chúc mừng bạn đã đăng nhập thành công! Hãy bắt đầu với PlanAI ngay nào!`}
+          duration={8000}
+        />
+      )}
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
