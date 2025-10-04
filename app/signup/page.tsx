@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Zap } from 'lucide-react'
-import { signUp } from '@/lib/supabase'
+import { signUp, signInWithGoogle } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -68,6 +69,26 @@ export default function SignupPage() {
       }
     } catch (err) {
       setError('Có lỗi xảy ra, vui lòng thử lại')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+      console.log('Starting Google sign up...')
+      const { data, error } = await signInWithGoogle()
+      console.log('Google sign up initiated:', { data, error })
+      if (error) {
+        console.error('Google sign up error:', error)
+        setError(`Đăng ký bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`)
+      }
+      // Auth context will handle the redirect automatically
+    } catch (error: any) {
+      console.error('Google sign up failed:', error)
+      setError(`Đăng ký bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`)
     } finally {
       setIsLoading(false)
     }
@@ -269,7 +290,12 @@ export default function SignupPage() {
 
           {/* Social Login */}
           <div className="mt-6 space-y-3">
-            <button className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium">
+            <button 
+              type="button"
+              onClick={handleGoogleSignUp}
+              disabled={isLoading}
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
