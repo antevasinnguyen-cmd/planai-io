@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Zap } from 'lucide-react'
 import { signIn, signInWithGoogle } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -173,15 +174,15 @@ export default function LoginPage() {
               onClick={async () => {
                 try {
                   setIsLoading(true);
+                  setError('');
                   console.log('Starting Google sign in...');
                   const { data, error } = await signInWithGoogle();
-                  console.log('Google sign in response:', { data, error });
+                  console.log('Google sign in initiated:', { data, error });
                   if (error) {
                     console.error('Google sign in error:', error);
-                    throw error;
+                    setError(`Đăng nhập bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`);
                   }
-                  console.log('Google sign in successful, redirecting...');
-                  router.push('/dashboard');
+                  // Auth context will handle the redirect automatically
                 } catch (error: any) {
                   console.error('Google sign in failed:', error);
                   setError(`Đăng nhập bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`);

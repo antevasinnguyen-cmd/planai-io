@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, FileText, MessageCircle, Sparkles, User, LogOut, BarChart3, Target, TrendingUp, Calendar } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits } from '@/lib/supabase'
 import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
 
 interface UsageStats {
   plans: number
@@ -14,29 +15,31 @@ interface UsageStats {
 }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null)
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageStats | null>(null)
   const [plans, setPlans] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const { user, loading: authLoading, signOut } = useAuth()
 
   useEffect(() => {
-    initializeDashboard()
-  }, [])
-
-  const initializeDashboard = async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-    if (!currentUser) {
+    if (!authLoading && !user) {
       router.push('/login')
       return
     }
 
-    setUser(currentUser)
+    if (user) {
+      initializeDashboard()
+    }
+  }, [user, authLoading, router])
+
+  const initializeDashboard = async () => {
+    if (!user) return
+
     await Promise.all([
-      loadSubscription(currentUser.id),
-      loadUsageStats(currentUser.id),
-      loadRecentPlans(currentUser.id)
+      loadSubscription(user.id),
+      loadUsageStats(user.id),
+      loadRecentPlans(user.id)
     ])
     
     setIsLoading(false)
@@ -44,13 +47,7 @@ export default function DashboardPage() {
 
   const loadSubscription = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .single()
-
+      const { data } = await getUserSubscription(userId)
       setSubscription(data)
     } catch (error) {
       console.error('Error loading subscription:', error)
@@ -59,33 +56,8 @@ export default function DashboardPage() {
 
   const loadUsageStats = async (userId: string) => {
     try {
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-
-      // Get plans count and word count
-      const { data: plansData } = await supabase
-        .from('plans')
-        .select('id, word_count')
-        .eq('user_id', userId)
-        .gte('created_at', startOfMonth.toISOString())
-
-      // Get chats count
-      const { data: chatsData } = await supabase
-        .from('chat_messages')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('type', 'user')
-        .gte('created_at', startOfMonth.toISOString())
-
-      const totalWords = plansData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
-
-      setUsage({
-        plans: plansData?.length || 0,
-        chats: chatsData?.length || 0,
-        words: totalWords,
-        error: null
-      })
+      const usageStats = await getUserUsageStats(userId)
+      setUsage(usageStats)
     } catch (error) {
       console.error('Error loading usage stats:', error)
     }
@@ -93,29 +65,11 @@ export default function DashboardPage() {
 
   const loadRecentPlans = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      if (data) {
-        setPlans(data)
-      }
+      const { data } = await getUserPlans(userId)
+      setPlans(data?.slice(0, 3) || []) // Only show 3 recent plans
     } catch (error) {
       console.error('Error loading plans:', error)
     }
-  }
-
-  const getSubscriptionLimits = (tier: string) => {
-    const limits = {
-      'free': { plans: 1, chats: 5, words: 1000 },
-      'basic': { plans: 1, chats: 20, words: 2000 },
-      'pro': { plans: 3, chats: 50, words: 5000 },
-      'pro_max': { plans: 6, chats: 999999, words: 10000 }
-    }
-    return limits[tier as keyof typeof limits] || limits.free
   }
 
   const getTierName = (tier: string) => {
@@ -139,7 +93,7 @@ export default function DashboardPage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await signOut()
     router.push('/')
   }
 
