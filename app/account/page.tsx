@@ -4,60 +4,61 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { CreditCard, CheckCircle2, ArrowRight, Wallet, BookOpen, Lock, Sparkles, RefreshCcw, CalendarClock, User, Settings, LogOut, Trash2 } from 'lucide-react'
-import { getCurrentUser, getUserProfile, supabase } from '@/lib/supabase'
+import { getUserProfile, supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
 import type { UserProfile, Payment, SubscriptionTier } from '@/types'
 
 export default function AccountPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [currentTier, setCurrentTier] = useState<SubscriptionTier | null>(null)
   const [tiers, setTiers] = useState<SubscriptionTier[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [storageOption, setStorageOption] = useState('30days') // '30days' or '7days'
+  const { user, loading: authLoading, signOut } = useAuth()
 
   useEffect(() => {
-    const run = async () => {
-      const u = await getCurrentUser()
-      if (!u) {
-        router.push('/login')
-        return
-      }
-      setUser(u)
-
-      const { data: p } = await getUserProfile(u.id)
-      if (p) setProfile(p as unknown as UserProfile)
-
-      // Load subscription tiers
-      const { data: allTiers } = await supabase
-        .from('subscription_tiers')
-        .select('*')
-        .order('price', { ascending: true })
-
-      if (allTiers) setTiers(allTiers as unknown as SubscriptionTier[])
-
-      // Current tier details
-      const tierId = (p?.subscription_tier || 'free') as string
-      const { data: tierRow } = await supabase
-        .from('subscription_tiers')
-        .select('*')
-        .eq('id', tierId)
-        .single()
-      if (tierRow) setCurrentTier(tierRow as unknown as SubscriptionTier)
-
-      // Payments history
-      const { data: paymentsData } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', u.id)
-        .order('created_at', { ascending: false })
-      if (paymentsData) setPayments(paymentsData as unknown as Payment[])
-
-      setIsLoading(false)
+    if (!authLoading && !user) {
+      router.push('/login')
+      return
     }
-    run()
-  }, [router])
+    
+    if (user) {
+      const run = async () => {
+        const { data: p } = await getUserProfile(user.id)
+        if (p) setProfile(p as unknown as UserProfile)
+
+        // Load subscription tiers
+        const { data: allTiers } = await supabase
+          .from('subscription_tiers')
+          .select('*')
+          .order('price', { ascending: true })
+
+        if (allTiers) setTiers(allTiers as unknown as SubscriptionTier[])
+
+        // Current tier details
+        const tierId = (p?.subscription_tier || 'free') as string
+        const { data: tierRow } = await supabase
+          .from('subscription_tiers')
+          .select('*')
+          .eq('id', tierId)
+          .single()
+        if (tierRow) setCurrentTier(tierRow as unknown as SubscriptionTier)
+
+        // Payments history
+        const { data: paymentsData } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+        if (paymentsData) setPayments(paymentsData as unknown as Payment[])
+
+        setIsLoading(false)
+      }
+      run()
+    }
+  }, [router, user, authLoading])
 
   const usage = useMemo(() => {
     const limits = currentTier || (tiers.find(t => t.id === (profile?.subscription_tier || 'free')) ?? null)
@@ -78,14 +79,14 @@ export default function AccountPage() {
   }, [currentTier, profile, tiers])
 
   const handleLogOut = async () => {
-    await supabase.auth.signOut()
+    await signOut()
     router.push('/')
   }
 
   const handleDeleteAccount = async () => {
     if (confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác.')) {
       // For now, just sign out. In production, call admin API to delete user.
-      await supabase.auth.signOut()
+      await signOut()
       router.push('/')
     }
   }
@@ -139,7 +140,7 @@ export default function AccountPage() {
                 Tạo kế hoạch
               </Link>
               <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                {user.email.charAt(0).toUpperCase()}
+                {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
           </div>
@@ -184,7 +185,7 @@ export default function AccountPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Thông tin cá nhân</h3>
                 <div className="space-y-2">
                   <div className="text-sm text-gray-600">Tên: {profile?.full_name || 'Chưa cập nhật'}</div>
-                  <div className="text-sm text-gray-600">Email: {user.email}</div>
+                  <div className="text-sm text-gray-600">Email: {user?.email || 'Không có email'}</div>
                   <div className="text-sm text-gray-600">Gói hiện tại: {currentTier?.name || 'Free'}</div>
                 </div>
               </div>
@@ -230,7 +231,7 @@ export default function AccountPage() {
                   <input
                     type="email"
                     placeholder="Email"
-                    value={user.email}
+                    value={user?.email || ''}
                     className="px-3 py-2 border border-gray-300 rounded-lg"
                     disabled
                   />
