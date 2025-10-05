@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Sparkles, ArrowRight, HelpCircle, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function ChatDemo() {
   const [messages, setMessages] = useState([
@@ -23,9 +24,17 @@ export default function ChatDemo() {
   
   // Auto focus textarea when component mounts
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus()
-    }
+    const timer = setTimeout(() => {
+      if (textareaRef.current) {
+        try {
+          textareaRef.current.focus({ preventScroll: true });
+        } catch (error) {
+          console.error('Lỗi khi focus textarea:', error);
+        }
+      }
+    }, 100); // Thêm delay để đảm bảo component đã render xong
+    
+    return () => clearTimeout(timer);
   }, [])
 
   const demoResponses = [
@@ -233,32 +242,33 @@ export default function ChatDemo() {
               <div className="flex items-end space-x-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      onCompositionStart={handleCompositionStart}
-                      onCompositionEnd={handleCompositionEnd}
-                      placeholder="Ví dụ: Tôi muốn có 2 tỷ trước 30 tuổi để mua nhà..."
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 bg-white"
-                      style={{ 
-                        minHeight: '48px', 
-                        maxHeight: '200px',
-                        pointerEvents: 'auto',
-                        position: 'relative',
-                        zIndex: 10
-                      }}
-                      rows={1}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.nativeEvent.stopImmediatePropagation();
-                      }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.nativeEvent.stopImmediatePropagation();
-                      }}
-                    />
+                    <div className="relative">
+                      <div 
+                        className="absolute inset-0 bg-transparent"
+                        style={{ zIndex: 5 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          textareaRef.current?.focus();
+                        }}
+                      />
+                      <textarea
+                        ref={textareaRef}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        onCompositionStart={handleCompositionStart}
+                        onCompositionEnd={handleCompositionEnd}
+                        placeholder="Ví dụ: Tôi muốn có 2 tỷ trước 30 tuổi để mua nhà..."
+                        className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 bg-white relative z-10"
+                        style={{ 
+                          minHeight: '48px', 
+                          maxHeight: '200px',
+                          position: 'relative',
+                          backgroundColor: 'white'
+                        }}
+                        rows={1}
+                      />
+                    </div>
                     {inputValue.trim() && (
                       <button
                         onClick={handleSendMessage}
