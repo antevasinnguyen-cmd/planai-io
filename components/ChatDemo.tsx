@@ -198,6 +198,7 @@ export default function ChatDemo() {
                     onKeyDown={handleKeyPress}
                     placeholder="Ví dụ: Tôi muốn có 2 tỷ trước 30 tuổi để mua nhà..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900"
+                    style={{ color: '#111827' }}
                     rows={2}
                   />
                 </div>
