@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Sparkles, ArrowRight, HelpCircle } from 'lucide-react'
-import Link from 'next/link'
+import { useState, useRef, useEffect } from 'react'
+import { Sparkles, ArrowRight, HelpCircle, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function ChatDemo() {
@@ -18,7 +17,16 @@ export default function ChatDemo() {
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [showInfoList, setShowInfoList] = useState(false)
+  const [isComposing, setIsComposing] = useState(false)
   const router = useRouter()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Auto focus textarea when component mounts
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [])
 
   const demoResponses = [
     'Tuyệt vời! Để tạo kế hoạch chi tiết nhất, bạn có thể cho tôi biết thêm về thu nhập hiện tại và thời gian mong muốn đạt được mục tiêu không?',
@@ -38,22 +46,54 @@ export default function ChatDemo() {
   ]
 
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return
+    const message = inputValue.trim()
+    if (!message) return
+    
+    // Add user message to chat
+    setMessages(prev => [...prev, {
+      type: 'user',
+      message: message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }])
+    
+    // Clear input
+    setInputValue('')
+    
+    // Show typing indicator
+    setIsTyping(true)
+    
+    // Simulate AI response after a delay
+    setTimeout(() => {
+      const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)]
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        message: randomResponse,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }])
+      setIsTyping(false)
+    }, 1000)
+    
+    // Save message to localStorage for login redirect
     try {
-      // Save pre-chat message and redirect to login/signup
-      localStorage.setItem('preChatMessage', inputValue.trim())
-      router.push('/login')
+      localStorage.setItem('preChatMessage', message)
     } catch (e) {
-      // fallback: still redirect
-      router.push('/login')
+      console.error('Lỗi khi lưu tin nhắn:', e)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault()
       handleSendMessage()
     }
+  }
+  
+  const handleCompositionStart = () => {
+    setIsComposing(true)
+  }
+  
+  const handleCompositionEnd = () => {
+    setIsComposing(false)
   }
 
   const insertSuggestion = (text: string) => {
@@ -192,15 +232,29 @@ export default function ChatDemo() {
             <div className="border-t border-gray-200 p-6">
               <div className="flex items-end space-x-4">
                 <div className="flex-1">
-                  <textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Ví dụ: Tôi muốn có 2 tỷ trước 30 tuổi để mua nhà..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900"
-                    style={{ color: '#111827' }}
-                    rows={2}
-                  />
+                  <div className="relative">
+                    <textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      onCompositionStart={handleCompositionStart}
+                      onCompositionEnd={handleCompositionEnd}
+                      placeholder="Ví dụ: Tôi muốn có 2 tỷ trước 30 tuổi để mua nhà..."
+                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 bg-white"
+                      style={{ minHeight: '48px', maxHeight: '200px' }}
+                      rows={1}
+                    />
+                    {inputValue.trim() && (
+                      <button
+                        onClick={handleSendMessage}
+                        className="absolute right-3 bottom-3 text-primary-600 hover:text-primary-700 transition-colors"
+                        type="button"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={handleSendMessage}

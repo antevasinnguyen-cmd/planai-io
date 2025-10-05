@@ -1,10 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowRight, MessageCircle, Sparkles } from 'lucide-react'
+import { useState, KeyboardEvent } from 'react'
+import { ArrowRight, MessageCircle, Sparkles, Send } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function Hero() {
+  const router = useRouter()
+  const [inputMessage, setInputMessage] = useState('')
+  const [isSending, setIsSending] = useState(false)
   const [chatMessages, setChatMessages] = useState([
     {
       type: 'ai',
@@ -19,6 +23,37 @@ export default function Hero() {
       message: 'Tuyệt vời! Để tạo kế hoạch phù hợp nhất, cho tôi biết thêm: Bạn bao nhiêu tuổi và thu nhập hiện tại là bao nhiêu?'
     }
   ])
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return
+    
+    // Lưu tin nhắn của người dùng
+    const userMessage = inputMessage.trim()
+    setChatMessages(prev => [...prev, { type: 'user', message: userMessage }])
+    setInputMessage('')
+    setIsSending(true)
+    
+    try {
+      // Lưu tin nhắn vào localStorage để sử dụng sau khi đăng nhập
+      localStorage.setItem('preChatMessage', userMessage)
+      
+      // Chuyển hướng đến trang đăng nhập
+      router.push('/login')
+    } catch (error) {
+      console.error('Lỗi khi gửi tin nhắn:', error)
+      // Fallback: vẫn chuyển hướng đến trang đăng nhập
+      router.push('/login')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
 
   return (
     <section className="pt-24 pb-20 bg-gradient-to-br from-gray-50 to-white">
@@ -94,38 +129,49 @@ export default function Hero() {
                         msg.type === 'user'
                           ? 'bg-primary-600 text-white'
                           : 'bg-gray-100 text-gray-900'
-                      } chat-message`}
+                      }`}
                     >
                       <p className="text-sm">{msg.message}</p>
                     </div>
                   </div>
                 ))}
-                
-                {/* Typing indicator */}
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 px-4 py-3 rounded-2xl">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                {isSending && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 text-gray-900 px-4 py-3 rounded-2xl">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
-
+              
               {/* Chat Input */}
               <div className="border-t border-gray-200 p-4">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="text"
-                    placeholder="Nhập câu hỏi của bạn..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    disabled
-                  />
-                  <button className="bg-primary-600 text-white p-2 rounded-lg hover:bg-primary-700 transition-colors">
-                    <ArrowRight className="w-5 h-5" />
+                <div className="flex items-end space-x-2">
+                  <div className="flex-1">
+                    <textarea
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Nhập câu hỏi của bạn..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 text-sm"
+                      style={{ minHeight: '44px', maxHeight: '120px' }}
+                      rows={1}
+                      disabled={isSending}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isSending}
+                    className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white p-2 rounded-xl transition-colors duration-200 flex-shrink-0"
+                  >
+                    <Send className="w-5 h-5" />
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">Nhấn Enter để gửi, Shift + Enter để xuống dòng</p>
               </div>
             </div>
 
