@@ -242,8 +242,22 @@ export default function ChatDemo() {
                       onCompositionEnd={handleCompositionEnd}
                       placeholder="Ví dụ: Tôi muốn có 2 tỷ trước 30 tuổi để mua nhà..."
                       className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 bg-white"
-                      style={{ minHeight: '48px', maxHeight: '200px' }}
+                      style={{ 
+                        minHeight: '48px', 
+                        maxHeight: '200px',
+                        pointerEvents: 'auto',
+                        position: 'relative',
+                        zIndex: 10
+                      }}
                       rows={1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.nativeEvent.stopImmediatePropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.nativeEvent.stopImmediatePropagation();
+                      }}
                     />
                     {inputValue.trim() && (
                       <button
