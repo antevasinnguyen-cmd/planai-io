@@ -3,12 +3,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
   signOut: () => Promise<void>
+  refreshSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -19,56 +21,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
+    // Lấy phiên hiện tại
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setSession(session)
+        setUser(session?.user ?? null)
+      } catch (error) {
+        console.error('Lỗi khi lấy phiên:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     getSession()
 
-    // Listen for auth changes
+    // Lắng nghe các thay đổi xác thực
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session)
+        console.log('Trạng thái xác thực thay đổi:', event, session)
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // Handle auth state changes
+        // Xử lý các thay đổi trạng thái xác thực
         if (event === 'SIGNED_IN' && session) {
-          // Handle OAuth callback (has hash in URL)
-          if ((window.location.pathname === '/login' || window.location.pathname === '/signup') && 
-              window.location.hash.includes('access_token')) {
-            // Show success message
+          // Xử lý callback từ OAuth (có hash trong URL)
+          if (window.location.hash && window.location.hash.includes('access_token')) {
+            // Lưu thông báo thành công
             localStorage.setItem('auth_success', 'true')
-            window.location.href = '/dashboard'
-          } 
-          // Handle normal sign in (already on login page)
-          else if (window.location.pathname === '/login') {
-            // Redirect will be handled by the login page itself
-            console.log('User signed in via email/password')
+            
+            // Lấy đường dẫn chuyển hướng từ localStorage hoặc mặc định là dashboard
+            const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
+            localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
+            
+            // Chuyển hướng đến trang đích
+            window.location.href = redirectPath
           }
+        } else if (event === 'SIGNED_OUT') {
+          // Xử lý khi đăng xuất
+          window.location.href = '/'
         }
       }
     )
+
+    // Xử lý trường hợp đăng nhập bằng Google
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      // Lưu đường dẫn chuyển hướng nếu có
+      const urlParams = new URLSearchParams(window.location.search)
+      const redirectedFrom = urlParams.get('redirectedFrom')
+      if (redirectedFrom) {
+        localStorage.setItem('auth_redirect', redirectedFrom)
+      }
+    }
 
     return () => subscription.unsubscribe()
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setSession(null)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      setSession(null)
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Lỗi khi đăng xuất:', error)
+    }
+  }
+
+  const refreshSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      setSession(session)
+      setUser(session?.user ?? null)
+    } catch (error) {
+      console.error('Lỗi khi làm mới phiên:', error)
+    }
   }
 
   const value = {
     user,
     session,
     loading,
-    signOut
+    signOut,
+    refreshSession
   }
 
   return (
@@ -81,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth phải được sử dụng trong AuthProvider')
   }
   return context
 }

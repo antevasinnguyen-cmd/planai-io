@@ -33,7 +33,7 @@ export default function DashboardPage() {
     if (user) {
       initializeDashboard()
       
-      // Check for auth success message
+      // Kiểm tra thông báo đăng nhập thành công
       const hasAuthSuccess = localStorage.getItem('auth_success')
       if (hasAuthSuccess === 'true') {
         setShowSuccessMessage(true)
@@ -116,7 +116,6 @@ export default function DashboardPage() {
       </div>
     )
   }
-
   const tier = subscription?.tier || 'free'
   const limits = getSubscriptionLimits(tier)
 
@@ -124,7 +123,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       {showSuccessMessage && (
         <SuccessAlert 
-          message={`Chúc mừng bạn đã đăng nhập thành công! Hãy bắt đầu với PlanAI ngay nào!`}
+          message={`Chúc mừng bạn đã đăng nhập thành công! Chào mừng đến với PlanAI!`}
           duration={8000}
         />
       )}

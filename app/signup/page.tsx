@@ -33,7 +33,7 @@ export default function SignupPage() {
     setIsLoading(true)
     setError('')
 
-    // Validation
+    // Kiểm tra hợp lệ
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp')
       setIsLoading(false)
@@ -54,40 +54,66 @@ export default function SignupPage() {
 
     try {
       const { data, error } = await signUp(formData.email, formData.password, {
-        full_name: formData.fullName
+        full_name: formData.fullName,
+        email: formData.email
       })
       
       if (error) {
-        setError(error.message === 'User already registered' 
-          ? 'Email này đã được đăng ký' 
-          : 'Có lỗi xảy ra khi đăng ký')
+        if (error.message === 'User already registered') {
+          setError('Email này đã được đăng ký. Vui lòng đăng nhập.')
+          setTimeout(() => {
+            router.push('/login')
+          }, 2000)
+        } else {
+          setError(`Lỗi đăng ký: ${error.message || 'Vui lòng thử lại'}`)
+        }
         return
       }
 
       if (data.user) {
-        router.push('/dashboard')
+        // Lưu thông báo đăng ký thành công
+        localStorage.setItem('signup_success', 'true')
+        
+        // Nếu cần xác thực email, chuyển hướng đến trang xác thực
+        if (data.session) {
+          // Đăng ký và đăng nhập thành công, chuyển hướng đến dashboard
+          localStorage.setItem('auth_success', 'true')
+          router.push('/dashboard')
+        } else {
+          // Cần xác thực email, hiển thị thông báo và chuyển hướng đến trang đăng nhập
+          alert('Vui lòng kiểm tra email của bạn để xác thực tài khoản!')
+          router.push('/login')
+        }
       }
     } catch (err) {
+      console.error('Lỗi đăng ký:', err)
       setError('Có lỗi xảy ra, vui lòng thử lại')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleGoogleSignUp = async () => {
+  const handleGoogleSignUp = async (e: React.MouseEvent) => {
+    e.preventDefault()
     try {
       setIsLoading(true)
       setError('')
-      console.log('Starting Google sign up...')
-      const { data, error } = await signInWithGoogle()
-      console.log('Google sign up initiated:', { data, error })
+      
+      // Lưu đường dẫn chuyển hướng nếu có
+      const urlParams = new URLSearchParams(window.location.search)
+      const redirectedFrom = urlParams.get('redirectedFrom')
+      if (redirectedFrom) {
+        localStorage.setItem('auth_redirect', redirectedFrom)
+      }
+      
+      // Đăng ký bằng Google (thực tế là đăng nhập vì Supabase tự động tạo tài khoản nếu chưa có)
+      const { error } = await signInWithGoogle()
       if (error) {
-        console.error('Google sign up error:', error)
         setError(`Đăng ký bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`)
       }
-      // Auth context will handle the redirect automatically
+      // AuthContext sẽ xử lý chuyển hướng sau khi OAuth thành công
     } catch (error: any) {
-      console.error('Google sign up failed:', error)
+      console.error('Lỗi đăng ký Google:', error)
       setError(`Đăng ký bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`)
     } finally {
       setIsLoading(false)

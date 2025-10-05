@@ -24,16 +24,23 @@ export default function LoginPage() {
       const { data, error } = await signIn(email, password)
       
       if (error) {
-        setError('Email hoặc mật khẩu không đúng')
+        setError(error.message || 'Email hoặc mật khẩu không đúng')
         return
       }
 
       if (data.user) {
-        // Store success message and redirect
+        // Lưu thông báo đăng nhập thành công
         localStorage.setItem('auth_success', 'true')
-        router.push('/dashboard')
+        
+        // Lấy đường dẫn chuyển hướng nếu có
+        const urlParams = new URLSearchParams(window.location.search)
+        const redirectedFrom = urlParams.get('redirectedFrom')
+        
+        // Chuyển hướng đến trang đích hoặc dashboard
+        router.push(redirectedFrom || '/dashboard')
       }
     } catch (err) {
+      console.error('Lỗi đăng nhập:', err)
       setError('Có lỗi xảy ra, vui lòng thử lại')
     } finally {
       setIsLoading(false)
@@ -146,18 +153,26 @@ export default function LoginPage() {
         <div className="mt-6 space-y-3">
           <button
             type="button"
-            onClick={async () => {
+            onClick={async (e) => {
+              e.preventDefault()
               try {
                 setIsLoading(true)
                 setError('')
-                console.log('Starting Google sign in...')
-                const { data, error } = await signInWithGoogle()
-                console.log('Google sign in initiated:', { data, error })
+                
+                // Lưu đường dẫn chuyển hướng nếu có
+                const urlParams = new URLSearchParams(window.location.search)
+                const redirectedFrom = urlParams.get('redirectedFrom')
+                if (redirectedFrom) {
+                  localStorage.setItem('auth_redirect', redirectedFrom)
+                }
+                
+                const { error } = await signInWithGoogle()
                 if (error) {
                   setError(`Đăng nhập bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`)
                 }
+                // AuthContext sẽ xử lý chuyển hướng sau khi OAuth thành công
               } catch (error) {
-                console.error('Google sign in failed:', error)
+                console.error('Lỗi đăng nhập Google:', error)
                 setError('Có lỗi xảy ra khi đăng nhập bằng Google. Vui lòng thử lại.')
               } finally {
                 setIsLoading(false)
