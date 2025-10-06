@@ -46,40 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Xử lý các thay đổi trạng thái xác thực
         if (event === 'SIGNED_IN' && session) {
-          console.log('AuthContext: SIGNED_IN event, user:', session.user.id)
+          console.log('AuthContext: SIGNED_IN event, user:', session.user.email)
           
           // Lưu thông báo thành công
           localStorage.setItem('auth_success', 'true')
           
-          // Nếu đang ở trang callback, để trang callback xử lý chuyển hướng
-          if (window.location.pathname !== '/auth/callback') {
-            console.log('AuthContext: Không phải trang callback, xử lý chuyển hướng')
-            
-            // Nếu không phải trang callback, chuyển hướng đến dashboard
-            const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
-            localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
-            
-            // Đảm bảo redirectPath không phải là 'null' hoặc 'undefined'
-            const safePath = redirectPath && redirectPath !== 'null' && redirectPath !== 'undefined' 
-              ? redirectPath 
-              : '/dashboard'
-            
-            // Đảm bảo URL có domain đầy đủ
-            const fullUrl = safePath.startsWith('http') 
-              ? safePath 
-              : `${window.location.origin}${safePath}`
-            
-            // Chỉ chuyển hướng nếu đang không ở trang đích
-            if (window.location.pathname !== safePath) {
-              console.log('AuthContext: Chuyển hướng đến', fullUrl)
-              
-              // Sử dụng setTimeout để đảm bảo các thay đổi được áp dụng trước khi chuyển hướng
-              setTimeout(() => {
-                window.location.href = fullUrl
-              }, 500)
-            }
-          } else {
-            console.log('AuthContext: Đang ở trang callback, để trang callback xử lý')
+          // Nếu đang ở trang login/signup, chuyển hướng đến dashboard
+          if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
+            console.log('AuthContext: Chuyển hướng từ trang auth đến dashboard')
+            window.location.replace('/dashboard')
           }
         } else if (event === 'SIGNED_OUT') {
           // Xử lý khi đăng xuất

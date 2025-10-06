@@ -29,18 +29,8 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // Lưu thông báo đăng nhập thành công
-        localStorage.setItem('auth_success', 'true')
-        
-        // Lấy đường dẫn chuyển hướng nếu có
-        const urlParams = new URLSearchParams(window.location.search)
-        const redirectedFrom = urlParams.get('redirectedFrom')
-        
-        // Chuyển hướng đến trang đích hoặc dashboard
-        const targetPath = redirectedFrom || '/dashboard'
-        
-        // Đảm bảo chuyển hướng đến trang đích
-        window.location.href = targetPath
+        console.log('Đăng nhập thành công:', data.user.email)
+        // AuthContext sẽ xử lý chuyển hướng
       }
     } catch (err) {
       console.error('Lỗi đăng nhập:', err)

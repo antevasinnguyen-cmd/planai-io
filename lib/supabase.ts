@@ -27,24 +27,8 @@ export const signIn = async (email: string, password: string) => {
 
 export const signInWithGoogle = async () => {
   try {
-    // Lấy đường dẫn chuyển hướng từ localStorage hoặc mặc định là dashboard
-    const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
+    console.log('Bắt đầu đăng nhập với Google')
     
-    // Lưu đường dẫn chuyển hướng vào localStorage để sử dụng sau khi đăng nhập
-    localStorage.setItem('auth_redirect', redirectPath)
-    
-    console.log('Bắt đầu đăng nhập với Google, redirectPath:', redirectPath)
-    
-    // Đảm bảo xóa các dữ liệu cũ có thể gây xung đột
-    localStorage.removeItem('supabase.auth.token')
-    
-    // Xác định URL callback đầy đủ
-    const origin = window.location.origin
-    const callbackUrl = `${origin}/auth/callback`
-    
-    console.log('URL callback đầy đủ:', callbackUrl)
-    
-    // Đảm bảo URL callback có domain đầy đủ (planai.io.vn)
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -52,7 +36,7 @@ export const signInWithGoogle = async () => {
           access_type: 'offline',
           prompt: 'consent',
         },
-        redirectTo: callbackUrl
+        redirectTo: `${window.location.origin}/auth/callback`
       }
     })
     

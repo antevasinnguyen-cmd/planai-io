@@ -71,23 +71,13 @@ export default function SignupPage() {
       }
 
       if (data.user) {
-        // Lưu thông báo đăng ký thành công
-        localStorage.setItem('signup_success', 'true')
+        console.log('Đăng ký thành công:', data.user.email)
         
-        // Nếu cần xác thực email, chuyển hướng đến trang xác thực
         if (data.session) {
-          // Đăng ký và đăng nhập thành công, chuyển hướng đến dashboard
-          localStorage.setItem('auth_success', 'true')
-          
-          // Lấy đường dẫn chuyển hướng nếu có
-          const urlParams = new URLSearchParams(window.location.search)
-          const redirectedFrom = urlParams.get('redirectedFrom')
-          
-          // Chuyển hướng đến trang đích hoặc dashboard
-          const targetPath = redirectedFrom || '/dashboard'
-          window.location.href = targetPath
+          // Đăng ký và đăng nhập thành công, AuthContext sẽ xử lý chuyển hướng
+          console.log('Có session, AuthContext sẽ xử lý chuyển hướng')
         } else {
-          // Cần xác thực email, hiển thị thông báo và chuyển hướng đến trang đăng nhập
+          // Cần xác thực email
           alert('Vui lòng kiểm tra email của bạn để xác thực tài khoản!')
           window.location.href = '/login'
         }
