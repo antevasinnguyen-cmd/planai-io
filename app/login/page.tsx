@@ -157,17 +157,24 @@ export default function LoginPage() {
                 const redirectedFrom = urlParams.get('redirectedFrom')
                 if (redirectedFrom) {
                   localStorage.setItem('auth_redirect', redirectedFrom)
+                  console.log('=== LOGIN: Lưu đường dẫn chuyển hướng ===', redirectedFrom)
                 }
                 
-                const { error } = await signInWithGoogle()
-                if (error) {
-                  setError(`Đăng nhập bằng Google thất bại: ${error.message || 'Vui lòng thử lại.'}`)
+                console.log('=== LOGIN: Gọi hàm signInWithGoogle ===')
+                const result = await signInWithGoogle()
+                
+                if (result.error) {
+                  console.error('=== LOGIN: Lỗi đăng nhập Google ===', result.error)
+                  setError(`Đăng nhập bằng Google thất bại: ${result.error.message || 'Vui lòng thử lại.'}`)
+                  setIsLoading(false)
+                } else {
+                  console.log('=== LOGIN: Đăng nhập Google thành công, đợi chuyển hướng ===')
+                  // Để signInWithGoogle tự động chuyển hướng đến Google OAuth
+                  // Không cần setIsLoading(false) vì sẽ chuyển trang
                 }
-                // AuthContext sẽ xử lý chuyển hướng sau khi OAuth thành công
               } catch (error) {
-                console.error('Lỗi đăng nhập Google:', error)
+                console.error('=== LOGIN: Lỗi không xác định khi đăng nhập Google ===', error)
                 setError('Có lỗi xảy ra khi đăng nhập bằng Google. Vui lòng thử lại.')
-              } finally {
                 setIsLoading(false)
               }
             }}

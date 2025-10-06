@@ -27,7 +27,15 @@ export const signIn = async (email: string, password: string) => {
 
 export const signInWithGoogle = async () => {
   try {
-    console.log('Bắt đầu đăng nhập với Google')
+    console.log('=== SUPABASE: Bắt đầu đăng nhập với Google ===')
+    console.log('Origin:', window.location.origin)
+    console.log('Redirect URL:', `${window.location.origin}/auth/callback`)
+    
+    // Lưu đường dẫn chuyển hướng vào localStorage trước khi chuyển hướng
+    const currentPath = window.location.pathname
+    if (currentPath !== '/login' && currentPath !== '/signup') {
+      localStorage.setItem('auth_redirect', currentPath)
+    }
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -40,13 +48,22 @@ export const signInWithGoogle = async () => {
       }
     })
     
+    // Kiểm tra kết quả
     if (error) {
-      console.error('Lỗi đăng nhập Google:', error)
+      console.error('=== SUPABASE: Lỗi đăng nhập Google ===', error)
+    } else if (data?.url) {
+      console.log('=== SUPABASE: Đăng nhập thành công, chuyển hướng đến ===', data.url)
+      
+      // Chuyển hướng đến URL của Google
+      window.location.href = data.url
+      return { data, error: null }
+    } else {
+      console.log('=== SUPABASE: Không có URL chuyển hướng ===', data)
     }
     
     return { data, error }
   } catch (err) {
-    console.error('Lỗi không xác định khi đăng nhập Google:', err)
+    console.error('=== SUPABASE: Lỗi không xác định khi đăng nhập Google ===', err)
     return { data: null, error: err instanceof Error ? err : new Error('Lỗi không xác định') }
   }
 }
