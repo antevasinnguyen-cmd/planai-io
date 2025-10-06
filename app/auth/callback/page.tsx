@@ -13,6 +13,14 @@ export default function AuthCallbackPage() {
     const handleAuthCallback = async () => {
       try {
         console.log('Bắt đầu xử lý callback OAuth')
+        console.log('URL hiện tại:', window.location.href)
+        
+        // Kiểm tra các tham số trong URL
+        const urlParams = new URLSearchParams(window.location.search)
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'))
+        
+        console.log('URL params:', Object.fromEntries(urlParams.entries()))
+        console.log('Hash params:', Object.fromEntries(hashParams.entries()))
         
         // Đợi một chút để đảm bảo Supabase đã xử lý xong phiên đăng nhập
         await new Promise(resolve => setTimeout(resolve, 1000))

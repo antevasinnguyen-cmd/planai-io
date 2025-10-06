@@ -38,6 +38,13 @@ export const signInWithGoogle = async () => {
     // Đảm bảo xóa các dữ liệu cũ có thể gây xung đột
     localStorage.removeItem('supabase.auth.token')
     
+    // Xác định URL callback đầy đủ
+    const origin = window.location.origin
+    const callbackUrl = `${origin}/auth/callback`
+    
+    console.log('URL callback đầy đủ:', callbackUrl)
+    
+    // Đảm bảo URL callback có domain đầy đủ (planai.io.vn)
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -45,7 +52,7 @@ export const signInWithGoogle = async () => {
           access_type: 'offline',
           prompt: 'consent',
         },
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: callbackUrl
       }
     })
     
