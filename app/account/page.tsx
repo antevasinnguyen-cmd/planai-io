@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CreditCard, CheckCircle2, ArrowRight, Wallet, BookOpen, Lock, Sparkles, RefreshCcw, CalendarClock, User, Settings, LogOut, Trash2 } from 'lucide-react'
+import { CreditCard, CheckCircle2, ArrowRight, Wallet, BookOpen, Lock, Sparkles, RefreshCcw, CalendarClock, User, Settings, LogOut, Trash2, FileText } from 'lucide-react'
 import { getUserProfile, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import type { UserProfile, Payment, SubscriptionTier } from '@/types'
@@ -91,6 +91,26 @@ export default function AccountPage() {
     }
   }
 
+  const getTierName = (tier: string) => {
+    switch (tier) {
+      case 'free': return 'Free'
+      case 'basic': return 'Gói 1'
+      case 'pro': return 'Gói 2'
+      case 'pro_max': return 'Gói 3'
+      default: return 'Free'
+    }
+  }
+
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case 'free': return 'text-gray-600'
+      case 'basic': return 'text-blue-600'
+      case 'pro': return 'text-purple-600'
+      case 'pro_max': return 'text-yellow-600'
+      default: return 'text-gray-600'
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -120,159 +140,238 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white">
-      <header className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-800 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">P</span>
-                </div>
-                <span className="text-xl font-bold gradient-text">PlanAI</span>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard/chat" className="text-gray-600 hover:text-primary-600 transition-colors">
-                Chat AI
-              </Link>
-              <Link href="/dashboard/plans/create" className="text-gray-600 hover:text-primary-600 transition-colors">
-                Tạo kế hoạch
-              </Link>
-              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar Navigation */}
+      <div className="flex">
+        <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto">
+          <div className="p-4 border-b border-gray-200">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-800 rounded-md flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-            </div>
+              <span className="text-xl font-bold text-gray-900">PlanAI</span>
+            </Link>
           </div>
-        </div>
-      </header>
-
-      <section className="pt-24 pb-8 bg-gradient-to-br from-primary-50 to-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Tài khoản của bạn</h1>
-          <p className="text-gray-600">Quản lý tài khoản, theo dõi sử dụng và cài đặt cá nhân.</p>
-        </div>
-      </section>
-
-      <section className="py-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          {/* 1. Trang chính tính năng */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Tính năng chính</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <Link href="/dashboard/chat" className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50">
-                <div>
-                  <div className="text-lg font-semibold text-gray-900">Chat với AI</div>
-                  <div className="text-gray-600 text-sm">Nhận tư vấn tài chính cá nhân hóa</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-gray-400" />
-              </Link>
-              <Link href="/dashboard/plans/create" className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50">
-                <div>
-                  <div className="text-lg font-semibold text-gray-900">Tạo kế hoạch</div>
-                  <div className="text-gray-600 text-sm">Lập kế hoạch tài chính độc quyền</div>
-                </div>
-                <ArrowRight className="w-5 h-5 text-gray-400" />
-              </Link>
+          
+          <nav className="p-4 space-y-1">
+            <Link href="/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <User className="w-5 h-5" />
+              <span>Dashboard</span>
+            </Link>
+            
+            <Link href="/dashboard/chat" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <BookOpen className="w-5 h-5" />
+              <span>Chat AI</span>
+            </Link>
+            
+            <Link href="/dashboard/plans" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <FileText className="w-5 h-5" />
+              <span>Kế hoạch</span>
+            </Link>
+            
+            <div className="pt-4 pb-2">
+              <div className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tài khoản</div>
             </div>
-          </div>
-
-          {/* 2. Quản lý */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Quản lý tài khoản</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Thông tin cá nhân</h3>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-600">Tên: {profile?.full_name || 'Chưa cập nhật'}</div>
-                  <div className="text-sm text-gray-600">Email: {user?.email || 'Không có email'}</div>
-                  <div className="text-sm text-gray-600">Gói hiện tại: {currentTier?.name || 'Free'}</div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Hoạt động tài khoản</h3>
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-sm font-medium text-gray-800 mb-1">Chat với AI</div>
-                    <ProgressBar used={usage.chat.used} limit={usage.chat.limit} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-800 mb-1">Số kế hoạch</div>
-                    <ProgressBar used={usage.plan.used} limit={usage.plan.limit} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-800 mb-1">Giới hạn từ</div>
-                    <ProgressBar used={usage.words.used} limit={usage.words.limit} />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6">
-              <Link href="/pricing" className="inline-flex items-center px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700">
-                Gia hạn thêm <ArrowRight className="w-4 h-4 ml-1" />
-              </Link>
-            </div>
-          </div>
-
-          {/* 3. Setting */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Cài đặt</h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Thông tin hồ sơ</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Họ và tên"
-                    value={profile?.full_name || ''}
-                    className="px-3 py-2 border border-gray-300 rounded-lg"
-                    onChange={(e) => {/* Handle update */}}
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={user?.email || ''}
-                    className="px-3 py-2 border border-gray-300 rounded-lg"
-                    disabled
-                  />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Lưu trữ Plan</h3>
-                <select
-                  value={storageOption}
-                  onChange={(e) => setStorageOption(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="30days">Lưu trữ theo gói (30 ngày)</option>
-                  <option value="7days">Xóa sau 7 ngày</option>
-                </select>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Xóa tài khoản</h3>
-                <button
-                  onClick={handleDeleteAccount}
-                  className="inline-flex items-center px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Xóa tài khoản
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Log out */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <button
+            
+            <Link href="/account" className="flex items-center space-x-3 px-3 py-2 rounded-md bg-blue-50 text-blue-700 font-medium">
+              <Settings className="w-5 h-5" />
+              <span>Quản lý tài khoản</span>
+            </Link>
+            
+            <Link href="/pricing" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+              <CreditCard className="w-5 h-5" />
+              <span>Nâng cấp gói</span>
+            </Link>
+            
+            <button 
               onClick={handleLogOut}
-              className="inline-flex items-center px-4 py-2 rounded-xl bg-gray-600 text-white hover:bg-gray-700"
+              className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-red-600 hover:bg-red-50"
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Đăng xuất
+              <LogOut className="w-5 h-5" />
+              <span>Đăng xuất</span>
             </button>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 min-w-0 overflow-hidden">
+          {/* Header */}
+          <header className="bg-white border-b border-gray-200">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Quản lý tài khoản</h1>
+                  <p className="text-gray-600 mt-1">Theo dõi sử dụng và cài đặt cá nhân</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold">
+                    {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{user?.user_metadata?.full_name || 'User'}</div>
+                    <div className="text-xs text-gray-500">{user?.email}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div className="p-6 space-y-6">
+            {/* 1. Tính năng chính */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <Sparkles className="w-5 h-5 mr-2 text-primary-600" />
+                Tính năng chính
+              </h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Link href="/dashboard/chat" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div>
+                    <div className="text-lg font-medium text-gray-900">Chat với AI</div>
+                    <div className="text-gray-600 text-sm">Tư vấn tài chính cá nhân hóa</div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400" />
+                </Link>
+                <Link href="/dashboard/plans/create" className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div>
+                    <div className="text-lg font-medium text-gray-900">Tạo kế hoạch</div>
+                    <div className="text-gray-600 text-sm">Lập kế hoạch tài chính AI</div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400" />
+                </Link>
+              </div>
+            </div>
+
+            {/* 2. Quản lý tài khoản */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <User className="w-5 h-5 mr-2 text-primary-600" />
+                Quản lý tài khoản
+              </h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Thông tin cá nhân</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Tên:</span>
+                      <span className="text-sm font-medium text-gray-900">{profile?.full_name || 'Chưa cập nhật'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Email:</span>
+                      <span className="text-sm font-medium text-gray-900">{user?.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Gói hiện tại:</span>
+                      <span className={`text-sm font-medium ${getTierColor(currentTier?.id || 'free')}`}>
+                        {getTierName(currentTier?.id || 'free')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Hoạt động tài khoản</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-sm font-medium text-gray-800 mb-2">Chat với AI</div>
+                      <ProgressBar used={usage.chat.used} limit={usage.chat.limit} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-800 mb-2">Kế hoạch tạo</div>
+                      <ProgressBar used={usage.plan.used} limit={usage.plan.limit} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-800 mb-2">Từ đã sử dụng</div>
+                      <ProgressBar used={usage.words.used} limit={usage.words.limit} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <Link href="/pricing" className="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Gia hạn thêm
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+            </div>
+
+            {/* 3. Cài đặt */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <Settings className="w-5 h-5 mr-2 text-primary-600" />
+                Cài đặt
+              </h2>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Thông tin hồ sơ</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                      <input
+                        type="text"
+                        placeholder="Nhập họ và tên"
+                        value={profile?.full_name || ''}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        onChange={(e) => {/* Handle update */}}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={user?.email || ''}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Lưu trữ Plan</h3>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="storage"
+                        value="30days"
+                        checked={storageOption === '30days'}
+                        onChange={(e) => setStorageOption(e.target.value)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Lưu trữ theo gói đăng ký (30 ngày)</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="storage"
+                        value="7days"
+                        checked={storageOption === '7days'}
+                        onChange={(e) => setStorageOption(e.target.value)}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Xóa sau mỗi 7 ngày</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Xóa tài khoản</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Hành động này sẽ xóa vĩnh viễn tài khoản và tất cả dữ liệu của bạn. Không thể hoàn tác.
+                  </p>
+                  <button
+                    onClick={handleDeleteAccount}
+                    className="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Xóa tài khoản
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-    </main>
+        </main>
+      </div>
+    </div>
   )
 }

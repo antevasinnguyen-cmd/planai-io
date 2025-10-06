@@ -42,7 +42,7 @@ export async function middleware(req: NextRequest) {
   // Nếu người dùng đã đăng nhập và đang truy cập trang đăng nhập/đăng ký
   if (session && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup')) {
     console.log('=== MIDDLEWARE: Đã đăng nhập, chuyển hướng dashboard ===')
-    return NextResponse.redirect(new URL('/dashboard/simple', req.url))
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   return res

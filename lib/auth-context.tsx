@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentPath = window.location.pathname
           if (currentPath !== '/dashboard' && !currentPath.startsWith('/dashboard/')) {
             console.log('=== AUTHCONTEXT: Redirecting to dashboard ===')
-            window.location.replace('/dashboard/simple')
+            window.location.replace('/dashboard')
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('=== AUTHCONTEXT: SIGNED_OUT event ===')

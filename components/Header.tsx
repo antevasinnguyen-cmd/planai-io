@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X, Zap } from 'lucide-react'
-import { getCurrentUser } from '@/lib/supabase'
+import { Menu, X, Zap, User, LogOut, Settings } from 'lucide-react'
+import { getCurrentUser, signOut } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -16,6 +19,37 @@ export default function Header() {
     }
     fetchUser()
   }, [])
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showUserMenu) {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showUserMenu])
+
+  const handleLogout = async () => {
+    await signOut()
+    setUser(null)
+    setShowUserMenu(false)
+    router.push('/')
+  }
+
+  const getUserInitial = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name.charAt(0).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return 'U'
+  }
 
   return (
     <header className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
@@ -50,9 +84,46 @@ export default function Header() {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <Link href="/account" className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-primary-700 transition-colors">
-                {user.email.charAt(0).toUpperCase()}
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-primary-700 transition-colors"
+                >
+                  {getUserInitial()}
+                </button>
+                
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                      <div className="font-medium">{user.user_metadata?.full_name || 'User'}</div>
+                      <div className="text-gray-500 text-xs">{user.email}</div>
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/account"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Tài khoản
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link href="/login" className="text-gray-600 hover:text-primary-600 transition-colors">
@@ -93,9 +164,20 @@ export default function Header() {
                 About
               </Link>
               {user ? (
-                <Link href="/account" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
-                  Tài khoản
-                </Link>
+                <>
+                  <Link href="/dashboard" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+                    Dashboard
+                  </Link>
+                  <Link href="/account" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+                    Tài khoản
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-3 py-2 text-red-600 hover:text-red-700"
+                  >
+                    Đăng xuất
+                  </button>
+                </>
               ) : (
                 <>
                   <Link href="/login" className="block px-3 py-2 text-gray-600 hover:text-primary-600">

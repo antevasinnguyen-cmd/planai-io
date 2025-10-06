@@ -29,12 +29,13 @@ export default function AuthCallbackPage() {
 
           // Lưu thông báo thành công
           localStorage.setItem('auth_success', 'true')
+          localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Test: thử chuyển hướng đến trang chủ trước để xem có hoạt động không
-          console.log('=== CALLBACK: Redirecting to dashboard/simple ===')
+          // Chuyển hướng đến dashboard chính
+          console.log('=== CALLBACK: Redirecting to main dashboard ===')
 
           // Sử dụng window.location.href để đảm bảo chuyển hướng
-          window.location.href = '/dashboard/simple'
+          window.location.href = '/dashboard'
 
         } else {
           console.log('=== CALLBACK: No session, redirecting to login ===')

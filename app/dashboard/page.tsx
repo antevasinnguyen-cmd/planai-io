@@ -44,10 +44,12 @@ export default function DashboardPage() {
       
       // Kiểm tra thông báo đăng nhập thành công
       const hasAuthSuccess = localStorage.getItem('auth_success')
+      const userEmail = localStorage.getItem('auth_user_email')
       if (hasAuthSuccess === 'true') {
         console.log('=== DASHBOARD: Hiển thị thông báo thành công ===')
         setShowSuccessMessage(true)
         localStorage.removeItem('auth_success')
+        localStorage.removeItem('auth_user_email')
       }
     }
   }, [user, authLoading, router])
@@ -133,8 +135,8 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#fafafa] flex">
       {showSuccessMessage && (
         <SuccessAlert 
-          message={`Chúc mừng bạn đã đăng nhập thành công! Chào mừng đến với PlanAI!`}
-          duration={8000}
+          message={`🎉 Chúc mừng bạn đã đăng nhập thành công! Hãy bắt đầu với PlanAI ngay nào!`}
+          duration={10000}
         />
       )}
       
