@@ -29,10 +29,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('=== AUTHCONTEXT: Initial session ===', {
           hasSession: !!session,
           userEmail: session?.user?.email,
-          error
+          userId: session?.user?.id,
+          error: error?.message,
+          timestamp: new Date().toISOString()
         })
+        
         setSession(session)
         setUser(session?.user ?? null)
+        
+        // Kiểm tra xem có cần chuyển hướng không
+        if (session && window.location.pathname === '/login') {
+          console.log('=== AUTHCONTEXT: Already logged in, redirecting from login page ===')
+          window.location.replace('/dashboard')
+        }
       } catch (error) {
         console.error('=== AUTHCONTEXT: Error getting session ===', error)
       } finally {
@@ -49,7 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           event,
           hasSession: !!session,
           userEmail: session?.user?.email,
-          currentPath: window.location.pathname
+          userId: session?.user?.id,
+          currentPath: window.location.pathname,
+          timestamp: new Date().toISOString()
         })
 
         setSession(session)
@@ -60,18 +71,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === 'SIGNED_IN' && session) {
           console.log('=== AUTHCONTEXT: SIGNED_IN event ===', session.user.email)
 
-          // Lưu thông báo thành công
+          // Lưu thông báo thành công và email người dùng
           localStorage.setItem('auth_success', 'true')
+          localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Chuyển hướng đến dashboard nếu không phải đang ở dashboard
+          // Lấy đường dẫn chuyển hướng nếu có
+          const redirectTo = localStorage.getItem('auth_redirect') || '/dashboard'
+          localStorage.removeItem('auth_redirect')
+          
+          // Chuyển hướng đến dashboard hoặc đường dẫn được yêu cầu
           const currentPath = window.location.pathname
-          if (currentPath !== '/dashboard' && !currentPath.startsWith('/dashboard/')) {
-            console.log('=== AUTHCONTEXT: Redirecting to dashboard ===')
-            window.location.replace('/dashboard')
+          if (currentPath !== redirectTo && 
+              currentPath !== '/dashboard' && 
+              !currentPath.startsWith('/dashboard/') &&
+              currentPath !== '/auth/callback') {
+            console.log(`=== AUTHCONTEXT: Redirecting to ${redirectTo} ===`)
+            window.location.replace(redirectTo)
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('=== AUTHCONTEXT: SIGNED_OUT event ===')
           window.location.href = '/'
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('=== AUTHCONTEXT: TOKEN_REFRESHED event ===')
         }
       }
     )

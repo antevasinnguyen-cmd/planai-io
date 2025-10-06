@@ -10,9 +10,24 @@ export default function AuthCallbackPage() {
         console.log('=== CALLBACK: Starting ===')
         console.log('Current URL:', window.location.href)
         console.log('Current path:', window.location.pathname)
+        console.log('Hash:', window.location.hash)
+
+        // Kiểm tra hash params (quan trọng cho OAuth callback)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+        const expiresIn = hashParams.get('expires_in')
+        const tokenType = hashParams.get('token_type')
+        
+        console.log('=== CALLBACK: Hash params ===', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          expiresIn,
+          tokenType
+        })
 
         // Đợi để đảm bảo Supabase đã xử lý xong
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        await new Promise(resolve => setTimeout(resolve, 2000))
 
         // Lấy thông tin phiên hiện tại
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -20,29 +35,53 @@ export default function AuthCallbackPage() {
         console.log('=== CALLBACK: Session check ===', {
           hasSession: !!session,
           userEmail: session?.user?.email,
-          error,
+          userId: session?.user?.id,
+          error: error?.message,
           timestamp: new Date().toISOString()
         })
 
         if (session && session.user) {
           console.log('=== CALLBACK: Success ===', session.user.email)
 
-          // Lưu thông báo thành công
+          // Lưu thông báo thành công và email người dùng
           localStorage.setItem('auth_success', 'true')
           localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Chuyển hướng đến dashboard chính
-          console.log('=== CALLBACK: Redirecting to main dashboard ===')
+          // Lấy đường dẫn chuyển hướng nếu có
+          const redirectTo = localStorage.getItem('auth_redirect') || '/dashboard'
+          localStorage.removeItem('auth_redirect')
 
-          // Sử dụng window.location.href để đảm bảo chuyển hướng
-          window.location.href = '/dashboard'
+          // Chuyển hướng đến dashboard hoặc đường dẫn được yêu cầu
+          console.log(`=== CALLBACK: Redirecting to ${redirectTo} ===`)
 
+          // Sử dụng window.location.replace để đảm bảo chuyển hướng
+          window.location.replace(redirectTo)
         } else {
-          console.log('=== CALLBACK: No session, redirecting to login ===')
-          // Kiểm tra hash params
-          const hashParams = new URLSearchParams(window.location.hash.substring(1))
-          console.log('Hash params:', Object.fromEntries(hashParams.entries()))
-
+          console.log('=== CALLBACK: No session, checking hash params ===')
+          
+          // Nếu có access_token trong hash nhưng không có session, thử set session thủ công
+          if (accessToken && refreshToken) {
+            console.log('=== CALLBACK: Found tokens in hash, setting session ===')
+            try {
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+              })
+              
+              if (data.session) {
+                console.log('=== CALLBACK: Manual session set success ===')
+                localStorage.setItem('auth_success', 'true')
+                window.location.replace('/dashboard')
+                return
+              } else {
+                console.error('=== CALLBACK: Manual session set failed ===', error)
+              }
+            } catch (err) {
+              console.error('=== CALLBACK: Error setting session ===', err)
+            }
+          }
+          
+          // Nếu không có session và không thể set thủ công, chuyển hướng về login
           window.location.replace('/login?error=no_session')
         }
       } catch (error) {
