@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, FileText, MessageCircle, Sparkles, User, LogOut, BarChart3, Target, TrendingUp, Calendar } from 'lucide-react'
+import { 
+  Plus, FileText, MessageCircle, Sparkles, User, LogOut, BarChart3, 
+  Target, TrendingUp, Calendar, Home, Settings, CreditCard, 
+  Users, HelpCircle, Command, Search, Bell, ChevronDown, Menu, X
+} from 'lucide-react'
 import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import SuccessAlert from '@/components/SuccessAlert'
+import Image from 'next/image'
 
 interface UsageStats {
   plans: number
@@ -120,24 +125,143 @@ export default function DashboardPage() {
   const limits = getSubscriptionLimits(tier)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fafafa] flex">
       {showSuccessMessage && (
         <SuccessAlert 
           message={`Chúc mừng bạn đã đăng nhập thành công! Chào mừng đến với PlanAI!`}
           duration={8000}
         />
       )}
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Chào mừng trở lại với PlanAI</p>
+      
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto hidden md:block">
+        <div className="p-4 border-b border-gray-200">
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-800 rounded-md flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-900">PlanAI</span>
+          </Link>
+        </div>
+        
+        <nav className="p-4 space-y-1">
+          <Link href="/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-md bg-blue-50 text-blue-700 font-medium">
+            <Home className="w-5 h-5" />
+            <span>Dashboard</span>
+          </Link>
+          
+          <Link href="/dashboard/chat" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+            <MessageCircle className="w-5 h-5" />
+            <span>Chat AI</span>
+          </Link>
+          
+          <Link href="/dashboard/plans" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+            <FileText className="w-5 h-5" />
+            <span>Kế hoạch</span>
+          </Link>
+          
+          <div className="pt-4 pb-2">
+            <div className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tài khoản</div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <div className={`text-sm font-medium ${getTierColor(tier)}`}>
+          <Link href="/account" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+            <User className="w-5 h-5" />
+            <span>Hồ sơ</span>
+          </Link>
+          
+          <Link href="/account/billing" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+            <CreditCard className="w-5 h-5" />
+            <span>Thanh toán</span>
+          </Link>
+          
+          <Link href="/account/settings" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+            <Settings className="w-5 h-5" />
+            <span>Cài đặt</span>
+          </Link>
+          
+          <div className="pt-4 pb-2">
+            <div className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Hỗ trợ</div>
+          </div>
+          
+          <Link href="/help" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+            <HelpCircle className="w-5 h-5" />
+            <span>Trợ giúp</span>
+          </Link>
+          
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-red-600 hover:bg-red-50"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Đăng xuất</span>
+          </button>
+        </nav>
+      </aside>
+      
+      {/* Main content */}
+      <div className="flex-1 min-w-0 overflow-hidden">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center md:hidden">
+              <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="relative hidden md:block w-64">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Search className="w-4 h-4 text-gray-400" />
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Tìm kiếm..." 
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button className="p-1 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative">
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+              </button>
+              
+              <div className="relative">
+                <button className="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-gray-900">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {user?.user_metadata?.avatar_url ? (
+                      <Image 
+                        src={user.user_metadata.avatar_url} 
+                        alt="Avatar" 
+                        width={32} 
+                        height={32} 
+                        className="object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5 text-gray-600" />
+                    )}
+                  </div>
+                  <span className="hidden md:inline-block">{user?.user_metadata?.full_name || user?.email}</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+        
+        <main className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-gray-600 mt-1">Chào mừng trở lại với PlanAI</p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <div className={`text-sm font-medium ${getTierColor(tier)}`}>
                 {getTierName(tier)}
               </div>
               <div className="text-xs text-gray-500">{user?.email}</div>
@@ -354,7 +478,7 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
-        )}
+        </main>
       </div>
     </div>
   )

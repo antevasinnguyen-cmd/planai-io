@@ -23,15 +23,18 @@ export default function AuthCallbackPage() {
           const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
           localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
           
-          // Chuyển hướng đến trang đích
-          router.push(redirectPath)
+          // Chuyển hướng đến trang đích (sử dụng window.location.href để đảm bảo chuyển hướng hoàn toàn)
+          console.log('Chuyển hướng đến:', redirectPath)
+          window.location.href = redirectPath
         } else {
           // Nếu không có phiên, chuyển hướng về trang đăng nhập
-          router.push('/login')
+          console.log('Không có phiên, chuyển hướng về trang đăng nhập')
+          window.location.href = '/login'
         }
       } catch (error) {
         console.error('Lỗi xử lý callback:', error)
-        router.push('/login')
+        console.error('Lỗi xử lý callback, chuyển hướng về trang đăng nhập')
+        window.location.href = '/login'
       }
     }
 
