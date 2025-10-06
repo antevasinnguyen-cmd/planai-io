@@ -47,14 +47,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Xử lý các thay đổi trạng thái xác thực
         if (event === 'SIGNED_IN' && session) {
           console.log('AuthContext: SIGNED_IN event, user:', session.user.email)
+          console.log('AuthContext: Current pathname:', window.location.pathname)
           
           // Lưu thông báo thành công
           localStorage.setItem('auth_success', 'true')
           
-          // Nếu đang ở trang login/signup, chuyển hướng đến dashboard
-          if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
-            console.log('AuthContext: Chuyển hướng từ trang auth đến dashboard')
-            window.location.replace('/dashboard')
+          // Chuyển hướng đến dashboard nếu không phải đang ở dashboard
+          const currentPath = window.location.pathname
+          if (currentPath !== '/dashboard' && !currentPath.startsWith('/dashboard/')) {
+            console.log('AuthContext: Chuyển hướng đến dashboard simple')
+            window.location.replace('/dashboard/simple')
           }
         } else if (event === 'SIGNED_OUT') {
           // Xử lý khi đăng xuất

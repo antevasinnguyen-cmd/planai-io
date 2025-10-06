@@ -30,18 +30,22 @@ export default function DashboardPage() {
   const { user, loading: authLoading, signOut } = useAuth()
 
   useEffect(() => {
+    console.log('=== DASHBOARD: useEffect ===', { user, authLoading })
+    
     if (!authLoading && !user) {
-      console.log('Không có người dùng, chuyển hướng đến trang đăng nhập')
+      console.log('=== DASHBOARD: Không có user, chuyển hướng login ===')
       window.location.href = '/login'
       return
     }
 
     if (user) {
+      console.log('=== DASHBOARD: Có user, khởi tạo dashboard ===', user.email)
       initializeDashboard()
       
       // Kiểm tra thông báo đăng nhập thành công
       const hasAuthSuccess = localStorage.getItem('auth_success')
       if (hasAuthSuccess === 'true') {
+        console.log('=== DASHBOARD: Hiển thị thông báo thành công ===')
         setShowSuccessMessage(true)
         localStorage.removeItem('auth_success')
       }
