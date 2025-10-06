@@ -26,24 +26,38 @@ export const signIn = async (email: string, password: string) => {
 }
 
 export const signInWithGoogle = async () => {
-  // Lấy đường dẫn chuyển hướng từ localStorage hoặc mặc định là dashboard
-  const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
-  
-  // Lưu đường dẫn chuyển hướng vào localStorage để sử dụng sau khi đăng nhập
-  localStorage.setItem('auth_redirect', redirectPath)
-  
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-      },
-      // Đảm bảo redirectTo trỏ về trang dashboard để AuthContext xử lý
-      redirectTo: `${window.location.origin}/auth/callback`
+  try {
+    // Lấy đường dẫn chuyển hướng từ localStorage hoặc mặc định là dashboard
+    const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
+    
+    // Lưu đường dẫn chuyển hướng vào localStorage để sử dụng sau khi đăng nhập
+    localStorage.setItem('auth_redirect', redirectPath)
+    
+    console.log('Bắt đầu đăng nhập với Google, redirectPath:', redirectPath)
+    
+    // Đảm bảo xóa các dữ liệu cũ có thể gây xung đột
+    localStorage.removeItem('supabase.auth.token')
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+        redirectTo: `${window.location.origin}/auth/callback`
+      }
+    })
+    
+    if (error) {
+      console.error('Lỗi đăng nhập Google:', error)
     }
-  })
-  return { data, error }
+    
+    return { data, error }
+  } catch (err) {
+    console.error('Lỗi không xác định khi đăng nhập Google:', err)
+    return { data: null, error: err instanceof Error ? err : new Error('Lỗi không xác định') }
+  }
 }
 
 export const signOut = async () => {

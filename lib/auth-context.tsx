@@ -46,22 +46,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Xử lý các thay đổi trạng thái xác thực
         if (event === 'SIGNED_IN' && session) {
+          console.log('AuthContext: SIGNED_IN event, user:', session.user.id)
+          
           // Lưu thông báo thành công
           localStorage.setItem('auth_success', 'true')
           
           // Nếu đang ở trang callback, để trang callback xử lý chuyển hướng
           if (window.location.pathname !== '/auth/callback') {
+            console.log('AuthContext: Không phải trang callback, xử lý chuyển hướng')
+            
             // Nếu không phải trang callback, chuyển hướng đến dashboard
             const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
             localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
             
+            // Đảm bảo redirectPath không phải là 'null' hoặc 'undefined'
+            const safePath = redirectPath && redirectPath !== 'null' && redirectPath !== 'undefined' 
+              ? redirectPath 
+              : '/dashboard'
+            
             // Chỉ chuyển hướng nếu đang không ở trang đích
-            if (window.location.pathname !== redirectPath) {
-              window.location.href = redirectPath
+            if (window.location.pathname !== safePath) {
+              console.log('AuthContext: Chuyển hướng đến', safePath)
+              
+              // Sử dụng setTimeout để đảm bảo các thay đổi được áp dụng trước khi chuyển hướng
+              setTimeout(() => {
+                window.location.href = safePath
+              }, 100)
             }
+          } else {
+            console.log('AuthContext: Đang ở trang callback, để trang callback xử lý')
           }
         } else if (event === 'SIGNED_OUT') {
           // Xử lý khi đăng xuất
+          console.log('AuthContext: SIGNED_OUT event, chuyển về trang chủ')
           window.location.href = '/'
         }
       }
