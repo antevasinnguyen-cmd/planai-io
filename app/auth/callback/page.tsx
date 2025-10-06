@@ -39,10 +39,17 @@ export default function AuthCallbackPage() {
           // Chuyển hướng đến trang đích (sử dụng window.location.href để đảm bảo chuyển hướng hoàn toàn)
           console.log('Chuyển hướng đến:', safePath)
           
+          // Đảm bảo URL có domain đầy đủ
+          const fullUrl = safePath.startsWith('http') 
+            ? safePath 
+            : `${window.location.origin}${safePath}`
+          
+          console.log('URL đầy đủ:', fullUrl)
+          
           // Sử dụng setTimeout để đảm bảo localStorage đã được cập nhật trước khi chuyển hướng
           setTimeout(() => {
-            window.location.href = safePath
-          }, 100)
+            window.location.href = fullUrl
+          }, 500)
         } else {
           // Nếu không có phiên, thử lấy lại phiên từ URL hash (trường hợp Supabase chưa xử lý xong)
           console.log('Không tìm thấy phiên, thử kiểm tra lại...')
@@ -60,7 +67,14 @@ export default function AuthCallbackPage() {
                 const safePath = redirectPath && redirectPath !== 'null' && redirectPath !== 'undefined' 
                   ? redirectPath 
                   : '/dashboard'
-                window.location.href = safePath
+                
+                // Đảm bảo URL có domain đầy đủ
+                const fullUrl = safePath.startsWith('http') 
+                  ? safePath 
+                  : `${window.location.origin}${safePath}`
+                
+                console.log('URL đầy đủ (retry):', fullUrl)
+                window.location.href = fullUrl
               } else {
                 console.log('Vẫn không tìm thấy phiên, chuyển hướng về trang đăng nhập')
                 setError('Không thể xác thực phiên đăng nhập')

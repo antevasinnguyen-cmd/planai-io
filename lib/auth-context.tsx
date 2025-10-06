@@ -64,14 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ? redirectPath 
               : '/dashboard'
             
+            // Đảm bảo URL có domain đầy đủ
+            const fullUrl = safePath.startsWith('http') 
+              ? safePath 
+              : `${window.location.origin}${safePath}`
+            
             // Chỉ chuyển hướng nếu đang không ở trang đích
             if (window.location.pathname !== safePath) {
-              console.log('AuthContext: Chuyển hướng đến', safePath)
+              console.log('AuthContext: Chuyển hướng đến', fullUrl)
               
               // Sử dụng setTimeout để đảm bảo các thay đổi được áp dụng trước khi chuyển hướng
               setTimeout(() => {
-                window.location.href = safePath
-              }, 100)
+                window.location.href = fullUrl
+              }, 500)
             }
           } else {
             console.log('AuthContext: Đang ở trang callback, để trang callback xử lý')

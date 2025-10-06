@@ -34,6 +34,7 @@ export async function middleware(req: NextRequest) {
   
   // Nếu người dùng chưa đăng nhập và đang truy cập đường dẫn được bảo vệ
   if (!session && isProtectedPath) {
+    console.log('Middleware: Người dùng chưa đăng nhập, chuyển hướng đến trang đăng nhập')
     // Lưu đường dẫn hiện tại để chuyển hướng sau khi đăng nhập
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/login'
@@ -43,12 +44,14 @@ export async function middleware(req: NextRequest) {
 
   // Nếu người dùng đã đăng nhập và đang truy cập trang đăng nhập/đăng ký
   if (session && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup')) {
-    // Chuyển hướng đến dashboard
+    console.log('Middleware: Người dùng đã đăng nhập, chuyển hướng đến dashboard')
+    // Chuyển hướng đến dashboard với URL đầy đủ
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   // Xử lý callback từ OAuth (Google)
   if (req.nextUrl.pathname === '/auth/callback') {
+    console.log('Middleware: Xử lý callback OAuth')
     // Cho phép tiếp tục để callback page xử lý
     return res
   }
