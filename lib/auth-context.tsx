@@ -46,17 +46,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Xử lý các thay đổi trạng thái xác thực
         if (event === 'SIGNED_IN' && session) {
-          // Xử lý callback từ OAuth (có hash trong URL)
-          if (window.location.hash && window.location.hash.includes('access_token')) {
-            // Lưu thông báo thành công
-            localStorage.setItem('auth_success', 'true')
-            
-            // Lấy đường dẫn chuyển hướng từ localStorage hoặc mặc định là dashboard
+          // Lưu thông báo thành công
+          localStorage.setItem('auth_success', 'true')
+          
+          // Nếu đang ở trang callback, để trang callback xử lý chuyển hướng
+          if (window.location.pathname !== '/auth/callback') {
+            // Nếu không phải trang callback, chuyển hướng đến dashboard
             const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
             localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
             
-            // Chuyển hướng đến trang đích
-            window.location.href = redirectPath
+            // Chỉ chuyển hướng nếu đang không ở trang đích
+            if (window.location.pathname !== redirectPath) {
+              window.location.href = redirectPath
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           // Xử lý khi đăng xuất
@@ -65,15 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    // Xử lý trường hợp đăng nhập bằng Google
-    if (window.location.hash && window.location.hash.includes('access_token')) {
-      // Lưu đường dẫn chuyển hướng nếu có
-      const urlParams = new URLSearchParams(window.location.search)
-      const redirectedFrom = urlParams.get('redirectedFrom')
-      if (redirectedFrom) {
-        localStorage.setItem('auth_redirect', redirectedFrom)
-      }
-    }
+    // Không cần xử lý hash ở đây nữa vì đã có trang callback riêng
 
     return () => subscription.unsubscribe()
   }, [])

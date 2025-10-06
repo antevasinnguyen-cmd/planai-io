@@ -17,7 +17,18 @@ export async function middleware(req: NextRequest) {
     '/settings',
   ]
   
+  // Các đường dẫn dành cho auth
+  const authPaths = [
+    '/login',
+    '/signup',
+    '/auth/callback'
+  ]
+  
   const isProtectedPath = protectedPaths.some(path => 
+    req.nextUrl.pathname === path || req.nextUrl.pathname.startsWith(`${path}/`)
+  )
+  
+  const isAuthPath = authPaths.some(path => 
     req.nextUrl.pathname === path || req.nextUrl.pathname.startsWith(`${path}/`)
   )
   
@@ -37,8 +48,8 @@ export async function middleware(req: NextRequest) {
   }
 
   // Xử lý callback từ OAuth (Google)
-  if (req.nextUrl.pathname === '/dashboard' && req.nextUrl.hash && req.nextUrl.hash.includes('access_token')) {
-    // Cho phép tiếp tục để AuthContext xử lý
+  if (req.nextUrl.pathname === '/auth/callback') {
+    // Cho phép tiếp tục để callback page xử lý
     return res
   }
 

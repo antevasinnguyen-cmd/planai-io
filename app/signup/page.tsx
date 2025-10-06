@@ -78,11 +78,18 @@ export default function SignupPage() {
         if (data.session) {
           // Đăng ký và đăng nhập thành công, chuyển hướng đến dashboard
           localStorage.setItem('auth_success', 'true')
-          router.push('/dashboard')
+          
+          // Lấy đường dẫn chuyển hướng nếu có
+          const urlParams = new URLSearchParams(window.location.search)
+          const redirectedFrom = urlParams.get('redirectedFrom')
+          
+          // Chuyển hướng đến trang đích hoặc dashboard
+          const targetPath = redirectedFrom || '/dashboard'
+          window.location.href = targetPath
         } else {
           // Cần xác thực email, hiển thị thông báo và chuyển hướng đến trang đăng nhập
           alert('Vui lòng kiểm tra email của bạn để xác thực tài khoản!')
-          router.push('/login')
+          window.location.href = '/login'
         }
       }
     } catch (err) {

@@ -29,6 +29,9 @@ export const signInWithGoogle = async () => {
   // Lấy đường dẫn chuyển hướng từ localStorage hoặc mặc định là dashboard
   const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
   
+  // Lưu đường dẫn chuyển hướng vào localStorage để sử dụng sau khi đăng nhập
+  localStorage.setItem('auth_redirect', redirectPath)
+  
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -37,7 +40,7 @@ export const signInWithGoogle = async () => {
         prompt: 'consent',
       },
       // Đảm bảo redirectTo trỏ về trang dashboard để AuthContext xử lý
-      redirectTo: `${window.location.origin}/dashboard`
+      redirectTo: `${window.location.origin}/auth/callback`
     }
   })
   return { data, error }

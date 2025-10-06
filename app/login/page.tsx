@@ -37,7 +37,10 @@ export default function LoginPage() {
         const redirectedFrom = urlParams.get('redirectedFrom')
         
         // Chuyển hướng đến trang đích hoặc dashboard
-        router.push(redirectedFrom || '/dashboard')
+        const targetPath = redirectedFrom || '/dashboard'
+        
+        // Đảm bảo chuyển hướng đến trang đích
+        window.location.href = targetPath
       }
     } catch (err) {
       console.error('Lỗi đăng nhập:', err)
