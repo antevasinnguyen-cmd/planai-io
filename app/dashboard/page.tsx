@@ -260,39 +260,9 @@ export default function DashboardFinal() {
               </Link>
             </div>
           </div>
-
-          {/* Feature Cards in Sidebar */}
-          {sidebarOpen && (
-            <div className="px-4 pb-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Tính năng nổi bật</p>
-              <div className="space-y-2">
-                {features.map((feature, index) => (
-                  <Link
-                    key={index}
-                    href={feature.href}
-                    className="block p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors group"
-                  >
-                    <div className="flex items-start space-x-2">
-                      <div className={`w-8 h-8 ${getColorClasses(feature.color)} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                        <feature.icon className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-0.5 truncate">
-                          {feature.title}
-                        </h4>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
         </nav>
 
-        {/* Usage Stats + Theme Toggle */}
+        {/* Usage Stats + Theme Toggle - Đẩy lên sau Lịch trình */}
         {sidebarOpen && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
             {/* Theme Toggle */}
@@ -493,7 +463,7 @@ export default function DashboardFinal() {
 
           {/* Empty State */}
           {plans.length === 0 && (
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center mb-8">
               <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-10 h-10 text-gray-400" />
               </div>
@@ -510,6 +480,25 @@ export default function DashboardFinal() {
               </Link>
             </div>
           )}
+
+          {/* Feature Cards - Giữ nguyên ở dưới cùng */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, index) => (
+              <Link
+                key={index}
+                href={feature.href}
+                className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
+              >
+                <div className={`w-12 h-12 ${getColorClasses(feature.color)} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <feature.icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {feature.description}
+                </p>
+              </Link>
+            ))}
+          </div>
         </main>
       </div>
     </div>
