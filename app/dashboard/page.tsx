@@ -405,26 +405,7 @@ export default function DashboardFinal() {
             <p className="text-gray-600 dark:text-gray-400">Sẵn sàng bắt đầu lập kế hoạch tài chính?</p>
           </div>
 
-          {/* Feature Cards - Từ Landing Page */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {features.map((feature, index) => (
-              <Link
-                key={index}
-                href={feature.href}
-                className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
-              >
-                <div className={`w-12 h-12 ${getColorClasses(feature.color)} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-6 h-6" />
-                </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {feature.description}
-                </p>
-              </Link>
-            ))}
-          </div>
-
-          {/* CTA Card */}
+          {/* CTA Card - Đẩy lên trên */}
           <div className="bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl p-8 mb-8 text-white">
             <div className="max-w-3xl">
               <h2 className="text-2xl font-bold mb-3">Bắt đầu tạo kế hoạch tài chính ngay!</h2>
@@ -482,7 +463,7 @@ export default function DashboardFinal() {
 
           {/* Empty State */}
           {plans.length === 0 && (
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center mb-8">
               <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-10 h-10 text-gray-400" />
               </div>
@@ -499,6 +480,25 @@ export default function DashboardFinal() {
               </Link>
             </div>
           )}
+
+          {/* Feature Cards - Đẩy xuống dưới cùng */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, index) => (
+              <Link
+                key={index}
+                href={feature.href}
+                className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
+              >
+                <div className={`w-12 h-12 ${getColorClasses(feature.color)} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <feature.icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {feature.description}
+                </p>
+              </Link>
+            ))}
+          </div>
         </main>
       </div>
     </div>
