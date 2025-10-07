@@ -262,9 +262,9 @@ export default function DashboardFinal() {
           </div>
         </nav>
 
-        {/* Usage Stats + Theme Toggle - Đẩy lên sau Lịch trình */}
+        {/* Usage Stats + Theme Toggle - Đẩy ngay dưới Lịch trình */}
         {sidebarOpen && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
+          <div className="px-4 pb-4 space-y-3">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}

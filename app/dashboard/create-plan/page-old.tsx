@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap } from 'lucide-react'
+import { Send, Sparkles, CheckCircle, Info, Loader2, FileText } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 
@@ -12,35 +12,28 @@ interface Message {
   timestamp: Date
 }
 
-// Thông tin cần thu thập - CẢI TIẾN
+// Thông tin cần thu thập
 const requiredInfo = [
-  { id: 'goal', label: 'Mục tiêu tài chính', icon: '🎯', required: true, description: 'Mục tiêu chính bạn muốn đạt được' },
-  { id: 'income', label: 'Thu nhập hiện tại', icon: '💰', required: true, description: 'Thu nhập hàng tháng của bạn' },
-  { id: 'occupation', label: 'Nghề nghiệp/Kỹ năng', icon: '💼', required: true, description: 'Công việc và kỹ năng hiện có' },
-  { id: 'timeline', label: 'Thời gian mục tiêu', icon: '⏰', required: true, description: 'Bao lâu để đạt mục tiêu' },
-  { id: 'description', label: 'Mô tả mong muốn', icon: '✍️', required: false, description: 'Tâm sự, chia sẻ về ước mơ và tương lai bạn mong muốn' },
-  { id: 'birth_date', label: 'Ngày sinh', icon: '🎂', required: false, description: 'Để phân tích tử vi (tùy chọn)' },
-  { id: 'savings', label: 'Tiết kiệm hiện có', icon: '🏦', required: false, description: 'Số tiền đã tiết kiệm' },
-  { id: 'location', label: 'Khu vực sinh sống', icon: '📍', required: false, description: 'Thành phố bạn đang sống' },
+  { id: 'goal', label: 'Mục tiêu tài chính', icon: '🎯', required: true },
+  { id: 'income', label: 'Thu nhập hiện tại', icon: '💰', required: true },
+  { id: 'occupation', label: 'Nghề nghiệp/Kỹ năng', icon: '💼', required: true },
+  { id: 'birth_date', label: 'Ngày sinh (dd/mm/yyyy)', icon: '🎂', required: false },
+  { id: 'timeline', label: 'Thời gian mục tiêu', icon: '⏰', required: true },
+  { id: 'savings', label: 'Tiết kiệm hiện có', icon: '🏦', required: false },
+  { id: 'location', label: 'Khu vực sinh sống', icon: '📍', required: false },
+  { id: 'readiness', label: 'Mức độ sẵn sàng', icon: '⚡', required: false }
 ]
 
-export default function CreatePlanV2() {
+export default function CreatePlanPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [collectedInfo, setCollectedInfo] = useState<Record<string, boolean>>({})
-  const [subscription, setSubscription] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    loadSubscription()
-    
     // Auto-start conversation
     const welcomeMessage: Message = {
       role: 'assistant',
@@ -48,37 +41,18 @@ export default function CreatePlanV2() {
 
 Tôi sẽ giúp bạn tạo một kế hoạch tài chính cá nhân hóa hoàn hảo. Để làm điều này, tôi cần thu thập một số thông tin về bạn.
 
-**Hãy bắt đầu bằng cách chia sẻ với tôi:**
+Hãy bắt đầu với câu hỏi đầu tiên nhé! 
 
-🎯 **Mục tiêu tài chính của bạn là gì?**
-Ví dụ: Mua nhà, khởi nghiệp, tiết kiệm, đầu tư, tăng thu nhập...
-
-💭 **Bạn cũng có thể tâm sự, mô tả chi tiết về:**
-- Tương lai bạn mong muốn
-- Những gì bạn đang có
-- Điều bạn lo lắng
-- Ước mơ của bạn
-
-Tôi lắng nghe bạn! ✨`,
+**Mục tiêu tài chính của bạn là gì?** 
+Ví dụ: Mua nhà, kinh doanh, tiết kiệm, đầu tư, tăng thu nhập...`,
       timestamp: new Date()
     }
     setMessages([welcomeMessage])
-  }, [user, router])
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
-
-  const loadSubscription = async () => {
-    // Load subscription info
-    try {
-      const { getUserSubscription } = await import('@/lib/supabase')
-      const { data } = await getUserSubscription(user!.id)
-      setSubscription(data)
-    } catch (error) {
-      console.error('Error loading subscription:', error)
-    }
-  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -98,6 +72,7 @@ Tôi lắng nghe bạn! ✨`,
     setIsLoading(true)
 
     try {
+      // Call API instead of direct OpenAI call
       const chatHistory = messages.map(m => ({
         type: m.role === 'user' ? 'user' : 'ai',
         message: m.content
@@ -125,6 +100,8 @@ Tôi lắng nghe bạn! ✨`,
       }
 
       setMessages(prev => [...prev, assistantMessage])
+
+      // Update collected info (simple detection)
       updateCollectedInfo(input)
     } catch (error) {
       console.error('Error:', error)
@@ -143,6 +120,7 @@ Tôi lắng nghe bạn! ✨`,
     const input = userInput.toLowerCase()
     const newInfo = { ...collectedInfo }
 
+    // Simple keyword detection
     if (input.includes('mục tiêu') || input.includes('muốn') || input.includes('cần')) {
       newInfo['goal'] = true
     }
@@ -164,9 +142,6 @@ Tôi lắng nghe bạn! ✨`,
     if (input.includes('hà nội') || input.includes('hcm') || input.includes('sài gòn')) {
       newInfo['location'] = true
     }
-    if (input.length > 100) {
-      newInfo['description'] = true
-    }
 
     setCollectedInfo(newInfo)
   }
@@ -182,44 +157,10 @@ Tôi lắng nghe bạn! ✨`,
     return required.every(i => collectedInfo[i.id])
   }
 
-  const getTierName = (tier: string) => {
-    switch (tier) {
-      case 'free': return 'Free'
-      case 'basic': return 'Gói 1'
-      case 'pro': return 'Gói 2'
-      case 'pro_max': return 'Gói 3'
-      default: return 'Free'
-    }
+  const handleCreatePlan = () => {
+    // Navigate to plan creation with collected info
+    router.push('/dashboard/plans/create')
   }
-
-  const getPlanLimit = (tier: string) => {
-    switch (tier) {
-      case 'free': return 1
-      case 'basic': return 5
-      case 'pro': return 20
-      case 'pro_max': return 999
-      default: return 1
-    }
-  }
-
-  const handleCreatePlan = async () => {
-    if (!canCreatePlan()) return
-    
-    // Collect all chat data and create plan
-    const planData = {
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
-      collectedInfo
-    }
-    
-    // Save to localStorage temporarily
-    localStorage.setItem('pending_plan', JSON.stringify(planData))
-    
-    // Navigate to plan generation
-    router.push('/dashboard/plans/generate')
-  }
-
-  const tier = subscription?.tier || 'free'
-  const planLimit = getPlanLimit(tier)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex">
@@ -253,77 +194,63 @@ Tôi lắng nghe bạn! ✨`,
         </div>
 
         {/* Info Checklist */}
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3">
           {requiredInfo.map((info) => (
             <div
               key={info.id}
-              className={`p-3 rounded-lg transition-colors ${
+              className={`flex items-start space-x-3 p-3 rounded-lg transition-colors ${
                 collectedInfo[info.id]
                   ? 'bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20'
                   : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'
               }`}
             >
-              <div className="flex items-start space-x-3">
-                <div className="text-2xl flex-shrink-0">{info.icon}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <p className={`text-sm font-medium ${
-                      collectedInfo[info.id]
-                        ? 'text-green-700 dark:text-green-400'
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}>
-                      {info.label}
-                    </p>
-                    {info.required && !collectedInfo[info.id] && (
-                      <span className="text-xs text-red-500">*</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">{info.description}</p>
-                  {collectedInfo[info.id] && (
-                    <div className="flex items-center space-x-1 mt-1">
-                      <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />
-                      <span className="text-xs text-green-600 dark:text-green-400">Đã thu thập</span>
-                    </div>
+              <div className="text-2xl">{info.icon}</div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <p className={`text-sm font-medium ${
+                    collectedInfo[info.id]
+                      ? 'text-green-700 dark:text-green-400'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}>
+                    {info.label}
+                  </p>
+                  {info.required && !collectedInfo[info.id] && (
+                    <span className="text-xs text-red-500">*</span>
                   )}
                 </div>
+                {collectedInfo[info.id] && (
+                  <div className="flex items-center space-x-1 mt-1">
+                    <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400" />
+                    <span className="text-xs text-green-600 dark:text-green-400">Đã thu thập</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Plan Limit Info */}
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg">
+        {/* Create Plan Button */}
+        {canCreatePlan() && (
+          <button
+            onClick={handleCreatePlan}
+            className="w-full mt-6 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center space-x-2"
+          >
+            <FileText className="w-5 h-5" />
+            <span>Tạo kế hoạch ngay</span>
+          </button>
+        )}
+
+        {/* Info Note */}
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg">
           <div className="flex items-start space-x-2">
             <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-blue-900 dark:text-blue-300 font-medium mb-1">
-                Gói {getTierName(tier)}
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-400">
-                Bạn có thể tạo tối đa <strong>{planLimit}</strong> kế hoạch{planLimit > 1 ? '' : ''}.
-              </p>
-              {tier === 'free' && (
-                <Link href="/pricing" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
-                  Nâng cấp để tạo nhiều hơn →
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Tips */}
-        <div className="p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-lg">
-          <div className="flex items-start space-x-2">
-            <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-purple-900 dark:text-purple-300 font-medium mb-1">
                 Mẹo nhỏ
               </p>
-              <ul className="text-xs text-purple-700 dark:text-purple-400 space-y-1">
-                <li>• Chia sẻ chi tiết để AI hiểu rõ hơn</li>
-                <li>• Tâm sự về ước mơ và mong muốn</li>
-                <li>• Sau khi tạo, bạn có thể chỉnh sửa plan</li>
-              </ul>
+              <p className="text-xs text-blue-700 dark:text-blue-400">
+                Cung cấp thông tin càng chi tiết, kế hoạch AI tạo ra càng chính xác và phù hợp với bạn.
+              </p>
             </div>
           </div>
         </div>
@@ -333,23 +260,13 @@ Tôi lắng nghe bạn! ✨`,
       <main className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">PlanAI Assistant</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Trợ lý AI tài chính của bạn</p>
-              </div>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
-            
-            {/* Progress Badge */}
-            <div className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {getProgress()}% hoàn thành
-              </span>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">PlanAI Assistant</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Trợ lý AI tài chính của bạn</p>
             </div>
           </div>
         </header>
@@ -392,10 +309,9 @@ Tôi lắng nghe bạn! ✨`,
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input + Create Button */}
+        {/* Input */}
         <div className="bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 p-6">
-          <div className="max-w-4xl mx-auto space-y-4">
-            {/* Chat Input */}
+          <div className="max-w-4xl mx-auto">
             <div className="flex items-end space-x-4">
               <div className="flex-1">
                 <textarea
@@ -407,7 +323,7 @@ Tôi lắng nghe bạn! ✨`,
                       handleSend()
                     }
                   }}
-                  placeholder="Chia sẻ với AI về mục tiêu, ước mơ, tình hình tài chính của bạn..."
+                  placeholder="Nhập câu trả lời của bạn..."
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   rows={3}
                   disabled={isLoading}
@@ -424,28 +340,6 @@ Tôi lắng nghe bạn! ✨`,
                 <Send className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Create Plan Button - NỔI BẬT */}
-            {canCreatePlan() && (
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl blur-xl opacity-50 animate-pulse"></div>
-                <button
-                  onClick={handleCreatePlan}
-                  className="relative w-full bg-gradient-to-r from-primary-600 via-purple-600 to-blue-600 hover:from-primary-700 hover:via-purple-700 hover:to-blue-700 text-white px-8 py-5 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02] shadow-2xl flex items-center justify-center space-x-3"
-                >
-                  <Zap className="w-6 h-6" />
-                  <span>Tạo Kế Hoạch Hoàn Chỉnh</span>
-                  <Sparkles className="w-6 h-6" />
-                </button>
-              </div>
-            )}
-
-            {!canCreatePlan() && (
-              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-500">
-                <AlertCircle className="w-4 h-4" />
-                <span>Vui lòng cung cấp đầy đủ thông tin bắt buộc (*) để tạo kế hoạch</span>
-              </div>
-            )}
           </div>
         </div>
       </main>
