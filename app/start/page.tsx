@@ -332,9 +332,20 @@ export default function StartPage() {
 
               <div className="bg-primary-50 rounded-2xl p-6">
                 <h3 className="font-semibold text-primary-900 mb-2">Bước tiếp theo</h3>
-                <p className="text-primary-700">
+                <p className="text-primary-700 mb-4">
                   Sau khi xác nhận, bạn sẽ được chuyển đến dashboard để bắt đầu chat với AI và tạo kế hoạch tài chính cá nhân hóa.
                 </p>
+                <div className="bg-white rounded-lg p-4 border border-primary-200">
+                  <div className="text-sm text-primary-800 font-medium mb-2">🎁 Gói Free bao gồm:</div>
+                  <div className="text-sm text-primary-700 space-y-1">
+                    <div>• 5 Chat với AI tư vấn</div>
+                    <div>• 1 Kế hoạch tài chính ngắn</div>
+                    <div>• Phân tích cơ bản</div>
+                  </div>
+                  <div className="mt-3 text-xs text-primary-600">
+                    💡 Nâng cấp bất cứ lúc nào để có thêm chat, kế hoạch chi tiết và tính năng cao cấp
+                  </div>
+                </div>
               </div>
             </div>
           )}

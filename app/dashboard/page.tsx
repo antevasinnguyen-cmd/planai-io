@@ -11,6 +11,8 @@ import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubs
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import SuccessAlert from '@/components/SuccessAlert'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import UsageProgressBar from '@/components/UsageProgressBar'
 import Image from 'next/image'
 
 interface UsageStats {
@@ -283,76 +285,68 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Upgrade Prompt for High Usage */}
+          {usage && tier === 'free' && (
+            (usage.chats / limits.chats >= 0.8 || usage.plans / limits.plans >= 0.8) && (
+              <UpgradePrompt 
+                variant="banner"
+                trigger="quota_warning"
+                currentUsage={usage}
+                limits={limits}
+                className="mb-8"
+              />
+            )
+          )}
+
           {/* Usage Stats Cards */}
           {usage && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Chat AI</p>
-                    <p className="text-2xl font-bold text-gray-900">{usage.chats}/{limits.chats}</p>
-                  </div>
+                <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                     <MessageCircle className="w-6 h-6 text-blue-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((usage.chats / limits.chats) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Còn lại: {Math.max(0, limits.chats - usage.chats)} chat
-                  </p>
-                </div>
+                <UsageProgressBar
+                  current={usage.chats}
+                  limit={limits.chats}
+                  label="Chat AI"
+                  color="blue"
+                  showUpgradePrompt={tier === 'free'}
+                  onUpgradeClick={() => router.push('/pricing')}
+                />
               </div>
 
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Kế hoạch</p>
-                    <p className="text-2xl font-bold text-gray-900">{usage.plans}/{limits.plans}</p>
-                  </div>
+                <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                     <Target className="w-6 h-6 text-green-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((usage.plans / limits.plans) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Còn lại: {Math.max(0, limits.plans - usage.plans)} kế hoạch
-                  </p>
-                </div>
+                <UsageProgressBar
+                  current={usage.plans}
+                  limit={limits.plans}
+                  label="Kế hoạch"
+                  color="green"
+                  showUpgradePrompt={tier === 'free'}
+                  onUpgradeClick={() => router.push('/pricing')}
+                />
               </div>
 
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Từ đã dùng</p>
-                    <p className="text-2xl font-bold text-gray-900">{usage.words.toLocaleString()}</p>
-                  </div>
+                <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                     <BarChart3 className="w-6 h-6 text-purple-600" />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((usage.words / limits.words) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Giới hạn: {limits.words.toLocaleString()} từ
-                  </p>
-                </div>
+                <UsageProgressBar
+                  current={usage.words}
+                  limit={limits.words}
+                  label="Từ đã dùng"
+                  color="purple"
+                  showUpgradePrompt={tier === 'free'}
+                  onUpgradeClick={() => router.push('/pricing')}
+                />
               </div>
             </div>
           )}

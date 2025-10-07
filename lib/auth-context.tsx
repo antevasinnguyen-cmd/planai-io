@@ -20,13 +20,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    console.log('=== AUTHCONTEXT: Initializing ===')
+    console.log('=== AUTHCONTEXT: Khởi tạo ===')
 
     // Lấy phiên hiện tại
     const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
-        console.log('=== AUTHCONTEXT: Initial session ===', {
+        console.log('=== AUTHCONTEXT: Phiên ban đầu ===', {
           hasSession: !!session,
           userEmail: session?.user?.email,
           userId: session?.user?.id,
@@ -38,12 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null)
         
         // Kiểm tra xem có cần chuyển hướng không
-        if (session && window.location.pathname === '/login') {
-          console.log('=== AUTHCONTEXT: Already logged in, redirecting from login page ===')
+        if (session && typeof window !== 'undefined' && window.location.pathname === '/login') {
+          console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ trang login ===')
           window.location.replace('/dashboard')
         }
       } catch (error) {
-        console.error('=== AUTHCONTEXT: Error getting session ===', error)
+        console.error('=== AUTHCONTEXT: Lỗi khi lấy phiên ===', error)
       } finally {
         setLoading(false)
       }
@@ -54,12 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Lắng nghe các thay đổi xác thực
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('=== AUTHCONTEXT: Auth state change ===', {
+        console.log('=== AUTHCONTEXT: Thay đổi trạng thái auth ===', {
           event,
           hasSession: !!session,
           userEmail: session?.user?.email,
           userId: session?.user?.id,
-          currentPath: window.location.pathname,
+          currentPath: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
           timestamp: new Date().toISOString()
         })
 
@@ -75,22 +75,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('auth_success', 'true')
           localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Lấy đường dẫn chuyển hướng nếu có
-          const redirectTo = localStorage.getItem('auth_redirect') || '/dashboard'
-          localStorage.removeItem('auth_redirect')
-          
-          // Chuyển hướng đến dashboard hoặc đường dẫn được yêu cầu
-          const currentPath = window.location.pathname
-          if (currentPath !== redirectTo && 
-              currentPath !== '/dashboard' && 
-              !currentPath.startsWith('/dashboard/') &&
-              currentPath !== '/auth/callback') {
-            console.log(`=== AUTHCONTEXT: Redirecting to ${redirectTo} ===`)
-            window.location.replace(redirectTo)
+          // Chuyển hướng đến dashboard nếu không phải đang ở callback hoặc dashboard
+          if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname
+            if (currentPath !== '/dashboard' && 
+                !currentPath.startsWith('/dashboard/') &&
+                currentPath !== '/auth/callback') {
+              console.log('=== AUTHCONTEXT: Chuyển hướng đến dashboard ===')
+              window.location.replace('/dashboard')
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('=== AUTHCONTEXT: SIGNED_OUT event ===')
-          window.location.href = '/'
+          if (typeof window !== 'undefined') {
+            window.location.href = '/'
+          }
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('=== AUTHCONTEXT: TOKEN_REFRESHED event ===')
         }
@@ -102,13 +101,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      console.log('=== AUTHCONTEXT: Signing out ===')
+      console.log('=== AUTHCONTEXT: Đăng xuất ===')
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)
-      window.location.href = '/'
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
     } catch (error) {
-      console.error('=== AUTHCONTEXT: Error signing out ===', error)
+      console.error('=== AUTHCONTEXT: Lỗi khi đăng xuất ===', error)
     }
   }
 
@@ -118,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
     } catch (error) {
-      console.error('=== AUTHCONTEXT: Error refreshing session ===', error)
+      console.error('=== AUTHCONTEXT: Lỗi khi làm mới phiên ===', error)
     }
   }
 

@@ -31,7 +31,7 @@ export async function middleware(req: NextRequest) {
     })
 
     // Các đường dẫn cần bảo vệ (yêu cầu đăng nhập)
-    const protectedPaths = ['/dashboard', '/account', '/plans', '/settings']
+    const protectedPaths = ['/dashboard', '/account', '/plans', '/settings', '/start']
 
     // Kiểm tra xem đường dẫn hiện tại có cần bảo vệ không
     const isProtectedPath = protectedPaths.some(path =>

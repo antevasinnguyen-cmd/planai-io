@@ -71,6 +71,7 @@ export default function AuthCallbackPage() {
               if (data.session) {
                 console.log('=== CALLBACK: Manual session set success ===')
                 localStorage.setItem('auth_success', 'true')
+                localStorage.setItem('auth_user_email', data.session.user?.email || '')
                 window.location.replace('/dashboard')
                 return
               } else {

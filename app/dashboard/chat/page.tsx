@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import UpgradePrompt from '@/components/UpgradePrompt'
 
 interface Message {
   id: string
@@ -200,6 +201,25 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Upgrade Prompt for Free Users */}
+        {usage && usage.tier === 'free' && usage.remaining <= 2 && (
+          <UpgradePrompt 
+            variant="banner"
+            trigger="quota_warning"
+            currentUsage={{
+              chats: usage.current,
+              plans: 0,
+              words: 0
+            }}
+            limits={{
+              chats: usage.limit,
+              plans: 1,
+              words: 1000
+            }}
+            className="mb-6"
+          />
+        )}
+
         {/* Chat Container */}
         <div className="bg-white rounded-lg shadow-sm flex flex-col h-[600px]">
           {/* Messages Area */}
@@ -307,6 +327,15 @@ export default function ChatPage() {
             )}
           </div>
         </div>
+
+        {/* Upgrade Prompt for Free Users - General */}
+        {usage && usage.tier === 'free' && usage.remaining > 2 && (
+          <UpgradePrompt 
+            variant="card"
+            trigger="general"
+            className="mt-6"
+          />
+        )}
 
         {/* Quick Actions */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
