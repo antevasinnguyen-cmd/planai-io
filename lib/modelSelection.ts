@@ -2,10 +2,17 @@ import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 import { generateClaudeResponse, CLAUDE_MODELS } from './claude'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client (lazy initialization to handle missing API key during build)
+let openai: OpenAI | null = null
+
+const getOpenAI = () => {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openai
+}
 
 // Initialize Supabase client for caching
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -118,8 +125,14 @@ export const chunkText = (text: string, maxChunkSize: number = 1000): string[] =
 
 // Function to generate embeddings for text chunks
 export const generateEmbeddings = async (text: string): Promise<number[]> => {
+  const client = getOpenAI()
+  if (!client) {
+    console.error('OpenAI client not initialized')
+    return []
+  }
+  
   try {
-    const response = await openai.embeddings.create({
+    const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
     })
@@ -137,16 +150,22 @@ export const fallbackToClaudeIfNeeded = async (
   maxTokens: number = 500,
   temperature: number = 0.7
 ): Promise<string> => {
+  const client = getOpenAI()
+  
   try {
-    // First try with OpenAI
-    const completion = await openai.chat.completions.create({
-      model: MODELS.CHAT_DEFAULT,
-      messages,
-      max_tokens: maxTokens,
-      temperature,
-    })
-    
-    return completion.choices[0]?.message?.content || ''
+    // First try with OpenAI if available
+    if (client) {
+      const completion = await client.chat.completions.create({
+        model: MODELS.CHAT_DEFAULT,
+        messages,
+        max_tokens: maxTokens,
+        temperature,
+      })
+      
+      return completion.choices[0]?.message?.content || ''
+    } else {
+      throw new Error('OpenAI client not initialized')
+    }
   } catch (error) {
     console.error('OpenAI API Error, falling back to Claude:', error)
     

@@ -1,10 +1,17 @@
 import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client (lazy initialization)
+let openai: OpenAI | null = null
+
+const getOpenAI = () => {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openai
+}
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -37,8 +44,14 @@ export const chunkText = (text: string, maxChunkSize: number = 1000): string[] =
 
 // Function to generate embeddings for text chunks
 export const generateEmbedding = async (text: string): Promise<number[]> => {
+  const client = getOpenAI()
+  if (!client) {
+    console.error('OpenAI client not initialized')
+    return []
+  }
+  
   try {
-    const response = await openai.embeddings.create({
+    const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
     })

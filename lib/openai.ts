@@ -6,10 +6,17 @@ export interface ChatMessage {
   content: string
 }
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client (lazy initialization)
+let openai: OpenAI | null = null
+
+const getOpenAI = () => {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openai
+}
 
 export const generateChatResponse = async (messages: ChatMessage[]): Promise<string> => {
   try {
@@ -57,7 +64,12 @@ Quy tắc phản hồi:
     // Select the appropriate model for regular chat
     const model = selectModel(TaskType.REGULAR_CHAT)
     
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAI()
+    if (!client) {
+      throw new Error('OpenAI client not initialized')
+    }
+    
+    const completion = await client.chat.completions.create({
       model,
       messages: fullMessages,
       max_tokens: 500,
@@ -155,7 +167,12 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
     ]
 
     // For large responses, we'll use chunking to handle the response better
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAI()
+    if (!client) {
+      throw new Error('OpenAI client not initialized')
+    }
+    
+    const completion = await client.chat.completions.create({
       model,
       messages,
       max_tokens: 4000,
@@ -231,7 +248,12 @@ Yêu cầu:
       }
     ]
     
-    const completion = await openai.chat.completions.create({
+    const client = getOpenAI()
+    if (!client) {
+      throw new Error('OpenAI client not initialized')
+    }
+    
+    const completion = await client.chat.completions.create({
       model,
       messages,
       max_tokens: 300,
