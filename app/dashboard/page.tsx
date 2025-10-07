@@ -3,17 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  Plus, FileText, MessageCircle, Sparkles, User, LogOut, BarChart3, 
-  Target, TrendingUp, Calendar, Home, Settings, CreditCard, 
-  Users, HelpCircle, Command, Search, Bell, ChevronDown, Menu, X
+  Sparkles, MessageCircle, FileText, TrendingUp, Zap,
+  ChevronDown, Crown, Settings, LogOut, Home, HelpCircle
 } from 'lucide-react'
 import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import SuccessAlert from '@/components/SuccessAlert'
-import UpgradePrompt from '@/components/UpgradePrompt'
 import UsageProgressBar from '@/components/UsageProgressBar'
-import Image from 'next/image'
 
 interface UsageStats {
   plans: number
@@ -22,33 +19,27 @@ interface UsageStats {
   error: any
 }
 
-export default function DashboardPage() {
+export default function DashboardPageRedesign() {
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageStats | null>(null)
   const [plans, setPlans] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const router = useRouter()
   const { user, loading: authLoading, signOut } = useAuth()
 
   useEffect(() => {
-    console.log('=== DASHBOARD: useEffect ===', { user, authLoading })
-    
     if (!authLoading && !user) {
-      console.log('=== DASHBOARD: Không có user, chuyển hướng login ===')
       window.location.href = '/login'
       return
     }
 
     if (user) {
-      console.log('=== DASHBOARD: Có user, khởi tạo dashboard ===', user.email)
       initializeDashboard()
       
-      // Kiểm tra thông báo đăng nhập thành công
       const hasAuthSuccess = localStorage.getItem('auth_success')
-      const userEmail = localStorage.getItem('auth_user_email')
       if (hasAuthSuccess === 'true') {
-        console.log('=== DASHBOARD: Hiển thị thông báo thành công ===')
         setShowSuccessMessage(true)
         localStorage.removeItem('auth_success')
         localStorage.removeItem('auth_user_email')
@@ -89,7 +80,7 @@ export default function DashboardPage() {
   const loadRecentPlans = async (userId: string) => {
     try {
       const { data } = await getUserPlans(userId)
-      setPlans(data?.slice(0, 3) || []) // Only show 3 recent plans
+      setPlans(data?.slice(0, 5) || [])
     } catch (error) {
       console.error('Error loading plans:', error)
     }
@@ -105,14 +96,19 @@ export default function DashboardPage() {
     }
   }
 
-  const getTierColor = (tier: string) => {
+  const getTierBadgeColor = (tier: string) => {
     switch (tier) {
-      case 'free': return 'text-gray-600'
-      case 'basic': return 'text-blue-600'
-      case 'pro': return 'text-purple-600'
-      case 'pro_max': return 'text-yellow-600'
-      default: return 'text-gray-600'
+      case 'free': return 'bg-gray-100 text-gray-700'
+      case 'basic': return 'bg-blue-100 text-blue-700'
+      case 'pro': return 'bg-purple-100 text-purple-700'
+      case 'pro_max': return 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white'
+      default: return 'bg-gray-100 text-gray-700'
     }
+  }
+
+  const getUserInitial = () => {
+    if (!user?.email) return 'U'
+    return user.email.charAt(0).toUpperCase()
   }
 
   const handleLogout = async () => {
@@ -122,366 +118,291 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải dashboard...</p>
+          <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Đang tải dashboard...</p>
         </div>
       </div>
     )
   }
+
   const tier = subscription?.tier || 'free'
   const limits = getSubscriptionLimits(tier)
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex">
+    <div className="min-h-screen bg-[#0f0f0f] text-white">
       {showSuccessMessage && (
         <SuccessAlert 
           message={`🎉 Chúc mừng bạn đã đăng nhập thành công! Hãy bắt đầu với PlanAI ngay nào!`}
           duration={10000}
         />
       )}
-      
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto hidden md:block">
-        <div className="p-4 border-b border-gray-200">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-800 rounded-md flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">PlanAI</span>
-          </Link>
-        </div>
-        
-        <nav className="p-4 space-y-1">
-          <Link href="/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-md bg-blue-50 text-blue-700 font-medium">
-            <Home className="w-5 h-5" />
-            <span>Dashboard</span>
-          </Link>
-          
-          <Link href="/dashboard/chat" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-            <MessageCircle className="w-5 h-5" />
-            <span>Chat AI</span>
-          </Link>
-          
-          <Link href="/dashboard/plans" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-            <FileText className="w-5 h-5" />
-            <span>Kế hoạch</span>
-          </Link>
-          
-          <div className="pt-4 pb-2">
-            <div className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tài khoản</div>
-          </div>
-          
-          <Link href="/account" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-            <User className="w-5 h-5" />
-            <span>Hồ sơ</span>
-          </Link>
-          
-          <Link href="/account/billing" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-            <CreditCard className="w-5 h-5" />
-            <span>Thanh toán</span>
-          </Link>
-          
-          <Link href="/account/settings" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-            <Settings className="w-5 h-5" />
-            <span>Cài đặt</span>
-          </Link>
-          
-          <div className="pt-4 pb-2">
-            <div className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Hỗ trợ</div>
-          </div>
-          
-          <Link href="/help" className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
-            <HelpCircle className="w-5 h-5" />
-            <span>Trợ giúp</span>
-          </Link>
-          
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-red-600 hover:bg-red-50"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Đăng xuất</span>
-          </button>
-        </nav>
-      </aside>
-      
-      {/* Main content */}
-      <div className="flex-1 min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center md:hidden">
-              <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-                <Menu className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="relative hidden md:block w-64">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Search className="w-4 h-4 text-gray-400" />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Tìm kiếm..." 
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button className="p-1 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-              </button>
-              
+
+      {/* Top Navigation Bar */}
+      <nav className="bg-[#1a1a1a] border-b border-gray-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Avatar + Tier Badge */}
+            <div className="flex items-center space-x-3">
+              {/* Avatar with dropdown */}
               <div className="relative">
-                <button className="flex items-center space-x-1 text-sm font-medium text-gray-700 hover:text-gray-900">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                    {user?.user_metadata?.avatar_url ? (
-                      <Image 
-                        src={user.user_metadata.avatar_url} 
-                        alt="Avatar" 
-                        width={32} 
-                        height={32} 
-                        className="object-cover"
-                      />
-                    ) : (
-                      <User className="w-5 h-5 text-gray-600" />
-                    )}
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-3 hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-lg">
+                    {getUserInitial()}
                   </div>
-                  <span className="hidden md:inline-block">{user?.user_metadata?.full_name || user?.email}</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium text-white">
+                      {user?.email?.split('@')[0] || 'User'}
+                    </div>
+                    <div className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block ${getTierBadgeColor(tier)}`}>
+                      {getTierName(tier)}
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        <main className="p-6">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600 mt-1">Chào mừng trở lại với PlanAI</p>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className={`text-sm font-medium ${getTierColor(tier)}`}>
-                  {getTierName(tier)}
-                </div>
-                <div className="text-xs text-gray-500">{user?.email}</div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Đăng xuất</span>
-              </button>
-            </div>
-          </div>
 
-          {/* Upgrade Prompt for High Usage */}
-          {usage && tier === 'free' && (
-            (usage.chats / limits.chats >= 0.8 || usage.plans / limits.plans >= 0.8) && (
-              <UpgradePrompt 
-                variant="banner"
-                trigger="quota_warning"
-                currentUsage={usage}
-                limits={limits}
-                className="mb-8"
-              />
-            )
-          )}
-
-          {/* Usage Stats Cards */}
-          {usage && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <MessageCircle className="w-6 h-6 text-blue-600" />
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute left-0 mt-2 w-56 bg-[#1a1a1a] border border-gray-800 rounded-lg shadow-xl py-2 z-50">
+                    <Link
+                      href="/"
+                      className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-800 transition-colors"
+                    >
+                      <Home className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">Trang chủ</span>
+                    </Link>
+                    <Link
+                      href="/account"
+                      className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-800 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">Cài đặt</span>
+                    </Link>
+                    <Link
+                      href="/help"
+                      className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-800 transition-colors"
+                    >
+                      <HelpCircle className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">Trợ giúp</span>
+                    </Link>
+                    <div className="border-t border-gray-800 my-2"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-800 transition-colors w-full text-left text-red-400"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="text-sm">Đăng xuất</span>
+                    </button>
                   </div>
-                </div>
-                <UsageProgressBar
-                  current={usage.chats}
-                  limit={limits.chats}
-                  label="Chat AI"
-                  color="blue"
-                  showUpgradePrompt={tier === 'free'}
-                  onUpgradeClick={() => router.push('/pricing')}
-                />
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Target className="w-6 h-6 text-green-600" />
-                  </div>
-                </div>
-                <UsageProgressBar
-                  current={usage.plans}
-                  limit={limits.plans}
-                  label="Kế hoạch"
-                  color="green"
-                  showUpgradePrompt={tier === 'free'}
-                  onUpgradeClick={() => router.push('/pricing')}
-                />
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-purple-600" />
-                  </div>
-                </div>
-                <UsageProgressBar
-                  current={usage.words}
-                  limit={limits.words}
-                  label="Từ đã dùng"
-                  color="purple"
-                  showUpgradePrompt={tier === 'free'}
-                  onUpgradeClick={() => router.push('/pricing')}
-                />
+                )}
               </div>
             </div>
-          )}
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Link
-              href="/dashboard/chat"
-              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                    Chat AI
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">Tư vấn tài chính cá nhân</p>
-                </div>
-                <MessageCircle className="w-8 h-8 text-blue-600" />
+            {/* Center: Logo */}
+            <Link href="/dashboard" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
+              <span className="text-xl font-bold hidden sm:block">PlanAI</span>
             </Link>
 
-            <Link
-              href="/dashboard/plans/create"
-              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
-                    Tạo Kế Hoạch
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">AI tạo kế hoạch tài chính</p>
-                </div>
-                <Plus className="w-8 h-8 text-green-600" />
-              </div>
-            </Link>
-
-            <Link
-              href="/dashboard/plans"
-              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
-                    Quản Lý Kế Hoạch
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">Xem và chỉnh sửa kế hoạch</p>
-                </div>
-                <FileText className="w-8 h-8 text-purple-600" />
-              </div>
-            </Link>
-
+            {/* Right: Upgrade Button */}
             <Link
               href="/pricing"
-              className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow group text-white"
+              className="flex items-center space-x-2 bg-gradient-to-r from-primary-500 to-purple-600 hover:from-primary-600 hover:to-purple-700 px-6 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">
-                    Nâng Cấp
-                  </h3>
-                  <p className="text-sm text-blue-100 mt-1">Mở khóa tính năng cao cấp</p>
-                </div>
-                <TrendingUp className="w-8 h-8" />
-              </div>
+              <Crown className="w-5 h-5" />
+              <span className="hidden sm:inline">Nâng cấp gói</span>
+              <span className="sm:hidden">Nâng cấp</span>
             </Link>
           </div>
+        </div>
+      </nav>
 
-          {/* Recent Plans */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Kế Hoạch Gần Đây</h2>
-              <Link
-                href="/dashboard/plans"
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                Xem tất cả
-              </Link>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">
+            Chào mừng trở lại, {user?.email?.split('@')[0] || 'User'}! 👋
+          </h1>
+          <p className="text-gray-400">
+            Đây là tổng quan về hoạt động của bạn
+          </p>
+        </div>
+
+        {/* Usage Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Chat Usage */}
+          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-primary-500 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <MessageCircle className="w-6 h-6 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Chat AI</p>
+                  <p className="text-2xl font-bold">{usage?.chats || 0}</p>
+                </div>
+              </div>
             </div>
-
-            {plans.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {plans.slice(0, 6).map((plan) => (
-                  <Link
-                    key={plan.id}
-                    href={`/dashboard/plans/${plan.id}`}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{plan.title}</h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{plan.goal}</p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>{plan.word_count?.toLocaleString()} từ</span>
-                      <span>{new Date(plan.created_at).toLocaleDateString('vi-VN')}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">📋</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có kế hoạch nào</h3>
-                <p className="text-gray-600 mb-6">
-                  Bắt đầu tạo kế hoạch tài chính đầu tiên của bạn với sự hỗ trợ của AI
-                </p>
-                <Link
-                  href="/dashboard/plans/create"
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Tạo Kế Hoạch Đầu Tiên
-                </Link>
-              </div>
-            )}
+            <UsageProgressBar
+              current={usage?.chats || 0}
+              limit={limits.chats}
+              label="cuộc hội thoại"
+              color="blue"
+            />
           </div>
 
-          {/* Upgrade Prompt */}
-          {tier === 'free' && (
-            <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Nâng cấp để mở khóa toàn bộ tính năng</h3>
-                  <p className="text-gray-600 text-sm">
-                    Tạo nhiều kế hoạch hơn, chat không giới hạn và nhận kế hoạch chi tiết hơn
-                  </p>
+          {/* Plans Usage */}
+          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-primary-500 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-green-500" />
                 </div>
-                <Link
-                  href="/pricing"
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                >
-                  Xem Gói Nâng Cấp
-                </Link>
+                <div>
+                  <p className="text-sm text-gray-400">Kế hoạch</p>
+                  <p className="text-2xl font-bold">{usage?.plans || 0}</p>
+                </div>
               </div>
             </div>
-          )}
-        </main>
-      </div>
+            <UsageProgressBar
+              current={usage?.plans || 0}
+              limit={limits.plans}
+              label="kế hoạch"
+              color="green"
+            />
+          </div>
+
+          {/* Words Usage */}
+          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-primary-500 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-purple-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">Từ phân tích</p>
+                  <p className="text-2xl font-bold">{usage?.words?.toLocaleString() || 0}</p>
+                </div>
+              </div>
+            </div>
+            <UsageProgressBar
+              current={usage?.words || 0}
+              limit={limits.words}
+              label="từ"
+              color="purple"
+            />
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Create New Chat */}
+          <Link
+            href="/dashboard/chat"
+            className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 hover:border-blue-500 rounded-xl p-8 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-2 group-hover:text-blue-400 transition-colors">
+                  Bắt đầu Chat AI
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Trò chuyện với AI để lập kế hoạch tài chính
+                </p>
+              </div>
+              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-8 h-8 text-blue-500" />
+              </div>
+            </div>
+          </Link>
+
+          {/* Create New Plan */}
+          <Link
+            href="/dashboard/plans/create"
+            className="bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 hover:border-green-500 rounded-xl p-8 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-2 group-hover:text-green-400 transition-colors">
+                  Tạo kế hoạch mới
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Tạo kế hoạch tài chính chi tiết ngay
+                </p>
+              </div>
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-8 h-8 text-green-500" />
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Recent Plans */}
+        {plans.length > 0 && (
+          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Kế hoạch gần đây</h2>
+              <Link
+                href="/dashboard/plans"
+                className="text-primary-500 hover:text-primary-400 text-sm font-medium"
+              >
+                Xem tất cả →
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {plans.map((plan) => (
+                <Link
+                  key={plan.id}
+                  href={`/dashboard/plans/${plan.id}`}
+                  className="flex items-center justify-between p-4 bg-[#0f0f0f] hover:bg-gray-800 rounded-lg transition-colors group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary-500/10 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium group-hover:text-primary-400 transition-colors">
+                        {plan.title || 'Kế hoạch tài chính'}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {new Date(plan.created_at).toLocaleDateString('vi-VN')}
+                      </p>
+                    </div>
+                  </div>
+                  <Zap className="w-5 h-5 text-gray-600 group-hover:text-primary-500 transition-colors" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {plans.length === 0 && (
+          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-12 text-center">
+            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="w-10 h-10 text-gray-600" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Chưa có kế hoạch nào</h3>
+            <p className="text-gray-400 mb-6">
+              Bắt đầu tạo kế hoạch tài chính đầu tiên của bạn
+            </p>
+            <Link
+              href="/dashboard/chat"
+              className="inline-flex items-center space-x-2 bg-primary-500 hover:bg-primary-600 px-6 py-3 rounded-lg font-semibold transition-colors"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span>Bắt đầu với Chat AI</span>
+            </Link>
+          </div>
+        )}
+      </main>
     </div>
   )
 }
