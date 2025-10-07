@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, Sparkles, CheckCircle, Info, Loader2, FileText } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import { generateChatResponse } from '@/lib/openai'
 import Link from 'next/link'
 
 interface Message {
@@ -73,17 +72,30 @@ Ví dụ: Mua nhà, kinh doanh, tiết kiệm, đầu tư, tăng thu nhập...`,
     setIsLoading(true)
 
     try {
-      // Call AI
-      const chatHistory = [...messages, userMessage].map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content
+      // Call API instead of direct OpenAI call
+      const chatHistory = messages.map(m => ({
+        type: m.role === 'user' ? 'user' : 'ai',
+        message: m.content
       }))
 
-      const response = await generateChatResponse(chatHistory as any)
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: input,
+          chatHistory
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to get response')
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response,
+        content: data.response,
         timestamp: new Date()
       }
 
