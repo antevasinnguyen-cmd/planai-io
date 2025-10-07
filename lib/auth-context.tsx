@@ -38,9 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null)
         
         // Kiểm tra xem có cần chuyển hướng không
-        if (session && typeof window !== 'undefined' && window.location.pathname === '/login') {
-          console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ trang login ===')
-          window.location.replace('/dashboard')
+        if (session && typeof window !== 'undefined') {
+          const currentPath = window.location.pathname
+          // Chỉ redirect từ /login hoặc /signup, KHÔNG redirect từ trang chủ
+          if (currentPath === '/login' || currentPath === '/signup') {
+            console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ', currentPath, '===')
+            window.location.replace('/dashboard')
+          }
         }
       } catch (error) {
         console.error('=== AUTHCONTEXT: Lỗi khi lấy phiên ===', error)
@@ -75,13 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('auth_success', 'true')
           localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Chuyển hướng đến dashboard nếu không phải đang ở callback hoặc dashboard
+          // Chỉ chuyển hướng từ /login hoặc /signup, KHÔNG từ trang chủ
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname
-            if (currentPath !== '/dashboard' && 
-                !currentPath.startsWith('/dashboard/') &&
-                currentPath !== '/auth/callback') {
-              console.log('=== AUTHCONTEXT: Chuyển hướng đến dashboard ===')
+            // Chỉ redirect từ login/signup pages
+            if (currentPath === '/login' || currentPath === '/signup') {
+              console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, 'đến dashboard ===')
               window.location.replace('/dashboard')
             }
           }
