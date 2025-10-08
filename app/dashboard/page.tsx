@@ -249,7 +249,7 @@ export default function DashboardFinal() {
         {/* Navigation */}
         <nav className="flex-1 p-4">
           {/* Main Section */}
-          <div className="mb-0">
+          <div className="mb-0 pb-1">
             {sidebarOpen && (
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Chính</p>
             )}
@@ -292,11 +292,9 @@ export default function DashboardFinal() {
             </div>
           </div>
           
-        </nav>
-
-        {/* Phần Tuỳ chọn - Ngay dưới phần Chính */}
-        {sidebarOpen && (
-          <div className="px-4 pb-4 space-y-1 border-t border-gray-200 dark:border-gray-800 pt-1">
+          {/* Phần Tuỳ chọn - Ngay dưới phần Chính */}
+          {sidebarOpen && (
+            <div className="px-4 pb-4 space-y-1 border-t border-gray-200 dark:border-gray-800 pt-2 -mt-1">
             <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tuỳ chọn</p>
             {/* Theme Toggle */}
             <button
