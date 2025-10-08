@@ -291,36 +291,8 @@ export default function DashboardFinal() {
               </Link>
             </div>
           </div>
-
-          {/* Cài đặt & Nâng cấp */}
-          <div>
-            {sidebarOpen && (
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tùy chọn</p>
-            )}
-            <div className="space-y-1">
-              {/* Chế độ sáng/tối */}
-              <button
-                onClick={toggleTheme}
-                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-              >
-                {theme === 'light' ? (
-                  <Sun className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
-                ) : (
-                  <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
-                )}
-                {sidebarOpen && <span className="text-sm">{theme === 'light' ? 'Chế độ tối' : 'Chế độ sáng'}</span>}
-              </button>
-
-              {/* Nâng cấp tài khoản */}
-              <Link
-                href="/pricing"
-                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-              >
-                <Crown className="w-5 h-5 text-yellow-500 group-hover:text-yellow-400" />
-                {sidebarOpen && <span className="text-sm">Nâng cấp tài khoản</span>}
-              </Link>
-            </div>
-          </div>
+          
+          {/* Chỉ để lại phần Chính */}
         </nav>
 
         {/* Usage Stats + Theme Toggle - Đặt ngay sau Lịch trình */}
@@ -398,7 +370,26 @@ export default function DashboardFinal() {
           </div>
         )}
         
-        {/* Theme Toggle & Upgrade Button */}
+        {/* Tính năng nổi bật - Ở dưới cùng */}
+        {sidebarOpen && (
+          <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tính năng nổi bật</p>
+            <div className="space-y-1">
+              {features.map((feature, index) => (
+                <Link
+                  key={index}
+                  href={feature.href}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                >
+                  <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
+                    <feature.icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm">{feature.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Main Content */}
