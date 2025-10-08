@@ -247,7 +247,7 @@ export default function DashboardFinal() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-6">
+        <nav className="flex-1 p-4 space-y-3">
           {/* Main Section */}
           <div>
             {sidebarOpen && (
@@ -291,6 +291,27 @@ export default function DashboardFinal() {
               </Link>
             </div>
           </div>
+          
+          {/* Tính năng nổi bật - Ngay sau phần Chính */}
+          {sidebarOpen && (
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tính năng nổi bật</p>
+              <div className="space-y-1">
+                {features.map((feature, index) => (
+                  <Link
+                    key={index}
+                    href={feature.href}
+                    className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                  >
+                    <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
+                      <feature.icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm">{feature.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Usage Stats + Theme Toggle - Đặt ngay sau Lịch trình */}
@@ -368,26 +389,7 @@ export default function DashboardFinal() {
           </div>
         )}
         
-        {/* Tính năng nổi bật - Đẩy xuống dưới cùng */}
-        {sidebarOpen && (
-          <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Tính năng nổi bật</p>
-            <div className="space-y-1">
-              {features.map((feature, index) => (
-                <Link
-                  key={index}
-                  href={feature.href}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                >
-                  <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
-                    <feature.icon className="w-4 h-4" />
-                  </div>
-                  <span className="text-sm">{feature.title}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Theme Toggle & Upgrade Button */}
       </aside>
 
       {/* Main Content */}
@@ -476,7 +478,6 @@ export default function DashboardFinal() {
           
           {/* Nét nổi bật của PlanAI */}
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
-            <h2 className="text-lg font-semibold mb-4">Nét Nổi Bật Của PlanAI</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
                 <div className="flex items-center space-x-3 mb-3">
@@ -596,7 +597,7 @@ export default function DashboardFinal() {
                 <div className={`w-12 h-12 ${getColorClasses(feature.color)} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                   <feature.icon className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 whitespace-nowrap">{feature.title}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                   {feature.description}
                 </p>
