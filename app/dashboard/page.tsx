@@ -181,30 +181,30 @@ export default function DashboardFinal() {
   // Tính năng nổi bật cho Feature Cards
   const features = [
     {
-      icon: Brain,
-      title: 'AI Thông Minh',
-      description: 'Sử dụng công nghệ AI tiên tiến để phân tích dữ liệu và tạo kế hoạch tài chính cá nhân hóa',
+      icon: Target,
+      title: 'Cá Nhân Hóa 100%',
+      description: 'Mỗi kế hoạch được tạo riêng cho bạn dựa trên mục tiêu, thu nhập và hoàn cảnh cá nhân.',
       color: 'blue',
       href: '/dashboard/create-plan'
     },
     {
-      icon: MessageSquare,
-      title: 'Chat Tương Tác',
-      description: 'Trò chuyện tự nhiên với AI để thu thập thông tin và điều chỉnh kế hoạch theo nhu cầu',
+      icon: Brain,
+      title: 'AI Tiên Tiến',
+      description: 'Sử dụng mô hình AI tiên tiến nhất để phân tích tài chính và đưa ra lời khuyên chuyên nghiệp.',
       color: 'green',
       href: '/dashboard/create-plan'
     },
     {
-      icon: FileText,
-      title: 'Kế Hoạch Chi Tiết',
-      description: 'Nhận kế hoạch tài chính như một cuốn Ebook độc quyền với lộ trình và checklist',
+      icon: Shield,
+      title: 'Bảo Mật Tuyệt Đối',
+      description: 'Dữ liệu tài chính của bạn được mã hóa và bảo vệ theo tiêu chuẩn bảo mật cao nhất.',
       color: 'purple',
       href: '/dashboard/plans'
     },
     {
-      icon: Download,
-      title: 'Xuất Đa Định Dạng',
-      description: 'Xuất kế hoạch sang PDF, Word, Google Sheets, Notion để dễ dàng theo dõi',
+      icon: Zap,
+      title: 'Cập Nhật Liên Tục',
+      description: 'Kế hoạch của bạn được cập nhật theo thời gian thực khi có thay đổi về tài chính hoặc mục tiêu.',
       color: 'yellow',
       href: '/dashboard/plans'
     }
@@ -584,7 +584,7 @@ export default function DashboardFinal() {
             </div>
           )}
 
-          {/* Feature Cards - Giữ nguyên ở dưới cùng */}
+          {/* Nét nổi bật của PlanAI */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <Link
