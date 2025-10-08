@@ -292,12 +292,12 @@ export default function DashboardFinal() {
             </div>
           </div>
           
-          {/* Chỉ để lại phần Chính */}
         </nav>
 
-        {/* Usage Stats + Theme Toggle - Đặt ngay sau Lịch trình */}
+        {/* Phần Tuỳ chọn - Đặt ngay dưới phần Chính */}
         {sidebarOpen && (
-          <div className="px-4 pb-4 space-y-3">
+          <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-800 pt-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tuỳ chọn</p>
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
