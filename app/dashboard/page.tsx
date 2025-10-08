@@ -21,33 +21,33 @@ interface UsageStats {
   error: any
 }
 
-// Features từ landing page
+// Hướng dẫn sử dụng
 const features = [
   {
-    icon: Brain,
-    title: 'AI Thông Minh',
-    description: 'Sử dụng công nghệ AI tiên tiến để phân tích dữ liệu và tạo kế hoạch tài chính cá nhân hóa',
+    icon: FileText,
+    title: 'Bước 1: Chọn mục tiêu',
+    description: 'Chọn mục tiêu tài chính của bạn từ các lựa chọn có sẵn hoặc tùy chỉnh theo ý muốn',
     color: 'blue',
     href: '/dashboard/create-plan'
   },
   {
     icon: MessageSquare,
-    title: 'Chat Tương Tác',
-    description: 'Trò chuyện tự nhiên với AI để thu thập thông tin và điều chỉnh kế hoạch theo nhu cầu',
+    title: 'Bước 2: Trò chuyện với AI',
+    description: 'Trả lời các câu hỏi của AI để cung cấp thông tin về tình hình tài chính hiện tại',
     color: 'green',
     href: '/dashboard/create-plan'
   },
   {
-    icon: FileText,
-    title: 'Kế Hoạch Chi Tiết',
-    description: 'Nhận kế hoạch tài chính như một cuốn Ebook độc quyền với lộ trình và checklist',
+    icon: Brain,
+    title: 'Bước 3: Nhận kế hoạch',
+    description: 'AI sẽ phân tích và tạo kế hoạch tài chính cá nhân hóa chỉ trong vài giây',
     color: 'purple',
     href: '/dashboard/plans'
   },
   {
     icon: Download,
-    title: 'Xuất Đa Định Dạng',
-    description: 'Xuất kế hoạch sang PDF, Word, Google Sheets, Notion để dễ dàng theo dõi',
+    title: 'Bước 4: Theo dõi & Điều chỉnh',
+    description: 'Xuất kế hoạch hoặc điều chỉnh dễ dàng dựa trên tình hình thực tế',
     color: 'yellow',
     href: '/dashboard/plans'
   }
@@ -425,7 +425,7 @@ export default function DashboardFinal() {
             <p className="text-gray-600 dark:text-gray-400">Sẵn sàng bắt đầu lập kế hoạch tài chính?</p>
           </div>
 
-          {/* CTA Card - Đẩy lên trên */}
+          {/* CTA Card */}
           <div className="bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl p-8 mb-8 text-white">
             <div className="max-w-3xl">
               <h2 className="text-2xl font-bold mb-3">Bắt đầu tạo kế hoạch tài chính ngay!</h2>
@@ -439,6 +439,22 @@ export default function DashboardFinal() {
                 <span>Tạo Plan ngay</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
+            </div>
+          </div>
+
+          {/* Personalization Highlight */}
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
+            <div className="flex items-start">
+              <div className="bg-primary-100 dark:bg-primary-500/20 p-3 rounded-lg mr-4">
+                <Sparkles className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Cá Nhân Hóa 100%</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Mỗi kế hoạch được tạo riêng cho bạn dựa trên mục tiêu, thu nhập và hoàn cảnh cá nhân. 
+                  Không có kế hoạch nào giống nhau vì mỗi người có ước mơ và thử thách riêng.
+                </p>
+              </div>
             </div>
           </div>
 
