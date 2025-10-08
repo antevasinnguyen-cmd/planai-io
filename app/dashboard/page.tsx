@@ -193,7 +193,7 @@ export default function DashboardFinal() {
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           {sidebarOpen ? (
             <>
-              <Logo href="/dashboard" size="md" showText={true} />
+              <Logo href="/dashboard" size="md" showText={true} isDashboard={true} />
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
@@ -203,7 +203,7 @@ export default function DashboardFinal() {
             </>
           ) : (
             <>
-              <Logo href="/dashboard" size="md" showText={false} />
+              <Logo href="/dashboard" size="md" showText={false} isDashboard={true} />
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded mx-auto mt-2"

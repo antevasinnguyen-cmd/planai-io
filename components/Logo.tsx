@@ -6,13 +6,15 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
   className?: string
+  isDashboard?: boolean
 }
 
 export default function Logo({ 
   href = '/', 
   size = 'md', 
   showText = true,
-  className = ''
+  className = '',
+  isDashboard = false
 }: LogoProps) {
   const sizes = {
     sm: { container: 'w-6 h-6', icon: 'w-3.5 h-3.5', text: 'text-base' },
@@ -30,7 +32,7 @@ export default function Logo({
       </div>
       
       {showText && (
-        <span className={`${currentSize.text} font-bold bg-gradient-to-r from-primary-500 to-primary-700 dark:from-white dark:to-gray-100 bg-clip-text text-transparent`}>
+        <span className={`${currentSize.text} font-bold bg-gradient-to-r from-primary-500 to-primary-700 ${isDashboard ? 'dark:from-white dark:to-gray-100' : ''} bg-clip-text text-transparent`}>
           PlanAI
         </span>
       )}
