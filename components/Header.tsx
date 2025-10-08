@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X, Zap, User, LogOut, Settings } from 'lucide-react'
+import { Menu, X, User, LogOut, Settings } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Logo from './Logo'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -57,12 +58,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-800 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold gradient-text">PlanAI</span>
-            </Link>
+            <Logo href="/" size="md" showText={true} />
           </div>
 
           {/* Desktop Navigation */}

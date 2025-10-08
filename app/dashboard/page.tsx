@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  Sparkles, Brain, FileText, Download, Zap, Shield, MessageSquare,
+  Brain, FileText, Download, Zap, Shield, MessageSquare,
   ChevronDown, Crown, Settings, LogOut, Home, HelpCircle, Menu, X,
   ArrowRight, Target, BarChart3, Calendar, Sun, Moon
 } from 'lucide-react'
@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useTheme } from '@/lib/theme-context'
 import SuccessAlert from '@/components/SuccessAlert'
+import Logo from '@/components/Logo'
 
 interface UsageStats {
   plans: number
@@ -192,12 +193,7 @@ export default function DashboardFinal() {
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           {sidebarOpen ? (
             <>
-              <Link href="/dashboard" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">PlanAI</span>
-              </Link>
+              <Logo href="/dashboard" size="md" showText={true} />
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
@@ -206,12 +202,15 @@ export default function DashboardFinal() {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded mx-auto"
-            >
-              <Menu className="w-5 h-5 text-gray-500" />
-            </button>
+            <>
+              <Logo href="/dashboard" size="md" showText={false} />
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded mx-auto mt-2"
+              >
+                <Menu className="w-5 h-5 text-gray-500" />
+              </button>
+            </>
           )}
         </div>
 
