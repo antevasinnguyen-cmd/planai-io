@@ -21,33 +21,33 @@ interface UsageStats {
   error: any
 }
 
-// Hướng dẫn sử dụng
-const usageSteps = [
+// Tính năng nổi bật
+const features = [
   {
-    icon: MessageSquare,
-    title: 'Bước 1: Trò chuyện với AI',
-    description: 'Trả lời các câu hỏi về mục tiêu tài chính, thu nhập và chi tiêu của bạn qua chat tự nhiên',
+    icon: Brain,
+    title: 'AI Thông Minh',
+    description: 'Sử dụng công nghệ AI tiên tiến để phân tích dữ liệu và tạo kế hoạch tài chính cá nhân hóa',
     color: 'blue',
     href: '/dashboard/create-plan'
   },
   {
-    icon: Brain,
-    title: 'Bước 2: Phân tích dữ liệu',
-    description: 'AI phân tích thông tin và đề xuất kế hoạch tài chính phù hợp với hoàn cảnh cá nhân của bạn',
+    icon: MessageSquare,
+    title: 'Chat Tương Tác',
+    description: 'Trò chuyện tự nhiên với AI để thu thập thông tin và điều chỉnh kế hoạch theo nhu cầu',
     color: 'green',
     href: '/dashboard/create-plan'
   },
   {
     icon: FileText,
-    title: 'Bước 3: Nhận kế hoạch',
-    description: 'Xem kế hoạch chi tiết với lộ trình, mục tiêu và các bước thực hiện cụ thể',
+    title: 'Kế Hoạch Chi Tiết',
+    description: 'Nhận kế hoạch tài chính như một cuốn Ebook độc quyền với lộ trình và checklist',
     color: 'purple',
     href: '/dashboard/plans'
   },
   {
     icon: Download,
-    title: 'Bước 4: Xuất & Thực hiện',
-    description: 'Xuất kế hoạch sang nhiều định dạng và bắt đầu hành trình tài chính của bạn',
+    title: 'Xuất Đa Định Dạng',
+    description: 'Xuất kế hoạch sang PDF, Word, Google Sheets, Notion để dễ dàng theo dõi',
     color: 'yellow',
     href: '/dashboard/plans'
   }
@@ -178,33 +178,33 @@ export default function DashboardFinal() {
   const tier = subscription?.tier || 'free'
   const limits = getSubscriptionLimits(tier)
   
-  // Tính năng nổi bật cho Feature Cards
-  const features = [
+  // Hướng dẫn sử dụng cho Feature Cards
+  const usageSteps = [
     {
-      icon: Target,
-      title: 'Cá Nhân Hóa 100%',
-      description: 'Mỗi kế hoạch được tạo riêng cho bạn dựa trên mục tiêu, thu nhập và hoàn cảnh cá nhân.',
+      icon: MessageSquare,
+      title: 'Bước 1: Trò chuyện với AI',
+      description: 'Trả lời các câu hỏi về mục tiêu tài chính, thu nhập và chi tiêu của bạn qua chat tự nhiên',
       color: 'blue',
       href: '/dashboard/create-plan'
     },
     {
       icon: Brain,
-      title: 'AI Tiên Tiến',
-      description: 'Sử dụng mô hình AI tiên tiến nhất để phân tích tài chính và đưa ra lời khuyên chuyên nghiệp.',
+      title: 'Bước 2: Phân tích dữ liệu',
+      description: 'AI phân tích thông tin và đề xuất kế hoạch tài chính phù hợp với hoàn cảnh cá nhân của bạn',
       color: 'green',
       href: '/dashboard/create-plan'
     },
     {
-      icon: Shield,
-      title: 'Bảo Mật Tuyệt Đối',
-      description: 'Dữ liệu tài chính của bạn được mã hóa và bảo vệ theo tiêu chuẩn bảo mật cao nhất.',
+      icon: FileText,
+      title: 'Bước 3: Nhận kế hoạch',
+      description: 'Xem kế hoạch chi tiết với lộ trình, mục tiêu và các bước thực hiện cụ thể',
       color: 'purple',
       href: '/dashboard/plans'
     },
     {
-      icon: Zap,
-      title: 'Cập Nhật Liên Tục',
-      description: 'Kế hoạch của bạn được cập nhật theo thời gian thực khi có thay đổi về tài chính hoặc mục tiêu.',
+      icon: Download,
+      title: 'Bước 4: Xuất & Thực hiện',
+      description: 'Xuất kế hoạch sang nhiều định dạng và bắt đầu hành trình tài chính của bạn',
       color: 'yellow',
       href: '/dashboard/plans'
     }
@@ -368,21 +368,21 @@ export default function DashboardFinal() {
           </div>
         )}
         
-        {/* Hướng dẫn sử dụng - Đẩy xuống dưới cùng */}
+        {/* Tính năng nổi bật - Đẩy xuống dưới cùng */}
         {sidebarOpen && (
           <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Hướng dẫn sử dụng</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Tính năng nổi bật</p>
             <div className="space-y-1">
-              {usageSteps.map((step, index) => (
+              {features.map((feature, index) => (
                 <Link
                   key={index}
-                  href={step.href}
+                  href={feature.href}
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                 >
-                  <div className={`p-1.5 rounded-lg ${getColorClasses(step.color)}`}>
-                    <step.icon className="w-4 h-4" />
+                  <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
+                    <feature.icon className="w-4 h-4" />
                   </div>
-                  <span className="text-sm">{step.title}</span>
+                  <span className="text-sm">{feature.title}</span>
                 </Link>
               ))}
             </div>
@@ -584,9 +584,10 @@ export default function DashboardFinal() {
             </div>
           )}
 
-          {/* Nét nổi bật của PlanAI */}
+          {/* Hướng dẫn sử dụng - Ở dưới cùng */}
+          <h2 className="text-2xl font-bold mb-6">Hướng dẫn sử dụng</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
+            {usageSteps.map((feature, index) => (
               <Link
                 key={index}
                 href={feature.href}
