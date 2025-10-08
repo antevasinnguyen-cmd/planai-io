@@ -22,32 +22,32 @@ interface UsageStats {
 }
 
 // Hướng dẫn sử dụng
-const features = [
+const usageSteps = [
   {
-    icon: FileText,
-    title: 'Bước 1: Chọn mục tiêu',
-    description: 'Chọn mục tiêu tài chính của bạn từ các lựa chọn có sẵn hoặc tùy chỉnh theo ý muốn',
+    icon: MessageSquare,
+    title: 'Bước 1: Trò chuyện với AI',
+    description: 'Trả lời các câu hỏi về mục tiêu tài chính, thu nhập và chi tiêu của bạn qua chat tự nhiên',
     color: 'blue',
     href: '/dashboard/create-plan'
   },
   {
-    icon: MessageSquare,
-    title: 'Bước 2: Trò chuyện với AI',
-    description: 'Trả lời các câu hỏi của AI để cung cấp thông tin về tình hình tài chính hiện tại',
+    icon: Brain,
+    title: 'Bước 2: Phân tích dữ liệu',
+    description: 'AI phân tích thông tin và đề xuất kế hoạch tài chính phù hợp với hoàn cảnh cá nhân của bạn',
     color: 'green',
     href: '/dashboard/create-plan'
   },
   {
-    icon: Brain,
+    icon: FileText,
     title: 'Bước 3: Nhận kế hoạch',
-    description: 'AI sẽ phân tích và tạo kế hoạch tài chính cá nhân hóa chỉ trong vài giây',
+    description: 'Xem kế hoạch chi tiết với lộ trình, mục tiêu và các bước thực hiện cụ thể',
     color: 'purple',
     href: '/dashboard/plans'
   },
   {
     icon: Download,
-    title: 'Bước 4: Theo dõi & Điều chỉnh',
-    description: 'Xuất kế hoạch hoặc điều chỉnh dễ dàng dựa trên tình hình thực tế',
+    title: 'Bước 4: Xuất & Thực hiện',
+    description: 'Xuất kế hoạch sang nhiều định dạng và bắt đầu hành trình tài chính của bạn',
     color: 'yellow',
     href: '/dashboard/plans'
   }
@@ -336,21 +336,21 @@ export default function DashboardFinal() {
           </div>
         )}
         
-        {/* Tính năng nổi bật - Đẩy xuống dưới cùng */}
+        {/* Hướng dẫn sử dụng - Đẩy xuống dưới cùng */}
         {sidebarOpen && (
           <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Tính năng nổi bật</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Hướng dẫn sử dụng</p>
             <div className="space-y-1">
-              {features.map((feature, index) => (
+              {usageSteps.map((step, index) => (
                 <Link
                   key={index}
-                  href={feature.href}
+                  href={step.href}
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
                 >
-                  <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
-                    <feature.icon className="w-4 h-4" />
+                  <div className={`p-1.5 rounded-lg ${getColorClasses(step.color)}`}>
+                    <step.icon className="w-4 h-4" />
                   </div>
-                  <span className="text-sm">{feature.title}</span>
+                  <span className="text-sm">{step.title}</span>
                 </Link>
               ))}
             </div>
@@ -425,7 +425,7 @@ export default function DashboardFinal() {
             <p className="text-gray-600 dark:text-gray-400">Sẵn sàng bắt đầu lập kế hoạch tài chính?</p>
           </div>
 
-          {/* CTA Card */}
+          {/* CTA Card - Đẩy lên trên */}
           <div className="bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl p-8 mb-8 text-white">
             <div className="max-w-3xl">
               <h2 className="text-2xl font-bold mb-3">Bắt đầu tạo kế hoạch tài chính ngay!</h2>
@@ -441,18 +441,53 @@ export default function DashboardFinal() {
               </Link>
             </div>
           </div>
-
-          {/* Personalization Highlight */}
+          
+          {/* Nét nổi bật của PlanAI */}
           <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
-            <div className="flex items-start">
-              <div className="bg-primary-100 dark:bg-primary-500/20 p-3 rounded-lg mr-4">
-                <Sparkles className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Cá Nhân Hóa 100%</h3>
+            <h2 className="text-lg font-semibold mb-4">Nét Nổi Bật Của PlanAI</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="font-semibold">Cá Nhân Hóa 100%</h3>
+                </div>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Mỗi kế hoạch được tạo riêng cho bạn dựa trên mục tiêu, thu nhập và hoàn cảnh cá nhân. 
-                  Không có kế hoạch nào giống nhau vì mỗi người có ước mơ và thử thách riêng.
+                  Mỗi kế hoạch được tạo riêng cho bạn dựa trên mục tiêu, thu nhập và hoàn cảnh cá nhân.
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <Brain className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="font-semibold">AI Tiên Tiến</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Sử dụng mô hình AI tiên tiến nhất để phân tích tài chính và đưa ra lời khuyên chuyên nghiệp.
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="font-semibold">Bảo Mật Tuyệt Đối</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Dữ liệu tài chính của bạn được mã hóa và bảo vệ theo tiêu chuẩn bảo mật cao nhất.
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <h3 className="font-semibold">Cập Nhật Liên Tục</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Kế hoạch của bạn được cập nhật theo thời gian thực khi có thay đổi về tài chính hoặc mục tiêu.
                 </p>
               </div>
             </div>
