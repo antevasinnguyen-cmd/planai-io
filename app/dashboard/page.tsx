@@ -177,6 +177,38 @@ export default function DashboardFinal() {
 
   const tier = subscription?.tier || 'free'
   const limits = getSubscriptionLimits(tier)
+  
+  // Tính năng nổi bật cho Feature Cards
+  const features = [
+    {
+      icon: Brain,
+      title: 'AI Thông Minh',
+      description: 'Sử dụng công nghệ AI tiên tiến để phân tích dữ liệu và tạo kế hoạch tài chính cá nhân hóa',
+      color: 'blue',
+      href: '/dashboard/create-plan'
+    },
+    {
+      icon: MessageSquare,
+      title: 'Chat Tương Tác',
+      description: 'Trò chuyện tự nhiên với AI để thu thập thông tin và điều chỉnh kế hoạch theo nhu cầu',
+      color: 'green',
+      href: '/dashboard/create-plan'
+    },
+    {
+      icon: FileText,
+      title: 'Kế Hoạch Chi Tiết',
+      description: 'Nhận kế hoạch tài chính như một cuốn Ebook độc quyền với lộ trình và checklist',
+      color: 'purple',
+      href: '/dashboard/plans'
+    },
+    {
+      icon: Download,
+      title: 'Xuất Đa Định Dạng',
+      description: 'Xuất kế hoạch sang PDF, Word, Google Sheets, Notion để dễ dàng theo dõi',
+      color: 'yellow',
+      href: '/dashboard/plans'
+    }
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] text-gray-900 dark:text-white flex">
