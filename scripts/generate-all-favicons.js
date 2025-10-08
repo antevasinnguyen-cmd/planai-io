@@ -6,15 +6,9 @@ function generateFavicon(size, filename) {
   const canvas = createCanvas(size, size);
   const ctx = canvas.getContext('2d');
 
-  // Create gradient background (rounded square)
-  const gradient = ctx.createLinearGradient(0, 0, size, size);
-  gradient.addColorStop(0, '#4F46E5'); // Indigo
-  gradient.addColorStop(0.5, '#7C3AED'); // Purple
-  gradient.addColorStop(1, '#4F46E5'); // Indigo
-  
-  // Draw rounded square background
-  const radius = size * 0.2;
-  ctx.fillStyle = gradient;
+  // Draw rounded square background - Sky Blue
+  const radius = size * 0.15;
+  ctx.fillStyle = '#0ea5e9'; // primary-500
   ctx.beginPath();
   ctx.moveTo(radius, 0);
   ctx.lineTo(size - radius, 0);
@@ -28,38 +22,29 @@ function generateFavicon(size, filename) {
   ctx.closePath();
   ctx.fill();
 
-  // Draw sparkle icon (simplified star shape)
-  ctx.fillStyle = '#FFFFFF';
+  // Draw simple target icon - 3 circles
   const centerX = size / 2;
   const centerY = size / 2;
-  const sparkleSize = size * 0.4;
+  const strokeWidth = Math.max(2, size * 0.06);
   
-  // Main sparkle (4-point star)
-  ctx.save();
-  ctx.translate(centerX, centerY);
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = strokeWidth;
+  
+  // Outer circle
   ctx.beginPath();
-  for (let i = 0; i < 4; i++) {
-    const angle = (Math.PI / 2) * i - Math.PI / 4;
-    const x = Math.cos(angle) * sparkleSize;
-    const y = Math.sin(angle) * sparkleSize;
-    if (i === 0) {
-      ctx.moveTo(x * 0.3, y * 0.3);
-    }
-    ctx.lineTo(x, y);
-    ctx.lineTo(Math.cos(angle + Math.PI / 4) * sparkleSize * 0.3, 
-               Math.sin(angle + Math.PI / 4) * sparkleSize * 0.3);
-  }
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
+  ctx.arc(centerX, centerY, size * 0.35, 0, Math.PI * 2);
+  ctx.stroke();
   
-  // Small yellow dot (target indicator)
-  if (size >= 32) {
-    ctx.fillStyle = '#FCD34D';
-    ctx.beginPath();
-    ctx.arc(size * 0.75, size * 0.25, size * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // Middle circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, size * 0.23, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  // Center dot
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, size * 0.1, 0, Math.PI * 2);
+  ctx.fill();
 
   // Save as PNG
   const out = fs.createWriteStream(path.join(__dirname, '../public', filename));
