@@ -7,25 +7,16 @@ const size = 64;
 const canvas = createCanvas(size, size);
 const ctx = canvas.getContext('2d');
 
-// Draw rounded square background - Sky Blue
-const radius = size * 0.15;
+// Draw circular background - Sky Blue
+const centerX = size / 2;
+const centerY = size / 2;
+
 ctx.fillStyle = '#0ea5e9'; // primary-500
 ctx.beginPath();
-ctx.moveTo(radius, 0);
-ctx.lineTo(size - radius, 0);
-ctx.quadraticCurveTo(size, 0, size, radius);
-ctx.lineTo(size, size - radius);
-ctx.quadraticCurveTo(size, size, size - radius, size);
-ctx.lineTo(radius, size);
-ctx.quadraticCurveTo(0, size, 0, size - radius);
-ctx.lineTo(0, radius);
-ctx.quadraticCurveTo(0, 0, radius, 0);
-ctx.closePath();
+ctx.arc(centerX, centerY, size * 0.48, 0, Math.PI * 2);
 ctx.fill();
 
 // Draw simple target icon - 3 circles
-const centerX = size / 2;
-const centerY = size / 2;
 const strokeWidth = Math.max(2, size * 0.06);
 
 ctx.strokeStyle = '#FFFFFF';

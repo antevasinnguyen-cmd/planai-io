@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Rounded square background - Sky Blue -->
-  <rect x="5" y="5" width="90" height="90" rx="12" fill="#0ea5e9"/>
+  <!-- Circular background - Sky Blue -->
+  <circle cx="50" cy="50" r="48" fill="#0ea5e9"/>
   
   <!-- Target icon - Simple circles -->
-  <circle cx="50" cy="50" r="28" fill="none" stroke="white" stroke-width="4"/>
-  <circle cx="50" cy="50" r="18" fill="none" stroke="white" stroke-width="4"/>
+  <circle cx="50" cy="50" r="32" fill="none" stroke="white" stroke-width="5"/>
+  <circle cx="50" cy="50" r="20" fill="none" stroke="white" stroke-width="5"/>
   <circle cx="50" cy="50" r="8" fill="white"/>
 </svg>

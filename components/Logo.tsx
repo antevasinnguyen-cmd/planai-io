@@ -30,7 +30,7 @@ export default function Logo({
       </div>
       
       {showText && (
-        <span className={`${currentSize.text} font-bold text-primary-600`}>
+        <span className={`${currentSize.text} font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent`}>
           PlanAI
         </span>
       )}
