@@ -11,6 +11,19 @@ export const metadata: Metadata = {
   description: 'Webapp SaaS áp dụng AI giúp người dùng lập kế hoạch / xây dựng chiến lược cá nhân hoá cho mục tiêu tài chính, kiếm tiền, tăng thu nhập.',
   keywords: 'AI, kế hoạch tài chính, kiếm tiền, tăng thu nhập, Việt Nam, SaaS',
   authors: [{ name: 'PlanAI Team' }],
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+    ],
+  },
+  manifest: '/site.webmanifest',
+  themeColor: '#4F46E5',
   openGraph: {
     title: 'PlanAI - AI Financial Planning',
     description: 'Biến dữ liệu thô thành bản kế hoạch đáng mơ ước',
@@ -18,6 +31,14 @@ export const metadata: Metadata = {
     siteName: 'PlanAI',
     locale: 'vi_VN',
     type: 'website',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'PlanAI - AI Financial Planning',
+      },
+    ],
   },
 }
 
