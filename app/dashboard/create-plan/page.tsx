@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap } from 'lucide-react'
+import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 
@@ -115,7 +115,9 @@ Tôi lắng nghe bạn! ✨`,
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to get response')
+        console.error('API Error:', data)
+        const errorMsg = data.message || data.error || 'Có lỗi xảy ra khi kết nối với AI'
+        throw new Error(errorMsg)
       }
 
       const assistantMessage: Message = {
@@ -127,10 +129,11 @@ Tôi lắng nghe bạn! ✨`,
       setMessages(prev => [...prev, assistantMessage])
       updateCollectedInfo(input)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Chat Error:', error)
+      const errorMsg = error instanceof Error ? error.message : 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.'
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',
+        content: `⚠️ ${errorMsg}\n\nVui lòng kiểm tra:\n• Kết nối internet của bạn\n• Thử làm mới trang và thử lại\n• Nếu vẫn gặp lỗi, vui lòng liên hệ hỗ trợ: webappsaas.ai@gmail.com`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -303,8 +306,13 @@ Tôi lắng nghe bạn! ✨`,
                 Bạn có thể tạo tối đa <strong>{planLimit}</strong> kế hoạch{planLimit > 1 ? '' : ''}.
               </p>
               {tier === 'free' && (
-                <Link href="/pricing" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
-                  Nâng cấp để tạo nhiều hơn →
+                <Link 
+                  href="/pricing" 
+                  className="inline-flex items-center space-x-1 mt-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs font-semibold rounded-lg transition-all transform hover:scale-105 shadow-md"
+                >
+                  <Crown className="w-3 h-3" />
+                  <span>Nâng cấp để tạo nhiều hơn</span>
+                  <ArrowRight className="w-3 h-3" />
                 </Link>
               )}
             </div>

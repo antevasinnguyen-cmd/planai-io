@@ -43,10 +43,26 @@ export async function POST(request: NextRequest) {
     ]
 
     // Generate AI response
-    const aiResponse = await generateChatResponse(messages)
+    let aiResponse: string
+    try {
+      aiResponse = await generateChatResponse(messages)
+    } catch (aiError) {
+      console.error('AI Response Generation Error:', aiError)
+      return NextResponse.json({ 
+        error: 'Không thể kết nối với AI',
+        message: 'Xin lỗi, có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.',
+        details: aiError instanceof Error ? aiError.message : 'Unknown error'
+      }, { status: 500 })
+    }
 
     // Analyze user input to guide next questions and UI suggestions
-    const analysis = await analyzeUserInput(message)
+    let analysis
+    try {
+      analysis = await analyzeUserInput(message)
+    } catch (analysisError) {
+      console.warn('Analysis failed, continuing without it:', analysisError)
+      analysis = null
+    }
     // Persist any structured fields into the user's profile (best-effort, ignore errors)
     try {
       if (analysis?.extractedInfo) {

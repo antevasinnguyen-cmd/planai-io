@@ -229,16 +229,50 @@ export default function SubscriptionPage() {
             </div>
           </div>
 
-          {/* Trial Status */}
-          {currentTier === 'free' && trialStatus?.isActive && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+          {/* Subscription Period Progress */}
+          {subscription && (subscription.current_period_end || trialStatus?.isActive) && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
               <div className="flex items-start space-x-3">
-                <Calendar className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-green-900 dark:text-green-100">Gói dùng thử đang hoạt động</p>
-                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                    Còn <strong>{trialStatus.daysRemaining} ngày</strong> để trải nghiệm miễn phí
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-medium text-blue-900 dark:text-blue-100">
+                      {currentTier === 'free' ? 'Gói dùng thử' : 'Thời hạn gói'}
+                    </p>
+                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                      {currentTier === 'free' && trialStatus?.isActive
+                        ? `${trialStatus.daysRemaining} ngày còn lại`
+                        : subscription?.current_period_end
+                        ? `${Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} ngày còn lại`
+                        : '30 ngày'}
+                    </span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="relative">
+                    <div className="w-full bg-blue-200 dark:bg-blue-900/40 rounded-full h-2.5">
+                      <div
+                        className="bg-blue-600 dark:bg-blue-400 h-2.5 rounded-full transition-all"
+                        style={{
+                          width: `${currentTier === 'free' && trialStatus?.isActive
+                            ? ((30 - trialStatus.daysRemaining) / 30) * 100
+                            : subscription?.current_period_end
+                            ? ((30 - Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) / 30) * 100
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs text-blue-700 dark:text-blue-300">
+                      <span>Ngày bắt đầu</span>
+                      <span>
+                        {currentTier === 'free' && trialStatus?.isActive
+                          ? `${30 - trialStatus.daysRemaining}/30 ngày đã qua`
+                          : subscription?.current_period_end
+                          ? `${30 - Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}/30 ngày đã qua`
+                          : '0/30 ngày'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -130,11 +130,11 @@ export default function HelpPage() {
                 Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ bạn. Gửi email cho chúng tôi và chúng tôi sẽ phản hồi trong vòng 24 giờ.
               </p>
               <a
-                href="mailto:support@planai.io.vn"
+                href="mailto:webappsaas.ai@gmail.com"
                 className="inline-flex items-center px-4 py-2 bg-white text-primary-600 font-medium rounded-lg hover:bg-primary-50 transition-colors"
               >
                 <Mail className="w-4 h-4 mr-2" />
-                support@planai.io.vn
+                webappsaas.ai@gmail.com
               </a>
             </div>
             <MessageCircle className="w-16 h-16 text-primary-200 hidden md:block" />
@@ -220,7 +220,7 @@ export default function HelpPage() {
             Vẫn chưa tìm thấy câu trả lời?
           </p>
           <a
-            href="mailto:support@planai.io.vn"
+            href="mailto:webappsaas.ai@gmail.com"
             className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors"
           >
             <Mail className="w-5 h-5 mr-2" />
