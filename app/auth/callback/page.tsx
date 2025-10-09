@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, initializeFreeTrialForNewUser } from '@/lib/supabase'
 
 export default function AuthCallbackPage() {
   useEffect(() => {
@@ -42,6 +42,18 @@ export default function AuthCallbackPage() {
 
         if (session && session.user) {
           console.log('=== CALLBACK: Success ===', session.user.email)
+
+          // Initialize free trial for new users
+          try {
+            const trialResult = await initializeFreeTrialForNewUser(session.user.id)
+            if (trialResult.alreadyUsed) {
+              console.log('=== CALLBACK: User already had free trial ===')
+            } else if (trialResult.data) {
+              console.log('=== CALLBACK: Free trial initialized ===')
+            }
+          } catch (error) {
+            console.error('=== CALLBACK: Error initializing trial ===', error)
+          }
 
           // Lưu thông báo thành công và email người dùng
           localStorage.setItem('auth_success', 'true')

@@ -201,6 +201,65 @@ export const getUserSubscription = async (userId: string) => {
   return { data, error }
 }
 
+// Free Trial helpers - 30 days trial, one-time only
+export const initializeFreeTrialForNewUser = async (userId: string) => {
+  // Check if user already had a free trial
+  const { data: existingTrial } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('tier', 'free')
+    .single()
+  
+  if (existingTrial) {
+    // User already had free trial, don't create another one
+    return { data: null, error: null, alreadyUsed: true }
+  }
+  
+  // Create new 30-day free trial
+  const trialStartDate = new Date()
+  const trialEndDate = new Date()
+  trialEndDate.setDate(trialEndDate.getDate() + 30)
+  
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .insert([{
+      user_id: userId,
+      tier: 'free',
+      status: 'active',
+      trial_start_date: trialStartDate.toISOString(),
+      trial_end_date: trialEndDate.toISOString(),
+      created_at: new Date().toISOString()
+    }])
+    .select()
+  
+  return { data, error, alreadyUsed: false }
+}
+
+export const checkTrialStatus = async (userId: string) => {
+  const { data: subscription } = await getUserSubscription(userId)
+  
+  if (!subscription || subscription.tier !== 'free') {
+    return { isActive: false, daysRemaining: 0, expired: true }
+  }
+  
+  const trialEndDate = new Date(subscription.trial_end_date)
+  const now = new Date()
+  const daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  
+  if (daysRemaining <= 0) {
+    // Trial expired, update status
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired' })
+      .eq('id', subscription.id)
+    
+    return { isActive: false, daysRemaining: 0, expired: true }
+  }
+  
+  return { isActive: true, daysRemaining, expired: false }
+}
+
 export const getSubscriptionLimits = (tier: string) => {
   const limits = {
     'free': { plans: 1, chats: 5, words: 1000 },
