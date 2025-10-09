@@ -357,9 +357,14 @@ export default function DashboardFinal() {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{getTierName(tier)}</p>
-                {tier === 'free' && trialStatus?.isActive && (
+                {subscription?.expires_at && (
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                    {Math.ceil((new Date(subscription.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} ngày còn lại
+                  </span>
+                )}
+                {!subscription?.expires_at && trialStatus?.isActive && (
                   <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
-                    {trialStatus.daysRemaining} ngày còn lại
+                    {trialStatus.daysRemaining} ngày dùng thử
                   </span>
                 )}
               </div>
