@@ -44,8 +44,10 @@ export default function DashboardFinal() {
       initializeDashboard()
       
       const hasAuthSuccess = localStorage.getItem('auth_success')
-      if (hasAuthSuccess === 'true') {
+      const hasShownWelcome = sessionStorage.getItem('welcome_shown')
+      if (hasAuthSuccess === 'true' && !hasShownWelcome) {
         setShowSuccessMessage(true)
+        sessionStorage.setItem('welcome_shown', 'true')
         localStorage.removeItem('auth_success')
         localStorage.removeItem('auth_user_email')
       }
@@ -231,7 +233,7 @@ export default function DashboardFinal() {
       )}
 
       {/* Sidebar - Fixed, không cuộn theo */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col fixed h-screen`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col fixed h-screen z-20`}>
         {/* Logo & Toggle */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
           {sidebarOpen ? (
@@ -401,7 +403,7 @@ export default function DashboardFinal() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-64">
         {/* Top Bar */}
         <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -458,7 +460,7 @@ export default function DashboardFinal() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-6 overflow-y-auto md:ml-0">
           {/* Welcome Message */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">
