@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { 
   Brain, FileText, Download, MessageSquare, ChevronDown, Crown, Settings, LogOut, 
   Home, HelpCircle, Menu, X, ArrowRight, Target, BarChart3, Calendar, Sun, Moon,
-  User, Zap
+  User, Zap, Shield, CreditCard
 } from 'lucide-react'
 import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits, checkTrialStatus } from '@/lib/supabase'
 import Link from 'next/link'
@@ -300,6 +300,13 @@ export default function DashboardFinal() {
                 <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
                 {sidebarOpen && <span className="text-sm font-medium">Lịch trình</span>}
               </Link>
+              <Link
+                href="/dashboard/subscription"
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <CreditCard className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+                {sidebarOpen && <span className="text-sm font-medium">Quản trị gói</span>}
+              </Link>
             </div>
           </div>
           
@@ -326,24 +333,6 @@ export default function DashboardFinal() {
                 <div className={`absolute top-1 ${theme === 'dark' ? 'right-1' : 'left-1'} w-4 h-4 bg-white dark:bg-primary-500 rounded-full transition-all`} />
               </div>
             </button>
-
-            {/* Cài đặt */}
-            <Link
-              href="/dashboard/settings"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
-              <span className="text-sm font-medium">Cài đặt</span>
-            </Link>
-
-            {/* Trợ giúp */}
-            <Link
-              href="/dashboard/help"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <HelpCircle className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
-              <span className="text-sm font-medium">Trợ giúp</span>
-            </Link>
 
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">{getTierName(tier)}</p>
