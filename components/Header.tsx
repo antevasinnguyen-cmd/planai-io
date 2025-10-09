@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Menu, X, User, LogOut, Settings } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/supabase'
@@ -12,6 +12,8 @@ export default function Header() {
   const [user, setUser] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const router = useRouter()
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const avatarButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -24,12 +26,21 @@ export default function Header() {
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showUserMenu) {
+      // Don't close if clicking on the avatar button
+      if (avatarButtonRef.current && avatarButtonRef.current.contains(event.target as Node)) {
+        return
+      }
+      
+      // Close if clicking outside the menu
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
@@ -82,6 +93,7 @@ export default function Header() {
             {user ? (
               <div className="relative">
                 <button
+                  ref={avatarButtonRef}
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-primary-700 transition-colors"
                 >
@@ -89,7 +101,10 @@ export default function Header() {
                 </button>
                 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                  <div 
+                    ref={userMenuRef}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200"
+                  >
                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                       <div className="font-medium">{user.user_metadata?.full_name || 'User'}</div>
                       <div className="text-gray-500 text-xs">{user.email}</div>
@@ -125,7 +140,7 @@ export default function Header() {
                 <Link href="/login" className="text-gray-600 hover:text-primary-600 transition-colors">
                   Login
                 </Link>
-                <Link href="/start" className="btn-primary">
+                <Link href="/signup" className="btn-primary">
                   Bắt đầu miễn phí
                 </Link>
               </>
@@ -179,7 +194,7 @@ export default function Header() {
                   <Link href="/login" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
                     Login
                   </Link>
-                  <Link href="/start" className="block px-3 py-2 btn-primary text-center">
+                  <Link href="/signup" className="block px-3 py-2 btn-primary text-center">
                     Bắt đầu miễn phí
                   </Link>
                 </>

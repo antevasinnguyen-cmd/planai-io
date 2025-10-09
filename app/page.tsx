@@ -1,15 +1,27 @@
-import Hero from '@/components/Hero'
-import Features from '@/components/Features'
-import ChatDemo from '@/components/ChatDemo'
-import Technology from '@/components/Technology'
-import Stats from '@/components/Stats'
-import PlanDemo from '@/components/PlanDemo'
-import Testimonials from '@/components/Testimonials'
-import HowItWorks from '@/components/HowItWorks'
-import FAQ from '@/components/FAQ'
-import CTA from '@/components/CTA'
+'use client'
+
+import { Suspense, lazy } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import Hero from '@/components/Hero'
+import CTA from '@/components/CTA'
+
+// Lazy load heavy components
+const Features = lazy(() => import('@/components/Features'))
+const ChatDemo = lazy(() => import('@/components/ChatDemo'))
+const Technology = lazy(() => import('@/components/Technology'))
+const Stats = lazy(() => import('@/components/Stats'))
+const PlanDemo = lazy(() => import('@/components/PlanDemo'))
+const Testimonials = lazy(() => import('@/components/Testimonials'))
+const HowItWorks = lazy(() => import('@/components/HowItWorks'))
+const FAQ = lazy(() => import('@/components/FAQ'))
+
+// Loading fallback
+const LoadingFallback = () => (
+  <div className="flex justify-center items-center py-16">
+    <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+)
 
 export default function Home() {
   return (
@@ -23,22 +35,32 @@ export default function Home() {
       <CTA />
       
       {/* 3. Tính năng AI: Khung chat */}
-      <Features />
+      <Suspense fallback={<LoadingFallback />}>
+        <Features />
+      </Suspense>
       
       {/* 4. Khung chat + nút bắt đầu miễn phí */}
-      <ChatDemo />
+      <Suspense fallback={<LoadingFallback />}>
+        <ChatDemo />
+      </Suspense>
       
       {/* 5. Công nghệ được áp dụng (GPT-5 / Grok / Claude Opus / Supabase) */}
-      <Technology />
+      <Suspense fallback={<LoadingFallback />}>
+        <Technology />
+      </Suspense>
       
       {/* 6. Con số người dùng đã sử dụng ứng dụng (5000+ user); số plan được tạo: 58.000+ */}
-      <Stats />
+      <Suspense fallback={<LoadingFallback />}>
+        <Stats />
+      </Suspense>
       
       {/* 7. Công nghệ được áp dụng */}
       {/* Đã có ở section 5 */}
       
       {/* 8. Demo 1 plan chi tiết */}
-      <PlanDemo />
+      <Suspense fallback={<LoadingFallback />}>
+        <PlanDemo />
+      </Suspense>
       
       {/* 9. Quote */}
       <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-800">
@@ -53,13 +75,19 @@ export default function Home() {
       </section>
       
       {/* 10. Trusted by the community (người dùng nói gì) */}
-      <Testimonials />
+      <Suspense fallback={<LoadingFallback />}>
+        <Testimonials />
+      </Suspense>
       
       {/* 11. Hướng dẫn sử dụng */}
-      <HowItWorks />
+      <Suspense fallback={<LoadingFallback />}>
+        <HowItWorks />
+      </Suspense>
       
       {/* 12. FAQ */}
-      <FAQ />
+      <Suspense fallback={<LoadingFallback />}>
+        <FAQ />
+      </Suspense>
       
       <Footer />
     </main>
