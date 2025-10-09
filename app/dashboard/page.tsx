@@ -21,7 +21,7 @@ interface UsageStats {
   error: any
 }
 
-export default function DashboardNew() {
+export default function DashboardFinal() {
   const [subscription, setSubscription] = useState<any>(null)
   const [usage, setUsage] = useState<UsageStats | null>(null)
   const [plans, setPlans] = useState<any[]>([])
@@ -63,6 +63,23 @@ export default function DashboardNew() {
     ])
     
     setIsLoading(false)
+  }
+
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Chào buổi sáng'
+    if (hour < 18) return 'Chào buổi chiều'
+    return 'Chào buổi tối'
+  }
+
+  const getColorClasses = (color: string) => {
+    const colors = {
+      blue: 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500',
+      green: 'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-500',
+      purple: 'bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-500',
+      yellow: 'bg-yellow-100 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-500'
+    }
+    return colors[color as keyof typeof colors] || colors.blue
   }
 
   const loadSubscription = async (userId: string) => {
@@ -139,6 +156,70 @@ export default function DashboardNew() {
 
   const tier = subscription?.tier || 'free'
   const limits = getSubscriptionLimits(tier)
+  
+  // Tính năng nổi bật
+  const features = [
+    {
+      icon: Brain,
+      title: 'AI Thông Minh',
+      description: 'Sử dụng công nghệ AI tiên tiến để phân tích dữ liệu và tạo kế hoạch tài chính cá nhân hóa',
+      color: 'blue',
+      href: '/dashboard/create-plan'
+    },
+    {
+      icon: MessageSquare,
+      title: 'Chat Tương Tác',
+      description: 'Trò chuyện tự nhiên với AI để thu thập thông tin và điều chỉnh kế hoạch theo nhu cầu',
+      color: 'green',
+      href: '/dashboard/create-plan'
+    },
+    {
+      icon: FileText,
+      title: 'Kế Hoạch Chi Tiết',
+      description: 'Nhận kế hoạch tài chính như một cuốn Ebook độc quyền với lộ trình và checklist',
+      color: 'purple',
+      href: '/dashboard/plans'
+    },
+    {
+      icon: Download,
+      title: 'Xuất Đa Định Dạng',
+      description: 'Xuất kế hoạch sang PDF, Word, Google Sheets, Notion để dễ dàng theo dõi',
+      color: 'yellow',
+      href: '/dashboard/plans'
+    }
+  ]
+  
+  // Hướng dẫn sử dụng cho Feature Cards
+  const usageSteps = [
+    {
+      icon: MessageSquare,
+      title: 'Bước 1: Trò chuyện với AI',
+      description: 'Trả lời các câu hỏi về mục tiêu tài chính, thu nhập và chi tiêu của bạn qua chat tự nhiên',
+      color: 'blue',
+      href: '/dashboard/create-plan'
+    },
+    {
+      icon: Brain,
+      title: 'Bước 2: Phân tích dữ liệu',
+      description: 'AI phân tích thông tin và đề xuất kế hoạch tài chính phù hợp với hoàn cảnh cá nhân của bạn',
+      color: 'green',
+      href: '/dashboard/create-plan'
+    },
+    {
+      icon: FileText,
+      title: 'Bước 3: Nhận kế hoạch',
+      description: 'Xem kế hoạch chi tiết với lộ trình, mục tiêu và các bước thực hiện cụ thể',
+      color: 'purple',
+      href: '/dashboard/plans'
+    },
+    {
+      icon: Download,
+      title: 'Bước 4: Xuất & Thực hiện',
+      description: 'Xuất kế hoạch sang nhiều định dạng và bắt đầu hành trình tài chính của bạn',
+      color: 'yellow',
+      href: '/dashboard/plans'
+    }
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] text-gray-900 dark:text-white flex">
@@ -150,7 +231,7 @@ export default function DashboardNew() {
       )}
 
       {/* Sidebar - Fixed, không cuộn theo */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col fixed h-screen overflow-y-auto`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col fixed h-screen`}>
         {/* Logo & Toggle */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
           {sidebarOpen ? (
@@ -176,97 +257,172 @@ export default function DashboardNew() {
           )}
         </div>
 
-        {/* Navigation - Chính */}
+        {/* Navigation */}
         <nav className="flex-1 p-4 overflow-y-auto">
-          <div className="space-y-1">
-            <Link
-              href="/dashboard"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white transition-colors group"
-            >
-              <Home className="w-5 h-5" />
-              {sidebarOpen && <span className="text-sm font-medium">Trang chủ</span>}
-            </Link>
-            <Link
-              href="/dashboard/create-plan"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <Target className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-              {sidebarOpen && <span className="text-sm font-medium">Tạo Plan</span>}
-            </Link>
-            <Link
-              href="/dashboard/plans"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-              {sidebarOpen && <span className="text-sm font-medium">Kế hoạch</span>}
-            </Link>
-            <Link
-              href="/dashboard/analytics"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-              {sidebarOpen && <span className="text-sm font-medium">Phân tích</span>}
-            </Link>
-            <Link
-              href="/dashboard/calendar"
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-            >
-              <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-              {sidebarOpen && <span className="text-sm font-medium">Lịch trình</span>}
-            </Link>
+          {/* Main Section */}
+          <div className="mb-0 pb-1">
+            {sidebarOpen && (
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Chính</p>
+            )}
+            <div className="space-y-1">
+              <Link
+                href="/dashboard"
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 transition-colors group"
+              >
+                <Home className="w-5 h-5" />
+                {sidebarOpen && <span className="text-sm font-medium">Tổng quan</span>}
+              </Link>
+              <Link
+                href="/dashboard/create-plan"
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <Target className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+                {sidebarOpen && <span className="text-sm font-medium">Tạo Plan</span>}
+              </Link>
+              <Link
+                href="/dashboard/plans"
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+                {sidebarOpen && <span className="text-sm font-medium">Kế hoạch</span>}
+              </Link>
+              <Link
+                href="/dashboard/analytics"
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+                {sidebarOpen && <span className="text-sm font-medium">Phân tích</span>}
+              </Link>
+              <Link
+                href="/dashboard/calendar"
+                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+                {sidebarOpen && <span className="text-sm font-medium">Lịch trình</span>}
+              </Link>
+            </div>
           </div>
-
-          {/* Tuỳ chỉnh Section */}
+          
+          {/* Phần Tuỳ chỉnh - Ngay dưới phần Chính */}
           {sidebarOpen && (
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-3 px-3">Tuỳ chỉnh</p>
-              <div className="space-y-1">
-                {/* Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                >
-                  <div className="flex items-center space-x-3">
-                    {theme === 'light' ? (
-                      <Sun className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    ) : (
-                      <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    )}
-                    <span className="text-sm font-medium">
-                      {theme === 'light' ? 'Chế độ sáng' : 'Chế độ tối'}
-                    </span>
-                  </div>
-                </button>
+            <div className="px-4 pb-4 space-y-1 border-t border-gray-200 dark:border-gray-800 pt-2 -mt-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tuỳ chỉnh</p>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+            >
+              <div className="flex items-center space-x-2">
+                {theme === 'light' ? (
+                  <Sun className="w-4 h-4 text-gray-600" />
+                ) : (
+                  <Moon className="w-4 h-4 text-gray-400" />
+                )}
+                <span className="text-sm font-medium">
+                  {theme === 'light' ? 'Sáng' : 'Tối'}
+                </span>
+              </div>
+              <div className="w-10 h-6 bg-gray-200 dark:bg-gray-700 rounded-full relative">
+                <div className={`absolute top-1 ${theme === 'dark' ? 'right-1' : 'left-1'} w-4 h-4 bg-white dark:bg-primary-500 rounded-full transition-all`} />
+              </div>
+            </button>
 
-                {/* Cài đặt */}
-                <Link
-                  href="/dashboard/settings"
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                >
-                  <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-                  <span className="text-sm font-medium">Cài đặt tài khoản</span>
-                </Link>
+            {/* Cài đặt */}
+            <Link
+              href="/dashboard/settings"
+              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+            >
+              <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+              <span className="text-sm font-medium">Cài đặt</span>
+            </Link>
 
-                {/* Trợ giúp */}
-                <Link
-                  href="/dashboard/help"
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                >
-                  <HelpCircle className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-                  <span className="text-sm font-medium">Trợ giúp</span>
-                </Link>
+            {/* Trợ giúp */}
+            <Link
+              href="/dashboard/help"
+              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+            >
+              <HelpCircle className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+              <span className="text-sm font-medium">Trợ giúp</span>
+            </Link>
 
-                {/* Nâng cấp */}
-                <Link
-                  href="/pricing"
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors group mt-2"
-                >
-                  <Crown className="w-5 h-5" />
-                  <span className="text-sm font-medium">Nâng cấp gói</span>
-                </Link>
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">{getTierName(tier)}</p>
+              
+              {tier === 'free' && trialStatus?.isActive && (
+                <p className="text-xs text-green-600 dark:text-green-400 mb-2">
+                  ⏰ Còn {trialStatus.daysRemaining} ngày
+                </p>
+              )}
+              
+              {/* Chat Usage */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-600 dark:text-gray-400">Chat</span>
+                  <span className="font-medium">{usage?.chats || 0}/{limits.chats}</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div
+                    className="bg-blue-500 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.min(((usage?.chats || 0) / limits.chats) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Plans Usage */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-600 dark:text-gray-400">Kế hoạch</span>
+                  <span className="font-medium">{usage?.plans || 0}/{limits.plans}</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div
+                    className="bg-green-500 h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.min(((usage?.plans || 0) / limits.plans) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Words Usage */}
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-600 dark:text-gray-400">Từ</span>
+                  <span className="font-medium">{(usage?.words || 0).toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-500">Resets in 25 days</p>
               </div>
             </div>
-          )}
+
+            {/* Upgrade Button */}
+            <Link
+              href="/pricing"
+              className="flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all"
+            >
+              <Crown className="w-4 h-4" />
+              <span>Nâng cấp ngay</span>
+            </Link>
+          </div>
+        )}
+        
+        {/* Tính năng nổi bật - Ở dưới cùng */}
+        {sidebarOpen && (
+          <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tính năng nổi bật</p>
+            <div className="space-y-1">
+              {features.map((feature, index) => (
+                <Link
+                  key={index}
+                  href={feature.href}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                >
+                  <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
+                    <feature.icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm">{feature.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         </nav>
 
         {/* Plan Status - Ở dưới cùng, fixed */}
@@ -320,65 +476,56 @@ export default function DashboardNew() {
         )}
       </aside>
 
-      {/* Main Content - Có margin-left để tránh sidebar */}
-      <div className={`flex-1 flex flex-col ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300`}>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-4 sticky top-0 z-10">
+        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Chào mừng trở lại, {getUserName()}!
-              </p>
-            </div>
+            <div></div>
 
-            {/* User Menu */}
+            {/* Right: User Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
+                className="flex items-center space-x-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-3 py-2 transition-colors"
               >
-                <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white font-bold">
+                <span className="text-sm font-medium hidden sm:block">{getUserName()}</span>
+                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white">
                   {getUserInitial()}
                 </div>
-                <div className="text-left hidden md:block">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{getUserName()}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</div>
-                </div>
-                <ChevronDown className="w-4 h-4 text-gray-500" />
+                <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
 
-              {/* Dropdown Menu */}
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl py-2 z-50">
                   <Link
-                    href="/dashboard"
-                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    href="/"
+                    className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <Home className="w-4 h-4" />
-                    <span>Trang chủ</span>
+                    <Home className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm">Trang chủ</span>
                   </Link>
                   <Link
-                    href="/dashboard/settings"
-                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    href="/account"
+                    className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <Settings className="w-4 h-4" />
-                    <span>Cài đặt</span>
+                    <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm">Cài đặt</span>
                   </Link>
                   <Link
-                    href="/dashboard/help"
-                    className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    href="/help"
+                    className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <HelpCircle className="w-4 h-4" />
-                    <span>Trợ giúp</span>
+                    <HelpCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm">Trợ giúp</span>
                   </Link>
-                  <hr className="my-2 border-gray-200 dark:border-gray-700" />
+                  <div className="border-t border-gray-200 dark:border-gray-800 my-2"></div>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
+                    className="flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors w-full text-left text-red-600 dark:text-red-400"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Đăng xuất</span>
+                    <span className="text-sm">Đăng xuất</span>
                   </button>
                 </div>
               )}
@@ -388,116 +535,159 @@ export default function DashboardNew() {
 
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Kế hoạch đã tạo</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{usage?.plans || 0}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Tin nhắn AI</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{usage?.chats || 0}</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-green-600 dark:text-green-400" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Từ đã dùng</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{(usage?.words || 0).toLocaleString()}</p>
-                </div>
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                  <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-            </div>
+          {/* Welcome Message */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">
+              {getGreeting()}, {getUserName()}! 🎯
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">Sẵn sàng bắt đầu lập kế hoạch tài chính?</p>
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bắt đầu nhanh</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* CTA Card - Đẩy lên trên */}
+          <div className="bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl p-8 mb-8 text-white">
+            <div className="max-w-3xl">
+              <h2 className="text-2xl font-bold mb-3">Bắt đầu tạo kế hoạch tài chính ngay!</h2>
+              <p className="text-white/90 mb-6">
+                AI sẽ hướng dẫn bạn từng bước để thu thập thông tin và tạo ra kế hoạch tài chính cá nhân hóa hoàn hảo.
+              </p>
               <Link
                 href="/dashboard/create-plan"
-                className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+                className="inline-flex items-center space-x-2 bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                <span>Tạo Plan ngay</span>
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          </div>
+          
+          {/* Nét nổi bật của PlanAI */}
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                     <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Tạo kế hoạch mới</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Bắt đầu với AI Assistant</p>
-                  </div>
+                  <h3 className="font-semibold">Cá Nhân Hóa 100%</h3>
                 </div>
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-              </Link>
-
-              <Link
-                href="/dashboard/plans"
-                className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <p className="text-gray-600 dark:text-gray-400">
+                  Mỗi kế hoạch được tạo riêng cho bạn dựa trên mục tiêu, thu nhập và hoàn cảnh cá nhân.
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <Brain className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Xem kế hoạch</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Quản lý kế hoạch của bạn</p>
-                  </div>
+                  <h3 className="font-semibold">AI Tiên Tiến</h3>
                 </div>
-                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-              </Link>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Sử dụng mô hình AI tiên tiến nhất để phân tích tài chính và đưa ra lời khuyên chuyên nghiệp.
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="font-semibold">Bảo Mật Tuyệt Đối</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Dữ liệu tài chính của bạn được mã hóa và bảo vệ theo tiêu chuẩn bảo mật cao nhất.
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <Zap className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <h3 className="font-semibold">Cập Nhật Liên Tục</h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Kế hoạch của bạn được cập nhật theo thời gian thực khi có thay đổi về tài chính hoặc mục tiêu.
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Recent Plans */}
           {plans.length > 0 && (
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Kế hoạch gần đây</h2>
-                <Link href="/dashboard/plans" className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400">
+                <h2 className="text-lg font-semibold">Kế hoạch gần đây</h2>
+                <Link
+                  href="/dashboard/plans"
+                  className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+                >
                   Xem tất cả →
                 </Link>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {plans.map((plan) => (
                   <Link
                     key={plan.id}
                     href={`/dashboard/plans/${plan.id}`}
-                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{plan.title || 'Kế hoạch tài chính'}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                          {plan.title || 'Kế hoạch tài chính'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
                           {new Date(plan.created_at).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
                     </div>
-                    <ArrowRight className="w-5 h-5 text-gray-400" />
+                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400" />
                   </Link>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Empty State */}
+          {plans.length === 0 && (
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center mb-8">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Chưa có kế hoạch nào</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Bắt đầu tạo kế hoạch tài chính đầu tiên của bạn với AI
+              </p>
+              <Link
+                href="/dashboard/create-plan"
+                className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+              >
+                <Target className="w-5 h-5" />
+                <span>Tạo Plan ngay</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Hướng dẫn sử dụng - Ở dưới cùng */}
+          <h2 className="text-2xl font-bold mb-6">Hướng dẫn sử dụng</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {usageSteps.map((feature, index) => (
+              <Link
+                key={index}
+                href={feature.href}
+                className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
+              >
+                <div className={`w-12 h-12 ${getColorClasses(feature.color)} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <feature.icon className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2 whitespace-nowrap">{feature.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {feature.description}
+                </p>
+              </Link>
+            ))}
+          </div>
         </main>
       </div>
     </div>
