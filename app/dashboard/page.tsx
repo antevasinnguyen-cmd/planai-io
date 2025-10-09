@@ -300,13 +300,6 @@ export default function DashboardFinal() {
                 <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
                 {sidebarOpen && <span className="text-sm font-medium">Lịch trình</span>}
               </Link>
-              <Link
-                href="/dashboard/subscription"
-                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-              >
-                <CreditCard className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
-                {sidebarOpen && <span className="text-sm font-medium">Quản trị gói</span>}
-              </Link>
             </div>
           </div>
           
@@ -314,6 +307,7 @@ export default function DashboardFinal() {
           {sidebarOpen && (
             <div className="px-4 pb-4 space-y-1 border-t border-gray-200 dark:border-gray-800 pt-2 -mt-1">
             <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tuỳ chỉnh</p>
+            
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -334,52 +328,14 @@ export default function DashboardFinal() {
               </div>
             </button>
 
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">{getTierName(tier)}</p>
-              
-              {tier === 'free' && trialStatus?.isActive && (
-                <p className="text-xs text-green-600 dark:text-green-400 mb-2">
-                  ⏰ Còn {trialStatus.daysRemaining} ngày
-                </p>
-              )}
-              
-              {/* Chat Usage */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-600 dark:text-gray-400">Chat</span>
-                  <span className="font-medium">{usage?.chats || 0}/{limits.chats}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                  <div
-                    className="bg-blue-500 h-1.5 rounded-full transition-all"
-                    style={{ width: `${Math.min(((usage?.chats || 0) / limits.chats) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Plans Usage */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-600 dark:text-gray-400">Kế hoạch</span>
-                  <span className="font-medium">{usage?.plans || 0}/{limits.plans}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                  <div
-                    className="bg-green-500 h-1.5 rounded-full transition-all"
-                    style={{ width: `${Math.min(((usage?.plans || 0) / limits.plans) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Words Usage */}
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-600 dark:text-gray-400">Từ</span>
-                  <span className="font-medium">{(usage?.words || 0).toLocaleString()}</span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-500">Resets in 25 days</p>
-              </div>
-            </div>
+            {/* Quản trị gói */}
+            <Link
+              href="/dashboard/subscription"
+              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+            >
+              <CreditCard className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-primary-600" />
+              <span className="text-sm font-medium">Quản trị gói</span>
+            </Link>
 
             {/* Upgrade Button */}
             <Link
@@ -387,29 +343,8 @@ export default function DashboardFinal() {
               className="flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all"
             >
               <Crown className="w-4 h-4" />
-              <span>Nâng cấp ngay</span>
+              <span>Nâng cấp gói</span>
             </Link>
-          </div>
-        )}
-        
-        {/* Tính năng nổi bật - Ở dưới cùng */}
-        {sidebarOpen && (
-          <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Tính năng nổi bật</p>
-            <div className="space-y-1">
-              {features.map((feature, index) => (
-                <Link
-                  key={index}
-                  href={feature.href}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
-                >
-                  <div className={`p-1.5 rounded-lg ${getColorClasses(feature.color)}`}>
-                    <feature.icon className="w-4 h-4" />
-                  </div>
-                  <span className="text-sm">{feature.title}</span>
-                </Link>
-              ))}
-            </div>
           </div>
         )}
         </nav>

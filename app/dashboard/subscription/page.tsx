@@ -22,50 +22,87 @@ const pricingTiers = [
       chats: 5,
       words: 1000
     },
-    description: 'Dùng thử miễn phí để trải nghiệm PlanAI',
-    color: 'gray'
+    description: 'Trải nghiệm PlanAI với các tính năng cơ bản',
+    color: 'gray',
+    detailedFeatures: [
+      '5 Chat với AI',
+      'Phân tích cơ bản',
+      '1 Kế hoạch ngắn',
+      'Giới hạn 1,000 từ'
+    ]
   },
   {
     id: 'basic',
     name: 'Gói 1',
-    price: 99000,
+    price: 169000,
     duration: '30 ngày',
     features: {
       plans: 1,
       chats: 40,
       words: 6500
     },
-    description: 'Phù hợp cho cá nhân bắt đầu',
+    description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     color: 'blue',
-    popular: false
+    popular: false,
+    detailedFeatures: [
+      '40 Chat với AI lập kế hoạch',
+      '1 Ebook plan cá nhân hóa độc quyền (5.000 - 8.000 từ)',
+      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      'Plan chuyên sâu + tất cả tài liệu liên quan',
+      'Xuất file PDF, Word, Docs',
+      'Xuất sang Notion, Google Trang tính, Google Tài liệu',
+      'Phân tích kết hợp tử vi, số mệnh, thần số học'
+    ]
   },
   {
     id: 'pro',
-    name: 'Gói 2',
-    price: 199000,
+    name: 'Gói 2 - Pro',
+    price: 289000,
     duration: '30 ngày',
     features: {
       plans: 3,
       chats: 90,
       words: 10500
     },
-    description: 'Tối ưu cho người dùng thường xuyên',
+    description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     color: 'purple',
-    popular: true
+    popular: true,
+    detailedFeatures: [
+      '90 Chat với AI lập kế hoạch',
+      '3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ / mỗi ebook)',
+      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      'Plan chuyên sâu + tất cả tài liệu liên quan',
+      'Xuất file PDF, Word, Docs',
+      'Xuất sang Notion, Google Trang tính, Google Tài liệu',
+      'Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Truy cập sớm các tính năng mới nhất',
+      'Mở khóa tính năng đọc các bài Blog trả phí'
+    ]
   },
   {
     id: 'pro_max',
-    name: 'Gói 3',
-    price: 299000,
+    name: 'Gói 3 - Pro Max',
+    price: 499000,
     duration: '30 ngày',
     features: {
       plans: 6,
       chats: 160,
       words: 17500
     },
-    description: 'Dành cho power users',
+    description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
     color: 'gradient',
-    popular: false
+    popular: false,
+    detailedFeatures: [
+      '160 Chat với AI lập kế hoạch',
+      '6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ / mỗi ebook)',
+      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      'Plan chuyên sâu + tất cả tài liệu liên quan',
+      'Xuất file PDF, Word, Docs',
+      'Xuất sang Notion, Google Trang Tính, Google Tài liệu',
+      'Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Truy cập sớm các tính năng mới nhất',
+      'Mở khóa tính năng đọc các bài Blog trả phí'
+    ]
   }
 ]
 
@@ -336,30 +373,16 @@ export default function SubscriptionPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">{tier.duration}</p>
                   </div>
 
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center space-x-2">
-                      <Check className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {tier.features.plans} kế hoạch
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Check className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {tier.features.chats} tin nhắn AI
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Check className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {tier.features.words.toLocaleString()} từ
-                      </span>
-                    </div>
+                  <div className="space-y-2 mb-6">
+                    {tier.detailedFeatures.map((feature, idx) => (
+                      <div key={idx} className="flex items-start space-x-2">
+                        <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 text-left">
+                          {feature}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
-                    {tier.description}
-                  </p>
 
                   {isCurrentTier ? (
                     <button
