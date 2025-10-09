@@ -9,6 +9,7 @@ export interface UserProfile {
   id: string
   email: string
   full_name?: string
+  date_of_birth?: string
   age?: number
   gender?: string
   location?: string

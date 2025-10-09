@@ -378,3 +378,74 @@ export const deleteCachedResponse = async (cacheKey: string) => {
   return { data, error }
 }
 
+// Password management functions
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+  try {
+    // Verify current password by attempting to sign in
+    const { data: userData, error: signInError } = await supabase.auth.getSession()
+    
+    if (signInError) {
+      return { data: null, error: signInError }
+    }
+    
+    if (!userData?.session?.user?.email) {
+      return { data: null, error: new Error('Không thể xác thực người dùng hiện tại') }
+    }
+    
+    // Attempt to sign in with current password to verify it
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: userData.session.user.email,
+      password: currentPassword
+    })
+    
+    if (verifyError) {
+      return { data: null, error: new Error('Mật khẩu hiện tại không chính xác') }
+    }
+    
+    // Update to new password
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+    
+    return { data, error }
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('Lỗi không xác định khi thay đổi mật khẩu') }
+  }
+}
+
+export const resetPasswordRequest = async (email: string) => {
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`
+    })
+    
+    return { data, error }
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('Lỗi không xác định khi yêu cầu đặt lại mật khẩu') }
+  }
+}
+
+export const verifyOtpAndResetPassword = async (email: string, otp: string, newPassword: string) => {
+  try {
+    // Verify OTP
+    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'recovery'
+    })
+    
+    if (verifyError) {
+      return { data: null, error: verifyError }
+    }
+    
+    // Update password
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+    
+    return { data, error }
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error('Lỗi không xác định khi đặt lại mật khẩu') }
+  }
+}
+
