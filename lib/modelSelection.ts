@@ -2,6 +2,9 @@ import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 import { generateClaudeResponse, CLAUDE_MODELS } from './claude'
 
+// Supabase configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+
 // Initialize OpenAI client (lazy initialization to handle missing API key during build)
 let openai: OpenAI | null = null
 
