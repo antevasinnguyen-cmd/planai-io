@@ -338,44 +338,119 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') 
 
 // AI Response Cache helpers
 export const getCachedResponse = async (cacheKey: string) => {
-  const { data, error } = await supabase
-    .from('ai_response_cache')
-    .select('response')
-    .eq('cache_key', cacheKey)
-    .single()
-  
-  if (error || !data) {
+  try {
+    // Get current time for expiration check
+    const now = new Date().toISOString()
+    
+    const { data, error } = await supabase
+      .from('ai_response_cache')
+      .select('response, expires_at, created_at')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', now) // Only get non-expired cache entries
+      .single()
+    
+    if (error || !data) {
+      return { data: null, error }
+    }
+    
+    // Log cache hit for analytics
+    console.log(`Cache hit for key: ${cacheKey.substring(0, 20)}... (created ${new Date(data.created_at).toLocaleString()})`)
+    
+    return { data: data.response, error: null }
+  } catch (error) {
+    console.error('Cache retrieval error:', error)
     return { data: null, error }
   }
-  
-  return { data: data.response, error: null }
 }
 
 export const saveCachedResponse = async (cacheKey: string, response: string, expiresInDays = 7) => {
-  const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + expiresInDays)
-  
-  const { data, error } = await supabase
-    .from('ai_response_cache')
-    .upsert([
-      {
-        cache_key: cacheKey,
-        response,
-        created_at: new Date().toISOString(),
-        expires_at: expiresAt.toISOString()
-      }
-    ])
-  
-  return { data, error }
+  try {
+    // Calculate expiration date
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays)
+    
+    // Check response size and compress if needed
+    let processedResponse = response
+    if (response.length > 100000) { // If response is very large
+      // Simple compression by removing excessive whitespace
+      processedResponse = response.replace(/\n\s*\n\s*\n/g, '\n\n')
+      console.log(`Compressed cache response from ${response.length} to ${processedResponse.length} chars`)
+    }
+    
+    const { data, error } = await supabase
+      .from('ai_response_cache')
+      .upsert([
+        {
+          cache_key: cacheKey,
+          response: processedResponse,
+          created_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString(),
+          access_count: 1 // Initialize access count
+        }
+      ])
+    
+    if (error) {
+      console.error('Cache save error:', error)
+    } else {
+      console.log(`Cached response with key: ${cacheKey.substring(0, 20)}... (expires in ${expiresInDays} days)`)
+    }
+    
+    return { data, error }
+  } catch (error) {
+    console.error('Cache save error:', error)
+    return { data: null, error }
+  }
+}
+
+export const updateCacheAccessCount = async (cacheKey: string) => {
+  try {
+    // Increment the access count for analytics
+    await supabase.rpc('increment_cache_access', { key: cacheKey })
+  } catch (error) {
+    console.warn('Failed to update cache access count:', error)
+  }
 }
 
 export const deleteCachedResponse = async (cacheKey: string) => {
-  const { data, error } = await supabase
-    .from('ai_response_cache')
-    .delete()
-    .eq('cache_key', cacheKey)
-  
-  return { data, error }
+  try {
+    const { data, error } = await supabase
+      .from('ai_response_cache')
+      .delete()
+      .eq('cache_key', cacheKey)
+    
+    if (!error) {
+      console.log(`Deleted cache entry with key: ${cacheKey.substring(0, 20)}...`)
+    }
+    
+    return { data, error }
+  } catch (error) {
+    console.error('Cache deletion error:', error)
+    return { data: null, error }
+  }
+}
+
+export const cleanupExpiredCache = async () => {
+  try {
+    const now = new Date().toISOString()
+    
+    const { data, error } = await supabase
+      .from('ai_response_cache')
+      .delete()
+      .lt('expires_at', now)
+    
+    if (error) {
+      console.error('Cache cleanup error:', error)
+    } else if (data && Array.isArray(data)) {
+      console.log(`Cleaned up ${data.length} expired cache entries`)
+    } else {
+      console.log('Cleaned up expired cache entries')
+    }
+    
+    return { data, error }
+  } catch (error) {
+    console.error('Cache cleanup error:', error)
+    return { data: null, error }
+  }
 }
 
 // Password management functions

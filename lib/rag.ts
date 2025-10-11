@@ -141,13 +141,36 @@ export const processFinancialPlanWithRAG = async (
   planContent: string
 ): Promise<void> => {
   try {
+    console.log(`Processing plan ${planId} with RAG for user ${userId}`)
+    
     // Chunk the plan content
     const chunks = chunkText(planContent)
+    console.log(`Created ${chunks.length} chunks from plan content`)
     
     // Store chunks with embeddings
     await storeChunksWithEmbeddings(userId, `plan_${planId}`, chunks)
+    console.log(`Successfully stored chunks with embeddings for plan ${planId}`)
+    
+    // Update plan metadata to indicate RAG processing is complete
+    await supabase
+      .from('plans')
+      .update({
+        rag_processed: true,
+        rag_processed_at: new Date().toISOString(),
+        chunk_count: chunks.length
+      })
+      .eq('id', planId)
+    
   } catch (error) {
     console.error('Error processing financial plan with RAG:', error)
+    // Update plan metadata to indicate RAG processing failed
+    await supabase
+      .from('plans')
+      .update({
+        rag_processed: false,
+        rag_error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      .eq('id', planId)
   }
 }
 

@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Sparkles, CheckCircle } from 'lucide-react'
+import { Loader2, Sparkles, CheckCircle, Brain, AlertCircle, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import Link from 'next/link'
 
 export default function GeneratePlanPage() {
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('Đang phân tích thông tin...')
+  const [error, setError] = useState('')
+  const [isGenerating, setIsGenerating] = useState(true)
+  const [modelInfo, setModelInfo] = useState({ name: 'GPT-4o-mini', type: 'primary' })
+  const [planId, setPlanId] = useState('')
   const { user } = useAuth()
   const router = useRouter()
 
@@ -27,25 +32,32 @@ export default function GeneratePlanPage() {
       return
     }
 
-    const data = JSON.parse(planData)
-    
-    // Simulate plan generation with progress
-    const steps = [
-      { progress: 20, status: 'Đang phân tích mục tiêu tài chính...' },
-      { progress: 40, status: 'Đang tạo lộ trình chi tiết...' },
-      { progress: 60, status: 'Đang tính toán ngân sách...' },
-      { progress: 80, status: 'Đang tạo checklist hành động...' },
-      { progress: 100, status: 'Hoàn thành!' }
-    ]
-
-    for (const step of steps) {
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      setProgress(step.progress)
-      setStatus(step.status)
-    }
-
-    // Call API to generate plan
     try {
+      const data = JSON.parse(planData)
+      setIsGenerating(true)
+      setError('')
+      
+      // Simulate plan generation with progress
+      const steps = [
+        { progress: 10, status: 'Đang phân tích thông tin cá nhân...', model: { name: 'GPT-4o-mini', type: 'primary' } },
+        { progress: 25, status: 'Đang phân tích mục tiêu tài chính...', model: { name: 'GPT-4o-mini', type: 'primary' } },
+        { progress: 40, status: 'Đang tạo lộ trình chi tiết...', model: { name: 'GPT-4o', type: 'primary' } },
+        { progress: 60, status: 'Đang tính toán ngân sách...', model: { name: 'GPT-4o', type: 'primary' } },
+        { progress: 75, status: 'Đang tạo checklist hành động...', model: { name: 'GPT-4o', type: 'primary' } },
+        { progress: 90, status: 'Đang tối ưu kế hoạch...', model: { name: 'GPT-4o', type: 'primary' } },
+        { progress: 95, status: 'Đang xử lý RAG...', model: { name: 'Embedding', type: 'secondary' } },
+        { progress: 100, status: 'Hoàn thành!', model: { name: 'GPT-4o', type: 'primary' } }
+      ]
+
+      // Simulate progress steps
+      for (const step of steps) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        setProgress(step.progress)
+        setStatus(step.status)
+        setModelInfo(step.model)
+      }
+
+      // Call API to generate plan
       const res = await fetch('/api/plans/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -56,56 +68,124 @@ export default function GeneratePlanPage() {
       
       if (res.ok) {
         localStorage.removeItem('pending_plan')
-        router.push(`/dashboard/plans/${result.planId}`)
+        setPlanId(result.planId)
+        setIsGenerating(false)
+        
+        // Redirect after a short delay to show completion
+        setTimeout(() => {
+          router.push(`/dashboard/plans/${result.planId}`)
+        }, 2000)
       } else {
-        throw new Error(result.error)
+        // Handle API error
+        setError(result.message || result.error || 'Có lỗi xảy ra khi tạo kế hoạch')
+        setIsGenerating(false)
       }
     } catch (error) {
       console.error('Error generating plan:', error)
-      alert('Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại.')
-      router.push('/dashboard/create-plan')
+      setError('Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại.')
+      setIsGenerating(false)
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex items-center justify-center p-6">
       <div className="max-w-md w-full">
+        {/* Back button */}
+        <Link 
+          href="/dashboard/create-plan" 
+          className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          <span className="text-sm">Quay lại</span>
+        </Link>
+        
         <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-          {/* Icon */}
-          <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-            {progress < 100 ? (
-              <Loader2 className="w-10 h-10 text-white animate-spin" />
-            ) : (
-              <CheckCircle className="w-10 h-10 text-white" />
-            )}
-          </div>
-
-          {/* Title */}
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {progress < 100 ? 'Đang tạo kế hoạch...' : 'Hoàn thành!'}
-          </h2>
+          {/* Error state */}
+          {error && !isGenerating && (
+            <>
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="w-10 h-10 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Có lỗi xảy ra
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {error}
+              </p>
+              <button
+                onClick={() => generatePlan()}
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Thử lại
+              </button>
+            </>
+          )}
           
-          {/* Status */}
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {status}
-          </p>
+          {/* Success state */}
+          {!error && !isGenerating && planId && (
+            <>
+              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-green-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Hoàn thành!
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Kế hoạch tài chính của bạn đã được tạo thành công.
+              </p>
+              <Link
+                href={`/dashboard/plans/${planId}`}
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors inline-block"
+              >
+                Xem kế hoạch
+              </Link>
+            </>
+          )}
+          
+          {/* Loading state */}
+          {isGenerating && (
+            <>
+              {/* Icon */}
+              <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <Loader2 className="w-10 h-10 text-white animate-spin" />
+              </div>
 
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
-            <div
-              className="bg-gradient-to-r from-primary-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-500">{progress}%</p>
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Đang tạo kế hoạch...
+              </h2>
+              
+              {/* Status */}
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {status}
+              </p>
 
-          {/* AI Magic Message */}
-          <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
-            <div className="flex items-center justify-center space-x-2 text-purple-700 dark:text-purple-400">
-              <Sparkles className="w-4 h-4" />
-              <span className="text-sm">AI đang tạo kế hoạch tài chính hoàn hảo cho bạn</span>
-            </div>
-          </div>
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
+                <div
+                  className="bg-gradient-to-r from-primary-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-500">{progress}%</p>
+
+              {/* AI Model Info */}
+              <div className="mt-4 mb-4 flex items-center justify-center space-x-2">
+                <Brain className={`w-4 h-4 ${modelInfo.type === 'primary' ? 'text-blue-500' : 'text-purple-500'}`} />
+                <span className="text-sm font-medium">
+                  {modelInfo.name}
+                </span>
+              </div>
+
+              {/* AI Magic Message */}
+              <div className="mt-2 p-4 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
+                <div className="flex items-center justify-center space-x-2 text-purple-700 dark:text-purple-400">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="text-sm">AI đang tạo kế hoạch tài chính hoàn hảo cho bạn</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
