@@ -15,21 +15,21 @@ const getOpenAI = () => {
 }
 
 // Initialize Supabase client for caching
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Model configuration
 export const MODELS = {
-  CHAT_DEFAULT: 'gpt-4o-mini', // For regular chat (70% cost savings)
-  COMPLEX_PLANNING: 'gpt-4o', // For complex planning tasks
-  FALLBACK: 'claude-3-5-haiku', // Cheaper fallback option
+  CHAT_DEFAULT: 'gpt-3.5-turbo',
+  COMPLEX_PLANNING: 'gpt-4o',
+  FALLBACK_PRIMARY: 'claude-3-5-sonnet',
+  FALLBACK_SECONDARY: 'claude-3-5-haiku',
+  EMBEDDING: 'text-embedding-3-small'
 }
 
 // Task types
 export enum TaskType {
   REGULAR_CHAT = 'regular_chat',
-  COMPLEX_PLANNING = 'complex_planning',
 }
 
 // Function to determine the appropriate model based on task complexity
