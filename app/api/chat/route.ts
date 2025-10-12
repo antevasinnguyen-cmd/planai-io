@@ -1,15 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateChatResponse, analyzeUserInput } from '@/lib/openai'
 import { getCurrentUser, saveChatMessage, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
     const { message, chatHistory } = await request.json()
     
-    // Get current user
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Lấy token từ header Authorization
+    const authHeader = request.headers.get('Authorization')
+    let user;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Xác thực bằng token từ header
+      const token = authHeader.substring(7)
+      
+      // Khởi tạo Supabase client với token
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      })
+      
+      // Lấy user từ session
+      const { data, error } = await supabase.auth.getUser()
+      if (error || !data.user) {
+        console.error('Auth error:', error)
+        return NextResponse.json({ error: 'Unauthorized', details: error?.message }, { status: 401 })
+      }
+      
+      user = data.user
+    } else {
+      // Fallback: Thử lấy user từ getCurrentUser nếu không có token
+      user = await getCurrentUser()
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized', details: 'No authentication token provided' }, { status: 401 })
+      }
     }
 
     // Check usage limits before processing

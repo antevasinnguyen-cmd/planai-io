@@ -35,16 +35,31 @@ export default function CreatePlanV2() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    loadSubscription()
-    
-    // Auto-start conversation
-    const welcomeMessage: Message = {
-      role: 'assistant',
-      content: `Xin chào! 👋 Tôi là PlanAI Assistant, trợ lý AI tài chính của bạn.
+    const checkAuth = async () => {
+      try {
+        // Kiểm tra phiên trực tiếp từ supabase
+        const { supabase } = await import('@/lib/supabase')
+        const { data, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Auth session error:', error)
+          router.push('/login')
+          return
+        }
+        
+        if (!data.session) {
+          console.log('No active session found')
+          router.push('/login')
+          return
+        }
+        
+        // Phiên hợp lệ, tiếp tục tải dữ liệu
+        loadSubscription()
+        
+        // Auto-start conversation
+        const welcomeMessage: Message = {
+          role: 'assistant',
+          content: `Xin chào! 👋 Tôi là PlanAI Assistant, trợ lý AI tài chính của bạn.
 
 Tôi sẽ giúp bạn tạo một kế hoạch tài chính cá nhân hóa hoàn hảo. Để làm điều này, tôi cần thu thập một số thông tin về bạn.
 
@@ -60,10 +75,17 @@ Ví dụ: Mua nhà, khởi nghiệp, tiết kiệm, đầu tư, tăng thu nhập
 - Ước mơ của bạn
 
 Tôi lắng nghe bạn! ✨`,
-      timestamp: new Date()
+          timestamp: new Date()
+        }
+        setMessages([welcomeMessage])
+      } catch (error) {
+        console.error('Authentication check failed:', error)
+        router.push('/login')
+      }
     }
-    setMessages([welcomeMessage])
-  }, [user, router])
+    
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     scrollToBottom()
@@ -72,8 +94,15 @@ Tôi lắng nghe bạn! ✨`,
   const loadSubscription = async () => {
     // Load subscription info
     try {
-      const { getUserSubscription } = await import('@/lib/supabase')
-      const { data } = await getUserSubscription(user!.id)
+      const { getUserSubscription, getCurrentUser } = await import('@/lib/supabase')
+      const currentUser = await getCurrentUser()
+      
+      if (!currentUser) {
+        console.error('No user found when loading subscription')
+        return
+      }
+      
+      const { data } = await getUserSubscription(currentUser.id)
       setSubscription(data)
     } catch (error) {
       console.error('Error loading subscription:', error)
@@ -98,6 +127,14 @@ Tôi lắng nghe bạn! ✨`,
     setIsLoading(true)
 
     try {
+      // Ensure we have a valid session before sending request
+      const { supabase } = await import('@/lib/supabase')
+      const { data: sessionData } = await supabase.auth.getSession()
+      
+      if (!sessionData.session) {
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+      }
+      
       const chatHistory = messages.map(m => ({
         type: m.role === 'user' ? 'user' : 'ai',
         message: m.content
@@ -105,7 +142,10 @@ Tôi lắng nghe bạn! ✨`,
 
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`
+        },
         body: JSON.stringify({
           message: input,
           chatHistory
@@ -260,11 +300,18 @@ Tôi lắng nghe bạn! ✨`,
           {requiredInfo.map((info) => (
             <div
               key={info.id}
-              className={`p-3 rounded-lg transition-colors ${
+              className={`p-3 rounded-lg transition-colors cursor-pointer hover:shadow-md ${
                 collectedInfo[info.id]
                   ? 'bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20'
                   : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'
               }`}
+              onClick={() => {
+                // Add the info label to input
+                const newInput = input ? `${input}\n${info.label}` : info.label
+                setInput(newInput)
+                // Focus the textarea
+                document.querySelector('textarea')?.focus()
+              }}
             >
               <div className="flex items-start space-x-3">
                 <div className="text-2xl flex-shrink-0">{info.icon}</div>
@@ -421,7 +468,7 @@ Tôi lắng nghe bạn! ✨`,
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  Nhấn Enter để gửi, Shift + Enter để xuống dòng
+                  Nhấn Enter để xuống dòng, nhấn mũi tên để gửi
                 </p>
               </div>
               <button
