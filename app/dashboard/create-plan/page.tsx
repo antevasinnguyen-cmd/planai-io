@@ -108,18 +108,23 @@ Tôi lắng nghe bạn! ✨`,
     }
     
     checkAuth()
-    
-    // Lưu tin nhắn khi component unmount
-    return () => {
-      if (messages.length > 0) {
-        localStorage.setItem('planai_chat_messages', JSON.stringify(messages))
-        console.log('Lưu tin nhắn vào localStorage:', messages.length)
-      }
-    }
-  }, [router, messages])
-
+  }, [router])
+  
+  // Lưu tin nhắn vào localStorage khi messages thay đổi
   useEffect(() => {
-    scrollToBottom()
+    if (messages.length > 0) {
+      localStorage.setItem('planai_chat_messages', JSON.stringify(messages))
+      console.log('Lưu tin nhắn vào localStorage:', messages.length)
+    }
+  }, [messages])
+
+  // Cuộn xuống dưới khi có tin nhắn mới
+  useEffect(() => {
+    // Thêm timeout để tránh cuộn liên tục
+    const timer = setTimeout(() => {
+      scrollToBottom()
+    }, 100)
+    return () => clearTimeout(timer)
   }, [messages])
 
   const loadSubscription = async () => {
@@ -153,10 +158,9 @@ Tôi lắng nghe bạn! ✨`,
       timestamp: new Date()
     }
 
-    const newMessages = [...messages, userMessage]
-    setMessages(newMessages)
-    // Lưu tin nhắn vào localStorage ngay khi gửi
-    localStorage.setItem('planai_chat_messages', JSON.stringify(newMessages))
+    // Chỉ cập nhật state, không lưu vào localStorage ở đây
+    // useEffect sẽ tự động lưu khi messages thay đổi
+    setMessages([...messages, userMessage])
     setInput('')
     setIsLoading(true)
 
@@ -200,10 +204,8 @@ Tôi lắng nghe bạn! ✨`,
         timestamp: new Date()
       }
 
-      const newMessages = [...messages, assistantMessage]
-      setMessages(newMessages)
-      // Lưu tin nhắn vào localStorage sau khi nhận phản hồi từ AI
-      localStorage.setItem('planai_chat_messages', JSON.stringify(newMessages))
+      // Chỉ cập nhật state, không lưu vào localStorage ở đây
+      setMessages([...messages, assistantMessage])
       updateCollectedInfo(input)
     } catch (error) {
       console.error('Chat Error:', error)
@@ -213,10 +215,8 @@ Tôi lắng nghe bạn! ✨`,
         content: `Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.`,
         timestamp: new Date()
       }
-      const newMessages = [...messages, errorMessage]
-      setMessages(newMessages)
-      // Lưu tin nhắn vào localStorage ngay cả khi gặp lỗi
-      localStorage.setItem('planai_chat_messages', JSON.stringify(newMessages))
+      // Chỉ cập nhật state, không lưu vào localStorage ở đây
+      setMessages([...messages, errorMessage])
     } finally {
       setIsLoading(false)
     }
@@ -509,7 +509,7 @@ Tôi lắng nghe bạn! ✨`,
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  Nhấn Enter để xuống dòng, nhấn mũi tên để gửi
+                  Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
                 </p>
               </div>
               <button
