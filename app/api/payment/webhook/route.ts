@@ -148,3 +148,23 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Thêm hàm GET để xử lý yêu cầu kiểm tra từ PayOS
+export async function GET() {
+  return NextResponse.json({ 
+    status: 'active',
+    message: 'PayOS Webhook is running',
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Thêm hàm OPTIONS để xử lý CORS preflight
+export async function OPTIONS() {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, x-signature, x-payment-provider',
+    },
+  });
+}
