@@ -149,13 +149,25 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Thêm hàm GET để xử lý yêu cầu kiểm tra từ PayOS
-export async function GET() {
-  return NextResponse.json({ 
-    status: 'active',
-    message: 'PayOS Webhook is running',
-    timestamp: new Date().toISOString()
-  });
+// Hàm GET để xử lý yêu cầu kiểm tra từ PayOS
+export async function GET(request: NextRequest) {
+  // Kiểm tra nếu là request kiểm tra kết nối từ PayOS
+  const isHealthCheck = request.headers.get('user-agent')?.includes('PayOS');
+  
+  if (isHealthCheck) {
+    // Trả về 200 OK cho health check
+    return NextResponse.json({ 
+      success: true,
+      message: 'PayOS Webhook is running',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Nếu không phải health check, trả về lỗi 400
+  return NextResponse.json(
+    { error: 'Invalid request method' }, 
+    { status: 400 }
+  );
 }
 
 // Thêm hàm OPTIONS để xử lý CORS preflight
