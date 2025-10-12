@@ -126,8 +126,7 @@ Quy tắc phản hồi:
     }
   } catch (error) {
     console.error('=== OPENAI: Lỗi không xử lý được ===', error);
-    return 'Có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau. Chi tiết: ' + 
-      (error instanceof Error ? error.message : 'Lỗi không xác định')
+    return 'Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.'
   }
 }
 

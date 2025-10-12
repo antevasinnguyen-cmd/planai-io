@@ -56,10 +56,37 @@ export default function CreatePlanV2() {
         // Phiên hợp lệ, tiếp tục tải dữ liệu
         loadSubscription()
         
-        // Auto-start conversation
-        const welcomeMessage: Message = {
-          role: 'assistant',
-          content: `Xin chào! 👋 Tôi là PlanAI Assistant, trợ lý AI tài chính của bạn.
+        // Lấy tin nhắn đã lưu từ localStorage hoặc tạo tin nhắn chào mới
+        const savedMessages = localStorage.getItem('planai_chat_messages')
+        
+        if (savedMessages) {
+          try {
+            const parsedMessages = JSON.parse(savedMessages)
+            // Chuyển đổi timestamp từ string sang Date
+            const messagesWithDateObjects = parsedMessages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }))
+            setMessages(messagesWithDateObjects)
+            console.log('Lấy tin nhắn đã lưu:', messagesWithDateObjects.length)
+          } catch (parseError) {
+            console.error('Lỗi khi phân tích tin nhắn đã lưu:', parseError)
+            initializeNewChat()
+          }
+        } else {
+          initializeNewChat()
+        }
+      } catch (error) {
+        console.error('Authentication check failed:', error)
+        router.push('/login')
+      }
+    }
+    
+    const initializeNewChat = () => {
+      // Auto-start conversation
+      const welcomeMessage: Message = {
+        role: 'assistant',
+        content: `Xin chào! 👋 Tôi là PlanAI Assistant, trợ lý AI tài chính của bạn.
 
 Tôi sẽ giúp bạn tạo một kế hoạch tài chính cá nhân hóa hoàn hảo. Để làm điều này, tôi cần thu thập một số thông tin về bạn.
 
@@ -75,17 +102,21 @@ Ví dụ: Mua nhà, khởi nghiệp, tiết kiệm, đầu tư, tăng thu nhập
 - Ước mơ của bạn
 
 Tôi lắng nghe bạn! ✨`,
-          timestamp: new Date()
-        }
-        setMessages([welcomeMessage])
-      } catch (error) {
-        console.error('Authentication check failed:', error)
-        router.push('/login')
+        timestamp: new Date()
       }
+      setMessages([welcomeMessage])
     }
     
     checkAuth()
-  }, [router])
+    
+    // Lưu tin nhắn khi component unmount
+    return () => {
+      if (messages.length > 0) {
+        localStorage.setItem('planai_chat_messages', JSON.stringify(messages))
+        console.log('Lưu tin nhắn vào localStorage:', messages.length)
+      }
+    }
+  }, [router, messages])
 
   useEffect(() => {
     scrollToBottom()
@@ -122,7 +153,10 @@ Tôi lắng nghe bạn! ✨`,
       timestamp: new Date()
     }
 
-    setMessages(prev => [...prev, userMessage])
+    const newMessages = [...messages, userMessage]
+    setMessages(newMessages)
+    // Lưu tin nhắn vào localStorage ngay khi gửi
+    localStorage.setItem('planai_chat_messages', JSON.stringify(newMessages))
     setInput('')
     setIsLoading(true)
 
@@ -166,17 +200,23 @@ Tôi lắng nghe bạn! ✨`,
         timestamp: new Date()
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      const newMessages = [...messages, assistantMessage]
+      setMessages(newMessages)
+      // Lưu tin nhắn vào localStorage sau khi nhận phản hồi từ AI
+      localStorage.setItem('planai_chat_messages', JSON.stringify(newMessages))
       updateCollectedInfo(input)
     } catch (error) {
       console.error('Chat Error:', error)
       const errorMsg = error instanceof Error ? error.message : 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.'
       const errorMessage: Message = {
         role: 'assistant',
-        content: `⚠️ ${errorMsg}\n\nVui lòng kiểm tra:\n• Kết nối internet của bạn\n• Thử làm mới trang và thử lại\n• Nếu vẫn gặp lỗi, vui lòng liên hệ hỗ trợ: webappsaas.ai@gmail.com`,
+        content: `Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.`,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, errorMessage])
+      const newMessages = [...messages, errorMessage]
+      setMessages(newMessages)
+      // Lưu tin nhắn vào localStorage ngay cả khi gặp lỗi
+      localStorage.setItem('planai_chat_messages', JSON.stringify(newMessages))
     } finally {
       setIsLoading(false)
     }
@@ -457,14 +497,15 @@ Tôi lắng nghe bạn! ✨`,
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    // Enter là xuống dòng bình thường, không gửi tin nhắn
+                    if (e.key === 'Enter' && e.ctrlKey) {
                       e.preventDefault()
                       handleSend()
                     }
                   }}
                   placeholder="Chia sẻ với AI về mục tiêu, ước mơ, tình hình tài chính của bạn..."
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  rows={3}
+                  rows={5} /* Tăng chiều dài ô chat */
                   disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
