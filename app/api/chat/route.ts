@@ -5,13 +5,41 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== API CHAT: Nhận request ===');
     const { message, chatHistory } = await request.json()
+    console.log('=== API CHAT: Message nhận được ===', { messageLength: message?.length, historyLength: chatHistory?.length })
     
     // Lấy token từ header Authorization
     const authHeader = request.headers.get('Authorization')
+    console.log('=== API CHAT: Auth header ===', { hasAuthHeader: !!authHeader })
+    
     let user;
     
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    // Kiểm tra cookie session trực tiếp
+    const cookies = request.headers.get('cookie')
+    console.log('=== API CHAT: Cookies ===', { hasCookies: !!cookies })
+    
+    // Thử cả hai cách để lấy user
+    try {
+      // Cách 1: Lấy user từ getCurrentUser (sử dụng cookie session)
+      console.log('=== API CHAT: Đang thử lấy user từ getCurrentUser ===');
+      const { supabase } = await import('@/lib/supabase')
+      const { data: sessionData } = await supabase.auth.getSession()
+      console.log('=== API CHAT: Session data ===', { hasSession: !!sessionData?.session, userId: sessionData?.session?.user?.id })
+      
+      if (sessionData?.session?.user) {
+        user = sessionData.session.user
+        console.log('=== API CHAT: Lấy user thành công từ session ===', { userId: user.id })
+      } else {
+        console.log('=== API CHAT: Không tìm thấy session ===');
+      }
+    } catch (sessionError) {
+      console.error('=== API CHAT: Lỗi khi lấy session ===', sessionError)
+    }
+    
+    // Nếu không có user từ session, thử dùng token
+    if (!user && authHeader && authHeader.startsWith('Bearer ')) {
+      console.log('=== API CHAT: Đang thử xác thực bằng token ===');
       // Xác thực bằng token từ header
       const token = authHeader.substring(7)
       
@@ -26,19 +54,28 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      // Lấy user từ session
+      // Lấy user từ token
       const { data, error } = await supabase.auth.getUser()
-      if (error || !data.user) {
-        console.error('Auth error:', error)
-        return NextResponse.json({ error: 'Unauthorized', details: error?.message }, { status: 401 })
+      if (error) {
+        console.error('=== API CHAT: Lỗi xác thực token ===', error)
+      } else if (data?.user) {
+        console.log('=== API CHAT: Lấy user thành công từ token ===', { userId: data.user.id })
+        user = data.user
       }
-      
-      user = data.user
-    } else {
-      // Fallback: Thử lấy user từ getCurrentUser nếu không có token
+    }
+    
+    // Nếu vẫn không có user, thử lấy từ getCurrentUser
+    if (!user) {
+      console.log('=== API CHAT: Thử lấy user từ getCurrentUser ===');
       user = await getCurrentUser()
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized', details: 'No authentication token provided' }, { status: 401 })
+      if (user) {
+        console.log('=== API CHAT: Lấy user thành công từ getCurrentUser ===', { userId: user.id })
+      } else {
+        console.error('=== API CHAT: Không thể xác thực người dùng ===');
+        return NextResponse.json({ 
+          error: 'Unauthorized', 
+          details: 'Không thể xác thực người dùng. Vui lòng đăng nhập lại.' 
+        }, { status: 401 })
       }
     }
 
@@ -75,9 +112,11 @@ export async function POST(request: NextRequest) {
     // Generate AI response
     let aiResponse: string
     try {
+      console.log('=== API CHAT: Đang gọi AI ===');
       aiResponse = await generateChatResponse(messages)
+      console.log('=== API CHAT: Nhận phản hồi từ AI thành công ===', { responseLength: aiResponse?.length })
     } catch (aiError) {
-      console.error('AI Response Generation Error:', aiError)
+      console.error('=== API CHAT: Lỗi khi gọi AI ===', aiError)
       return NextResponse.json({ 
         error: 'Không thể kết nối với AI',
         message: 'Xin lỗi, có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.',
@@ -124,9 +163,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Chat API Error:', error)
+    console.error('=== API CHAT: Lỗi không xác định ===', error)
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
       { status: 500 }
     )
   }

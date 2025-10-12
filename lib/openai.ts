@@ -20,6 +20,7 @@ const getOpenAI = () => {
 
 export const generateChatResponse = async (messages: ChatMessage[]): Promise<string> => {
   try {
+    console.log('=== OPENAI: Bắt đầu tạo phản hồi chat ===');
     const systemMessage = {
       role: 'system' as const,
       content: `Bạn là PlanAI - trợ lý AI tài chính cá nhân cho người Việt (độ tuổi mục tiêu 23-35, ngôn ngữ thân thiện, ngắn gọn, dễ hiểu).
@@ -55,36 +56,78 @@ Quy tắc phản hồi:
     const cacheKey = generateCacheKey(fullMessages)
     
     // Check if we have a cached response
+    console.log('=== OPENAI: Kiểm tra cache ===');
     const cachedResponse = await checkCache(cacheKey)
     if (cachedResponse) {
-      console.log('Using cached response')
+      console.log('=== OPENAI: Sử dụng phản hồi từ cache ===');
       return cachedResponse
     }
     
-    // Select the appropriate model for regular chat
-    const model = selectModel(TaskType.REGULAR_CHAT)
-    
-    const client = getOpenAI()
-    if (!client) {
-      throw new Error('OpenAI client not initialized')
+    // Kiểm tra API key OpenAI
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('=== OPENAI: Thiếu API key ===');
+      throw new Error('OpenAI API key không được cấu hình')
     }
     
-    const completion = await client.chat.completions.create({
-      model,
-      messages: fullMessages,
-      max_tokens: 500,
-      temperature: 0.7,
-    })
+    console.log('=== OPENAI: Thử gọi OpenAI API ===');
+    try {
+      // Select the appropriate model for regular chat
+      const model = selectModel(TaskType.REGULAR_CHAT)
+      
+      const client = getOpenAI()
+      if (!client) {
+        throw new Error('OpenAI client không được khởi tạo')
+      }
+      
+      const completion = await client.chat.completions.create({
+        model,
+        messages: fullMessages,
+        max_tokens: 500,
+        temperature: 0.7,
+      })
 
-    const response = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
-    
-    // Save response to cache
-    await saveToCache(cacheKey, response)
-    
-    return response
+      const response = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
+      
+      // Save response to cache
+      console.log('=== OPENAI: Lưu phản hồi vào cache ===');
+      await saveToCache(cacheKey, response)
+      
+      return response
+    } catch (openaiError) {
+      console.error('=== OPENAI: Lỗi khi gọi OpenAI, thử fallback sang Claude ===', openaiError);
+      
+      // Fallback to Claude
+      try {
+        console.log('=== OPENAI: Đang gọi Claude fallback ===');
+        const { generateClaudeResponse, CLAUDE_MODELS } = await import('./claude')
+        
+        // Kiểm tra API key Anthropic
+        if (!process.env.ANTHROPIC_API_KEY) {
+          console.error('=== OPENAI: Thiếu Anthropic API key cho fallback ===');
+          throw new Error('Anthropic API key không được cấu hình')
+        }
+        
+        const claudeResponse = await generateClaudeResponse(
+          fullMessages,
+          CLAUDE_MODELS.DEFAULT,
+          500,
+          0.7
+        )
+        
+        // Save Claude response to cache
+        console.log('=== OPENAI: Lưu phản hồi Claude vào cache ===');
+        await saveToCache(cacheKey, claudeResponse)
+        
+        return claudeResponse
+      } catch (claudeError) {
+        console.error('=== OPENAI: Lỗi khi gọi Claude fallback ===', claudeError);
+        throw new Error('Không thể kết nối với cả OpenAI và Claude')
+      }
+    }
   } catch (error) {
-    console.error('OpenAI API Error:', error)
-    return 'Có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.'
+    console.error('=== OPENAI: Lỗi không xử lý được ===', error);
+    return 'Có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau. Chi tiết: ' + 
+      (error instanceof Error ? error.message : 'Lỗi không xác định')
   }
 }
 

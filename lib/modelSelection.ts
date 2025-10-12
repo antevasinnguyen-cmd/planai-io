@@ -33,6 +33,7 @@ export const MODELS = {
 // Task types
 export enum TaskType {
   REGULAR_CHAT = 'regular_chat',
+  COMPLEX_PLANNING = 'complex_planning'
 }
 
 // Function to determine the appropriate model based on task complexity
