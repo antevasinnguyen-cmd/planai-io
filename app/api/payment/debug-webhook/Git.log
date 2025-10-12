@@ -1,0 +1,64 @@
+2025-10-12 21:14:30.804 [info] [main] Log level: Info
+2025-10-12 21:14:30.804 [info] [main] Validating found git in: "/usr/bin/git"
+2025-10-12 21:14:30.932 [info] [main] Using git "2.37.1 (Apple Git-137.1)" from "/usr/bin/git"
+2025-10-12 21:14:30.932 [info] [Model][doInitialScan] Initial repository scan started
+2025-10-12 21:14:31.005 [info] > git rev-parse --show-toplevel [47ms]
+2025-10-12 21:14:31.044 [info] > git rev-parse --git-dir --git-common-dir [35ms]
+2025-10-12 21:14:31.067 [info] [Model][openRepository] Opened repository (path): /Users/mf840/Documents/BUILD APP/SaaS 1
+2025-10-12 21:14:31.067 [info] [Model][openRepository] Opened repository (real path): /Users/mf840/Documents/BUILD APP/SaaS 1
+2025-10-12 21:14:31.121 [info] > git config --get commit.template [47ms]
+2025-10-12 21:14:31.121 [info] > git rev-parse --show-toplevel [46ms]
+2025-10-12 21:14:31.155 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [54ms]
+2025-10-12 21:14:31.175 [info] > git rev-parse --show-toplevel [44ms]
+2025-10-12 21:14:31.212 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [40ms]
+2025-10-12 21:14:31.218 [info] > git rev-parse --show-toplevel [39ms]
+2025-10-12 21:14:31.229 [info] > git status -z -uall [70ms]
+2025-10-12 21:14:31.336 [info] > git rev-parse --show-toplevel [112ms]
+2025-10-12 21:14:31.341 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [62ms]
+2025-10-12 21:14:31.362 [info] > git config --get commit.template [47ms]
+2025-10-12 21:14:31.375 [info] > git rev-parse --show-toplevel [35ms]
+2025-10-12 21:14:31.381 [info] > git config --get --local branch.main.vscode-merge-base [28ms]
+2025-10-12 21:14:31.382 [warning] [Git][config] git config failed: Failed to execute git
+2025-10-12 21:14:31.389 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [30ms]
+2025-10-12 21:14:31.416 [info] > git rev-parse --show-toplevel [36ms]
+2025-10-12 21:14:31.445 [info] > git status -z -uall [45ms]
+2025-10-12 21:14:31.454 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [39ms]
+2025-10-12 21:14:31.487 [info] > git rev-parse --show-toplevel [65ms]
+2025-10-12 21:14:31.505 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [42ms]
+2025-10-12 21:14:31.525 [info] > git rev-parse --show-toplevel [34ms]
+2025-10-12 21:14:31.544 [info] > git config --get --local branch.main.vscode-merge-base [35ms]
+2025-10-12 21:14:31.545 [warning] [Git][config] git config failed: Failed to execute git
+2025-10-12 21:14:31.561 [info] > git reflog main --grep-reflog=branch: Created from *. [174ms]
+2025-10-12 21:14:31.570 [info] > git rev-parse --show-toplevel [41ms]
+2025-10-12 21:14:31.591 [info] > git reflog main --grep-reflog=branch: Created from *. [43ms]
+2025-10-12 21:14:31.620 [info] > git symbolic-ref --short refs/remotes/origin/HEAD [51ms]
+2025-10-12 21:14:31.620 [info] fatal: ref refs/remotes/origin/HEAD is not a symbolic ref
+2025-10-12 21:14:31.620 [warning] [Repository][getDefaultBranch] Failed to get default branch details: Failed to execute git.
+2025-10-12 21:14:31.625 [info] > git rev-parse --show-toplevel [47ms]
+2025-10-12 21:14:31.639 [info] > git symbolic-ref --short refs/remotes/origin/HEAD [46ms]
+2025-10-12 21:14:31.640 [info] fatal: ref refs/remotes/origin/HEAD is not a symbolic ref
+2025-10-12 21:14:31.640 [warning] [Repository][getDefaultBranch] Failed to get default branch details: Failed to execute git.
+2025-10-12 21:14:31.665 [info] > git rev-parse --show-toplevel [37ms]
+2025-10-12 21:14:31.666 [info] > git merge-base refs/heads/main refs/remotes/origin/main [43ms]
+2025-10-12 21:14:31.681 [info] > git merge-base refs/heads/main refs/remotes/origin/main [39ms]
+2025-10-12 21:14:31.703 [info] > git diff --name-status -z --diff-filter=ADMR e7155d1c7925d448c8afe80e602c971f84e86269...refs/remotes/origin/main [34ms]
+2025-10-12 21:14:31.705 [info] > git rev-parse --show-toplevel [33ms]
+2025-10-12 21:14:31.733 [info] > git diff --name-status -z --diff-filter=ADMR e7155d1c7925d448c8afe80e602c971f84e86269...refs/remotes/origin/main [49ms]
+2025-10-12 21:14:31.747 [info] > git rev-parse --show-toplevel [39ms]
+2025-10-12 21:14:31.781 [info] > git rev-parse --show-toplevel [32ms]
+2025-10-12 21:14:31.816 [info] > git rev-parse --show-toplevel [33ms]
+2025-10-12 21:14:31.853 [info] > git rev-parse --show-toplevel [34ms]
+2025-10-12 21:14:31.855 [info] [Model][doInitialScan] Initial repository scan completed - repositories (1), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2025-10-12 21:14:32.430 [info] > git check-ignore -v -z --stdin [57ms]
+2025-10-12 21:14:32.531 [info] > git show --textconv :app/api/payment/webhook/route.ts [78ms]
+2025-10-12 21:14:32.532 [info] > git ls-files --stage -- app/api/payment/webhook/route.ts [73ms]
+2025-10-12 21:14:32.566 [info] > git cat-file -s 6c6a6685f26041dcbce0805eb0253aa19c5fd43b [31ms]
+2025-10-12 21:14:39.344 [info] > git check-ignore -v -z --stdin [149ms]
+2025-10-12 21:14:39.858 [info] > git config --get --local branch.main.github-pr-owner-number [50ms]
+2025-10-12 21:14:39.858 [warning] [Git][config] git config failed: Failed to execute git
+2025-10-12 21:58:46.479 [info] > git check-ignore -v -z --stdin [314ms]
+2025-10-12 21:58:46.713 [info] > git config --get commit.template [47ms]
+2025-10-12 21:58:46.766 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [94ms]
+2025-10-12 21:58:46.833 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [51ms]
+2025-10-12 21:58:46.932 [info] > git status -z -uall [153ms]
+2025-10-12 22:06:29.698 [info] > git check-ignore -v -z --stdin [119ms]
