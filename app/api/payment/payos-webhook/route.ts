@@ -26,40 +26,52 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // Xác thực signature
-    // Đảm bảo lấy đúng checksum key từ biến môi trường
+    // Lấy checksum key từ biến môi trường
     const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
     if (!checksumKey) {
       console.error('Missing PAYOS_CHECKSUM_KEY environment variable');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    // Tạo chuỗi dữ liệu để ký theo đúng định dạng PayOS yêu cầu
+    // Log toàn bộ dữ liệu nhận được để debug
+    console.log('Raw webhook data:', JSON.stringify({
+      body,
+      paymentData,
+      headers: Object.fromEntries(request.headers.entries())
+    }, null, 2));
+
+    // Tạo chuỗi dữ liệu để ký theo đúng định dạng PayOS
+    // Lưu ý: Thứ tự các trường phải chính xác theo tài liệu PayOS
     const dataToSign = [
-      paymentData.code || paymentData.orderCode,
-      paymentData.amount,
+      paymentData.amount || '0',
+      paymentData.cancelUrl || '',
+      paymentData.description || '',
+      paymentData.orderCode || paymentData.code || '',
+      paymentData.returnUrl || '',
       paymentData.status || '00',
-      paymentData.transId || '',
-      paymentData.message || ''
-    ].join('|') + `|${checksumKey}`;
+      checksumKey
+    ].join(''); // Nối chuỗi không có dấu phân cách
     
-    console.log('Data to sign:', dataToSign);
+    console.log('Data to sign (raw):', dataToSign);
     
-    // Tạo signature từ dữ liệu
-    const computedSignature = createHash('md5').update(dataToSign).digest('hex');
+    // Tạo signature từ dữ liệu (chuyển về chữ thường và bỏ các ký tự đặc biệt)
+    const normalizedData = dataToSign.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const computedSignature = createHash('md5').update(normalizedData).digest('hex');
     
     console.log('Computed signature:', computedSignature);
     console.log('Received signature:', signature);
     
-    // So sánh signature nhận được với signature tính toán
-    if (signature !== computedSignature) {
+    // So sánh signature (không phân biệt hoa thường)
+    if (signature.toLowerCase() !== computedSignature) {
       console.error('Invalid signature. Expected:', computedSignature);
       return NextResponse.json({ 
+        success: false,
         error: 'Invalid signature',
         received: signature,
         expected: computedSignature,
-        data: dataToSign
-      }, { status: 401 });
+        signedData: normalizedData,
+        note: 'Make sure PAYOS_CHECKSUM_KEY matches the one in PayOS dashboard'
+      }, { status: 200 }); // Trả về 200 để PayOS không gửi lại request
     }
     
     // Xử lý thanh toán
