@@ -13,7 +13,13 @@ export async function POST(request: NextRequest) {
 
     if (provider === 'payos') {
       // PayOS webhook handling
-      const signature = request.headers.get('x-signature');
+      console.log('PayOS webhook body:', JSON.stringify(body, null, 2));
+      
+      // Lấy dữ liệu từ body.data nếu có, nếu không dùng body
+      const paymentData = body.data || body;
+      
+      // Lấy signature từ body.signature nếu có, nếu không mới lấy từ header
+      const signature = body.signature || request.headers.get('x-signature');
 
       console.log('PayOS signature:', signature);
       console.log('PayOS checksum key exists:', !!process.env.PAYOS_CHECKSUM_KEY);
@@ -23,11 +29,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
       }
 
-      // Verify signature
+      // Verify signature - sử dụng cấu trúc dữ liệu từ PayOS
       const dataStr = [
-        body.code,
-        body.amount,
-        body.status
+        paymentData.orderCode,
+        paymentData.amount,
+        paymentData.status || '00' // Mặc định là '00' nếu không có status
       ].join('|') + `|${process.env.PAYOS_CHECKSUM_KEY}`;
 
       console.log('Data string for signature:', dataStr);
@@ -43,8 +49,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Process PayOS payment
-      const transaction_id = body.code.toString();
-      const status = body.status === 'PAID' ? 'completed' : 'failed';
+      const transaction_id = paymentData.orderCode?.toString() || paymentData.code?.toString();
+      const status = paymentData.status === '00' ? 'completed' : 'failed';
       
       // Update payment status
       const { data: payment, error: paymentError } = await supabase
