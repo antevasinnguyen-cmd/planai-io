@@ -117,10 +117,58 @@ export async function POST(request: NextRequest) {
       console.log('=== API CHAT: Nhận phản hồi từ AI thành công ===', { responseLength: aiResponse?.length })
     } catch (aiError) {
       console.error('=== API CHAT: Lỗi khi gọi AI ===', aiError)
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'Xin lỗi, có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.'
+      let userFriendlyMessage = errorMessage
+      let isQuotaError = false
+      
+      if (aiError instanceof Error) {
+        const errorMsg = aiError.message.toLowerCase()
+        
+        if (errorMsg.includes('api key')) {
+          errorMessage = 'Hệ thống AI chưa được cấu hình đầy đủ. Vui lòng liên hệ admin.'
+          userFriendlyMessage = '🔧 Hệ thống đang được bảo trì. Chúng tôi sẽ khắc phục sớm nhất có thể!'
+        } else if (errorMsg.includes('rate limit') || errorMsg.includes('quota') || errorMsg.includes('insufficient_quota') || errorMsg.includes('exceeded your current quota')) {
+          errorMessage = 'Đã hết giới hạn sử dụng API OpenAI'
+          userFriendlyMessage = '🚨 **OpenAI API đã hết hạn mức sử dụng.**\n\nChúng tôi đang xử lý vấn đề này. Vui lòng thử lại sau hoặc liên hệ support@planai.io.vn để được hỗ trợ.'
+          isQuotaError = true
+        } else if (errorMsg.includes('credit balance') || errorMsg.includes('low to access') || errorMsg.includes('too low to access')) {
+          errorMessage = 'API credit Anthropic không đủ'
+          userFriendlyMessage = '🚨 **Anthropic API đã hết credit.**\n\nChúng tôi đang xử lý vấn đề này. Vui lòng thử lại sau hoặc liên hệ support@planai.io.vn để được hỗ trợ.'
+          isQuotaError = true
+        } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
+          errorMessage = 'Lỗi kết nối mạng'
+          userFriendlyMessage = '🌐 Kết nối không ổn định. Vui lòng kiểm tra mạng và thử lại.'
+        } else {
+          // Fallback response khi AI không hoạt động
+          console.log('=== API CHAT: Sử dụng fallback response ===');
+          userFriendlyMessage = '🤖 **Xin chào! Tôi là PlanAI Assistant.**\n\nHiện tại hệ thống AI đang được bảo trì. Tôi sẽ giúp bạn tạo kế hoạch tài chính cơ bản bằng cách trả lời một số câu hỏi:\n\n**Hãy cho tôi biết:**\n• Mục tiêu tài chính của bạn là gì?\n• Thu nhập hàng tháng hiện tại?\n• Bạn muốn đạt được mục tiêu trong bao lâu?\n\nHoặc bạn có thể nhấn nút "Plan" để xem demo kế hoạch mẫu.'
+          isQuotaError = true
+        }
+      }
+      
+      // Nếu là lỗi quota hoặc không xác định, trả về fallback response
+      if (isQuotaError) {
+        return NextResponse.json({ 
+          response: userFriendlyMessage,
+          success: true,
+          usage: {
+            current: 0,
+            limit: 0,
+            tier: 'maintenance',
+            remaining: 0
+          },
+          quotaExceeded: true,
+          analysis: null
+        })
+      }
+      
       return NextResponse.json({ 
-        error: 'Không thể kết nối với AI',
-        message: 'Xin lỗi, có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.',
-        details: aiError instanceof Error ? aiError.message : 'Unknown error'
+        error: 'AI_CONNECTION_ERROR',
+        message: userFriendlyMessage,
+        details: errorMessage,
+        suggestion: 'Nếu lỗi tiếp tục xảy ra, vui lòng liên hệ support@planai.io.vn'
       }, { status: 500 })
     }
 

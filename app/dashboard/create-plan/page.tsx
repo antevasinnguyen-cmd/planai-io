@@ -86,22 +86,28 @@ export default function CreatePlanV2() {
       // Auto-start conversation
       const welcomeMessage: Message = {
         role: 'assistant',
-        content: `Xin chào! 👋 Tôi là PlanAI Assistant, trợ lý AI tài chính của bạn.
+        content: `Xin chào! 👋 Tôi là **PlanAI Assistant** - trợ lý AI tài chính thông minh của bạn.
 
-Tôi sẽ giúp bạn tạo một kế hoạch tài chính cá nhân hóa hoàn hảo. Để làm điều này, tôi cần thu thập một số thông tin về bạn.
+🎯 **Tôi sẽ giúp bạn tạo một kế hoạch tài chính cá nhân hóa hoàn hảo** dựa trên:
+• Mục tiêu và ước mơ của bạn
+• Tình hình tài chính hiện tại  
+• Kỹ năng và nghề nghiệp
+• Phân tích tâm linh & số học (nếu bạn muốn)
 
-**Hãy bắt đầu bằng cách chia sẻ với tôi:**
+💡 **Đừng lo lắng!** Tôi sẽ hướng dẫn bạn từng bước một cách thân thiện và dễ hiểu.
 
-🎯 **Mục tiêu tài chính của bạn là gì?**
-Ví dụ: Mua nhà, khởi nghiệp, tiết kiệm, đầu tư, tăng thu nhập...
+**🚀 Hãy bắt đầu bằng cách chia sẻ với tôi:**
 
-💭 **Bạn cũng có thể tâm sự, mô tả chi tiết về:**
-- Tương lai bạn mong muốn
-- Những gì bạn đang có
-- Điều bạn lo lắng
-- Ước mơ của bạn
+🎯 **Mục tiêu tài chính chính của bạn là gì?**
+*Ví dụ: Mua nhà 2 tỷ, khởi nghiệp với 500 triệu, tiết kiệm cho con học đại học, đầu tư chứng khoán...*
 
-Tôi lắng nghe bạn! ✨`,
+💭 **Bạn cũng có thể tâm sự thoải mái về:**
+- Ước mơ và tương lai bạn mong muốn
+- Tình hình tài chính hiện tại
+- Những lo lắng về tiền bạc
+- Kế hoạch cuộc sống
+
+**✨ Tôi lắng nghe và sẽ tạo ra kế hoạch phù hợp nhất cho bạn!**`,
         timestamp: new Date()
       }
       setMessages([welcomeMessage])
@@ -158,6 +164,8 @@ Tôi lắng nghe bạn! ✨`,
       timestamp: new Date()
     }
 
+    const currentInput = input // Store input before clearing
+    
     // Chỉ cập nhật state, không lưu vào localStorage ở đây
     // useEffect sẽ tự động lưu khi messages thay đổi
     setMessages([...messages, userMessage])
@@ -185,7 +193,7 @@ Tôi lắng nghe bạn! ✨`,
           'Authorization': `Bearer ${sessionData.session.access_token}`
         },
         body: JSON.stringify({
-          message: input,
+          message: currentInput,
           chatHistory
         })
       })
@@ -194,8 +202,20 @@ Tôi lắng nghe bạn! ✨`,
 
       if (!res.ok) {
         console.error('API Error:', data)
-        const errorMsg = data.message || data.error || 'Có lỗi xảy ra khi kết nối với AI'
-        throw new Error(errorMsg)
+        
+        // Use the improved error message from API
+        let errorContent = data.message || 'Có lỗi xảy ra khi kết nối với AI'
+        if (data.suggestion) {
+          errorContent += `\n\n${data.suggestion}`
+        }
+        
+        const errorMessage: Message = {
+          role: 'assistant',
+          content: errorContent,
+          timestamp: new Date()
+        }
+        setMessages([...messages, userMessage, errorMessage])
+        return
       }
 
       const assistantMessage: Message = {
@@ -205,18 +225,25 @@ Tôi lắng nghe bạn! ✨`,
       }
 
       // Chỉ cập nhật state, không lưu vào localStorage ở đây
-      setMessages([...messages, assistantMessage])
-      updateCollectedInfo(input)
+      setMessages([...messages, userMessage, assistantMessage])
+      updateCollectedInfo(currentInput)
     } catch (error) {
       console.error('Chat Error:', error)
-      const errorMsg = error instanceof Error ? error.message : 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.'
+      
+      const errorContent = `🔌 Không thể kết nối với hệ thống AI. Vui lòng kiểm tra kết nối mạng và thử lại.
+
+💡 **Gợi ý khắc phục:**
+- Kiểm tra kết nối internet
+- Tải lại trang và thử lại
+- Liên hệ support nếu vấn đề tiếp tục`
+      
       const errorMessage: Message = {
         role: 'assistant',
-        content: `Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.`,
+        content: errorContent,
         timestamp: new Date()
       }
       // Chỉ cập nhật state, không lưu vào localStorage ở đây
-      setMessages([...messages, errorMessage])
+      setMessages([...messages, userMessage, errorMessage])
     } finally {
       setIsLoading(false)
     }

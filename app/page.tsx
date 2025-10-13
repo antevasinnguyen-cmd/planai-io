@@ -1,25 +1,49 @@
 'use client'
 
 import { Suspense, lazy } from 'react'
+import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import Hero from '@/components/Hero'
 import CTA from '@/components/CTA'
 
-// Lazy load heavy components
-const Features = lazy(() => import('@/components/Features'))
-const ChatDemo = lazy(() => import('@/components/ChatDemo'))
-const Technology = lazy(() => import('@/components/Technology'))
-const Stats = lazy(() => import('@/components/Stats'))
-const PlanDemo = lazy(() => import('@/components/PlanDemo'))
-const Testimonials = lazy(() => import('@/components/Testimonials'))
-const HowItWorks = lazy(() => import('@/components/HowItWorks'))
-const FAQ = lazy(() => import('@/components/FAQ'))
+// Preload critical above-the-fold components
+import Features from '@/components/Features'
 
-// Loading fallback
+// Lazy load components with optimized loading
+const ChatDemo = dynamic(() => import('@/components/ChatDemo'), {
+  loading: () => <LoadingFallback />,
+  ssr: false
+})
+
+const Technology = dynamic(() => import('@/components/Technology'), {
+  loading: () => <LoadingFallback />
+})
+
+const Stats = dynamic(() => import('@/components/Stats'), {
+  loading: () => <LoadingFallback />
+})
+
+const PlanDemo = dynamic(() => import('@/components/PlanDemo'), {
+  loading: () => <LoadingFallback />
+})
+
+const Testimonials = dynamic(() => import('@/components/Testimonials'), {
+  loading: () => <LoadingFallback />
+})
+
+const HowItWorks = dynamic(() => import('@/components/HowItWorks'), {
+  loading: () => <LoadingFallback />
+})
+
+const FAQ = dynamic(() => import('@/components/FAQ'), {
+  loading: () => <LoadingFallback />
+})
+
+// Optimized loading fallback
 const LoadingFallback = () => (
-  <div className="flex justify-center items-center py-16">
-    <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+  <div className="flex justify-center items-center py-8">
+    <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
   </div>
 )
 
@@ -35,32 +59,22 @@ export default function Home() {
       <CTA />
       
       {/* 3. Tính năng AI: Khung chat */}
-      <Suspense fallback={<LoadingFallback />}>
-        <Features />
-      </Suspense>
+      <Features />
       
       {/* 4. Khung chat + nút bắt đầu miễn phí */}
-      <Suspense fallback={<LoadingFallback />}>
-        <ChatDemo />
-      </Suspense>
+      <ChatDemo />
       
       {/* 5. Công nghệ được áp dụng (GPT-5 / Grok / Claude Opus / Supabase) */}
-      <Suspense fallback={<LoadingFallback />}>
-        <Technology />
-      </Suspense>
+      <Technology />
       
       {/* 6. Con số người dùng đã sử dụng ứng dụng (5000+ user); số plan được tạo: 58.000+ */}
-      <Suspense fallback={<LoadingFallback />}>
-        <Stats />
-      </Suspense>
+      <Stats />
       
       {/* 7. Công nghệ được áp dụng */}
       {/* Đã có ở section 5 */}
       
       {/* 8. Demo 1 plan chi tiết */}
-      <Suspense fallback={<LoadingFallback />}>
-        <PlanDemo />
-      </Suspense>
+      <PlanDemo />
       
       {/* 9. Quote */}
       <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-800">
@@ -75,19 +89,13 @@ export default function Home() {
       </section>
       
       {/* 10. Trusted by the community (người dùng nói gì) */}
-      <Suspense fallback={<LoadingFallback />}>
-        <Testimonials />
-      </Suspense>
+      <Testimonials />
       
       {/* 11. Hướng dẫn sử dụng */}
-      <Suspense fallback={<LoadingFallback />}>
-        <HowItWorks />
-      </Suspense>
+      <HowItWorks />
       
       {/* 12. FAQ */}
-      <Suspense fallback={<LoadingFallback />}>
-        <FAQ />
-      </Suspense>
+      <FAQ />
       
       <Footer />
     </main>

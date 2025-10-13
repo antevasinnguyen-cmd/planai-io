@@ -24,7 +24,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Model configuration
 export const MODELS = {
   CHAT_DEFAULT: 'gpt-3.5-turbo',
-  COMPLEX_PLANNING: 'gpt-4o',
+  COMPLEX_PLANNING: 'gpt-4o-mini', // Changed from gpt-4o to gpt-4o-mini
   FALLBACK_PRIMARY: 'claude-3-5-sonnet',
   FALLBACK_SECONDARY: 'claude-3-5-haiku',
   EMBEDDING: 'text-embedding-3-small'

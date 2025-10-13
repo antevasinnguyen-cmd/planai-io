@@ -194,41 +194,98 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
       return cachedResponse
     }
 
-    // This is a complex planning task, so use the appropriate model
-    const model = selectModel(TaskType.COMPLEX_PLANNING)
+    // This is a complex planning task, prioritize GPT-4o-mini for better cost-efficiency
+    try {
+      console.log('=== FINANCIAL PLAN: Trying GPT-4o-mini first ===');
+      const model = selectModel(TaskType.COMPLEX_PLANNING)
     
-    const messages = [
-      {
-        role: 'system' as const,
-        content: 'Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.'
-      },
-      {
-        role: 'user' as const,
-        content: prompt
+      const messages = [
+        {
+          role: 'system' as const,
+          content: 'Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.'
+        },
+        {
+          role: 'user' as const,
+          content: prompt
+        }
+      ]
+
+      // For large responses, we'll use chunking to handle the response better
+      const client = getOpenAI()
+      if (!client) {
+        throw new Error('OpenAI client not initialized')
       }
-    ]
+      
+      const completion = await client.chat.completions.create({
+        model,
+        messages,
+        max_tokens: 4000,
+        temperature: 0.3,
+      })
 
-    // For large responses, we'll use chunking to handle the response better
-    const client = getOpenAI()
-    if (!client) {
-      throw new Error('OpenAI client not initialized')
+      const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
+      
+      // Save response to cache
+      await saveToCache(cacheKey, response)
+      console.log('=== FINANCIAL PLAN: GPT-4o-mini completed successfully ===');
+      return response
+      
+    } catch (gptError) {
+      console.error('=== FINANCIAL PLAN: GPT-4o-mini failed, falling back to Claude-3.5-Sonnet ===', gptError);
+      
+      // Fallback to Claude-3.5-Sonnet
+      try {
+        console.log('=== FINANCIAL PLAN: Trying Claude-3.5-Sonnet ===');
+        const { generateFinancialPlanWithClaude } = await import('./claude')
+        
+        if (!process.env.ANTHROPIC_API_KEY) {
+          throw new Error('Anthropic API key not configured')
+        }
+        
+        const claudeResponse = await generateFinancialPlanWithClaude(
+          `Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.
+
+Yêu cầu tạo kế hoạch:
+1. Độ dài: ${wordRange}
+2. Cấu trúc rõ ràng với các phần: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
+3. Phù hợp với thị trường tài chính Việt Nam
+4. Bao gồm lộ trình cụ thể theo tháng/quý/năm
+5. Checklist hành động hàng ngày/tuần/tháng
+6. Liên kết đến tài nguyên học tập thực tế
+7. Tích hợp phân tích tâm linh nếu có
+
+QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế và có thể thực hiện được trong giới hạn này.
+
+${spiritualInsights ? `Phân tích tâm linh và số học:
+${spiritualInsights}
+
+Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}`,
+          `Tạo kế hoạch tài chính cho: ${userProfile.full_name}
+
+Thông tin cá nhân:
+- Tuổi: ${userProfile.age}
+- Nghề nghiệp: ${userProfile.occupation}
+- Thu nhập: ${userProfile.current_income?.toLocaleString()} VNĐ/tháng
+- Mục tiêu: ${userProfile.financial_goal}
+- Thời gian: ${userProfile.timeline}
+- Mức độ rủi ro: ${userProfile.risk_tolerance}
+- Tiết kiệm hiện có: ${userProfile.savings || 'Chưa có thông tin'}`,
+          maxWords > 5000 ? 4000 : 3000,
+          0.3
+        )
+        
+        // Save Claude response to cache
+        await saveToCache(cacheKey, claudeResponse)
+        console.log('=== FINANCIAL PLAN: Claude-3.5-Sonnet completed successfully ===');
+        return claudeResponse
+        
+      } catch (claudeError) {
+        console.error('=== FINANCIAL PLAN: Claude fallback also failed ===', claudeError);
+        throw new Error('Không thể tạo kế hoạch với cả GPT-4o-mini và Claude')
+      }
     }
-    
-    const completion = await client.chat.completions.create({
-      model,
-      messages,
-      max_tokens: 4000,
-      temperature: 0.3,
-    })
-
-    const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
-    
-    // Save response to cache
-    await saveToCache(cacheKey, response)
-    
-    return response
   } catch (error) {
-    console.error('OpenAI Plan Generation Error:', error)
+    console.error('Financial Plan Generation Error:', error)
     return 'Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại sau.'
   }
 }
