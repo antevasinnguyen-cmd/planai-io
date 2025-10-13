@@ -27,19 +27,39 @@ export async function POST(request: NextRequest) {
     }
     
     // Xác thực signature
+    // Đảm bảo lấy đúng checksum key từ biến môi trường
+    const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
+    if (!checksumKey) {
+      console.error('Missing PAYOS_CHECKSUM_KEY environment variable');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    // Tạo chuỗi dữ liệu để ký theo đúng định dạng PayOS yêu cầu
     const dataToSign = [
-      paymentData.orderCode || paymentData.code,
+      paymentData.code || paymentData.orderCode,
       paymentData.amount,
-      paymentData.status || '00'
-    ].join('|') + `|${process.env.PAYOS_CHECKSUM_KEY}`;
+      paymentData.status || '00',
+      paymentData.transId || '',
+      paymentData.message || ''
+    ].join('|') + `|${checksumKey}`;
     
     console.log('Data to sign:', dataToSign);
     
+    // Tạo signature từ dữ liệu
     const computedSignature = createHash('md5').update(dataToSign).digest('hex');
     
+    console.log('Computed signature:', computedSignature);
+    console.log('Received signature:', signature);
+    
+    // So sánh signature nhận được với signature tính toán
     if (signature !== computedSignature) {
       console.error('Invalid signature. Expected:', computedSignature);
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+      return NextResponse.json({ 
+        error: 'Invalid signature',
+        received: signature,
+        expected: computedSignature,
+        data: dataToSign
+      }, { status: 401 });
     }
     
     // Xử lý thanh toán
