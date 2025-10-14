@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
-export default function PaymentSuccessPage() {
+// Component riêng để sử dụng useSearchParams
+function PaymentSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [countdown, setCountdown] = useState(5)
@@ -78,5 +79,32 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Component loading đơn giản
+function PaymentSuccessLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+        <div className="animate-pulse flex flex-col items-center space-y-4">
+          <div className="rounded-full bg-gray-200 h-20 w-20"></div>
+          <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-32 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-10 bg-gray-200 rounded w-full"></div>
+          <div className="h-10 bg-gray-200 rounded w-full"></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Component chính sử dụng Suspense
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<PaymentSuccessLoading />}>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }
