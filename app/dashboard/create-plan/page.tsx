@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap, ArrowRight } from 'lucide-react'
+import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap, ArrowRight, Moon, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 
@@ -18,6 +18,7 @@ const requiredInfo = [
   { id: 'income', label: 'Thu nhập hiện tại', icon: '💰', required: true, description: 'Thu nhập hàng tháng của bạn' },
   { id: 'occupation', label: 'Nghề nghiệp/Kỹ năng', icon: '💼', required: true, description: 'Công việc và kỹ năng hiện có' },
   { id: 'timeline', label: 'Thời gian mục tiêu', icon: '⏰', required: true, description: 'Bao lâu để đạt mục tiêu' },
+  { id: 'readiness', label: 'Mức độ sẵn sàng', icon: '🚀', required: true, description: 'Sẵn sàng học kiến thức mới, thời gian dành cho kế hoạch' },
   { id: 'description', label: 'Mô tả mong muốn', icon: '✍️', required: false, description: 'Tâm sự, chia sẻ về ước mơ và tương lai bạn mong muốn' },
   { id: 'birth_date', label: 'Ngày sinh', icon: '🎂', required: false, description: 'Để phân tích tử vi (tùy chọn)' },
   { id: 'savings', label: 'Tiết kiệm hiện có', icon: '🏦', required: false, description: 'Số tiền đã tiết kiệm' },
@@ -30,6 +31,7 @@ export default function CreatePlanV2() {
   const [isLoading, setIsLoading] = useState(false)
   const [collectedInfo, setCollectedInfo] = useState<Record<string, boolean>>({})
   const [subscription, setSubscription] = useState<any>(null)
+  const [spiritualEnabled, setSpiritualEnabled] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const router = useRouter()
@@ -83,34 +85,38 @@ export default function CreatePlanV2() {
     }
     
     const initializeNewChat = () => {
-      // Auto-start conversation
-      const welcomeMessage: Message = {
+      // Auto-start conversation with sequential messages
+      const welcomeMessage1: Message = {
         role: 'assistant',
-        content: `Xin chào! 👋 Tôi là **PlanAI Assistant** - trợ lý AI tài chính thông minh của bạn.
-
-🎯 **Tôi sẽ giúp bạn tạo một kế hoạch tài chính cá nhân hóa hoàn hảo** dựa trên:
-• Mục tiêu và ước mơ của bạn
-• Tình hình tài chính hiện tại  
-• Kỹ năng và nghề nghiệp
-• Phân tích tâm linh & số học (nếu bạn muốn)
-
-💡 **Đừng lo lắng!** Tôi sẽ hướng dẫn bạn từng bước một cách thân thiện và dễ hiểu.
-
-**🚀 Hãy bắt đầu bằng cách chia sẻ với tôi:**
-
-🎯 **Mục tiêu tài chính chính của bạn là gì?**
-*Ví dụ: Mua nhà 2 tỷ, khởi nghiệp với 500 triệu, tiết kiệm cho con học đại học, đầu tư chứng khoán...*
-
-💭 **Bạn cũng có thể tâm sự thoải mái về:**
-- Ước mơ và tương lai bạn mong muốn
-- Tình hình tài chính hiện tại
-- Những lo lắng về tiền bạc
-- Kế hoạch cuộc sống
-
-**✨ Tôi lắng nghe và sẽ tạo ra kế hoạch phù hợp nhất cho bạn!**`,
+        content: `Xin chào! Tôi là AI của PlanAI. Tôi sẽ giúp bạn tạo kế hoạch tài chính cá nhân hóa một cách đầy đủ và chi tiết nhất. :D 
+Thể làm được điều này, hãy giúp tôi hiểu hơn về bạn và nhu cầu của bạn.`,
         timestamp: new Date()
       }
-      setMessages([welcomeMessage])
+      
+      const welcomeMessage2: Message = {
+        role: 'assistant',
+        content: `Bắt đầu chia sẻ với tôi các thông tin cần thiết như: 
+Mục tiêu tài chính: Số tiền và loại mục tiêu (nhà, xe, kinh doanh...)
+Thông tin cá nhân: Độ tuổi, ngày sinh, giới tính, khu vực sinh sống
+Tài chính hiện tại: Thu nhập/tháng, chi phí cố định, khoản tiết kiệm
+Kỹ năng/nghề nghiệp: Kỹ năng hiện tại (ví dụ: marketing), kinh nghiệm, nghề nghiệp hiện tại
+Mức độ sẵn sàng: Sẵn sàng học kiến thức mới, thời gian dành cho kế hoạch
+Thời gian mục tiêu: 3 tháng, 6 tháng, 1 năm, 2 năm, 5 năm, v.v.
+ 
+
+Ngoài ra, bạn có thể mô tả kỹ hơn, hoặc tâm sự với tôi về mọi thứ liên quan như: Một tương lai bạn mong muốn, nỗi sợ/lo lắng, thói quen, ước mơ của bạn,…`,
+        timestamp: new Date(new Date().getTime() + 1000) // 1 second later
+      }
+      
+      const welcomeMessage3: Message = {
+        role: 'assistant',
+        content: `Tôi ở đây để lắng nghe và giúp bạn đạt được mọi thứ bạn cần. 
+
+Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính xác, thực tiễn và phù hợp nhất cho bạn.`,
+        timestamp: new Date(new Date().getTime() + 2000) // 2 seconds later
+      }
+      
+      setMessages([welcomeMessage1, welcomeMessage2, welcomeMessage3])
     }
     
     checkAuth()
@@ -274,6 +280,9 @@ export default function CreatePlanV2() {
     if (input.includes('hà nội') || input.includes('hcm') || input.includes('sài gòn')) {
       newInfo['location'] = true
     }
+    if (input.includes('sẵn sàng') || input.includes('học hỏi') || input.includes('thời gian dành')) {
+      newInfo['readiness'] = true
+    }
     if (input.length > 100) {
       newInfo['description'] = true
     }
@@ -318,7 +327,8 @@ export default function CreatePlanV2() {
     // Collect all chat data and create plan
     const planData = {
       messages: messages.map(m => ({ role: m.role, content: m.content })),
-      collectedInfo
+      collectedInfo,
+      spiritualEnabled // Include spiritual toggle state
     }
     
     // Save to localStorage temporarily
@@ -344,7 +354,7 @@ export default function CreatePlanV2() {
             Thông tin cần cung cấp
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            AI sẽ hỏi từng thông tin qua chat. Bạn có thể tham khảo danh sách bên dưới.
+            Bạn có thể cung cấp thông tin theo gợi ý ở cột bên trái, bằng cách nhấn chọn từng mục.
           </p>
         </div>
 
@@ -432,6 +442,37 @@ export default function CreatePlanV2() {
             </div>
           </div>
         </div>
+        
+        {/* Spiritual Add-on Toggle */}
+        <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-lg">
+          <div className="flex items-start space-x-2">
+            <Moon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-indigo-900 dark:text-indigo-300 font-medium mb-1">
+                Tính năng Spiritual Add-on
+              </p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-400 mb-2">
+                Kết hợp yếu tố tử vi, thần số học vào kế hoạch tài chính
+              </p>
+              <button 
+                onClick={() => setSpiritualEnabled(!spiritualEnabled)}
+                className="flex items-center space-x-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-600 shadow-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
+              >
+                {spiritualEnabled ? (
+                  <>
+                    <ToggleRight className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Đã bật tính năng</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Bật tính năng</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Tips */}
         <div className="p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-lg">
@@ -442,9 +483,9 @@ export default function CreatePlanV2() {
                 Mẹo nhỏ
               </p>
               <ul className="text-xs text-purple-700 dark:text-purple-400 space-y-1">
-                <li>• Chia sẻ chi tiết để AI hiểu rõ hơn</li>
-                <li>• Tâm sự về ước mơ và mong muốn</li>
-                <li>• Sau khi tạo, bạn có thể chỉnh sửa plan</li>
+                <li>• Nhấn vào các mục bên trái để thêm thông tin nhanh chóng</li>
+                <li>• Tâm sự về ước mơ và mong muốn của bạn</li>
+                <li>• Thông tin chi tiết giúp tạo kế hoạch chính xác hơn</li>
               </ul>
             </div>
           </div>
@@ -461,8 +502,8 @@ export default function CreatePlanV2() {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">PlanAI Assistant</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Trợ lý AI tài chính của bạn</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">PlanAI</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Sẵn sàng tạo kế hoạch cho bạn</p>
               </div>
             </div>
             
@@ -518,34 +559,36 @@ export default function CreatePlanV2() {
         <div className="bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 p-6">
           <div className="max-w-4xl mx-auto space-y-4">
             {/* Chat Input */}
-            <div className="flex items-end space-x-4">
+            <div className="flex items-start space-x-4">
               <div className="flex-1">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Enter là xuống dòng bình thường, không gửi tin nhắn
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      e.preventDefault()
-                      handleSend()
-                    }
-                  }}
-                  placeholder="Chia sẻ với AI về mục tiêu, ước mơ, tình hình tài chính của bạn..."
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  rows={5} /* Tăng chiều dài ô chat */
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter là xuống dòng bình thường, không gửi tin nhắn
+                      if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder="Chia sẻ với AI về mục tiêu, ước mơ, tình hình tài chính của bạn..."
+                    className="w-full px-4 py-3 pr-14 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                    rows={5}
+                    disabled={isLoading}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    className="absolute right-2 bottom-2 p-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
                   Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
                 </p>
               </div>
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white p-4 rounded-lg transition-colors disabled:cursor-not-allowed"
-              >
-                <Send className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Create Plan Button - NỔI BẬT */}
