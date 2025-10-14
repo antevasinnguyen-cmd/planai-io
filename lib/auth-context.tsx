@@ -105,6 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       console.log('=== AUTHCONTEXT: Đăng xuất ===')
+      
+      // Xóa dữ liệu chat của người dùng hiện tại khi đăng xuất
+      if (user?.id && typeof window !== 'undefined') {
+        // Xóa các dữ liệu cụ thể của người dùng
+        const userId = user.id
+        localStorage.removeItem(`planai_chat_messages_${userId}`)
+        localStorage.removeItem(`pending_plan_${userId}`)
+        console.log(`=== AUTHCONTEXT: Đã xóa dữ liệu của user ${userId} ===`)
+      }
+      
       await supabase.auth.signOut()
       setUser(null)
       setSession(null)

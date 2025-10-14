@@ -35,6 +35,52 @@ export default function CreatePlanV2() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const router = useRouter()
+  
+  // Khai báo hàm initializeNewChat ở phạm vi component
+  const initializeNewChat = () => {
+    console.log('Khởi tạo chat mới với các tin nhắn chào mừng')
+    
+    // Xóa dữ liệu cũ trước khi tạo mới
+    if (user?.id) {
+      const userId = user.id
+      localStorage.removeItem(`planai_chat_messages_${userId}`)
+      localStorage.removeItem(`pending_plan_${userId}`)
+    }
+    
+    // Auto-start conversation with sequential messages
+    const welcomeMessage1: Message = {
+      role: 'assistant',
+      content: `Xin chào! Tôi là AI của PlanAI. Tôi sẽ giúp bạn tạo kế hoạch tài chính cá nhân hóa một cách đầy đủ và chi tiết nhất. :D 
+Để làm được điều này, hãy giúp tôi hiểu hơn về bạn và nhu cầu của bạn.`,
+      timestamp: new Date()
+    }
+    
+    const welcomeMessage2: Message = {
+      role: 'assistant',
+      content: `Bắt đầu chia sẻ với tôi các thông tin cần thiết như: 
+Mục tiêu tài chính: Số tiền và loại mục tiêu (nhà, xe, kinh doanh...)
+Thông tin cá nhân: Độ tuổi, ngày sinh, giới tính, khu vực sinh sống
+Tài chính hiện tại: Thu nhập/tháng, chi phí cố định, khoản tiết kiệm
+Kỹ năng/nghề nghiệp: Kỹ năng hiện tại (ví dụ: marketing), kinh nghiệm, nghề nghiệp hiện tại
+Mức độ sẵn sàng: Sẵn sàng học kiến thức mới, thời gian dành cho kế hoạch
+Thời gian mục tiêu: 3 tháng, 6 tháng, 1 năm, 2 năm, 5 năm, v.v.
+
+Ngoài ra, bạn có thể mô tả kỹ hơn, hoặc tâm sự với tôi về mọi thứ liên quan như: Một tương lai bạn mong muốn, nỗi sợ/lo lắng, thói quen, ước mơ của bạn,…`,
+      timestamp: new Date(new Date().getTime() + 1000) // 1 second later
+    }
+    
+    const welcomeMessage3: Message = {
+      role: 'assistant',
+      content: `Tôi ở đây để lắng nghe và giúp bạn đạt được mọi thứ bạn cần. 
+
+Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính xác, thực tiễn và phù hợp nhất cho bạn.`,
+      timestamp: new Date(new Date().getTime() + 2000) // 2 seconds later
+    }
+    
+    // Đặt tin nhắn vào state
+    setMessages([welcomeMessage1, welcomeMessage2, welcomeMessage3])
+    console.log('Khởi tạo 3 tin nhắn chào mừng thành công')
+  }
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,7 +105,10 @@ export default function CreatePlanV2() {
         loadSubscription()
         
         // Lấy tin nhắn đã lưu từ localStorage hoặc tạo tin nhắn chào mới
-        const savedMessages = localStorage.getItem('planai_chat_messages')
+        // Thêm user ID vào key để phân biệt dữ liệu giữa các tài khoản
+        const userId = data.session?.user?.id || 'anonymous'
+        const chatMessagesKey = `planai_chat_messages_${userId}`
+        const savedMessages = localStorage.getItem(chatMessagesKey)
         
         if (savedMessages) {
           try {
@@ -84,50 +133,18 @@ export default function CreatePlanV2() {
       }
     }
     
-    const initializeNewChat = () => {
-      // Auto-start conversation with sequential messages
-      const welcomeMessage1: Message = {
-        role: 'assistant',
-        content: `Xin chào! Tôi là AI của PlanAI. Tôi sẽ giúp bạn tạo kế hoạch tài chính cá nhân hóa một cách đầy đủ và chi tiết nhất. :D 
-Để làm được điều này, hãy giúp tôi hiểu hơn về bạn và nhu cầu của bạn.`,
-        timestamp: new Date()
-      }
-      
-      const welcomeMessage2: Message = {
-        role: 'assistant',
-        content: `Bắt đầu chia sẻ với tôi các thông tin cần thiết như: 
-Mục tiêu tài chính: Số tiền và loại mục tiêu (nhà, xe, kinh doanh...)
-Thông tin cá nhân: Độ tuổi, ngày sinh, giới tính, khu vực sinh sống
-Tài chính hiện tại: Thu nhập/tháng, chi phí cố định, khoản tiết kiệm
-Kỹ năng/nghề nghiệp: Kỹ năng hiện tại (ví dụ: marketing), kinh nghiệm, nghề nghiệp hiện tại
-Mức độ sẵn sàng: Sẵn sàng học kiến thức mới, thời gian dành cho kế hoạch
-Thời gian mục tiêu: 3 tháng, 6 tháng, 1 năm, 2 năm, 5 năm, v.v.
-
-Ngoài ra, bạn có thể mô tả kỹ hơn, hoặc tâm sự với tôi về mọi thứ liên quan như: Một tương lai bạn mong muốn, nỗi sợ/lo lắng, thói quen, ước mơ của bạn,…`,
-        timestamp: new Date(new Date().getTime() + 1000) // 1 second later
-      }
-      
-      const welcomeMessage3: Message = {
-        role: 'assistant',
-        content: `Tôi ở đây để lắng nghe và giúp bạn đạt được mọi thứ bạn cần. 
-
-Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính xác, thực tiễn và phù hợp nhất cho bạn.`,
-        timestamp: new Date(new Date().getTime() + 2000) // 2 seconds later
-      }
-      
-      setMessages([welcomeMessage1, welcomeMessage2, welcomeMessage3])
-    }
-    
     checkAuth()
   }, [router])
   
   // Lưu tin nhắn vào localStorage khi messages thay đổi
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('planai_chat_messages', JSON.stringify(messages))
-      console.log('Lưu tin nhắn vào localStorage:', messages.length)
+    if (messages.length > 0 && user) {
+      const userId = user.id || 'anonymous'
+      const chatMessagesKey = `planai_chat_messages_${userId}`
+      localStorage.setItem(chatMessagesKey, JSON.stringify(messages))
+      console.log(`Lưu tin nhắn vào localStorage cho user ${userId}:`, messages.length)
     }
-  }, [messages])
+  }, [messages, user])
 
   // Cuộn xuống dưới khi có tin nhắn mới
   useEffect(() => {
@@ -330,8 +347,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       spiritualEnabled // Include spiritual toggle state
     }
     
-    // Save to localStorage temporarily
-    localStorage.setItem('pending_plan', JSON.stringify(planData))
+    // Save to localStorage temporarily with user ID
+    const userId = user?.id || 'anonymous'
+    localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(planData))
     
     // Navigate to plan generation
     router.push('/dashboard/plans/generate')
@@ -359,6 +377,23 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
         {/* Progress */}
         <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tạo kế hoạch tài chính</h1>
+              <span className="bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-primary-900 dark:text-primary-300">AI</span>
+            </div>
+            <button
+              onClick={() => {
+                if (confirm('Bạn có chắc muốn xóa toàn bộ cuộc trò chuyện và bắt đầu lại?')) {
+                  initializeNewChat()
+                }
+              }}
+              className="text-xs flex items-center space-x-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Bắt đầu lại</span>
+            </button>
+          </div>
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="font-medium text-gray-700 dark:text-gray-300">Tiến độ</span>
             <span className="text-primary-600 dark:text-primary-400 font-semibold">{getProgress()}%</span>
