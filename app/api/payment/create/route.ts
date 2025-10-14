@@ -52,17 +52,41 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
         
         // Thông tin tài khoản SePay
-        const bankName = 'MBBank'
+        const bankName = 'MB Bank'
         const accountName = 'NGUYEN THI KHANH HUYEN'
         const accountNumber = SEPAY_ACCOUNT_NUMBER
         
         // Tạo nội dung chuyển khoản
         const transferContent = transactionId
         
-        // Tạo URL VietQR
-        const vietQRUrl = `https://img.vietqr.io/image/${bankName}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+        // Gọi API SePay để tạo QR code
+        const sePayResponse = await fetch(SEPAY_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SEPAY_TOKEN}`
+          },
+          body: JSON.stringify({
+            account_number: accountNumber,
+            amount: amount,
+            content: transferContent
+          })
+        })
+
+        if (!sePayResponse.ok) {
+          throw new Error('SePay API request failed')
+        }
+
+        const sePayData = await sePayResponse.json()
+        console.log('SePay API response:', sePayData)
         
-        qrCode = vietQRUrl
+        // Lấy QR code từ response
+        qrCode = sePayData.qr_code || sePayData.data?.qr_code || ''
+        
+        // Nếu không có QR từ API, tạo fallback bằng VietQR
+        if (!qrCode) {
+          qrCode = `https://img.vietqr.io/image/970422-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+        }
         
         // URL chuyển đến trang processing
         paymentUrl = `${baseUrl}/payment/processing?order=${transactionId}&amount=${amount}&plan=${planId}&provider=sepay&qr=${encodeURIComponent(qrCode)}&account=${accountNumber}&name=${encodeURIComponent(accountName)}&bank=${encodeURIComponent(bankName)}`
@@ -81,15 +105,17 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
         
         // Thông tin tài khoản PayOS
-        const bankName = 'MBBank'
+        const bankCode = '970422' // Mã BIN của MBBank
+        const bankName = 'MB Bank'
         const accountName = 'NGUYEN THI KHANH HUYEN'
         const accountNumber = '5428960265186'
         
         // Tạo nội dung chuyển khoản
         const transferContent = transactionId
         
-        // Tạo URL VietQR
-        const vietQRUrl = `https://img.vietqr.io/image/${bankName}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+        // Tạo URL VietQR với định dạng đúng
+        // Format: https://img.vietqr.io/image/{BANK_BIN}-{ACCOUNT_NUMBER}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={CONTENT}&accountName={NAME}
+        const vietQRUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${transferContent}&accountName=${accountName}`
         
         qrCode = vietQRUrl
         
