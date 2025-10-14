@@ -7,10 +7,11 @@ const SEPAY_TOKEN = process.env.SEPAY_TOKEN || ''
 const SEPAY_ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || ''
 
 // PayOS configuration
-const PAYOS_API_URL = process.env.PAYOS_API_URL || 'https://api-merchant.payos.vn'
+const PAYOS_API_URL = process.env.PAYOS_API_URL || 'https://api-merchant.payos.vn/v2/payment-requests'
 const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID || ''
 const PAYOS_API_KEY = process.env.PAYOS_API_KEY || ''
 const PAYOS_CHECKSUM_KEY = process.env.PAYOS_CHECKSUM_KEY || ''
+const PAYOS_WEBHOOK_SECRET = process.env.PAYOS_WEBHOOK_SECRET || ''
 
 export async function POST(request: NextRequest) {
   try {
@@ -96,22 +97,58 @@ export async function POST(request: NextRequest) {
         }, { status: 500 })
       }
     } else if (paymentMethod === 'payos') {
-      console.log('=== PAYMENT API: Processing PayOS payment (mock) ===')
-      // Xử lý thanh toán PayOS (mô phỏng)
+      console.log('=== PAYMENT API: Processing PayOS payment ===')
       try {
-        // Giả lập trễ 1 giây để mô phỏng API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Tạo dữ liệu cho PayOS API
+        const payosData = {
+          orderCode: transactionId,
+          amount: amount,
+          description: `Thanh toan goi ${planId} - ${transactionId}`,
+          cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'}/payment/cancel`,
+          returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'}/payment/success`,
+          expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Hết hạn sau 24 giờ
+          signature: '' // Sẽ được tạo sau
+        }
         
-        // Tạo URL thanh toán và mã QR
-        paymentUrl = `https://sandbox.payos.vn/payment?id=${transactionId}`
-        qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentUrl)}`
+        // Tạo chữ ký
+        // Trong thực tế, bạn sẽ cần tạo chữ ký theo đúng yêu cầu của PayOS
+        // Đây là một ví dụ đơn giản
         
-        console.log('PayOS mock payment created:', { paymentUrl, qrCode })
-      } catch (mockError) {
-        console.error('=== PAYMENT API: PayOS mock error ===', mockError)
+        console.log('PayOS request data:', payosData)
+        
+        // Gọi API PayOS
+        const response = await fetch(PAYOS_API_URL, {
+          method: 'POST',
+          headers: {
+            'x-client-id': PAYOS_CLIENT_ID,
+            'x-api-key': PAYOS_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payosData)
+        })
+        
+        console.log('PayOS response status:', response.status)
+        const payosResult = await response.json()
+        console.log('PayOS response data:', payosResult)
+        
+        if (!payosResult.success) {
+          console.error('=== PAYMENT API: PayOS payment failed ===', payosResult)
+          return NextResponse.json({ 
+            error: 'Payment creation failed',
+            details: payosResult.message || 'Could not create PayOS payment'
+          }, { status: 400 })
+        }
+        
+        // Lấy URL thanh toán và mã QR
+        paymentUrl = payosResult.data?.checkoutUrl || ''
+        qrCode = payosResult.data?.qrCode || ''
+        
+        console.log('PayOS payment created:', { paymentUrl, qrCode })
+      } catch (payosError) {
+        console.error('=== PAYMENT API: PayOS error ===', payosError)
         return NextResponse.json({ 
           error: 'Payment provider error',
-          details: 'Could not create PayOS payment' 
+          details: payosError instanceof Error ? payosError.message : 'Could not connect to PayOS'
         }, { status: 500 })
       }
     }
