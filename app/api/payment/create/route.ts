@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
         
         // Thông tin tài khoản SePay
-        const bankName = 'MB Bank'
-        const accountName = 'NGUYEN VAN A'
+        const bankName = 'MBBank'
+        const accountName = 'NGUYEN THI KHANH HUYEN'
         const accountNumber = SEPAY_ACCOUNT_NUMBER
         
         // Tạo nội dung chuyển khoản
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
         
         // Thông tin tài khoản PayOS
-        const bankName = 'Vietcombank'
-        const accountName = 'CONG TY TNHH PAYOS'
-        const accountNumber = '1234567890'
+        const bankName = 'MBBank'
+        const accountName = 'NGUYEN THI KHANH HUYEN'
+        const accountNumber = '5428960265186'
         
         // Tạo nội dung chuyển khoản
         const transferContent = transactionId
