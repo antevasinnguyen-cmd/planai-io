@@ -89,7 +89,7 @@ export default function CreatePlanV2() {
       const welcomeMessage1: Message = {
         role: 'assistant',
         content: `Xin chào! Tôi là AI của PlanAI. Tôi sẽ giúp bạn tạo kế hoạch tài chính cá nhân hóa một cách đầy đủ và chi tiết nhất. :D 
-Thể làm được điều này, hãy giúp tôi hiểu hơn về bạn và nhu cầu của bạn.`,
+Để làm được điều này, hãy giúp tôi hiểu hơn về bạn và nhu cầu của bạn.`,
         timestamp: new Date()
       }
       
