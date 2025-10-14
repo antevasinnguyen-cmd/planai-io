@@ -25,7 +25,7 @@ Thêm các biến sau:
 | `SEPAY_ACCOUNT_NUMBER` | `FLIOAI000` | Production, Preview, Development |
 | `SEPAY_TOKEN` | `40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVK` | Production, Preview, Development |
 | `SEPAY_API_URL` | `https://my.sepay.vn/userapi/transactions/create` | Production, Preview, Development |
-| `SEPAY_WEBHOOK_SECRET` | `https://planai.io.vn/api/webhook/sepay` | Production, Preview, Development |
+| `SEPAY_WEBHOOK_SECRET` | `https://planai.io.vn/api/payment/sepay-webhook` | Production, Preview, Development |
 
 ### B. PayOS Configuration
 
@@ -37,7 +37,7 @@ Thêm các biến sau:
 | `PAYOS_API_KEY` | `f9e1a148-cbf3-4f24-be35-dfe90a5a14a9` | Production, Preview, Development |
 | `PAYOS_CHECKSUM_KEY` | `a3b3caf969522d63ac1a656fb14ef14208b46acc8432f5e28b38c1ba8087dc03` | Production, Preview, Development |
 | `PAYOS_API_URL` | `https://api-merchant.payos.vn/v2/payment-requests` | Production, Preview, Development |
-| `PAYOS_WEBHOOK_SECRET` | `https://planai.io.vn/api/webhook/payos` | Production, Preview, Development |
+| `PAYOS_WEBHOOK_SECRET` | `https://planai.io.vn/api/payment/payos-webhook` | Production, Preview, Development |
 
 ### C. App URL
 
@@ -52,7 +52,7 @@ Thêm các biến sau:
 1. Đăng nhập vào [SePay Dashboard](https://my.sepay.vn)
 2. Vào **Cài đặt** → **Webhooks**
 3. Thêm webhook mới với thông tin:
-   - **URL**: `https://planai.io.vn/api/webhook/sepay`
+   - **URL**: `https://planai.io.vn/api/payment/sepay-webhook`
    - **Kiểu chứng thực**: API Key
    - **Request Content Type**: application/json
    - **API Key**: `40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVKWT`
@@ -65,7 +65,7 @@ Thêm các biến sau:
 1. Đăng nhập vào [PayOS Dashboard](https://my.payos.vn)
 2. Vào **Cài đặt** → **Webhooks**
 3. Thêm webhook mới với thông tin:
-   - **URL**: `https://planai.io.vn/api/webhook/payos`
+   - **URL**: `https://planai.io.vn/api/payment/payos-webhook`
    - **Events**: Chọn tất cả payment events
 4. Lưu cấu hình
 
@@ -79,10 +79,10 @@ Sau khi deploy, kiểm tra webhooks hoạt động:
 
 ```bash
 # Test SePay webhook
-curl https://planai.io.vn/api/webhook/sepay
+curl https://planai.io.vn/api/payment/sepay-webhook
 
 # Test PayOS webhook
-curl https://planai.io.vn/api/webhook/payos
+curl https://planai.io.vn/api/payment/payos-webhook
 ```
 
 Cả hai endpoint phải trả về status `ok`.

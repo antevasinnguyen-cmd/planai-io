@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
                    request.headers.get('X-API-Key') || 
                    request.headers.get('api-key')
     
+    console.log('Received API Key:', apiKey ? 'Present' : 'Missing')
+    
     if (!apiKey || apiKey !== SEPAY_API_KEY) {
       console.error('=== SEPAY WEBHOOK: Invalid API key ===')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -162,9 +164,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
+// Health check endpoint - Không yêu cầu authentication
 export async function GET() {
   return NextResponse.json({ 
+    success: true,
     status: 'ok',
     webhook: 'sepay',
     timestamp: new Date().toISOString()
