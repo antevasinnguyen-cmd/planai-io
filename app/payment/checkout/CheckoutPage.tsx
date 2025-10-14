@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('sepay')
+  const [errorMessage, setErrorMessage] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -66,9 +67,10 @@ export default function CheckoutPage() {
     if (!selectedPlan || !user) return
 
     setIsProcessing(true)
+    setErrorMessage('') // Xóa thông báo lỗi cũ
 
     try {
-      // Tạo payment request với SePay
+      // Tạo payment request với SePay hoặc PayOS
       const response = await fetch('/api/payment/create', {
         method: 'POST',
         headers: {
@@ -85,14 +87,16 @@ export default function CheckoutPage() {
       const data = await response.json()
 
       if (data.success) {
-        // Redirect to SePay payment page
+        // Redirect to payment page
         window.location.href = data.paymentUrl
       } else {
-        alert('Có lỗi xảy ra khi tạo thanh toán. Vui lòng thử lại.')
+        // Hiển thị lỗi chi tiết
+        console.error('Payment creation error:', data)
+        setErrorMessage(data.details || data.error || 'Có lỗi xảy ra khi tạo thanh toán. Vui lòng thử lại.')
       }
     } catch (error) {
       console.error('Payment error:', error)
-      alert('Có lỗi xảy ra. Vui lòng thử lại sau.')
+      setErrorMessage('Có lỗi xảy ra khi kết nối với hệ thống thanh toán. Vui lòng thử lại sau.')
     }
 
     setIsProcessing(false)
@@ -195,8 +199,8 @@ export default function CheckoutPage() {
                     className="text-primary-600 focus:ring-primary-500"
                   />
                   <span className="ml-3 flex items-center">
-                    <CreditCard className="w-5 h-5 text-gray-400 mr-2" />
-                    VietQR Pro (SePay)
+                    <CreditCard className="w-5 h-5 text-gray-700 mr-2" />
+                    <span className="text-gray-700">VietQR Pro (SePay)</span>
                   </span>
                 </label>
                 <label className="flex items-center">
@@ -208,8 +212,8 @@ export default function CheckoutPage() {
                     className="text-primary-600 focus:ring-primary-500"
                   />
                   <span className="ml-3 flex items-center">
-                    <CreditCard className="w-5 h-5 text-gray-400 mr-2" />
-                    PayOS
+                    <CreditCard className="w-5 h-5 text-gray-700 mr-2" />
+                    <span className="text-gray-700">PayOS</span>
                   </span>
                 </label>
               </div>
@@ -228,6 +232,13 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600">{errorMessage}</p>
+              </div>
+            )}
+            
             {/* Payment Button */}
             <button
               onClick={handlePayment}
@@ -248,7 +259,7 @@ export default function CheckoutPage() {
             </button>
 
             {/* Security Notice */}
-            <div className="mt-6 flex items-center text-sm text-gray-500">
+            <div className="mt-6 flex items-center text-sm text-gray-600 dark:text-gray-400">
               <Shield className="w-4 h-4 text-green-500 mr-2" />
               Thanh toán được bảo mật bởi SePay/PayOS
             </div>
