@@ -17,7 +17,7 @@ PAYOS_API_URL=https://api-merchant.payos.vn/v2/payment-requests
 PAYOS_WEBHOOK_SECRET=https://planai.io.vn/api/payment/payos-webhook
 
 # App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://planai.io.vn
 ```
 
 Sau khi cập nhật, khởi động lại server:
