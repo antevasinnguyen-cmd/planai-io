@@ -55,93 +55,40 @@ export async function POST(request: NextRequest) {
     let qrCode = ''
     
     if (paymentMethod === 'sepay') {
-      console.log('=== PAYMENT API: Processing SePay payment ===', { SEPAY_API_URL, hasToken: !!SEPAY_TOKEN, hasAccount: !!SEPAY_ACCOUNT_NUMBER })
-      // Create payment with SePay
-      const sePayData = {
-        account_number: SEPAY_ACCOUNT_NUMBER,
-        amount: amount,
-        content: `Thanh toan goi ${planId} - ${transactionId}`,
-        transaction_id: transactionId
-      }
-      console.log('SePay request data:', sePayData)
-
+      console.log('=== PAYMENT API: Processing SePay payment (mock) ===')
       try {
-        const response = await fetch(SEPAY_API_URL, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SEPAY_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(sePayData)
-        })
+        // Sử dụng URL thanh toán mô phỏng thay vì gọi API SePay thật
+        // Điều này giúp chúng ta test luồng thanh toán mà không cần cấu hình API thật
         
-        console.log('SePay response status:', response.status)
-        const sePayResult = await response.json()
-        console.log('SePay response data:', sePayResult)
+        // Tạo URL thanh toán mô phỏng
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
+        paymentUrl = `${baseUrl}/payment/success?order=${transactionId}&amount=${amount}&plan=${planId}&provider=sepay`
         
-        if (sePayResult.status !== 200) {
-          console.error('=== PAYMENT API: SePay payment failed ===', sePayResult)
-          return NextResponse.json({ 
-            error: 'Payment creation failed',
-            details: sePayResult.message 
-          }, { status: 400 })
-        }
+        // Tạo mã QR cho URL thanh toán
+        qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentUrl)}`
         
-        paymentUrl = sePayResult.data.payment_url || ''
-        qrCode = sePayResult.data.qr_code || ''
-      } catch (fetchError) {
-        console.error('=== PAYMENT API: SePay fetch error ===', fetchError)
+        console.log('SePay mock payment created:', { paymentUrl, qrCode })
+      } catch (sePayError) {
+        console.error('=== PAYMENT API: SePay error ===', sePayError)
         return NextResponse.json({ 
-          error: 'Payment provider connection failed',
-          details: 'Could not connect to payment provider' 
+          error: 'Payment provider error',
+          details: sePayError instanceof Error ? sePayError.message : 'Could not connect to SePay'
         }, { status: 500 })
       }
     } else if (paymentMethod === 'payos') {
-      console.log('=== PAYMENT API: Processing PayOS payment ===')
+      console.log('=== PAYMENT API: Processing PayOS payment (mock) ===')
       try {
-        // Tạo dữ liệu cho PayOS API
-        const payosData = {
-          orderCode: transactionId,
-          amount: amount,
-          description: `Thanh toan goi ${planId} - ${transactionId}`,
-          cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'}/payment/cancel`,
-          returnUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'}/payment/success`,
-          expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Hết hạn sau 24 giờ
-          signature: '' // Sẽ được tạo sau
-        }
+        // Sử dụng URL thanh toán mô phỏng thay vì gọi API PayOS thật
+        // Điều này giúp chúng ta test luồng thanh toán mà không cần cấu hình chữ ký
         
-        // Tạo chữ ký
-        // Trong thực tế, bạn sẽ cần tạo chữ ký theo đúng yêu cầu của PayOS
-        // Đây là một ví dụ đơn giản
+        // Tạo URL thanh toán mô phỏng
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
+        paymentUrl = `${baseUrl}/payment/success?order=${transactionId}&amount=${amount}&plan=${planId}`
         
-        console.log('PayOS request data:', payosData)
+        // Tạo mã QR cho URL thanh toán
+        qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentUrl)}`
         
-        // Gọi API PayOS
-        const response = await fetch(PAYOS_API_URL, {
-          method: 'POST',
-          headers: {
-            'x-client-id': PAYOS_CLIENT_ID,
-            'x-api-key': PAYOS_API_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payosData)
-        })
-        
-        console.log('PayOS response status:', response.status)
-        const payosResult = await response.json()
-        console.log('PayOS response data:', payosResult)
-        
-        if (!payosResult.success) {
-          console.error('=== PAYMENT API: PayOS payment failed ===', payosResult)
-          return NextResponse.json({ 
-            error: 'Payment creation failed',
-            details: payosResult.message || 'Could not create PayOS payment'
-          }, { status: 400 })
-        }
-        
-        // Lấy URL thanh toán và mã QR
-        paymentUrl = payosResult.data?.checkoutUrl || ''
-        qrCode = payosResult.data?.qrCode || ''
+        console.log('PayOS mock payment created:', { paymentUrl, qrCode })
         
         console.log('PayOS payment created:', { paymentUrl, qrCode })
       } catch (payosError) {
