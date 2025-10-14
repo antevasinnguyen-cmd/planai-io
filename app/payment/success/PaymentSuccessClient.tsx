@@ -44,16 +44,16 @@ export default function PaymentSuccessClient({ orderId, amount, planId, provider
         <div className="bg-gray-50 p-4 rounded-lg mb-6">
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="text-left text-gray-600">Mã đơn hàng:</div>
-            <div className="text-right font-medium">{orderId}</div>
+            <div className="text-right font-medium text-gray-900">{orderId}</div>
             
             <div className="text-left text-gray-600">Số tiền:</div>
-            <div className="text-right font-medium">{parseInt(amount || '0').toLocaleString('vi-VN')} VND</div>
+            <div className="text-right font-medium text-gray-900">{parseInt(amount || '0').toLocaleString('vi-VN')} VND</div>
             
             <div className="text-left text-gray-600">Gói:</div>
-            <div className="text-right font-medium">{planId === 'basic' ? 'Gói 1' : planId === 'pro' ? 'Gói 2' : planId === 'pro_max' ? 'Gói 3' : planId}</div>
+            <div className="text-right font-medium text-gray-900">{planId === 'basic' ? 'Gói 1' : planId === 'pro' ? 'Gói 2' : planId === 'pro_max' ? 'Gói 3' : planId}</div>
             
             <div className="text-left text-gray-600">Phương thức:</div>
-            <div className="text-right font-medium">{provider === 'sepay' ? 'VietQR Pro (SePay)' : 'PayOS'}</div>
+            <div className="text-right font-medium text-gray-900">{provider === 'sepay' ? 'VietQR Pro (SePay)' : 'PayOS'}</div>
           </div>
         </div>
         

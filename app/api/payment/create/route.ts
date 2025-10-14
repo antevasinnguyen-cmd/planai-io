@@ -47,19 +47,27 @@ export async function POST(request: NextRequest) {
     let qrCode = ''
     
     if (paymentMethod === 'sepay') {
-      console.log('=== PAYMENT API: Processing SePay payment (mock) ===')
+      console.log('=== PAYMENT API: Processing SePay payment ===')
       try {
-        // Sử dụng URL thanh toán mô phỏng thay vì gọi API SePay thật
-        // Điều này giúp chúng ta test luồng thanh toán mà không cần cấu hình API thật
-        
-        // Tạo URL thanh toán mô phỏng
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
-        paymentUrl = `${baseUrl}/payment/success?order=${transactionId}&amount=${amount}&plan=${planId}&provider=sepay`
         
-        // Tạo mã QR cho URL thanh toán
-        qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentUrl)}`
+        // Thông tin tài khoản SePay
+        const bankName = 'MB Bank'
+        const accountName = 'NGUYEN VAN A'
+        const accountNumber = SEPAY_ACCOUNT_NUMBER
         
-        console.log('SePay mock payment created:', { paymentUrl, qrCode })
+        // Tạo nội dung chuyển khoản
+        const transferContent = transactionId
+        
+        // Tạo URL VietQR
+        const vietQRUrl = `https://img.vietqr.io/image/${bankName}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+        
+        qrCode = vietQRUrl
+        
+        // URL chuyển đến trang processing
+        paymentUrl = `${baseUrl}/payment/processing?order=${transactionId}&amount=${amount}&plan=${planId}&provider=sepay&qr=${encodeURIComponent(qrCode)}&account=${accountNumber}&name=${encodeURIComponent(accountName)}&bank=${encodeURIComponent(bankName)}`
+        
+        console.log('SePay payment created:', { paymentUrl, qrCode })
       } catch (sePayError) {
         console.error('=== PAYMENT API: SePay error ===', sePayError)
         return NextResponse.json({ 
@@ -68,19 +76,25 @@ export async function POST(request: NextRequest) {
         }, { status: 500 })
       }
     } else if (paymentMethod === 'payos') {
-      console.log('=== PAYMENT API: Processing PayOS payment (mock) ===')
+      console.log('=== PAYMENT API: Processing PayOS payment ===')
       try {
-        // Sử dụng URL thanh toán mô phỏng thay vì gọi API PayOS thật
-        // Điều này giúp chúng ta test luồng thanh toán mà không cần cấu hình chữ ký
-        
-        // Tạo URL thanh toán mô phỏng
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
-        paymentUrl = `${baseUrl}/payment/success?order=${transactionId}&amount=${amount}&plan=${planId}`
         
-        // Tạo mã QR cho URL thanh toán
-        qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(paymentUrl)}`
+        // Thông tin tài khoản PayOS
+        const bankName = 'Vietcombank'
+        const accountName = 'CONG TY TNHH PAYOS'
+        const accountNumber = '1234567890'
         
-        console.log('PayOS mock payment created:', { paymentUrl, qrCode })
+        // Tạo nội dung chuyển khoản
+        const transferContent = transactionId
+        
+        // Tạo URL VietQR
+        const vietQRUrl = `https://img.vietqr.io/image/${bankName}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+        
+        qrCode = vietQRUrl
+        
+        // URL chuyển đến trang processing
+        paymentUrl = `${baseUrl}/payment/processing?order=${transactionId}&amount=${amount}&plan=${planId}&provider=payos&qr=${encodeURIComponent(qrCode)}&account=${accountNumber}&name=${encodeURIComponent(accountName)}&bank=${encodeURIComponent(bankName)}`
         
         console.log('PayOS payment created:', { paymentUrl, qrCode })
       } catch (payosError) {
