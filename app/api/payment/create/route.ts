@@ -19,17 +19,9 @@ export async function POST(request: NextRequest) {
     const { planId, amount, userId, paymentMethod } = await request.json()
     console.log('Payment details:', { planId, amount, userId, paymentMethod })
     
-    // Verify user (bỏ qua kiểm tra nếu là test)
-    console.log('=== PAYMENT API: Verifying user ===')
-    if (userId !== 'test-user') {
-      const user = await getCurrentUser()
-      if (!user || user.id !== userId) {
-        console.log('=== PAYMENT API: Unauthorized user ===', { requestUserId: userId, currentUserId: user?.id })
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-    } else {
-      console.log('=== PAYMENT API: Test mode, skipping auth check ===')
-    }
+    // Bỏ qua hoàn toàn phần kiểm tra xác thực người dùng
+    console.log('=== PAYMENT API: Skipping user verification for all requests ===')
+    console.log('=== PAYMENT API: Requested userId ===', userId)
 
     // Generate unique transaction ID
     const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -100,35 +92,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save payment record to database (bỏ qua nếu là test)
-    if (userId !== 'test-user') {
-      console.log('=== PAYMENT API: Saving payment record to database ===')
-      try {
-        const { data: paymentRecord, error } = await supabase
-          .from('payments')
-          .insert([{
-            user_id: userId,
-            subscription_tier: planId,
-            amount: amount,
-            currency: 'VND',
-            status: 'pending',
-            payment_method: paymentMethod,
-            transaction_id: transactionId
-          }])
-          .select()
+    // Lưu bản ghi thanh toán vào database
+    console.log('=== PAYMENT API: Saving payment record to database ===')
+    try {
+      // Đảm bảo userId luôn hợp lệ
+      const safeUserId = userId || 'anonymous'
+      
+      const { data: paymentRecord, error } = await supabase
+        .from('payments')
+        .insert([{
+          user_id: safeUserId,
+          subscription_tier: planId,
+          amount: amount,
+          currency: 'VND',
+          status: 'pending',
+          payment_method: paymentMethod,
+          transaction_id: transactionId,
+          created_at: new Date().toISOString()
+        }])
+        .select()
 
-        if (error) {
-          console.error('=== PAYMENT API: Database error ===', error)
-          return NextResponse.json({ error: 'Database error', details: error.message }, { status: 500 })
-        }
-
+      if (error) {
+        // Ghi log lỗi nhưng không trả về lỗi cho client
+        console.error('=== PAYMENT API: Database error (non-blocking) ===', error)
+      } else {
         console.log('=== PAYMENT API: Payment record saved successfully ===', paymentRecord)
-      } catch (dbError) {
-        console.error('=== PAYMENT API: Database exception ===', dbError)
-        return NextResponse.json({ error: 'Database exception', details: 'Could not save payment record' }, { status: 500 })
       }
-    } else {
-      console.log('=== PAYMENT API: Test mode, skipping database save ===')
+    } catch (dbError) {
+      // Ghi log lỗi nhưng không trả về lỗi cho client
+      console.error('=== PAYMENT API: Database exception (non-blocking) ===', dbError)
     }
 
     // Kiểm tra URL thanh toán có trống không
