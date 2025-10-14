@@ -7,7 +7,7 @@ Vui lòng thêm các dòng sau vào file `.env` của bạn:
 SEPAY_ACCOUNT_NUMBER=FLIOAI000
 SEPAY_TOKEN=40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVK
 SEPAY_API_URL=https://my.sepay.vn/userapi/transactions/create
-SEPAY_WEBHOOK_SECRET=https://planai.io.vn/api/payment/sepay-webhook
+SEPAY_WEBHOOK_SECRET=https://planai.io.vn/api/webhook/sepay
 
 # PayOS Configuration
 PAYOS_CLIENT_ID=2d884d13-bf7d-4733-89e4-2624b976aff2

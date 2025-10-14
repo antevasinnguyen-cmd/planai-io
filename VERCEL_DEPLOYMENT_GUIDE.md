@@ -25,7 +25,7 @@ Thêm các biến sau:
 | `SEPAY_ACCOUNT_NUMBER` | `FLIOAI000` | Production, Preview, Development |
 | `SEPAY_TOKEN` | `40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVK` | Production, Preview, Development |
 | `SEPAY_API_URL` | `https://my.sepay.vn/userapi/transactions/create` | Production, Preview, Development |
-| `SEPAY_WEBHOOK_SECRET` | `https://planai.io.vn/api/payment/sepay-webhook` | Production, Preview, Development |
+| `SEPAY_WEBHOOK_SECRET` | `https://planai.io.vn/api/webhook/sepay` | Production, Preview, Development |
 
 ### B. PayOS Configuration
 
@@ -52,7 +52,7 @@ Thêm các biến sau:
 1. Đăng nhập vào [SePay Dashboard](https://my.sepay.vn)
 2. Vào **Cài đặt** → **Webhooks**
 3. Thêm webhook mới với thông tin:
-   - **URL**: `https://planai.io.vn/api/payment/sepay-webhook`
+   - **URL**: `https://planai.io.vn/api/webhook/sepay`
    - **Kiểu chứng thực**: API Key
    - **Request Content Type**: application/json
    - **API Key**: `40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVKWT`
@@ -79,7 +79,7 @@ Sau khi deploy, kiểm tra webhooks hoạt động:
 
 ```bash
 # Test SePay webhook
-curl https://planai.io.vn/api/payment/sepay-webhook
+curl https://planai.io.vn/api/webhook/sepay
 
 # Test PayOS webhook
 curl https://planai.io.vn/api/payment/payos-webhook
