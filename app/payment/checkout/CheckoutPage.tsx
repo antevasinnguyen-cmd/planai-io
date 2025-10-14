@@ -69,9 +69,21 @@ export default function CheckoutPage() {
     setIsProcessing(true)
     setErrorMessage('') // Xóa thông báo lỗi cũ
 
+    // Thêm timeout để tránh chờ mãi mài
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout: Request took too long')), 15000) // 15 giây timeout
+    })
+
     try {
       // Tạo payment request với SePay hoặc PayOS
-      const response = await fetch('/api/payment/create', {
+      console.log('Sending payment request:', {
+        planId: selectedPlan.id,
+        amount: selectedPlan.price,
+        userId: user.id,
+        paymentMethod
+      })
+
+      const fetchPromise = fetch('/api/payment/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,19 +96,36 @@ export default function CheckoutPage() {
         })
       })
 
+      // Race giữa fetch và timeout
+      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response
+      console.log('Payment API response received')
+
       const data = await response.json()
+      console.log('Payment response data:', data)
 
       if (data.success) {
+        console.log('Payment created successfully, redirecting to:', data.paymentUrl)
         // Redirect to payment page
         window.location.href = data.paymentUrl
       } else {
         // Hiển thị lỗi chi tiết
         console.error('Payment creation error:', data)
-        setErrorMessage(data.details || data.error || 'Có lỗi xảy ra khi tạo thanh toán. Vui lòng thử lại.')
+        
+        // Nếu lỗi với SePay, đề xuất chuyển sang PayOS
+        if (paymentMethod === 'sepay') {
+          setErrorMessage(`${data.details || data.error || 'Có lỗi xảy ra khi tạo thanh toán.'} Bạn có thể thử phương thức thanh toán PayOS.`)
+          setPaymentMethod('payos') // Tự động chuyển sang PayOS
+        } else {
+          setErrorMessage(data.details || data.error || 'Có lỗi xảy ra khi tạo thanh toán. Vui lòng thử lại sau.')
+        }
       }
     } catch (error) {
       console.error('Payment error:', error)
-      setErrorMessage('Có lỗi xảy ra khi kết nối với hệ thống thanh toán. Vui lòng thử lại sau.')
+      if (error instanceof Error && error.message.includes('Timeout')) {
+        setErrorMessage('Yêu cầu thanh toán đã hết thời gian chờ. Vui lòng thử lại sau.')
+      } else {
+        setErrorMessage('Có lỗi xảy ra khi kết nối với hệ thống thanh toán. Vui lòng thử lại sau.')
+      }
     }
 
     setIsProcessing(false)
