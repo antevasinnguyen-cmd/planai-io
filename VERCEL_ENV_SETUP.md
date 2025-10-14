@@ -1,51 +1,78 @@
-# Hướng dẫn cài đặt Environment Variables trên Vercel
+# Hướng dẫn cập nhật biến môi trường trên Vercel
 
-Để tính năng AI hoạt động đúng, bạn cần cấu hình các biến môi trường sau trên Vercel:
+## Bước 1: Truy cập Vercel Dashboard
 
-## 1. OpenAI API Key
+1. Đăng nhập vào [Vercel](https://vercel.com)
+2. Chọn project **planai-io**
+3. Vào **Settings** → **Environment Variables**
 
-1. Đăng nhập vào tài khoản OpenAI của bạn tại [platform.openai.com](https://platform.openai.com)
-2. Truy cập vào mục API Keys
-3. Tạo một API key mới
-4. Sao chép API key
+## Bước 2: Thêm các biến môi trường sau
 
-## 2. Anthropic API Key (Cho Claude fallback)
+### SePay Configuration
 
-1. Đăng nhập vào tài khoản Anthropic của bạn tại [console.anthropic.com](https://console.anthropic.com)
-2. Truy cập vào mục API Keys
-3. Tạo một API key mới
-4. Sao chép API key
+```
+SEPAY_ACCOUNT_NUMBER=FLIOAI000
+SEPAY_TOKEN=40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVK
+SEPAY_WEBHOOK_SECRET=https://planai.io.vn/api/webhook/sepay
+```
 
-## 3. Cấu hình trên Vercel
+### PayOS Configuration
 
-1. Đăng nhập vào [Vercel Dashboard](https://vercel.com/dashboard)
-2. Chọn dự án PlanAI
-3. Vào mục **Settings**
-4. Chọn tab **Environment Variables**
-5. Thêm các biến môi trường sau:
+```
+PAYOS_CLIENT_ID=2d884d13-bf7d-4733-89e4-2624b976aff2
+PAYOS_API_KEY=f9e1a148-cbf3-4f24-be35-dfe90a5a14a9
+PAYOS_CHECKSUM_KEY=a3b3caf969522d63ac1a656fb14ef14208b46acc8432f5e28b38c1ba8087dc03
+PAYOS_API_URL=https://api-merchant.payos.vn/v2/payment-requests
+PAYOS_WEBHOOK_SECRET=https://planai.io.vn/api/payment/payos-webhook
+```
 
-| Tên biến | Giá trị | Môi trường |
-|----------|---------|------------|
-| `OPENAI_API_KEY` | [API key của OpenAI] | Production, Preview, Development |
-| `ANTHROPIC_API_KEY` | [API key của Anthropic] | Production, Preview, Development |
+### App URL
 
-6. Nhấn **Save** để lưu lại cấu hình
+```
+NEXT_PUBLIC_APP_URL=https://planai.io.vn
+```
 
-## 4. Redeploy ứng dụng
+## Bước 3: Lưu và Redeploy
 
-1. Vào tab **Deployments**
-2. Chọn deployment gần nhất
-3. Nhấn nút **Redeploy** để triển khai lại ứng dụng với các biến môi trường mới
+1. Nhấn **Save** cho mỗi biến
+2. Vercel sẽ tự động redeploy
+3. Đợi khoảng 2-3 phút để deployment hoàn tất
 
-## 5. Kiểm tra
+## Thông tin tài khoản đã cập nhật trong code
 
-Sau khi redeploy, hãy kiểm tra tính năng AI để đảm bảo nó hoạt động đúng:
+### SePay (MBBank)
+- **Ngân hàng**: TMCP Quân đội MBBank  
+- **Thụ hưởng**: NGUYEN THI KHANH HUYEN  
+- **Số tài khoản**: FLIOAI000
 
-1. Truy cập vào trang [https://planai.io.vn/dashboard/create-plan](https://planai.io.vn/dashboard/create-plan)
-2. Thử chat với AI để xem phản hồi
+### PayOS (MBBank)
+- **Ngân hàng**: TMCP Quân đội MBBank  
+- **Chủ tài khoản**: NGUYEN THI KHANH HUYEN  
+- **Số tài khoản**: 5428960265186
 
-## Lưu ý
+## Cách thức hoạt động
 
-- Không bao giờ chia sẻ API key với người khác
-- Nếu nghi ngờ API key bị lộ, hãy tạo key mới và cập nhật trên Vercel
-- Kiểm tra giới hạn sử dụng API của OpenAI và Anthropic để tránh chi phí không mong muốn
+Hệ thống sẽ **tự động tạo QR code động** cho mỗi giao dịch với:
+- ✅ Số tiền chính xác theo gói (169.000đ / 289.000đ / 499.000đ)
+- ✅ Nội dung chuyển khoản unique (PLANAI_timestamp_random)
+- ✅ Thông tin tài khoản ngân hàng của bạn
+
+**Không cần tạo QR tĩnh trên SePay/PayOS!** Mỗi lần thanh toán sẽ có QR riêng với số tiền và nội dung khác nhau.
+
+## Kiểm tra sau khi deploy
+
+1. Truy cập: https://planai.io.vn/payment/checkout?plan=basic
+2. Chọn phương thức thanh toán (SePay hoặc PayOS)
+3. Nhấn "Thanh toán"
+4. Kiểm tra:
+   - ✅ Có chuyển đến trang `/payment/processing`
+   - ✅ Hiển thị QR code
+   - ✅ Hiển thị thông tin tài khoản đúng
+   - ✅ Số tiền đúng với gói đã chọn
+   - ✅ Có nội dung chuyển khoản unique
+
+## Lưu ý quan trọng
+
+- Mỗi giao dịch sẽ có mã riêng (transaction ID) để hệ thống có thể xác định thanh toán
+- Người dùng cần chuyển khoản **đúng số tiền** và **đúng nội dung** để hệ thống tự động xác nhận
+- Webhook sẽ nhận thông báo từ SePay/PayOS khi có giao dịch thành công
