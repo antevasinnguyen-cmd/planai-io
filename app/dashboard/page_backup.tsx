@@ -137,7 +137,7 @@ export default function DashboardPage() {
       const errorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         user_id: user?.id || '',
-        message: "Có lỗi xảy ra khi kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.",
+        message: "Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.",
         type: 'ai',
         created_at: new Date().toISOString()
       }

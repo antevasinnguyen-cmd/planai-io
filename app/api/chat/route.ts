@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       console.error('=== API CHAT: Lỗi khi gọi AI ===', aiError)
       
       // Provide specific error messages based on error type
-      let errorMessage = 'Xin lỗi, có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.'
+      let errorMessage = 'Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.'
       let userFriendlyMessage = errorMessage
       let isQuotaError = false
       

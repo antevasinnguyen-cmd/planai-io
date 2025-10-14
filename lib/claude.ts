@@ -54,7 +54,7 @@ export const generateClaudeResponse = async (
     return 'Không nhận được phản hồi từ AI.'
   } catch (error) {
     console.error('Claude API Error:', error)
-    return 'Có lỗi xảy ra khi kết nối với Claude AI. Vui lòng thử lại sau.'
+    return 'Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.'
   }
 }
 
