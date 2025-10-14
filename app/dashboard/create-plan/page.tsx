@@ -102,7 +102,6 @@ Tài chính hiện tại: Thu nhập/tháng, chi phí cố định, khoản ti�
 Kỹ năng/nghề nghiệp: Kỹ năng hiện tại (ví dụ: marketing), kinh nghiệm, nghề nghiệp hiện tại
 Mức độ sẵn sàng: Sẵn sàng học kiến thức mới, thời gian dành cho kế hoạch
 Thời gian mục tiêu: 3 tháng, 6 tháng, 1 năm, 2 năm, 5 năm, v.v.
- 
 
 Ngoài ra, bạn có thể mô tả kỹ hơn, hoặc tâm sự với tôi về mọi thứ liên quan như: Một tương lai bạn mong muốn, nỗi sợ/lo lắng, thói quen, ước mơ của bạn,…`,
         timestamp: new Date(new Date().getTime() + 1000) // 1 second later
