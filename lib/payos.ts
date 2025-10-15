@@ -31,7 +31,7 @@ export interface Payment {
   reference?: string
 }
 
-// Create payment link
+// Create payment link - Simplified version to avoid signature issues
 export const createPaymentLink = async (
   orderCode: string,
   amount: number,
@@ -41,11 +41,10 @@ export const createPaymentLink = async (
 ): Promise<Payment> => {
   try {
     // Kiểm tra các biến môi trường cần thiết
-    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY) {
       throw new Error('Missing PayOS configuration: CLIENT_ID or API_KEY')
     }
 
-    console.log('Creating PayOS payment (simplified):', {
+    console.log('Creating PayOS payment (simplified - no checksum):', {
       orderCode,
       amount,
       description,
@@ -53,29 +52,17 @@ export const createPaymentLink = async (
       cancelUrl
     })
 
-    // Sử dụng approach đơn giản hơn để tránh rate limiting
-    // Thử không có checksum trước
-    const simplePayload = {
-      orderCode,
-      amount,
-      description,
-      returnUrl,
-      cancelUrl,
-      expiredAt: getExpiredTime()
-    }
-
-    console.log('Creating PayOS payment without checksum:', {
-      orderCode,
-      amount,
-      description,
-      returnUrl,
-      cancelUrl,
-      expiredAt: getExpiredTime()
-    })
-
+    // Sử dụng phương án đơn giản nhất - không có checksum
     const response = await axios.post(
       `${PAYOS_API_URL}/v2/payment-requests`,
-      simplePayload,
+      {
+        orderCode,
+        amount,
+        description,
+        returnUrl,
+        cancelUrl,
+        expiredAt: getExpiredTime()
+      },
       {
         headers: {
           'x-client-id': PAYOS_CLIENT_ID,
@@ -85,60 +72,7 @@ export const createPaymentLink = async (
     )
 
     if (response.data.code !== '00') {
-      // Nếu không thành công, thử với checksum đơn giản
-      console.log('Simple approach failed, trying with checksum...')
-
-      const checksumData = `${orderCode}${amount}${description}${returnUrl}${cancelUrl}`
-      const checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY || PAYOS_CLIENT_ID).update(checksumData, 'utf8').digest('hex')
-
-      console.log('Creating PayOS payment with checksum:', {
-        orderCode,
-        amount,
-        description,
-        returnUrl,
-        cancelUrl,
-        expiredAt: getExpiredTime(),
-        checksumData: checksumData.substring(0, 50) + '...',
-        checksum: checksum.substring(0, 16) + '...'
-      })
-
-      const responseWithChecksum = await axios.post(
-        `${PAYOS_API_URL}/v2/payment-requests`,
-        {
-          orderCode,
-          amount,
-          description,
-          returnUrl,
-          cancelUrl,
-          expiredAt: getExpiredTime(),
-          signature: checksum
-        },
-        {
-          headers: {
-            'x-client-id': PAYOS_CLIENT_ID,
-            'x-api-key': PAYOS_API_KEY
-          }
-        }
-      )
-
-      if (responseWithChecksum.data.code !== '00') {
-        throw new Error(`Payment creation failed: ${responseWithChecksum.data.desc}`)
-      }
-
-      const paymentData = responseWithChecksum.data.data
-      return {
-        id: paymentData.paymentLinkId,
-        orderCode,
-        amount,
-        description,
-        status: PaymentStatus.PENDING,
-        createdAt: new Date().toISOString(),
-        paymentUrl: paymentData.checkoutUrl,
-        qrCode: paymentData.qrCode,
-        accountName: paymentData.accountName,
-        accountNumber: paymentData.accountNumber,
-        reference: paymentData.reference
-      }
+      throw new Error(`Payment creation failed: ${response.data.desc}`)
     }
 
     const paymentData = response.data.data
