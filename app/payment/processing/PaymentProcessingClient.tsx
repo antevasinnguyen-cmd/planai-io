@@ -34,6 +34,19 @@ export default function PaymentProcessingClient({
   const [timeRemaining, setTimeRemaining] = useState(PAYMENT_TIMEOUT)
   const [isCancelling, setIsCancelling] = useState(false)
 
+  // Debug QR code format
+  useEffect(() => {
+    if (qrCode) {
+      console.log('QR Code format debug:', {
+        qrCode: qrCode.substring(0, 100) + '...',
+        startsWithData: qrCode.startsWith('data:'),
+        startsWithHttp: qrCode.startsWith('http'),
+        length: qrCode.length,
+        provider: provider
+      })
+    }
+  }, [qrCode, provider])
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     setCopied(true)
@@ -147,10 +160,14 @@ export default function PaymentProcessingClient({
           <div className="flex justify-center mb-6">
             <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
               {qrCode ? (
-                <img 
-                  src={decodeURIComponent(qrCode)} 
-                  alt="QR Code thanh toán" 
-                  width={250} 
+                <img
+                  src={
+                    qrCode.startsWith('data:') || qrCode.startsWith('http')
+                      ? qrCode
+                      : decodeURIComponent(qrCode)
+                  }
+                  alt="QR Code thanh toán"
+                  width={250}
                   height={250}
                   className="rounded"
                   onError={(e) => {
