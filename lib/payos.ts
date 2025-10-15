@@ -46,8 +46,11 @@ export const createPaymentLink = async (
       throw new Error('Missing PayOS configuration: CLIENT_ID or API_KEY')
     }
 
+    // PayOS yêu cầu orderCode phải là số nguyên, không phải string
+    const orderCodeNumber = parseInt(orderCode.replace(/[^0-9]/g, '').slice(0, 9)) || Date.now()
+
     console.log('Creating PayOS payment (simplified - no checksum):', {
-      orderCode,
+      orderCode: orderCodeNumber,
       amount,
       description,
       returnUrl,
@@ -58,7 +61,7 @@ export const createPaymentLink = async (
     const response = await axios.post(
       `${PAYOS_API_URL}/v2/payment-requests`,
       {
-        orderCode,
+        orderCode: orderCodeNumber,
         amount,
         description,
         returnUrl,
