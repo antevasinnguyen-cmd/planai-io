@@ -13,20 +13,30 @@ export async function GET(request: NextRequest) {
     console.log('=== PAYMENT STATUS CHECK: Checking payment status ===', orderId)
 
     // Kiểm tra trạng thái thanh toán trong database
-    const { data: payment, error } = await supabase
+    const { data: payments, error } = await supabase
       .from('payments')
       .select('*')
       .eq('transaction_id', orderId)
-      .single()
 
     if (error) {
       console.error('=== PAYMENT STATUS CHECK: Database error ===', error)
+      return NextResponse.json({ 
+        status: 'pending',
+        message: 'Database error',
+        error: error.message
+      })
+    }
+
+    // Nếu không tìm thấy payment hoặc chưa có trong DB
+    if (!payments || payments.length === 0) {
+      console.log('=== PAYMENT STATUS CHECK: Payment not found in database ===', orderId)
       return NextResponse.json({ 
         status: 'pending',
         message: 'Payment not found or still pending'
       })
     }
 
+    const payment = payments[0]
     console.log('=== PAYMENT STATUS CHECK: Payment found ===', payment)
 
     return NextResponse.json({

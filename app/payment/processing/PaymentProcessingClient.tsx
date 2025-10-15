@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { QrCode, Copy, CheckCircle, XCircle, Loader2, AlertTriangle, Clock, X } from 'lucide-react'
-import Image from 'next/image'
 
 interface PaymentProcessingClientProps {
   orderId: string
@@ -148,12 +147,17 @@ export default function PaymentProcessingClient({
           <div className="flex justify-center mb-6">
             <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
               {qrCode ? (
-                <Image 
-                  src={qrCode} 
+                <img 
+                  src={decodeURIComponent(qrCode)} 
                   alt="QR Code thanh toán" 
                   width={250} 
                   height={250}
                   className="rounded"
+                  onError={(e) => {
+                    console.error('QR Code load error:', qrCode);
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = '<div class="w-[250px] h-[250px] flex items-center justify-center bg-red-50 rounded text-red-600 text-sm text-center p-4">Không thể tải QR code. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.</div>';
+                  }}
                 />
               ) : (
                 <div className="w-[250px] h-[250px] flex items-center justify-center bg-gray-100 rounded">
@@ -206,27 +210,6 @@ export default function PaymentProcessingClient({
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Cancel Button */}
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={handleCancelPayment}
-              disabled={isCancelling || paymentStatus === 'success' || paymentStatus === 'cancelled'}
-              className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCancelling ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Đang hủy...</span>
-                </>
-              ) : (
-                <>
-                  <X className="w-5 h-5" />
-                  <span>Hủy thanh toán</span>
-                </>
-              )}
-            </button>
           </div>
 
           {/* Trạng thái thanh toán */}
@@ -350,6 +333,27 @@ export default function PaymentProcessingClient({
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Cancel Button - Moved to bottom */}
+        <div className="flex justify-center mt-8 mb-6">
+          <button
+            onClick={handleCancelPayment}
+            disabled={isCancelling || paymentStatus === 'success' || paymentStatus === 'cancelled'}
+            className="flex items-center gap-2 px-8 py-4 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-md"
+          >
+            {isCancelling ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>Đang hủy...</span>
+              </>
+            ) : (
+              <>
+                <X className="w-6 h-6" />
+                <span>Hủy thanh toán</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
