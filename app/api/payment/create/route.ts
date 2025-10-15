@@ -66,12 +66,29 @@ export async function POST(request: NextRequest) {
     const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     // Kiểm tra biến môi trường
-    if (paymentMethod === 'sepay' && (!SEPAY_TOKEN || !SEPAY_ACCOUNT_NUMBER)) {
-      console.error('Missing SePay configuration')
-      return NextResponse.json({ 
-        error: 'Payment provider configuration missing', 
-        details: 'SePay configuration is not complete' 
-      }, { status: 500 })
+    if (paymentMethod === 'sepay') {
+      console.log('=== SEPAY CONFIG CHECK ===', {
+        hasToken: !!SEPAY_TOKEN,
+        tokenLength: SEPAY_TOKEN?.length || 0,
+        hasAccountNumber: !!SEPAY_ACCOUNT_NUMBER,
+        accountNumber: SEPAY_ACCOUNT_NUMBER
+      });
+      
+      if (!SEPAY_TOKEN) {
+        console.error('Missing SEPAY_TOKEN environment variable');
+        return NextResponse.json({ 
+          error: 'Payment provider configuration missing', 
+          details: 'SEPAY_TOKEN is not configured. Please contact support.' 
+        }, { status: 500 });
+      }
+      
+      if (!SEPAY_ACCOUNT_NUMBER) {
+        console.error('Missing SEPAY_ACCOUNT_NUMBER environment variable');
+        return NextResponse.json({ 
+          error: 'Payment provider configuration missing', 
+          details: 'SEPAY_ACCOUNT_NUMBER is not configured. Please contact support.' 
+        }, { status: 500 });
+      }
     }
     
     if (paymentMethod === 'payos' && (!PAYOS_CLIENT_ID || !PAYOS_API_KEY || !PAYOS_CHECKSUM_KEY)) {
@@ -181,14 +198,27 @@ export async function POST(request: NextRequest) {
         
         // Tạo URL VietQR với định dạng đúng
         // Format: https://img.vietqr.io/image/{BANK_BIN}-{ACCOUNT_NUMBER}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={CONTENT}&accountName={NAME}
-        const vietQRUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${transferContent}&accountName=${accountName}`
-        
-        qrCode = vietQRUrl
+        qrCode = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
         
         // URL chuyển đến trang processing
-        paymentUrl = `${baseUrl}/payment/processing?order=${transactionId}&amount=${amount}&plan=${planId}&provider=payos&qr=${encodeURIComponent(qrCode)}&account=${accountNumber}&name=${encodeURIComponent(accountName)}&bank=${encodeURIComponent(bankName)}`
+        paymentUrl = `${baseUrl}/payment/processing?${new URLSearchParams({
+          order: transactionId,
+          amount: amount.toString(),
+          plan: planId,
+          provider: 'payos',
+          qr: qrCode,
+          account: accountNumber,
+          name: accountName,
+          bank: bankName,
+          timestamp: Date.now().toString()
+        })}`
         
-        console.log('PayOS payment created:', { paymentUrl, qrCode })
+        console.log('PayOS payment created:', { 
+          paymentUrl, 
+          qrCode: qrCode ? 'QR code generated' : 'No QR code',
+          transactionId,
+          timestamp: new Date().toISOString()
+        })
       } catch (payosError) {
         console.error('=== PAYMENT API: PayOS error ===', payosError)
         return NextResponse.json({ 

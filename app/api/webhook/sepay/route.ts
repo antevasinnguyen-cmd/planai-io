@@ -62,26 +62,33 @@ export async function POST(request: NextRequest) {
   console.log('=== SEPAY WEBHOOK: API Key verified ===');
 
   try {
-    // SePay webhook data format
+    // SePay webhook data format theo docs: https://docs.sepay.vn/tich-hop-webhooks.html
     const {
-      transaction_id,
-      status,
-      amount,
+      id,
+      gateway,
+      transactionDate,
+      accountNumber,
       code,
-      transaction_content,
-      amount_in,
+      content,
+      transferType,
+      transferAmount,
+      accumulated,
+      subAccount,
+      referenceCode,
       description
     } = body;
 
-    // Lấy order ID từ code hoặc transaction_content
-    const orderId = code || transaction_content || transaction_id;
-    const paymentAmount = amount_in || amount;
+    // Lấy order ID từ code hoặc content (nội dung chuyển khoản)
+    const orderId = code || content;
+    const paymentAmount = transferAmount;
 
     console.log('=== SEPAY WEBHOOK: Processing ===', {
+      id,
       orderId,
-      status,
+      gateway,
+      transferType,
       amount: paymentAmount,
-      description,
+      transactionDate,
       timestamp: new Date().toISOString()
     });
 
@@ -166,7 +173,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Xác định trạng thái thanh toán
-    const paymentStatus = status === 'success' || paymentAmount > 0 ? 'completed' : 'failed';
+    // Nếu là tiền vào (transferType = 'in') và có số tiền > 0 thì là thành công
+    const paymentStatus = transferType === 'in' && paymentAmount > 0 ? 'completed' : 'failed';
     const now = new Date().toISOString();
 
     // Cập nhật payment status với retry

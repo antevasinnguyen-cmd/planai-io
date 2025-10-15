@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { QrCode, Copy, CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react'
+import { QrCode, Copy, CheckCircle, XCircle, Loader2, AlertTriangle, Clock, X } from 'lucide-react'
 import Image from 'next/image'
 
 interface PaymentProcessingClientProps {
@@ -16,6 +16,8 @@ interface PaymentProcessingClientProps {
   bankName: string
 }
 
+const PAYMENT_TIMEOUT = 30 * 60 * 1000; // 30 phút
+
 export default function PaymentProcessingClient({
   orderId,
   amount,
@@ -28,14 +30,59 @@ export default function PaymentProcessingClient({
 }: PaymentProcessingClientProps) {
   const router = useRouter()
   const [copied, setCopied] = useState(false)
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'failed'>('pending')
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'success' | 'failed' | 'cancelled'>('pending')
   const [checkCount, setCheckCount] = useState(0)
+  const [timeRemaining, setTimeRemaining] = useState(PAYMENT_TIMEOUT)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  // Format thời gian còn lại
+  const formatTime = (ms: number) => {
+    const minutes = Math.floor(ms / 60000)
+    const seconds = Math.floor((ms % 60000) / 1000)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  // Hủy thanh toán
+  const handleCancelPayment = async () => {
+    if (!confirm('Bạn có chắc chắn muốn hủy thanh toán này?')) return
+    
+    setIsCancelling(true)
+    try {
+      await fetch('/api/payment/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      })
+      setPaymentStatus('cancelled')
+      setTimeout(() => router.push('/pricing'), 2000)
+    } catch (error) {
+      console.error('Error cancelling payment:', error)
+      setIsCancelling(false)
+    }
+  }
+
+  // Countdown timer
+  useEffect(() => {
+    if (paymentStatus !== 'pending' && paymentStatus !== 'checking') return
+    
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1000) {
+          setPaymentStatus('failed')
+          return 0
+        }
+        return prev - 1000
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [paymentStatus])
 
   // Kiểm tra trạng thái thanh toán mỗi 5 giây
   useEffect(() => {
@@ -54,7 +101,7 @@ export default function PaymentProcessingClient({
           setTimeout(() => {
             router.push(`/payment/success?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}`)
           }, 2000)
-        } else if (checkCount >= 60) { // Sau 5 phút (60 lần x 5 giây)
+        } else if (timeRemaining <= 0) { // Hết thời gian
           setPaymentStatus('failed')
         } else {
           setPaymentStatus('pending')
@@ -84,9 +131,17 @@ export default function PaymentProcessingClient({
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Quét mã QR để thanh toán</h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-4">
               Sử dụng ứng dụng ngân hàng của bạn để quét mã QR bên dưới
             </p>
+            
+            {/* Countdown Timer */}
+            <div className="flex items-center justify-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 max-w-md mx-auto">
+              <Clock className="w-5 h-5 text-yellow-600" />
+              <span className="text-yellow-800 font-medium">
+                Thời gian còn lại: <span className="font-bold text-lg">{formatTime(timeRemaining)}</span>
+              </span>
+            </div>
           </div>
 
           {/* QR Code */}
@@ -153,8 +208,40 @@ export default function PaymentProcessingClient({
             </div>
           </div>
 
+          {/* Cancel Button */}
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={handleCancelPayment}
+              disabled={isCancelling || paymentStatus === 'success' || paymentStatus === 'cancelled'}
+              className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Đang hủy...</span>
+                </>
+              ) : (
+                <>
+                  <X className="w-5 h-5" />
+                  <span>Hủy thanh toán</span>
+                </>
+              )}
+            </button>
+          </div>
+
           {/* Trạng thái thanh toán */}
-          <div className="border-t pt-4">
+          {paymentStatus === 'cancelled' && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 mt-6">
+              <div className="flex items-center gap-3">
+                <XCircle className="w-6 h-6 text-gray-500" />
+                <div>
+                  <p className="font-medium text-gray-900">Đã hủy thanh toán</p>
+                  <p className="text-sm text-gray-600">Bạn sẽ được chuyển hướng về trang gói dịch vụ...</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="border-t pt-4 mt-6">
             {paymentStatus === 'pending' && (
               <div className="flex items-center justify-center gap-2 text-gray-600">
                 <Loader2 className="w-5 h-5 animate-spin" />

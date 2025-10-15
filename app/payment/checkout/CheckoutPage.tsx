@@ -240,7 +240,7 @@ export default function CheckoutPage() {
                   />
                   <span className="ml-3 flex items-center">
                     <CreditCard className="w-5 h-5 text-gray-700 mr-2" />
-                    <span className="text-gray-700">VietQR Pro (SePay)</span>
+                    <span className="text-gray-700">SePay</span>
                   </span>
                 </label>
                 <label className="flex items-center">
