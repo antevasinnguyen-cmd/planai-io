@@ -42,6 +42,7 @@ export const createPaymentLink = async (
 ): Promise<Payment> => {
   try {
     // Kiểm tra các biến môi trường cần thiết
+    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY) {
       throw new Error('Missing PayOS configuration: CLIENT_ID or API_KEY')
     }
 
