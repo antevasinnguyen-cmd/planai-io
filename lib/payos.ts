@@ -53,7 +53,21 @@ export const createPaymentLink = async (
       cancelUrl
     })
 
-    // Thử phiên bản đơn giản trước - không cần checksum
+    // Tạo checksum đơn giản cho PayOS
+    const checksumData = `${orderCode}${amount}${description}${returnUrl}${cancelUrl}`
+    const checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY || PAYOS_CLIENT_ID).update(checksumData, 'utf8').digest('hex')
+
+    console.log('Creating PayOS payment with checksum:', {
+      orderCode,
+      amount,
+      description,
+      returnUrl,
+      cancelUrl,
+      expiredAt: getExpiredTime(),
+      checksumData: checksumData.substring(0, 50) + '...',
+      checksum: checksum.substring(0, 16) + '...'
+    })
+
     const response = await axios.post(
       `${PAYOS_API_URL}/v2/payment-requests`,
       {
@@ -62,7 +76,8 @@ export const createPaymentLink = async (
         description,
         returnUrl,
         cancelUrl,
-        expiredAt: getExpiredTime()
+        expiredAt: getExpiredTime(),
+        signature: checksum
       },
       {
         headers: {
@@ -149,7 +164,7 @@ export const verifyWebhookSignature = (
 const getExpiredTime = (): string => {
   const date = new Date()
   date.setHours(date.getHours() + 24)
-  return date.toISOString()
+  return Math.floor(date.getTime() / 1000).toString() // Unix timestamp
 }
 
 // Process subscription payment
