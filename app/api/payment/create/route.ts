@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
       try {
         // Thông tin tài khoản SePay
         const bankName = 'MB Bank';
+        const bankCode = '970422'; // MB Bank BIN
         const accountName = 'NGUYEN THI KHANH HUYEN';
         const accountNumber = SEPAY_ACCOUNT_NUMBER;
         
@@ -106,68 +107,8 @@ export async function POST(request: NextRequest) {
         // Tạo nội dung chuyển khoản
         const transferContent = transactionId;
         
-        // Tạo payload cho webhook
-        const webhookPayload = {
-          transaction_id: transactionId,
-          amount: amount,
-          status: 'pending',
-          code: transferContent,
-          created_at: new Date().toISOString(),
-          metadata: {
-            plan_id: planId,
-            user_id: userId,
-            payment_method: 'sepay'
-          }
-        };
-        
-        // Tạo chữ ký webhook
-        const webhookSignature = generateWebhookSignature(webhookPayload, SEPAY_WEBHOOK_SECRET);
-        
-        // Gọi API SePay để tạo QR code
-        const sePayResponse = await fetch(SEPAY_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SEPAY_TOKEN}`,
-            'X-Webhook-Url': `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/sepay`,
-            'X-Webhook-Signature': webhookSignature
-          },
-          body: JSON.stringify({
-            account_number: accountNumber,
-            amount: amount,
-            content: transferContent,
-            webhook_data: webhookPayload
-          })
-        });
-
-        const responseText = await sePayResponse.text();
-        let sePayData;
-        
-        try {
-          sePayData = JSON.parse(responseText);
-        } catch (e) {
-          console.error('Failed to parse SePay response:', responseText);
-          throw new Error('Invalid response from SePay API');
-        }
-        
-        if (!sePayResponse.ok) {
-          console.error('SePay API error:', {
-            status: sePayResponse.status,
-            statusText: sePayResponse.statusText,
-            data: sePayData
-          });
-          throw new Error(sePayData.message || 'SePay API request failed');
-        }
-
-        console.log('SePay API response:', sePayData);
-        
-        // Lấy QR code từ response
-        qrCode = sePayData.qr_code || sePayData.data?.qr_code || '';
-        
-        // Nếu không có QR từ API, tạo fallback bằng VietQR
-        if (!qrCode) {
-          qrCode = `https://img.vietqr.io/image/970422-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
-        }
+        // Tạo QR code bằng VietQR (SePay sẽ tự động nhận diện giao dịch)
+        qrCode = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
         
         // Tạo URL xử lý thanh toán
         paymentUrl = createPaymentProcessingUrl({
