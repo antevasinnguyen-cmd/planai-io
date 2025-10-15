@@ -18,44 +18,39 @@ function getSepayConfig() {
 // Hàm tạo giao dịch SePay và nhận QR code
 async function createSepayTransaction(sepayConfig: any, amount: number, transferContent: string, transactionId: string) {
   try {
-    console.log('=== SEPAY API: Creating transaction ===', {
+    console.log('=== SEPAY QR: Creating QR code ===', {
       amount,
       transferContent,
-      apiUrl: sepayConfig.SEPAY_API_URL
+      accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER
     })
 
-    const response = await fetch(sepayConfig.SEPAY_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Apikey ${sepayConfig.SEPAY_TOKEN}`
-      },
-      body: JSON.stringify({
-        amount: amount,
-        content: transferContent,
-        // Các trường khác có thể cần thiết cho SePay API
-      })
-    })
+    // Sử dụng trình tạo QR trực tiếp từ Sepay thay vì gọi API phức tạp
+    const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER
+    const bankCode = '970422' // MB Bank BIN
+    const accountName = 'NGUYEN THI KHANH HUYEN'
 
-    if (!response.ok) {
-      throw new Error(`SePay API error: ${response.status} ${response.statusText}`)
-    }
+    // Tạo QR code sử dụng format chuẩn của Sepay
+    const qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${bankCode}&amount=${amount}&des=${encodeURIComponent(transferContent)}&template=compact2`
 
-    const data = await response.json()
-    console.log('=== SEPAY API: Transaction created ===', {
-      transactionId: data.transactionId || data.id,
-      qrCode: data.qrCode || data.qr_code,
-      status: data.status
+    console.log('=== SEPAY QR: QR code generated ===', {
+      qrUrl,
+      accountNumber,
+      bankCode,
+      amount,
+      transferContent
     })
 
     return {
       success: true,
-      qrCode: data.qrCode || data.qr_code,
-      transactionId: data.transactionId || data.id,
-      data: data
+      qrCode: qrUrl,
+      transactionId: transactionId,
+      data: {
+        qr_code: qrUrl,
+        transactionId: transactionId
+      }
     }
   } catch (error) {
-    console.error('=== SEPAY API: Error ===', error)
+    console.error('=== SEPAY QR: Error ===', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
