@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, supabase } from '@/lib/supabase'
 import crypto from 'crypto'
-
-// SePay configuration - Đọc động để tránh cache
+import { createPaymentLink, PaymentStatus } from '@/lib/payos'
 function getSepayConfig() {
   // Hỗ trợ cả SEPAY_TOKEN (cũ) và SEPAY_API_KEY (mới)
   const sepayToken = process.env.SEPAY_API_KEY || process.env.SEPAY_TOKEN || '';
@@ -16,10 +15,52 @@ function getSepayConfig() {
   }
 }
 
-// Hàm tạo chữ ký webhook
-function generateWebhookSignature(payload: any, secret: string): string {
-  const hmac = crypto.createHmac('sha256', secret);
-  return hmac.update(JSON.stringify(payload)).digest('hex');
+// Hàm tạo giao dịch SePay và nhận QR code
+async function createSepayTransaction(sepayConfig: any, amount: number, transferContent: string, transactionId: string) {
+  try {
+    console.log('=== SEPAY API: Creating transaction ===', {
+      amount,
+      transferContent,
+      apiUrl: sepayConfig.SEPAY_API_URL
+    })
+
+    const response = await fetch(sepayConfig.SEPAY_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Apikey ${sepayConfig.SEPAY_TOKEN}`
+      },
+      body: JSON.stringify({
+        amount: amount,
+        content: transferContent,
+        // Các trường khác có thể cần thiết cho SePay API
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`SePay API error: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    console.log('=== SEPAY API: Transaction created ===', {
+      transactionId: data.transactionId || data.id,
+      qrCode: data.qrCode || data.qr_code,
+      status: data.status
+    })
+
+    return {
+      success: true,
+      qrCode: data.qrCode || data.qr_code,
+      transactionId: data.transactionId || data.id,
+      data: data
+    }
+  } catch (error) {
+    console.error('=== SEPAY API: Error ===', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
 }
 
 // Hàm tạo mã giao dịch duy nhất
@@ -145,16 +186,28 @@ export async function POST(request: NextRequest) {
         const bankCode = '970422'; // MB Bank BIN
         const accountName = 'NGUYEN THI KHANH HUYEN';
         const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER;
-        
+
         if (!accountNumber) {
           throw new Error('SePay account number is not configured');
         }
-        
+
         // Tạo nội dung chuyển khoản
         const transferContent = transactionId;
-        
-        // Tạo QR code bằng VietQR (SePay sẽ tự động nhận diện giao dịch)
-        qrCode = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
+
+        // Thử tạo giao dịch bằng SePay API
+        console.log('Attempting to create SePay transaction...')
+        const sepayResult = await createSepayTransaction(sepayConfig, amount, transferContent, transactionId)
+
+        if (sepayResult.success && sepayResult.qrCode) {
+          // Sử dụng QR code từ SePay API
+          qrCode = sepayResult.qrCode
+          console.log('SePay QR code received from API:', qrCode)
+        } else {
+          // Fallback to VietQR nếu SePay API không hoạt động
+          console.log('SePay API failed or no QR returned, using VietQR as fallback:', sepayResult.error)
+          const bankCode = '970422' // MB Bank BIN
+          qrCode = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
+        }
         
         // Tạo URL xử lý thanh toán
         paymentUrl = createPaymentProcessingUrl({
@@ -215,44 +268,66 @@ export async function POST(request: NextRequest) {
       console.log('=== PAYMENT API: Processing PayOS payment ===')
       try {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
-        
-        // Thông tin tài khoản PayOS
-        const bankCode = '970422' // Mã BIN của MBBank
-        const bankName = 'MB Bank'
-        const accountName = 'NGUYEN THI KHANH HUYEN'
-        const accountNumber = '5428960265186'
-        
-        // Tạo nội dung chuyển khoản
-        const transferContent = transactionId
-        
-        // Tạo URL VietQR với định dạng đúng
-        // Format: https://img.vietqr.io/image/{BANK_BIN}-{ACCOUNT_NUMBER}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={CONTENT}&accountName={NAME}
-        qrCode = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
-        
-        // URL chuyển đến trang processing
+
+        // Sử dụng PayOS API để tạo payment link
+        const orderCode = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const description = `PlanAI Payment - ${planId} Plan - ${amount.toLocaleString('vi-VN')} VND`
+        const returnUrl = `${baseUrl}/payment/success`
+        const cancelUrl = `${baseUrl}/payment/cancel`
+
+        console.log('Creating PayOS payment:', {
+          orderCode,
+          amount,
+          description,
+          returnUrl,
+          cancelUrl
+        })
+
+        // Gọi PayOS API để tạo payment
+        const payosPayment = await createPaymentLink(
+          orderCode,
+          amount,
+          description,
+          returnUrl,
+          cancelUrl
+        )
+
+        console.log('PayOS payment created successfully:', {
+          paymentId: payosPayment.id,
+          orderCode: payosPayment.orderCode,
+          paymentUrl: payosPayment.paymentUrl,
+          qrCode: payosPayment.qrCode ? 'QR generated' : 'No QR'
+        })
+
+        // Tạo URL xử lý thanh toán với PayOS payment URL
         paymentUrl = `${baseUrl}/payment/processing?${new URLSearchParams({
           order: transactionId,
           amount: amount.toString(),
           plan: planId,
           provider: 'payos',
-          qr: qrCode,
-          account: accountNumber,
-          name: accountName,
-          bank: bankName,
-          timestamp: Date.now().toString()
+          qr: payosPayment.qrCode || '',
+          account: payosPayment.accountNumber || '',
+          name: payosPayment.accountName || '',
+          bank: 'MB Bank',
+          timestamp: Date.now().toString(),
+          payosOrderCode: orderCode,
+          paymentUrl: payosPayment.paymentUrl || ''
         })}`
-        
-        console.log('PayOS payment created:', { 
-          paymentUrl, 
-          qrCode: qrCode ? 'QR code generated' : 'No QR code',
+
+        qrCode = payosPayment.qrCode || ''
+
+        console.log('PayOS payment processed:', {
+          paymentUrl,
+          qrCode: qrCode ? 'QR code received from PayOS' : 'No QR code',
           transactionId,
           timestamp: new Date().toISOString()
         })
       } catch (payosError) {
         console.error('=== PAYMENT API: PayOS error ===', payosError)
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'Payment provider error',
-          details: payosError instanceof Error ? payosError.message : 'Could not connect to PayOS'
+          details: payosError instanceof Error ? payosError.message : 'Could not connect to PayOS',
+          payosError: payosError
         }, { status: 500 })
       }
     }
@@ -262,19 +337,36 @@ export async function POST(request: NextRequest) {
     try {
       // Đảm bảo userId luôn hợp lệ
       const safeUserId = userId || 'anonymous'
-      
+
+      // Chuẩn bị dữ liệu để lưu
+      const paymentData: any = {
+        user_id: safeUserId,
+        subscription_tier: planId,
+        amount: amount,
+        currency: 'VND',
+        status: 'pending',
+        payment_method: paymentMethod,
+        transaction_id: transactionId,
+        created_at: new Date().toISOString()
+      }
+
+      // Thêm thông tin SePay nếu có
+      if (paymentMethod === 'sepay' && sepayResult.success && sepayResult.data) {
+        paymentData.metadata = {
+          sepay_transaction_id: sepayResult.transactionId,
+          qr_source: 'sepay_api',
+          sepay_data: sepayResult.data
+        }
+      } else if (paymentMethod === 'sepay') {
+        paymentData.metadata = {
+          qr_source: 'vietqr_fallback',
+          sepay_api_error: sepayResult.error
+        }
+      }
+
       const { data: paymentRecord, error } = await supabase
         .from('payments')
-        .insert([{
-          user_id: safeUserId,
-          subscription_tier: planId,
-          amount: amount,
-          currency: 'VND',
-          status: 'pending',
-          payment_method: paymentMethod,
-          transaction_id: transactionId,
-          created_at: new Date().toISOString()
-        }])
+        .insert([paymentData])
         .select()
 
       if (error) {
