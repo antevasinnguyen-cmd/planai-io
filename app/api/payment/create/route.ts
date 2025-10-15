@@ -24,18 +24,18 @@ async function createSepayTransaction(sepayConfig: any, amount: number, transfer
       accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER
     })
 
-    // Sử dụng trình tạo QR trực tiếp từ Sepay thay vì gọi API phức tạp
+    // Sử dụng trình tạo QR trực tiếp từ Sepay theo docs: https://docs.sepay.vn/tao-qr-code-vietqr-dong.html
     const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER
-    const bankCode = '970422' // MB Bank BIN
+    const bankName = 'MBBank' // Tên ngân hàng theo danh sách Sepay
     const accountName = 'NGUYEN THI KHANH HUYEN'
 
-    // Tạo QR code sử dụng format chuẩn của Sepay
-    const qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${bankCode}&amount=${amount}&des=${encodeURIComponent(transferContent)}&template=compact2`
+    // Tạo QR code sử dụng format chuẩn của Sepay - bank phải là tên ngân hàng, không phải BIN
+    const qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${bankName}&amount=${amount}&des=${encodeURIComponent(transferContent)}`
 
     console.log('=== SEPAY QR: QR code generated ===', {
       qrUrl,
       accountNumber,
-      bankCode,
+      bankName,
       amount,
       transferContent
     })

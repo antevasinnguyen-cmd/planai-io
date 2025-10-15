@@ -48,16 +48,24 @@ export const createPaymentLink = async (
 
     // PayOS yêu cầu orderCode phải là số nguyên, không phải string
     const orderCodeNumber = parseInt(orderCode.replace(/[^0-9]/g, '').slice(0, 9)) || Date.now()
+    const expiredAt = getExpiredTime()
 
-    console.log('Creating PayOS payment (simplified - no checksum):', {
+    // Tạo signature theo docs PayOS: https://payos.vn/docs/tich-hop-webhook/kiem-tra-du-lieu-voi-signature
+    // Format: amount|cancelUrl|description|orderCode|returnUrl
+    const signatureData = `amount=${amount}&cancelUrl=${cancelUrl}&description=${description}&orderCode=${orderCodeNumber}&returnUrl=${returnUrl}`
+    const signature = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY || PAYOS_CLIENT_ID || '').update(signatureData, 'utf8').digest('hex')
+
+    console.log('Creating PayOS payment with signature:', {
       orderCode: orderCodeNumber,
       amount,
       description,
       returnUrl,
-      cancelUrl
+      cancelUrl,
+      expiredAt,
+      signaturePreview: signature.substring(0, 16) + '...'
     })
 
-    // Sử dụng phương án đơn giản nhất - không có checksum
+    // Gọi PayOS API với signature
     const response = await axios.post(
       `${PAYOS_API_URL}/v2/payment-requests`,
       {
@@ -66,7 +74,8 @@ export const createPaymentLink = async (
         description,
         returnUrl,
         cancelUrl,
-        expiredAt: getExpiredTime()
+        expiredAt,
+        signature
       },
       {
         headers: {
