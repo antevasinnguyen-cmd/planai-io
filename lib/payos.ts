@@ -45,17 +45,72 @@ export const createPaymentLink = async (
       throw new Error('Missing PayOS configuration: CLIENT_ID, API_KEY, or CHECKSUM_KEY')
     }
 
-    // Tạo checksum cho request
-    const checksumData = `${PAYOS_CLIENT_ID}${orderCode}${amount}${description}${returnUrl}${cancelUrl}`
-    const checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY).update(checksumData).digest('hex')
+    // Tạo checksum cho request theo định dạng PayOS
+    // Thử nhiều thứ tự khác nhau để tìm đúng format
+    const checksumAttempts = [
+      // Thứ tự 1: clientId + orderCode + amount + description + returnUrl + cancelUrl
+      `${PAYOS_CLIENT_ID}${orderCode}${amount}${description}${returnUrl}${cancelUrl}`,
+      // Thứ tự 2: amount + cancelUrl + description + orderCode + returnUrl
+      `${amount}${cancelUrl}${description}${orderCode}${returnUrl}`,
+      // Thứ tự 3: orderCode + amount + description + returnUrl + cancelUrl
+      `${orderCode}${amount}${description}${returnUrl}${cancelUrl}`,
+      // Thứ tự 4: clientId + amount + orderCode + description + returnUrl + cancelUrl
+      `${PAYOS_CLIENT_ID}${amount}${orderCode}${description}${returnUrl}${cancelUrl}`
+    ]
 
-    console.log('Creating PayOS payment:', {
-      orderCode,
-      amount,
-      description,
-      checksum: checksum.substring(0, 10) + '...'
-    })
+    let checksum = ''
+    let checksumData = ''
 
+    // Thử từng cách tạo checksum cho đến khi thành công
+    for (let i = 0; i < checksumAttempts.length; i++) {
+      try {
+        checksumData = checksumAttempts[i]
+        checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY).update(checksumData, 'utf8').digest('hex')
+
+        console.log(`PayOS checksum attempt ${i + 1}:`, {
+          checksumData: checksumData.substring(0, 60) + '...',
+          checksum: checksum.substring(0, 16) + '...'
+        })
+
+        // Thử gửi request với checksum này
+        const testResponse = await axios.post(
+          `${PAYOS_API_URL}/v2/payment-requests`,
+          {
+            orderCode,
+            amount,
+            description,
+            returnUrl,
+            cancelUrl,
+            expiredAt: getExpiredTime(),
+            signature: checksum
+          },
+          {
+            headers: {
+              'x-client-id': PAYOS_CLIENT_ID,
+              'x-api-key': PAYOS_API_KEY
+            }
+          }
+        )
+
+        if (testResponse.data.code === '00') {
+          console.log(`✅ PayOS checksum attempt ${i + 1} successful!`)
+          break
+        } else {
+          console.log(`❌ PayOS checksum attempt ${i + 1} failed:`, testResponse.data.desc)
+          if (i === checksumAttempts.length - 1) {
+            throw new Error(`All checksum attempts failed. Last error: ${testResponse.data.desc}`)
+          }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.log(`❌ PayOS checksum attempt ${i + 1} error:`, errorMessage)
+        if (i === checksumAttempts.length - 1) {
+          throw error
+        }
+      }
+    }
+
+    // Nếu tất cả attempts đều thành công, sử dụng checksum cuối cùng
     const response = await axios.post(
       `${PAYOS_API_URL}/v2/payment-requests`,
       {
