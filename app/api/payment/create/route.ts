@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
 
     let paymentUrl = ''
     let qrCode = ''
+    let sepayResult: { success: boolean; error?: string; qrCode?: string; transactionId?: string; data?: any } = { success: false, error: 'Not processed' }
     
     if (paymentMethod === 'sepay') {
       const sepayConfig = getSepayConfig();
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
 
         // Thử tạo giao dịch bằng SePay API
         console.log('Attempting to create SePay transaction...')
-        const sepayResult = await createSepayTransaction(sepayConfig, amount, transferContent, transactionId)
+        sepayResult = await createSepayTransaction(sepayConfig, amount, transferContent, transactionId)
 
         if (sepayResult.success && sepayResult.qrCode) {
           // Sử dụng QR code từ SePay API

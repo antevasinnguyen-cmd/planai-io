@@ -1,11 +1,12 @@
 // Payos integration for VietQR pro payments
 import axios from 'axios'
+import crypto from 'crypto'
 
 // Payos API configuration
 const PAYOS_API_URL = 'https://api-merchant.payos.vn'
 const PAYOS_API_KEY = process.env.PAYOS_API_KEY
 const PAYOS_CLIENT_ID = process.env.PAYOS_CLIENT_ID
-const PAYOS_CLIENT_SECRET = process.env.PAYOS_CLIENT_SECRET
+const PAYOS_CHECKSUM_KEY = process.env.PAYOS_CHECKSUM_KEY
 
 // Payment status
 export enum PaymentStatus {
@@ -39,6 +40,22 @@ export const createPaymentLink = async (
   cancelUrl: string
 ): Promise<Payment> => {
   try {
+    // Kiểm tra các biến môi trường cần thiết
+    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY || !PAYOS_CHECKSUM_KEY) {
+      throw new Error('Missing PayOS configuration: CLIENT_ID, API_KEY, or CHECKSUM_KEY')
+    }
+
+    // Tạo checksum cho request
+    const checksumData = `${PAYOS_CLIENT_ID}${orderCode}${amount}${description}${returnUrl}${cancelUrl}`
+    const checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY).update(checksumData).digest('hex')
+
+    console.log('Creating PayOS payment:', {
+      orderCode,
+      amount,
+      description,
+      checksum: checksum.substring(0, 10) + '...'
+    })
+
     const response = await axios.post(
       `${PAYOS_API_URL}/v2/payment-requests`,
       {
@@ -47,7 +64,8 @@ export const createPaymentLink = async (
         description,
         returnUrl,
         cancelUrl,
-        expiredAt: getExpiredTime()
+        expiredAt: getExpiredTime(),
+        signature: checksum
       },
       {
         headers: {
