@@ -31,6 +31,7 @@ export interface Payment {
   reference?: string
 }
 
+// Create payment link
 // Create payment link - Simplified version to avoid signature issues
 export const createPaymentLink = async (
   orderCode: string,
@@ -94,7 +95,6 @@ export const createPaymentLink = async (
     throw error
   }
 }
-
 // Check payment status
 export const checkPaymentStatus = async (paymentId: string): Promise<PaymentStatus> => {
   try {
