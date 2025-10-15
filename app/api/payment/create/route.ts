@@ -1,10 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, supabase } from '@/lib/supabase'
+import crypto from 'crypto'
 
 // SePay configuration
 const SEPAY_API_URL = 'https://my.sepay.vn/userapi/transactions/create'
 const SEPAY_TOKEN = process.env.SEPAY_TOKEN || ''
-const SEPAY_ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || ''
+const SEPAY_ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || 'FLIOAI000' // Fallback value
+const SEPAY_WEBHOOK_SECRET = process.env.SEPAY_WEBHOOK_SECRET || ''
+
+// Hàm tạo chữ ký webhook
+function generateWebhookSignature(payload: any, secret: string): string {
+  const hmac = crypto.createHmac('sha256', secret);
+  return hmac.update(JSON.stringify(payload)).digest('hex');
+}
+
+// Hàm tạo mã giao dịch duy nhất
+function generateTransactionId(prefix = 'PLANAI'): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Hàm tạo URL xử lý thanh toán
+function createPaymentProcessingUrl(params: {
+  orderId: string;
+  amount: number;
+  planId: string;
+  qrCode: string;
+  accountNumber: string;
+  accountName: string;
+  bankName: string;
+}): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn';
+  const { orderId, amount, planId, qrCode, accountNumber, accountName, bankName } = params;
+  
+  return `${baseUrl}/payment/processing?${new URLSearchParams({
+    order: orderId,
+    amount: amount.toString(),
+    plan: planId,
+    provider: 'sepay',
+    qr: qrCode,
+    account: accountNumber,
+    name: accountName,
+    bank: bankName,
+    timestamp: Date.now().toString()
+  })}`;
+}
 
 // PayOS configuration
 const PAYOS_API_URL = process.env.PAYOS_API_URL || 'https://api-merchant.payos.vn/v2/payment-requests'
@@ -47,57 +86,143 @@ export async function POST(request: NextRequest) {
     let qrCode = ''
     
     if (paymentMethod === 'sepay') {
-      console.log('=== PAYMENT API: Processing SePay payment ===')
+      console.log('=== PAYMENT API: Processing SePay payment ===', {
+        transactionId,
+        amount,
+        planId,
+        timestamp: new Date().toISOString()
+      });
+      
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
-        
         // Thông tin tài khoản SePay
-        const bankName = 'MB Bank'
-        const accountName = 'NGUYEN THI KHANH HUYEN'
-        const accountNumber = SEPAY_ACCOUNT_NUMBER
+        const bankName = 'MB Bank';
+        const accountName = 'NGUYEN THI KHANH HUYEN';
+        const accountNumber = SEPAY_ACCOUNT_NUMBER;
+        
+        if (!accountNumber) {
+          throw new Error('SePay account number is not configured');
+        }
         
         // Tạo nội dung chuyển khoản
-        const transferContent = transactionId
+        const transferContent = transactionId;
+        
+        // Tạo payload cho webhook
+        const webhookPayload = {
+          transaction_id: transactionId,
+          amount: amount,
+          status: 'pending',
+          code: transferContent,
+          created_at: new Date().toISOString(),
+          metadata: {
+            plan_id: planId,
+            user_id: userId,
+            payment_method: 'sepay'
+          }
+        };
+        
+        // Tạo chữ ký webhook
+        const webhookSignature = generateWebhookSignature(webhookPayload, SEPAY_WEBHOOK_SECRET);
         
         // Gọi API SePay để tạo QR code
         const sePayResponse = await fetch(SEPAY_API_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SEPAY_TOKEN}`
+            'Authorization': `Bearer ${SEPAY_TOKEN}`,
+            'X-Webhook-Url': `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/sepay`,
+            'X-Webhook-Signature': webhookSignature
           },
           body: JSON.stringify({
             account_number: accountNumber,
             amount: amount,
-            content: transferContent
+            content: transferContent,
+            webhook_data: webhookPayload
           })
-        })
+        });
 
+        const responseText = await sePayResponse.text();
+        let sePayData;
+        
+        try {
+          sePayData = JSON.parse(responseText);
+        } catch (e) {
+          console.error('Failed to parse SePay response:', responseText);
+          throw new Error('Invalid response from SePay API');
+        }
+        
         if (!sePayResponse.ok) {
-          throw new Error('SePay API request failed')
+          console.error('SePay API error:', {
+            status: sePayResponse.status,
+            statusText: sePayResponse.statusText,
+            data: sePayData
+          });
+          throw new Error(sePayData.message || 'SePay API request failed');
         }
 
-        const sePayData = await sePayResponse.json()
-        console.log('SePay API response:', sePayData)
+        console.log('SePay API response:', sePayData);
         
         // Lấy QR code từ response
-        qrCode = sePayData.qr_code || sePayData.data?.qr_code || ''
+        qrCode = sePayData.qr_code || sePayData.data?.qr_code || '';
         
         // Nếu không có QR từ API, tạo fallback bằng VietQR
         if (!qrCode) {
-          qrCode = `https://img.vietqr.io/image/970422-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
+          qrCode = `https://img.vietqr.io/image/970422-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
         }
         
-        // URL chuyển đến trang processing
-        paymentUrl = `${baseUrl}/payment/processing?order=${transactionId}&amount=${amount}&plan=${planId}&provider=sepay&qr=${encodeURIComponent(qrCode)}&account=${accountNumber}&name=${encodeURIComponent(accountName)}&bank=${encodeURIComponent(bankName)}`
+        // Tạo URL xử lý thanh toán
+        paymentUrl = createPaymentProcessingUrl({
+          orderId: transactionId,
+          amount,
+          planId,
+          qrCode,
+          accountNumber,
+          accountName,
+          bankName
+        });
         
-        console.log('SePay payment created:', { paymentUrl, qrCode })
+        console.log('SePay payment created:', { 
+          paymentUrl, 
+          qrCode: qrCode ? 'QR code generated' : 'No QR code',
+          transactionId,
+          timestamp: new Date().toISOString()
+        });
+        
       } catch (sePayError) {
-        console.error('=== PAYMENT API: SePay error ===', sePayError)
+        const errorId = `err_${Date.now()}`;
+        console.error('=== PAYMENT API: SePay error ===', {
+          errorId,
+          error: sePayError,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Log lỗi vào database
+        try {
+          await supabase
+            .from('error_logs')
+            .insert([{
+              type: 'payment_error',
+              error_id: errorId,
+              message: sePayError instanceof Error ? sePayError.message : 'Unknown SePay error',
+              metadata: {
+                transactionId,
+                amount,
+                planId,
+                userId,
+                error: sePayError
+              },
+              created_at: new Date().toISOString()
+            }]);
+        } catch (logError) {
+          console.error('Failed to log payment error:', logError);
+        }
+        
         return NextResponse.json({ 
+          success: false,
           error: 'Payment provider error',
-          details: sePayError instanceof Error ? sePayError.message : 'Could not connect to SePay'
-        }, { status: 500 })
+          error_id: errorId,
+          details: sePayError instanceof Error ? sePayError.message : 'Could not process payment',
+          timestamp: new Date().toISOString()
+        }, { status: 500 });
       }
     } else if (paymentMethod === 'payos') {
       console.log('=== PAYMENT API: Processing PayOS payment ===')
