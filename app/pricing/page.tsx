@@ -108,7 +108,7 @@ export default function PricingPage() {
                     <Sparkles className="w-5 h-5 text-primary-600" />
                     <span className="text-sm font-medium text-primary-700">Ưu đãi đặc biệt</span>
                   </div>
-                  <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
+                  <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
                     Giá chỉ bằng 1 chiếc áo
                   </h2>
                   <p className="text-xl text-gray-600">
@@ -136,7 +136,7 @@ export default function PricingPage() {
                   <div className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Shirt className="w-12 h-12 text-primary-600" strokeWidth={1.5} />
+                        <Shirt className="w-12 h-12 text-gray-900" strokeWidth={1.5} />
                         <span className="text-lg font-semibold text-gray-900">Gói 1</span>
                       </div>
                       <div className="text-right">
@@ -151,8 +151,8 @@ export default function PricingPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex">
-                          <Shirt className="w-12 h-12 text-blue-600" strokeWidth={1.5} />
-                          <Shirt className="w-12 h-12 text-blue-600 -ml-4" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-gray-900" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-gray-900 -ml-4" strokeWidth={1.5} />
                         </div>
                         <span className="text-lg font-semibold text-gray-900">Gói 2 - Pro</span>
                       </div>
@@ -168,9 +168,9 @@ export default function PricingPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex">
-                          <Shirt className="w-12 h-12 text-purple-600" strokeWidth={1.5} />
-                          <Shirt className="w-12 h-12 text-purple-600 -ml-4" strokeWidth={1.5} />
-                          <Shirt className="w-12 h-12 text-purple-600 -ml-4" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-gray-900" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-gray-900 -ml-4" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-gray-900 -ml-4" strokeWidth={1.5} />
                         </div>
                         <span className="text-lg font-semibold text-gray-900">Gói 3 - Pro Max</span>
                       </div>
