@@ -157,11 +157,11 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    if (paymentMethod === 'payos' && (!PAYOS_CLIENT_ID || !PAYOS_API_KEY || !PAYOS_CHECKSUM_KEY)) {
+    if (paymentMethod === 'payos' && (!PAYOS_CLIENT_ID || !PAYOS_API_KEY)) {
       console.error('Missing PayOS configuration')
       return NextResponse.json({ 
         error: 'Payment provider configuration missing', 
-        details: 'PayOS configuration is not complete' 
+        details: 'PayOS CLIENT_ID or API_KEY is not configured' 
       }, { status: 500 })
     }
 
@@ -351,17 +351,16 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString()
       }
 
-      // Thêm thông tin SePay nếu có
-      if (paymentMethod === 'sepay' && sepayResult.success && sepayResult.data) {
-        paymentData.metadata = {
-          sepay_transaction_id: sepayResult.transactionId,
-          qr_source: 'sepay_api',
-          sepay_data: sepayResult.data
-        }
-      } else if (paymentMethod === 'sepay') {
-        paymentData.metadata = {
-          qr_source: 'vietqr_fallback',
-          sepay_api_error: sepayResult.error
+      // Thêm thông tin PayOS nếu có
+      if (paymentMethod === 'payos') {
+        const urlParams = new URL(paymentUrl).searchParams
+        const payosOrderCode = urlParams.get('payosOrderCode')
+        if (payosOrderCode) {
+          paymentData.order_code = parseInt(payosOrderCode.replace('PLANAI_', ''))
+          paymentData.metadata = {
+            payos_order_code: payosOrderCode,
+            provider_url: paymentUrl
+          }
         }
       }
 
@@ -398,7 +397,6 @@ export async function POST(request: NextRequest) {
       transactionId: transactionId,
       qrCode: qrCode
     })
-
   } catch (error) {
     console.error('Payment API Error:', error)
     return NextResponse.json(
