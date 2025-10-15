@@ -100,47 +100,85 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Hero Message - Giá chỉ bằng 1 chiếc áo */}
           <div className="mb-16">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              {/* Left: Hook message */}
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-100 to-purple-100 rounded-full px-4 py-2">
-                  <Sparkles className="w-5 h-5 text-primary-600" />
-                  <span className="text-sm font-medium text-primary-700">Ưu đãi đặc biệt</span>
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-8 md:p-12 border-2 border-primary-100 shadow-xl">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                {/* Left: Hook message */}
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm">
+                    <Sparkles className="w-5 h-5 text-primary-600" />
+                    <span className="text-sm font-medium text-primary-700">Ưu đãi đặc biệt</span>
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+                    Giá chỉ bằng 1 chiếc áo
+                  </h2>
+                  <p className="text-xl text-gray-600">
+                    Có ngay bản kế hoạch tài chính đáng mơ ước
+                  </p>
+                  <div className="flex items-center gap-4 pt-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                        <Check className="w-6 h-6 text-primary-600" />
+                      </div>
+                      <span className="text-sm text-gray-600">Cá nhân hóa 100%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                        <Zap className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <span className="text-sm text-gray-600">AI thông minh</span>
+                    </div>
+                  </div>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
-                  Giá chỉ bằng 1 chiếc áo
-                </h2>
-                <p className="text-xl text-gray-600">
-                  Có ngay bản kế hoạch tài chính đáng mơ ước
-                </p>
-                <div className="flex items-center gap-4 pt-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                      <Check className="w-6 h-6 text-primary-600" />
-                    </div>
-                    <span className="text-sm text-gray-600">Cá nhân hóa 100%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                      <Zap className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <span className="text-sm text-gray-600">AI thông minh</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Right: Illustration */}
-              <div className="relative">
-                <div className="bg-gradient-to-br from-primary-500 to-purple-600 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-transform">
-                  <div className="flex items-center justify-center gap-6">
-                    <Shirt className="w-24 h-24 text-white" strokeWidth={1.5} />
-                    <div className="text-white">
-                      <div className="text-6xl font-bold mb-2">≈</div>
-                      <div className="text-2xl font-semibold">169K VNĐ</div>
+                
+                {/* Right: Illustration - 3 pricing tiers */}
+                <div className="space-y-4">
+                  {/* Gói 1 */}
+                  <div className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Shirt className="w-12 h-12 text-primary-600" strokeWidth={1.5} />
+                        <span className="text-lg font-semibold text-gray-900">Gói 1</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-primary-600">169K</div>
+                        <div className="text-xs text-gray-500">VNĐ</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-6 text-center text-white/90 text-sm">
-                    Đầu tư cho tương lai tài chính của bạn
+                  
+                  {/* Gói 2 - Pro */}
+                  <div className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex">
+                          <Shirt className="w-12 h-12 text-blue-600" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-blue-600 -ml-4" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">Gói 2 - Pro</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-600">289K</div>
+                        <div className="text-xs text-gray-500">VNĐ</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Gói 3 - Pro Max */}
+                  <div className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex">
+                          <Shirt className="w-12 h-12 text-purple-600" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-purple-600 -ml-4" strokeWidth={1.5} />
+                          <Shirt className="w-12 h-12 text-purple-600 -ml-4" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">Gói 3 - Pro Max</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-purple-600">499K</div>
+                        <div className="text-xs text-gray-500">VNĐ</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -202,8 +240,8 @@ export default function PricingPage() {
               >
                 {tier.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center">
-                      <Star className="w-4 h-4 mr-1" />
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center shadow-lg">
+                      <Star className="w-4 h-4 mr-1 fill-white" />
                       Phổ biến nhất
                     </div>
                   </div>

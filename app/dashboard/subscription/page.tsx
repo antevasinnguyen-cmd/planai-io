@@ -90,7 +90,7 @@ const pricingTiers = [
       words: 17500
     },
     description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
-    color: 'gradient',
+    color: 'purple',
     popular: false,
     detailedFeatures: [
       '160 Chat với AI lập kế hoạch',
