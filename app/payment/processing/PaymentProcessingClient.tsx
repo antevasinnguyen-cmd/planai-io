@@ -160,22 +160,31 @@ export default function PaymentProcessingClient({
           <div className="flex justify-center mb-6">
             <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
               {qrCode ? (
-                <img
-                  src={
-                    qrCode.startsWith('data:') || qrCode.startsWith('http')
-                      ? qrCode
-                      : decodeURIComponent(qrCode)
-                  }
-                  alt="QR Code thanh toán"
-                  width={250}
-                  height={250}
-                  className="rounded"
-                  onError={(e) => {
-                    console.error('QR Code load error:', qrCode);
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<div class="w-[250px] h-[250px] flex items-center justify-center bg-red-50 rounded text-red-600 text-sm text-center p-4">Không thể tải QR code. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.</div>';
-                  }}
-                />
+                <div className="relative">
+                  <img
+                    src={qrCode}
+                    alt="QR Code thanh toán"
+                    width={250}
+                    height={250}
+                    className="rounded"
+                    crossOrigin="anonymous"
+                    onLoad={() => {
+                      console.log('✅ QR Code loaded successfully');
+                    }}
+                    onError={(e) => {
+                      console.error('❌ QR Code load error:', {
+                        qrCode: qrCode.substring(0, 100),
+                        provider: provider,
+                        error: e
+                      });
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        parent.innerHTML = '<div class="w-[250px] h-[250px] flex items-center justify-center bg-red-50 rounded text-red-600 text-sm text-center p-4">Không thể tải QR code. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.</div>';
+                      }
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="w-[250px] h-[250px] flex items-center justify-center bg-gray-100 rounded">
                   <QrCode className="w-20 h-20 text-gray-400" />

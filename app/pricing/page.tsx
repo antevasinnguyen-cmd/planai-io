@@ -99,27 +99,60 @@ export default function PricingPage() {
       <div className="pt-24 pb-20 bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Hero Message - Giá chỉ bằng 1 chiếc áo */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center gap-4 bg-gradient-to-r from-primary-600 to-purple-600 rounded-3xl px-8 py-6 mb-8 shadow-2xl transform hover:scale-105 transition-transform">
-              <Shirt className="w-16 h-16 text-white" strokeWidth={1.5} />
-              <div className="text-left">
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">
+          <div className="mb-16">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              {/* Left: Hook message */}
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-100 to-purple-100 rounded-full px-4 py-2">
+                  <Sparkles className="w-5 h-5 text-primary-600" />
+                  <span className="text-sm font-medium text-primary-700">Ưu đãi đặc biệt</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
                   Giá chỉ bằng 1 chiếc áo
                 </h2>
-                <p className="text-xl text-white/90 font-medium">
+                <p className="text-xl text-gray-600">
                   Có ngay bản kế hoạch tài chính đáng mơ ước
                 </p>
+                <div className="flex items-center gap-4 pt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                      <Check className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <span className="text-sm text-gray-600">Cá nhân hóa 100%</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                      <Zap className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <span className="text-sm text-gray-600">AI thông minh</span>
+                  </div>
+                </div>
               </div>
-              <Sparkles className="w-12 h-12 text-yellow-300 animate-pulse" />
+              
+              {/* Right: Illustration */}
+              <div className="relative">
+                <div className="bg-gradient-to-br from-primary-500 to-purple-600 rounded-3xl p-8 shadow-2xl transform hover:scale-105 transition-transform">
+                  <div className="flex items-center justify-center gap-6">
+                    <Shirt className="w-24 h-24 text-white" strokeWidth={1.5} />
+                    <div className="text-white">
+                      <div className="text-6xl font-bold mb-2">≈</div>
+                      <div className="text-2xl font-semibold">169K VNĐ</div>
+                    </div>
+                  </div>
+                  <div className="mt-6 text-center text-white/90 text-sm">
+                    Đầu tư cho tương lai tài chính của bạn
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Header */}
-          <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-6">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Chọn Gói Phù Hợp Với Bạn
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
               Bắt đầu miễn phí và nâng cấp khi cần. Tất cả gói đều bao gồm kế hoạch tài chính cá nhân hóa hoàn toàn.
             </p>
             
