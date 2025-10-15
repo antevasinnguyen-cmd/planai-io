@@ -108,7 +108,7 @@ export default function PricingPage() {
                     <Sparkles className="w-5 h-5 text-primary-600" />
                     <span className="text-sm font-medium text-primary-700">Ưu đãi đặc biệt</span>
                   </div>
-                  <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+                  <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
                     Giá chỉ bằng 1 chiếc áo
                   </h2>
                   <p className="text-xl text-gray-600">
@@ -249,11 +249,11 @@ export default function PricingPage() {
 
                 <div className="p-8 flex flex-col h-full">
                   {/* Header */}
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-4">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">
                       {tier.name}
                     </h3>
-                    <div className="mb-6 text-center">
+                    <div className="mb-4 text-center">
                       {tier.price === 0 ? (
                         <div className="space-y-1">
                           <span className="text-4xl font-bold text-gray-900 block">Miễn phí</span>
@@ -293,13 +293,24 @@ export default function PricingPage() {
                         </div>
                       )}
                     </div>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 text-sm mb-6">
                       {tier.description}
                     </p>
                   </div>
 
+                  {/* CTA Button - ngay dưới giá tiền */}
+                  <div className="mb-6">
+                    <Link
+                      href={tier.id === 'free' ? '/start' : `/payment/checkout?plan=${tier.id}`}
+                      className={`w-full inline-flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${tier.buttonStyle}`}
+                    >
+                      {tier.price === 0 ? 'Bắt đầu miễn phí' : billingCycle === 'yearly' ? `${tier.buttonText} (Tiết kiệm 10%)` : tier.buttonText}
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Link>
+                  </div>
+
                   {/* Features */}
-                  <div className="space-y-4 mb-8">
+                  <div className="space-y-4 flex-1">
                     {tier.features.map((feature, index) => (
                       <div key={index} className="flex items-start">
                         <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
@@ -319,17 +330,6 @@ export default function PricingPage() {
                         ))}
                       </div>
                     )}
-                  </div>
-
-                  {/* CTA Button */}
-                  <div className="mt-auto pt-6">
-                    <Link
-                      href={tier.id === 'free' ? '/start' : `/payment/checkout?plan=${tier.id}`}
-                      className={`w-full inline-flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${tier.buttonStyle}`}
-                    >
-                      {tier.price === 0 ? 'Bắt đầu miễn phí' : billingCycle === 'yearly' ? `${tier.buttonText} (Tiết kiệm 10%)` : tier.buttonText}
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Link>
                   </div>
                 </div>
               </div>
