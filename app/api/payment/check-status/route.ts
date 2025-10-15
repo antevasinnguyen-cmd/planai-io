@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+// Tắt static optimization vì route này cần đọc searchParams động
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const orderId = searchParams.get('orderId')
+    // Sử dụng URL constructor thay vì nextUrl để tránh lỗi static generation
+    const url = new URL(request.url)
+    const orderId = url.searchParams.get('orderId')
 
     if (!orderId) {
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 })
@@ -20,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('=== PAYMENT STATUS CHECK: Database error ===', error)
-      return NextResponse.json({ 
+      return NextResponse.json({
         status: 'pending',
         message: 'Database error',
         error: error.message
@@ -30,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Nếu không tìm thấy payment hoặc chưa có trong DB
     if (!payments || payments.length === 0) {
       console.log('=== PAYMENT STATUS CHECK: Payment not found in database ===', orderId)
-      return NextResponse.json({ 
+      return NextResponse.json({
         status: 'pending',
         message: 'Payment not found or still pending'
       })
@@ -52,7 +57,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('=== PAYMENT STATUS CHECK: Error ===', error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Internal server error',
       status: 'pending'
     }, { status: 500 })

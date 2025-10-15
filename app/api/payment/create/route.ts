@@ -81,7 +81,9 @@ export async function POST(request: NextRequest) {
         accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER,
         nodeEnv: process.env.NODE_ENV,
         vercelEnv: process.env.VERCEL_ENV || 'not-vercel',
-        allEnvKeys: Object.keys(process.env).filter(k => k.includes('SEPAY')).join(', ')
+        allEnvKeys: Object.keys(process.env).filter(k => k.includes('SEPAY')).join(', '),
+        allProcessEnvKeys: Object.keys(process.env).slice(0, 10).join(', '), // Hiển thị 10 biến đầu tiên để debug
+        processEnvCount: Object.keys(process.env).length // Tổng số biến môi trường
       });
       
       if (!sepayConfig.SEPAY_TOKEN || sepayConfig.SEPAY_TOKEN.length === 0) {

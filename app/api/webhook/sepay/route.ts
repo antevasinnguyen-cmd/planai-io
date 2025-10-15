@@ -367,10 +367,6 @@ export async function POST(request: NextRequest) {
       error: 'Internal server error',
       error_id: errorId 
     }, { status: 500 });
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    );
   }
 }
 
