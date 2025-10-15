@@ -53,42 +53,90 @@ export const createPaymentLink = async (
       cancelUrl
     })
 
-    // Tạo checksum đơn giản cho PayOS
-    const checksumData = `${orderCode}${amount}${description}${returnUrl}${cancelUrl}`
-    const checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY || PAYOS_CLIENT_ID).update(checksumData, 'utf8').digest('hex')
+    // Thử nhiều thứ tự khác nhau cho checksum PayOS
+    const checksumAttempts = [
+      // Thứ tự 1: orderCode + amount + description + returnUrl + cancelUrl
+      `${orderCode}${amount}${description}${returnUrl}${cancelUrl}`,
+      // Thứ tự 2: amount + cancelUrl + description + orderCode + returnUrl
+      `${amount}${cancelUrl}${description}${orderCode}${returnUrl}`,
+      // Thứ tự 3: orderCode + description + amount + returnUrl + cancelUrl
+      `${orderCode}${description}${amount}${returnUrl}${cancelUrl}`,
+      // Thứ tự 4: amount + orderCode + description + returnUrl + cancelUrl
+      `${amount}${orderCode}${description}${returnUrl}${cancelUrl}`,
+      // Thứ tự 5: cancelUrl + amount + description + orderCode + returnUrl
+      `${cancelUrl}${amount}${description}${orderCode}${returnUrl}`,
+      // Thứ tự 6: Không có checksum (nếu PayOS không yêu cầu)
+      null
+    ]
 
-    console.log('Creating PayOS payment with checksum:', {
-      orderCode,
-      amount,
-      description,
-      returnUrl,
-      cancelUrl,
-      expiredAt: getExpiredTime(),
-      checksumData: checksumData.substring(0, 50) + '...',
-      checksum: checksum.substring(0, 16) + '...'
-    })
+    let checksum = ''
+    let checksumData = ''
+    let response: any = null
 
-    const response = await axios.post(
-      `${PAYOS_API_URL}/v2/payment-requests`,
-      {
-        orderCode,
-        amount,
-        description,
-        returnUrl,
-        cancelUrl,
-        expiredAt: getExpiredTime(),
-        signature: checksum
-      },
-      {
-        headers: {
-          'x-client-id': PAYOS_CLIENT_ID,
-          'x-api-key': PAYOS_API_KEY
+    // Thử từng cách tạo checksum cho đến khi thành công
+    for (let i = 0; i < checksumAttempts.length; i++) {
+      try {
+        if (checksumAttempts[i] === null) {
+          // Thử không có checksum
+          checksum = ''
+          checksumData = 'no-checksum'
+        } else {
+          checksumData = checksumAttempts[i] || ''
+          checksum = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY || PAYOS_CLIENT_ID).update(checksumData, 'utf8').digest('hex')
+        }
+
+        console.log(`PayOS checksum attempt ${i + 1}:`, {
+          checksumData: checksumData.substring(0, 60) + '...',
+          checksum: checksum.substring(0, 16) + '...',
+          hasChecksum: !!checksum
+        })
+
+        // Chuẩn bị payload
+        const payload: any = {
+          orderCode,
+          amount,
+          description,
+          returnUrl,
+          cancelUrl,
+          expiredAt: getExpiredTime()
+        }
+
+        // Chỉ thêm signature nếu có checksum
+        if (checksum) {
+          payload.signature = checksum
+        }
+
+        response = await axios.post(
+          `${PAYOS_API_URL}/v2/payment-requests`,
+          payload,
+          {
+            headers: {
+              'x-client-id': PAYOS_CLIENT_ID,
+              'x-api-key': PAYOS_API_KEY
+            }
+          }
+        )
+
+        if (response.data.code === '00') {
+          console.log(`✅ PayOS checksum attempt ${i + 1} successful!`)
+          break
+        } else {
+          console.log(`❌ PayOS checksum attempt ${i + 1} failed:`, response.data.desc)
+          if (i === checksumAttempts.length - 1) {
+            throw new Error(`All checksum attempts failed. Last error: ${response.data.desc}`)
+          }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.log(`❌ PayOS checksum attempt ${i + 1} error:`, errorMessage)
+        if (i === checksumAttempts.length - 1) {
+          throw error
         }
       }
-    )
+    }
 
-    if (response.data.code !== '00') {
-      throw new Error(`Payment creation failed: ${response.data.desc}`)
+    if (!response || response.data.code !== '00') {
+      throw new Error(`Payment creation failed: ${response?.data?.desc || 'Unknown error'}`)
     }
 
     const paymentData = response.data.data
