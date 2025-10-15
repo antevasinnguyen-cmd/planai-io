@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, supabase } from '@/lib/supabase'
 import crypto from 'crypto'
 
-// SePay configuration
-const SEPAY_API_URL = 'https://my.sepay.vn/userapi/transactions/create'
-const SEPAY_TOKEN = process.env.SEPAY_TOKEN || ''
-const SEPAY_ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || 'FLIOAI000' // Fallback value
-const SEPAY_WEBHOOK_SECRET = process.env.SEPAY_WEBHOOK_SECRET || ''
+// SePay configuration - Đọc động để tránh cache
+function getSepayConfig() {
+  return {
+    SEPAY_API_URL: process.env.SEPAY_API_URL || 'https://my.sepay.vn/userapi/transactions/create',
+    SEPAY_TOKEN: process.env.SEPAY_TOKEN || '',
+    SEPAY_ACCOUNT_NUMBER: process.env.SEPAY_ACCOUNT_NUMBER || 'FLIOAI000',
+    SEPAY_WEBHOOK_SECRET: process.env.SEPAY_WEBHOOK_SECRET || ''
+  }
+}
 
 // Hàm tạo chữ ký webhook
 function generateWebhookSignature(payload: any, secret: string): string {
@@ -65,24 +69,36 @@ export async function POST(request: NextRequest) {
     // Generate unique transaction ID
     const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
-    // Kiểm tra biến môi trường
+    // Kiểm tra biến môi trường SePay
     if (paymentMethod === 'sepay') {
-      console.log('=== SEPAY CONFIG CHECK ===', {
-        hasToken: !!SEPAY_TOKEN,
-        tokenLength: SEPAY_TOKEN?.length || 0,
-        hasAccountNumber: !!SEPAY_ACCOUNT_NUMBER,
-        accountNumber: SEPAY_ACCOUNT_NUMBER
+      const sepayConfig = getSepayConfig();
+      
+      console.log('=== SEPAY CONFIG CHECK (DYNAMIC) ===', {
+        hasToken: !!sepayConfig.SEPAY_TOKEN,
+        tokenLength: sepayConfig.SEPAY_TOKEN?.length || 0,
+        tokenFirstChars: sepayConfig.SEPAY_TOKEN ? sepayConfig.SEPAY_TOKEN.substring(0, 10) + '...' : 'EMPTY',
+        hasAccountNumber: !!sepayConfig.SEPAY_ACCOUNT_NUMBER,
+        accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER,
+        nodeEnv: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV || 'not-vercel',
+        allEnvKeys: Object.keys(process.env).filter(k => k.includes('SEPAY')).join(', ')
       });
       
-      if (!SEPAY_TOKEN) {
-        console.error('Missing SEPAY_TOKEN environment variable');
+      if (!sepayConfig.SEPAY_TOKEN || sepayConfig.SEPAY_TOKEN.length === 0) {
+        console.error('=== CRITICAL: SEPAY_TOKEN is missing or empty ===');
+        console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('SEPAY')));
         return NextResponse.json({ 
           error: 'Payment provider configuration missing', 
-          details: 'SEPAY_TOKEN is not configured. Please contact support.' 
+          details: 'SEPAY_TOKEN is not configured. Please contact support.',
+          debug: {
+            hasToken: !!sepayConfig.SEPAY_TOKEN,
+            tokenLength: sepayConfig.SEPAY_TOKEN?.length || 0,
+            env: process.env.VERCEL_ENV || 'local'
+          }
         }, { status: 500 });
       }
       
-      if (!SEPAY_ACCOUNT_NUMBER) {
+      if (!sepayConfig.SEPAY_ACCOUNT_NUMBER) {
         console.error('Missing SEPAY_ACCOUNT_NUMBER environment variable');
         return NextResponse.json({ 
           error: 'Payment provider configuration missing', 
@@ -103,10 +119,14 @@ export async function POST(request: NextRequest) {
     let qrCode = ''
     
     if (paymentMethod === 'sepay') {
+      const sepayConfig = getSepayConfig();
+      
       console.log('=== PAYMENT API: Processing SePay payment ===', {
         transactionId,
         amount,
         planId,
+        hasToken: !!sepayConfig.SEPAY_TOKEN,
+        tokenLength: sepayConfig.SEPAY_TOKEN?.length || 0,
         timestamp: new Date().toISOString()
       });
       
@@ -115,7 +135,7 @@ export async function POST(request: NextRequest) {
         const bankName = 'MB Bank';
         const bankCode = '970422'; // MB Bank BIN
         const accountName = 'NGUYEN THI KHANH HUYEN';
-        const accountNumber = SEPAY_ACCOUNT_NUMBER;
+        const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER;
         
         if (!accountNumber) {
           throw new Error('SePay account number is not configured');
