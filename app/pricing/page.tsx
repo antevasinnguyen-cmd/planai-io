@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, Star, Zap, ArrowRight } from 'lucide-react'
+import { Check, Star, Zap, ArrowRight, Shirt, Sparkles } from 'lucide-react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -96,11 +96,27 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white">
       <Header />
       
-      <div className="pt-24 pb-20">
+      <div className="pt-24 pb-20 bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Hero Message - Giá chỉ bằng 1 chiếc áo */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center gap-4 bg-gradient-to-r from-primary-600 to-purple-600 rounded-3xl px-8 py-6 mb-8 shadow-2xl transform hover:scale-105 transition-transform">
+              <Shirt className="w-16 h-16 text-white" strokeWidth={1.5} />
+              <div className="text-left">
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                  Giá chỉ bằng 1 chiếc áo
+                </h2>
+                <p className="text-xl text-white/90 font-medium">
+                  Có ngay bản kế hoạch tài chính đáng mơ ước
+                </p>
+              </div>
+              <Sparkles className="w-12 h-12 text-yellow-300 animate-pulse" />
+            </div>
+          </div>
+
           {/* Header */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-6">
               Chọn Gói Phù Hợp Với Bạn
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
