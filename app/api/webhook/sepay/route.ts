@@ -23,8 +23,15 @@ function verifyWebhookSignature(signature: string, payload: any, secret: string)
 }
 
 // Kiểm tra webhook secret và API key
-const SEPAY_TOKEN = process.env.SEPAY_TOKEN || '';
+const sepayToken = process.env.SEPAY_API_KEY || process.env.SEPAY_TOKEN || '';
 const SEPAY_WEBHOOK_SECRET = process.env.SEPAY_WEBHOOK_SECRET || '';
+
+console.log('=== SEPAY WEBHOOK: Config check ===', {
+  hasToken: !!sepayToken,
+  tokenLength: sepayToken.length,
+  hasWebhookSecret: !!SEPAY_WEBHOOK_SECRET,
+  envVars: Object.keys(process.env).filter(k => k.includes('SEPAY')).join(', ')
+});
 
 // Số lần thử lại tối đa khi cập nhật database
 const MAX_RETRIES = 3;
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
 
   // Xác thực webhook bằng API Key
   const authHeader = headers['authorization'] || '';
-  const expectedAuth = `Apikey ${SEPAY_TOKEN}`;
+  const expectedAuth = `Apikey ${sepayToken}`;
   
   if (authHeader !== expectedAuth) {
     console.error('=== SEPAY WEBHOOK: Invalid API Key ===', {

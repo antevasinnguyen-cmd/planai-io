@@ -4,9 +4,13 @@ import crypto from 'crypto'
 
 // SePay configuration - Đọc động để tránh cache
 function getSepayConfig() {
+  // Hỗ trợ cả SEPAY_TOKEN (cũ) và SEPAY_API_KEY (mới)
+  const sepayToken = process.env.SEPAY_API_KEY || process.env.SEPAY_TOKEN || '';
+
   return {
     SEPAY_API_URL: process.env.SEPAY_API_URL || 'https://my.sepay.vn/userapi/transactions/create',
-    SEPAY_TOKEN: process.env.SEPAY_TOKEN || '',
+    SEPAY_TOKEN: sepayToken, // Giữ tên cũ để tương thích ngược
+    SEPAY_API_KEY: sepayToken, // Thêm tên mới
     SEPAY_ACCOUNT_NUMBER: process.env.SEPAY_ACCOUNT_NUMBER || 'FLIOAI000',
     SEPAY_WEBHOOK_SECRET: process.env.SEPAY_WEBHOOK_SECRET || ''
   }
@@ -83,7 +87,10 @@ export async function POST(request: NextRequest) {
         vercelEnv: process.env.VERCEL_ENV || 'not-vercel',
         allEnvKeys: Object.keys(process.env).filter(k => k.includes('SEPAY')).join(', '),
         allProcessEnvKeys: Object.keys(process.env).slice(0, 10).join(', '), // Hiển thị 10 biến đầu tiên để debug
-        processEnvCount: Object.keys(process.env).length // Tổng số biến môi trường
+        processEnvCount: Object.keys(process.env).length, // Tổng số biến môi trường
+        // Hiển thị giá trị cụ thể của các biến SePay
+        sepayTokenValue: process.env.SEPAY_TOKEN ? '***' + process.env.SEPAY_TOKEN.slice(-4) : 'NOT_SET',
+        sepayApiKeyValue: process.env.SEPAY_API_KEY ? '***' + process.env.SEPAY_API_KEY.slice(-4) : 'NOT_SET'
       });
       
       if (!sepayConfig.SEPAY_TOKEN || sepayConfig.SEPAY_TOKEN.length === 0) {

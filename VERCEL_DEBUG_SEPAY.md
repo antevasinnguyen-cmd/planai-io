@@ -1,4 +1,34 @@
-# 🔍 Debug SEPAY_TOKEN trên Vercel - Hướng dẫn chi tiết
+## ✅ QUAN TRỌNG: ĐÃ HỖ TRỢ CẢ HAI TÊN BIẾN
+
+**Code hiện tại hỗ trợ cả:**
+- `SEPAY_TOKEN` (tên cũ)
+- `SEPAY_API_KEY` (tên mới - theo yêu cầu của bạn)
+
+**Ưu tiên:** `SEPAY_API_KEY` → `SEPAY_TOKEN` → mặc định rỗng
+
+## 🔧 Nếu bạn đã set `SEPAY_API_KEY` trên Vercel:
+
+1. **Không cần thay đổi gì** - code sẽ tự động đọc `SEPAY_API_KEY` trước
+2. **Kiểm tra logs** để xác nhận token được đọc đúng
+3. **Nếu vẫn lỗi**, kiểm tra tên biến chính xác trên Vercel
+
+## 🔧 Nếu bạn muốn đổi từ `SEPAY_TOKEN` sang `SEPAY_API_KEY`:
+
+1. Vào **Vercel Dashboard** → **Settings** → **Environment Variables**
+2. Tìm `SEPAY_TOKEN` và đổi tên thành `SEPAY_API_KEY`
+3. **Lưu** thay đổi
+4. **Redeploy** với **Clear Cache**
+
+## 🔍 Debug Logs mới:
+
+```json
+{
+  "sepayTokenValue": "***1234",  // 4 ký tự cuối của SEPAY_TOKEN
+  "sepayApiKeyValue": "***5678", // 4 ký tự cuối của SEPAY_API_KEY
+  "hasToken": true,
+  "tokenLength": 66
+}
+```
 
 ## ⚠️ Vấn đề hiện tại:
 Mặc dù đã thêm `SEPAY_TOKEN` vào Vercel Environment Variables, nhưng application vẫn không đọc được token.
@@ -162,8 +192,11 @@ tokenLength: 67  // ❌ SAI - có khoảng trắng thừa
 ### Environment Variables cần có trên Vercel:
 
 ```bash
-# SePay (QUAN TRỌNG!)
-SEPAY_TOKEN=40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVKWT
+# SePay (QUAN TRỌNG! - chọn 1 trong 2)
+SEPAY_API_KEY=40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVKWT  # Khuyến nghị
+# HOẶC
+SEPAY_TOKEN=40KPESXRD5XUKP6WYLKYOJGMBMJBRQZ4SEXDLUNDTCBZVZFIJL5I1FVAMRZGVKWT    # Vẫn hoạt động
+
 SEPAY_ACCOUNT_NUMBER=FLIOAI000
 SEPAY_API_URL=https://my.sepay.vn/userapi/transactions/create
 SEPAY_WEBHOOK_SECRET=https://planai.io.vn/api/webhook/sepay
