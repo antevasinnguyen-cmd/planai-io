@@ -91,25 +91,22 @@ export const createPaymentLink = async (
 
     const paymentData = response.data.data
 
-    // Tạo QR code từ thông tin PayOS response sử dụng QR Server API
+    // Tạo QR code từ thông tin PayOS response sử dụng VietQR API
     let qrCode = null
     if (paymentData.accountNumber && paymentData.accountName) {
-      const qrText = `Ngân hàng: MB Bank
-Số tài khoản: ${paymentData.accountNumber}
-Số tiền: ${amount.toLocaleString('vi-VN')} VND
-Nội dung: ${orderCode}`
-      qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`
+      const bankCode = '970422' // MB Bank BIN code
+      qrCode = `https://img.vietqr.io/image/${bankCode}-${paymentData.accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(orderCode)}&accountName=${encodeURIComponent(paymentData.accountName)}`
     }
 
     return {
       id: paymentData.paymentLinkId,
       orderCode,
       amount,
-      description: shortDescription,
+      description,
       status: PaymentStatus.PENDING,
       createdAt: new Date().toISOString(),
       paymentUrl: paymentData.checkoutUrl,
-      qrCode: paymentData.qrCode,
+      qrCode: qrCode || paymentData.qrCode,
       accountName: paymentData.accountName,
       accountNumber: paymentData.accountNumber,
       reference: paymentData.reference

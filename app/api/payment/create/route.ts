@@ -24,27 +24,23 @@ async function createSepayTransaction(sepayConfig: any, amount: number, transfer
       accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER
     })
 
-    // Sử dụng QR Server API miễn phí và đáng tin cậy thay vì Sepay để tránh vấn đề CORS
+    // Sử dụng VietQR API - API chính thức của Việt Nam cho QR code ngân hàng
     const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER
     const bankName = 'MB Bank'
+    const bankCode = '970422' // MB Bank BIN code
     const accountName = 'NGUYEN THI KHANH HUYEN'
 
-    // Tạo nội dung QR code theo format chuẩn
-    const qrText = `Ngân hàng: ${bankName}
-Số tài khoản: ${accountNumber}
-Số tiền: ${amount.toLocaleString('vi-VN')} VND
-Nội dung: ${transferContent}`
+    // Tạo QR code bằng VietQR API (ổn định, không CORS, hỗ trợ banking app)
+    // Format: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={DESCRIPTION}&accountName={ACC_NAME}
+    const qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`
 
-    // Sử dụng QR Server API (miễn phí, không có vấn đề CORS)
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`
-
-    console.log('=== SEPAY QR: QR code generated with QR Server ===', {
+    console.log('=== SEPAY QR: QR code generated with VietQR ===', {
       qrUrl,
       accountNumber,
       bankName,
+      bankCode,
       amount,
-      transferContent,
-      qrTextLength: qrText.length
+      transferContent
     })
 
     return {
@@ -274,7 +270,8 @@ export async function POST(request: NextRequest) {
 
         // Sử dụng PayOS API để tạo payment link
         const orderCode = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        const description = `PlanAI Payment - ${planId} Plan - ${amount.toLocaleString('vi-VN')} VND`
+        // PayOS yêu cầu description tối đa 25 ký tự
+        const description = `PlanAI ${planId}`.substring(0, 25)
         const returnUrl = `${baseUrl}/payment/success`
         const cancelUrl = `${baseUrl}/payment/cancel`
 
