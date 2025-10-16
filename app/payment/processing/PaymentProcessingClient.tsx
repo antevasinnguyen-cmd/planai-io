@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { QrCode, Copy, CheckCircle, XCircle, Loader2, AlertTriangle, Clock, X } from 'lucide-react'
 
 interface PaymentProcessingClientProps {
@@ -161,13 +162,13 @@ export default function PaymentProcessingClient({
             <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
               {qrCode ? (
                 <div className="relative">
-                  <img
+                  <Image
                     src={qrCode}
                     alt="QR Code thanh toán"
                     width={250}
                     height={250}
                     className="rounded"
-                    crossOrigin="anonymous"
+                    priority={true}
                     onLoad={() => {
                       console.log('✅ QR Code loaded successfully');
                     }}
@@ -177,10 +178,15 @@ export default function PaymentProcessingClient({
                         provider: provider,
                         error: e
                       });
-                      e.currentTarget.style.display = 'none';
+                      // Hide the broken image and show error message
+                      const errorDiv = document.createElement('div');
+                      errorDiv.className = 'w-[250px] h-[250px] flex items-center justify-center bg-red-50 rounded text-red-600 text-sm text-center p-4';
+                      errorDiv.textContent = 'Không thể tải QR code. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.';
+                      
                       const parent = e.currentTarget.parentElement;
                       if (parent) {
-                        parent.innerHTML = '<div class="w-[250px] h-[250px] flex items-center justify-center bg-red-50 rounded text-red-600 text-sm text-center p-4">Không thể tải QR code. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.</div>';
+                        parent.innerHTML = '';
+                        parent.appendChild(errorDiv);
                       }
                     }}
                   />
