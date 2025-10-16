@@ -17,7 +17,7 @@ export default function Footer() {
               <span className="text-xl font-bold">PlanAI</span>
             </div>
             <p className="text-gray-400 leading-relaxed">
-              Biến dữ liệu thô thành bản kế hoạch đáng mơ ước. Webapp SaaS áp dụng AI giúp lập kế hoạch tài chính cá nhân hóa.
+              Biến dữ liệu thô thành bản kế hoạch đáng mơ ước. Ứng dụng công nghệ giúp lập kế hoạch tài chính cá nhân hóa.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">

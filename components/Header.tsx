@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Menu, X, User, LogOut, Settings } from 'lucide-react'
+import { Menu, X, User, LogOut, Settings, ChevronDown } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Logo from './Logo'
@@ -95,9 +95,12 @@ export default function Header() {
                 <button
                   ref={avatarButtonRef}
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-primary-700 transition-colors"
+                  className="flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
                 >
-                  {getUserInitial()}
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
+                    {getUserInitial()}
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
                 
                 {showUserMenu && (

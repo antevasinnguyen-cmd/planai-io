@@ -73,7 +73,7 @@ export default function Hero() {
               </h1>
               
               <p className="text-xl text-gray-600 leading-relaxed">
-                Webapp SaaS áp dụng AI giúp người dùng lập kế hoạch / xây dựng chiến lược cá nhân hoá cho mục tiêu tài chính, kiếm tiền, tăng thu nhập. AI tạo plan độc quyền như 1 cuốn Ebook cho mục tiêu của bạn.
+                Ứng dụng công nghệ giúp người dùng lập kế hoạch / xây dựng chiến lược cá nhân hoá cho mục tiêu tài chính, kiếm tiền, tăng thu nhập. AI tạo plan độc quyền như 1 cuốn Ebook cho mục tiêu của bạn.
               </p>
             </div>
 
