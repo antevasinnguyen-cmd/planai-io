@@ -105,31 +105,26 @@ export async function POST(request: NextRequest) {
     const { planId, amount, userId, paymentMethod } = await request.json()
     console.log('Payment details:', { planId, amount, userId, paymentMethod })
     
-    // Kiểm tra user phải đăng nhập
-    if (!userId || userId.startsWith('anonymous')) {
-      console.error('=== PAYMENT API: Unauthorized - User not logged in ===')
+    if (!userId || userId.startsWith('anonymous-')) {
+      console.error('=== PAYMENT API: Anonymous user attempted payment ===')
       return NextResponse.json({
-        error: 'Unauthorized',
-        details: 'Bạn phải đăng nhập trước khi thanh toán. Vui lòng đăng nhập và thử lại.'
+        success: false,
+        error: 'Authentication required',
+        details: 'You must be logged in to make a payment. Please sign in first.'
       }, { status: 401 })
     }
     
-    // Kiểm tra user có tồn tại trong database không
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, email')
-      .eq('id', userId)
-      .single()
-    
-    if (profileError || !userProfile) {
-      console.error('=== PAYMENT API: User not found in database ===', { userId, profileError })
+    const currentUser = await getCurrentUser()
+    if (!currentUser || currentUser.id !== userId) {
+      console.error('=== PAYMENT API: User ID mismatch or not authenticated ===')
       return NextResponse.json({
-        error: 'User not found',
-        details: 'Thông tin tài khoản không hợp lệ. Vui lòng đăng nhập lại.'
-      }, { status: 404 })
+        success: false,
+        error: 'Authentication failed',
+        details: 'Your session is invalid. Please log in again.'
+      }, { status: 401 })
     }
     
-    console.log('=== PAYMENT API: User verified ===', { userId, email: userProfile.email })
+    console.log('=== PAYMENT API: User authenticated ===', userId)
 
     // Generate unique transaction ID
     const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`

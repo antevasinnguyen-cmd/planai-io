@@ -73,7 +73,7 @@ export default function PremiumGate({ slug, title }: Props) {
           Nội dung này chỉ dành cho người dùng đã đăng ký gói trả phí của PlanAI (Gói 1, Gói 2, hoặc Gói 3).
         </p>
         <div className="flex items-center justify-center gap-3">
-          <Link href="/login" className="px-5 py-3 rounded-xl bg-white border text-gray-700 hover:bg-gray-50">Đăng nhập</Link>
+          <Link href="/auth/login" className="px-5 py-3 rounded-xl bg-white border text-gray-700 hover:bg-gray-50">Đăng nhập</Link>
           <Link href="/pricing" className="px-5 py-3 rounded-xl bg-primary-600 text-white hover:bg-primary-700">
             Mua gói để mở khoá
           </Link>

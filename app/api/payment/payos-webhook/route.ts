@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     const transaction_id = paymentData.orderCode?.toString() || paymentData.code?.toString();
     const status = (paymentData.status === '00' || paymentData.status === 'PAID') ? 'completed' : 'failed';
     
-    console.log(`=== WEBHOOK: Processing payment ${transaction_id} with status: ${status}`);
+    console.log(`Processing payment ${transaction_id} with status: ${status}`);
     
     // Cập nhật trạng thái thanh toán trong database
     const { data: payment, error: paymentError } = await supabase
@@ -92,20 +92,12 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (paymentError || !payment) {
-      console.error('=== WEBHOOK: Payment update error ===', { transaction_id, paymentError });
+      console.error('Payment update error:', paymentError);
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
     
-    console.log('=== WEBHOOK: Payment updated ===', { paymentId: payment.id, userId: payment.user_id, status });
-    
     // Nếu thanh toán thành công, cập nhật thông tin người dùng
     if (status === 'completed') {
-      console.log('=== WEBHOOK: Updating subscription ===', {
-        userId: payment.user_id,
-        tier: payment.subscription_tier,
-        amount: payment.amount
-      });
-      
       const { error: subscriptionError } = await supabase
         .from('profiles')
         .update({
@@ -117,10 +109,8 @@ export async function POST(request: NextRequest) {
         .eq('id', payment.user_id);
       
       if (subscriptionError) {
-        console.error('=== WEBHOOK: Subscription update error ===', { userId: payment.user_id, subscriptionError });
-        // Vẫn trả về success vì webhook đã xử lý payment
-      } else {
-        console.log('=== WEBHOOK: Subscription updated successfully ===', { userId: payment.user_id });
+        console.error('Subscription update error:', subscriptionError);
+        return NextResponse.json({ error: 'Subscription update failed' }, { status: 500 });
       }
     }
     
