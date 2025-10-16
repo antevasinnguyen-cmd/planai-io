@@ -40,7 +40,14 @@ SEPAY_TOKEN=your_sepay_token
 ```
 
 #### 🌐 **APP CONFIGURATION**
-```
+
+
+> **⚠️ Lưu ý quan trọng về NEXT_PUBLIC_APP_URL:**
+> -  là URL mặc định khi deploy trên Vercel
+> - Website thực tế của bạn là:  (custom domain)
+> - NEXT_PUBLIC_APP_URL được sử dụng nội bộ trong code để tạo các URL callback
+> - Custom domain được thiết lập riêng trong **Vercel Dashboard > Project Settings > Domains**
+> - Người dùng sẽ truy cập qua , không phải URL Vercel```
 NEXT_PUBLIC_APP_URL=https://planai-io.vercel.app
 NODE_ENV=production
 ```
@@ -57,15 +64,43 @@ NODE_ENV=production
    - ✅ AI chat hoạt động (nếu có API keys)
    - ✅ Thanh toán hoạt động (nếu có payment configs)
 
+
+## 🌐 **Giải thích về NEXT_PUBLIC_APP_URL**
+
+**NEXT_PUBLIC_APP_URL** và **Custom Domain** là hai khái niệm khác nhau:
+
+### 🔗 **NEXT_PUBLIC_APP_URL (Bắt buộc)**
+
+- Đây là URL mặc định khi deploy trên Vercel
+- Được sử dụng nội bộ trong code để tạo các URL callback, redirect
+- Ví dụ: OAuth callbacks, payment return URLs, webhook URLs
+
+### 🏠 **Custom Domain (Tùy chọn)**
+
+- Được thiết lập riêng trong **Vercel Dashboard > Settings > Domains**
+- Người dùng sẽ truy cập qua custom domain này
+- NEXT_PUBLIC_APP_URL vẫn cần thiết cho hoạt động nội bộ
+
+### ⚙️ **Cách thiết lập Custom Domain:**
+1. Vào **Vercel Dashboard > Project Settings > Domains**
+2. Thêm domain 
+3. Vercel sẽ tự động cấu hình redirect từ  → 
+
+**Kết quả cuối cùng:**
+- Người dùng truy cập:  ✅
+- Hệ thống nội bộ vẫn dùng:  ✅
+- Cả hai hoạt động song song mà không xung đột ✅
+
 ## 🔧 Các biến môi trường quan trọng nhất:
 
 | Biến | Mô tả | Bắt buộc |
 |------|-------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | URL của Supabase project | ✅ |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public API key của Supabase | ✅ |
-| `OPENAI_API_KEY` | API key để AI chat hoạt động | ⚠️ (cần cho AI) |
-| `PAYOS_CLIENT_ID` | ID của PayOS merchant | ⚠️ (cần cho thanh toán) |
-| `PAYOS_API_KEY` | API key của PayOS | ⚠️ (cần cho thanh toán) |
+|  | URL của Supabase project | ✅ |
+|  | Public API key của Supabase | ✅ |
+|  | **URL deployment Vercel** (https://planai-io.vercel.app)<br/>⚠️ Khác với custom domain https://planai.io.vn | ✅ |
+|  | API key để AI chat hoạt động | ⚠️ (cần cho AI) |
+|  | ID của PayOS merchant | ⚠️ (cần cho thanh toán) |
+|  | API key của PayOS | ⚠️ (cần cho thanh toán) |
 
 ## 🚨 Lưu ý quan trọng:
 - **Không commit file `.env`** vào Git (đã được ignore)
