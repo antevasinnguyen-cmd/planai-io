@@ -114,9 +114,9 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
     
-    const currentUser = await getCurrentUser()
-    if (!currentUser || currentUser.id !== userId) {
-      console.error('=== PAYMENT API: User ID mismatch or not authenticated ===')
+    const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId)
+    if (authError || !user) {
+      console.error('=== PAYMENT API: User not found or authentication failed ===', authError)
       return NextResponse.json({
         success: false,
         error: 'Authentication failed',
