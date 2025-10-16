@@ -114,9 +114,14 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
     
-    const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId)
-    if (authError || !user) {
-      console.error('=== PAYMENT API: User not found or authentication failed ===', authError)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single()
+    
+    if (profileError || !profile) {
+      console.error('=== PAYMENT API: User profile not found ===', profileError)
       return NextResponse.json({
         success: false,
         error: 'Authentication failed',
