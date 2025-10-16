@@ -105,9 +105,31 @@ export async function POST(request: NextRequest) {
     const { planId, amount, userId, paymentMethod } = await request.json()
     console.log('Payment details:', { planId, amount, userId, paymentMethod })
     
-    // Bỏ qua hoàn toàn phần kiểm tra xác thực người dùng
-    console.log('=== PAYMENT API: Skipping user verification for all requests ===')
-    console.log('=== PAYMENT API: Requested userId ===', userId)
+    // Kiểm tra user phải đăng nhập
+    if (!userId || userId.startsWith('anonymous')) {
+      console.error('=== PAYMENT API: Unauthorized - User not logged in ===')
+      return NextResponse.json({
+        error: 'Unauthorized',
+        details: 'Bạn phải đăng nhập trước khi thanh toán. Vui lòng đăng nhập và thử lại.'
+      }, { status: 401 })
+    }
+    
+    // Kiểm tra user có tồn tại trong database không
+    const { data: userProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('id', userId)
+      .single()
+    
+    if (profileError || !userProfile) {
+      console.error('=== PAYMENT API: User not found in database ===', { userId, profileError })
+      return NextResponse.json({
+        error: 'User not found',
+        details: 'Thông tin tài khoản không hợp lệ. Vui lòng đăng nhập lại.'
+      }, { status: 404 })
+    }
+    
+    console.log('=== PAYMENT API: User verified ===', { userId, email: userProfile.email })
 
     // Generate unique transaction ID
     const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`

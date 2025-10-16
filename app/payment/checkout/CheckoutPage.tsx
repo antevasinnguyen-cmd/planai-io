@@ -42,25 +42,22 @@ export default function CheckoutPage() {
     try {
       const currentUser = await getCurrentUser()
       
-      // Nếu có người dùng đăng nhập, sử dụng thông tin của họ
-      if (currentUser) {
-        setUser(currentUser)
-        const { data: profileData } = await getUserProfile(currentUser.id)
-        setProfile(profileData)
-      } else {
-        // Nếu không có người dùng, tạo một người dùng ẩn danh
-        setUser({
-          id: 'anonymous-' + Date.now(),
-          email: 'guest@planai.io.vn'
-        })
+      // Nếu không có người dùng đăng nhập => Yêu cầu đăng nhập
+      if (!currentUser) {
+        console.log('User not logged in, redirecting to login')
+        router.push('/auth/login?redirect=/pricing')
+        return
       }
+      
+      // Lấy thông tin user đăng nhập
+      setUser(currentUser)
+      const { data: profileData } = await getUserProfile(currentUser.id)
+      setProfile(profileData)
     } catch (error) {
       console.error('Error initializing checkout:', error)
-      // Tạo người dùng ẩn danh trong trường hợp lỗi
-      setUser({
-        id: 'anonymous-' + Date.now(),
-        email: 'guest@planai.io.vn'
-      })
+      // Nếu có lỗi, yêu cầu đăng nhập lại
+      router.push('/auth/login?redirect=/pricing')
+      return
     }
 
     const planId = searchParams.get('plan')

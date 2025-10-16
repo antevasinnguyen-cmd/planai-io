@@ -76,16 +76,31 @@ export async function GET(request: NextRequest) {
           if (payosStatus === 'PAID') {
             // Cập nhật database nếu PayOS báo đã thanh toán
             if (payment && payment.status !== 'completed') {
-              await supabase
+              console.log('Updating payment status to completed:', { paymentId: payment.id, userId: payment.user_id })
+              
+              // Cập nhật payment status
+              const { error: paymentUpdateError } = await supabase
                 .from('payments')
                 .update({ 
                   status: 'completed',
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', payment.id)
+              
+              if (paymentUpdateError) {
+                console.error('Error updating payment status:', paymentUpdateError)
+              } else {
+                console.log('Payment status updated successfully')
+              }
 
               // Cập nhật subscription cho user
-              await supabase
+              console.log('Updating user subscription:', {
+                userId: payment.user_id,
+                tier: payment.subscription_tier,
+                amount: payment.amount
+              })
+              
+              const { error: subscriptionError } = await supabase
                 .from('profiles')
                 .update({
                   subscription_tier: payment.subscription_tier,
@@ -94,6 +109,12 @@ export async function GET(request: NextRequest) {
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', payment.user_id)
+              
+              if (subscriptionError) {
+                console.error('Error updating subscription:', subscriptionError)
+              } else {
+                console.log('Subscription updated successfully')
+              }
             }
 
             return NextResponse.json({
