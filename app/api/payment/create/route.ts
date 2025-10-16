@@ -15,6 +15,15 @@ function getSepayConfig() {
   }
 }
 
+// Hàm tạo giao dịch SePay và nhận QR code
+async function createSepayTransaction(sepayConfig: any, amount: number, transferContent: string, transactionId: string) {
+  try {
+    console.log('=== SEPAY QR: Creating QR code ===', {
+      amount,
+      transferContent,
+      accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER
+    })
+
     // Sử dụng QR Server API miễn phí và đáng tin cậy thay vì Sepay để tránh vấn đề CORS
     const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER
     const bankName = 'MB Bank'
@@ -47,6 +56,14 @@ Nội dung: ${transferContent}`
         transactionId: transactionId
       }
     }
+  } catch (error) {
+    console.error('=== SEPAY QR: Error ===', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
 
 // Hàm tạo mã giao dịch duy nhất
 function generateTransactionId(prefix = 'PLANAI'): string {
