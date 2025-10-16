@@ -361,7 +361,7 @@ export default function PaymentProcessingClient({
             <div className="flex justify-between">
               <span className="text-gray-600">Phương thức:</span>
               <span className="font-medium text-gray-900">
-                {provider === 'sepay' ? 'VietQR Pro (SePay)' : 'PayOS'}
+                {provider === 'sepay' ? 'VietQR Pro (SePay)' : 'PayOS (VietQR)'}
               </span>
             </div>
           </div>

@@ -239,10 +239,10 @@ export default function PricingPage() {
                 }`}
               >
                 {tier.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center shadow-lg">
-                      <Star className="w-4 h-4 mr-1 fill-white" />
-                      Phổ biến nhất
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium flex items-center shadow-lg min-w-max">
+                      <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1 fill-white flex-shrink-0" />
+                      <span className="whitespace-nowrap">Phổ biến nhất</span>
                     </div>
                   </div>
                 )}

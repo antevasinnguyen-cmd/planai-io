@@ -53,7 +53,7 @@ export default function PaymentSuccessClient({ orderId, amount, planId, provider
             <div className="text-right font-medium text-gray-900">{planId === 'basic' ? 'Gói 1' : planId === 'pro' ? 'Gói 2' : planId === 'pro_max' ? 'Gói 3' : planId}</div>
             
             <div className="text-left text-gray-600">Phương thức:</div>
-            <div className="text-right font-medium text-gray-900">{provider === 'sepay' ? 'VietQR Pro (SePay)' : 'PayOS'}</div>
+            <div className="text-right font-medium text-gray-900">{provider === 'sepay' ? 'VietQR Pro (SePay)' : 'PayOS (VietQR)'}</div>
           </div>
         </div>
         

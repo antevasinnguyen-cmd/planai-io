@@ -91,7 +91,7 @@ export const createPaymentLink = async (
 
     const paymentData = response.data.data
 
-    // Tạo QR code từ thông tin PayOS response sử dụng VietQR API
+    // Tạo QR code từ thông tin PayOS response sử dụng VietQR API (cả PayOS và SePay đều sử dụng VietQR)
     let qrCode = null
     if (paymentData.accountNumber && paymentData.accountName) {
       const bankCode = '970422' // MB Bank BIN code
