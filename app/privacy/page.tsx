@@ -119,7 +119,7 @@ export default function PrivacyPolicyPage() {
                     <li><strong>Từ chối:</strong> Không đồng ý với việc xử lý dữ liệu nhất định</li>
                   </ul>
                   <p className="mt-4">
-                    Để thực hiện các quyền này, vui lòng liên hệ: <a href="mailto:support@planai.io.vn" className="text-primary-600 hover:underline">support@planai.io.vn</a>
+                    Để thực hiện các quyền này, vui lòng liên hệ: <a href="mailto:webappsaas.ai@gmail.com" className="text-primary-600 hover:underline">webappsaas.ai@gmail.com</a>
                   </p>
                 </div>
               </div>
@@ -185,7 +185,7 @@ export default function PrivacyPolicyPage() {
               Nếu bạn có câu hỏi về chính sách bảo mật này, vui lòng liên hệ:
             </p>
             <div className="space-y-2 text-gray-700">
-              <p><strong>Email:</strong> <a href="mailto:support@planai.io.vn" className="text-primary-600 hover:underline">support@planai.io.vn</a></p>
+              <p><strong>Email:</strong> <a href="mailto:webappsaas.ai@gmail.com" className="text-primary-600 hover:underline">webappsaas.ai@gmail.com</a></p>
               <p><strong>Website:</strong> <a href="https://planai.io.vn" className="text-primary-600 hover:underline">https://planai.io.vn</a></p>
             </div>
           </section>

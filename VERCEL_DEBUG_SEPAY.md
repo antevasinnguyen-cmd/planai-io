@@ -291,7 +291,7 @@ Nếu tất cả đều thất bại, có thể là bug của Vercel:
 ## 📞 Liên hệ:
 
 Nếu cần hỗ trợ thêm:
-- Email: support@planai.io.vn
+- Email: webappsaas.ai@gmail.com
 - Gửi kèm:
   1. Screenshot Environment Variables page
   2. Function logs từ Vercel

@@ -61,5 +61,5 @@ Nếu không thể nạp tiền ngay, hệ thống sẽ hiển thị thông báo
 "💰 API của chúng tôi đã hết hạn mức sử dụng. Chúng tôi đang nỗ lực nạp thêm credit..."
 
 ## 📞 Liên hệ hỗ trợ
-- Email: support@planai.io.vn
+- Email: webappsaas.ai@gmail.com
 - Hotline: [Thêm số hotline nếu có]

@@ -63,4 +63,4 @@ Sau khi cấu hình xong, bạn có thể kiểm tra bằng cách:
 
 ## Liên hệ hỗ trợ
 
-Nếu bạn vẫn gặp vấn đề sau khi thực hiện các bước trên, vui lòng liên hệ với đội hỗ trợ kỹ thuật qua email: support@planai.io.vn
+Nếu bạn vẫn gặp vấn đề sau khi thực hiện các bước trên, vui lòng liên hệ với đội hỗ trợ kỹ thuật qua email: webappsaas.ai@gmail.com

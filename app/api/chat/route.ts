@@ -131,11 +131,11 @@ export async function POST(request: NextRequest) {
           userFriendlyMessage = '🔧 Hệ thống đang được bảo trì. Chúng tôi sẽ khắc phục sớm nhất có thể!'
         } else if (errorMsg.includes('rate limit') || errorMsg.includes('quota') || errorMsg.includes('insufficient_quota') || errorMsg.includes('exceeded your current quota')) {
           errorMessage = 'Đã hết giới hạn sử dụng API OpenAI'
-          userFriendlyMessage = '🚨 **OpenAI API đã hết hạn mức sử dụng.**\n\nChúng tôi đang xử lý vấn đề này. Vui lòng thử lại sau hoặc liên hệ support@planai.io.vn để được hỗ trợ.'
+          userFriendlyMessage = '🚨 **OpenAI API đã hết hạn mức sử dụng.**\n\nChúng tôi đang xử lý vấn đề này. Vui lòng thử lại sau hoặc liên hệ webappsaas.ai@gmail.com để được hỗ trợ.'
           isQuotaError = true
         } else if (errorMsg.includes('credit balance') || errorMsg.includes('low to access') || errorMsg.includes('too low to access')) {
           errorMessage = 'API credit Anthropic không đủ'
-          userFriendlyMessage = '🚨 **Anthropic API đã hết credit.**\n\nChúng tôi đang xử lý vấn đề này. Vui lòng thử lại sau hoặc liên hệ support@planai.io.vn để được hỗ trợ.'
+          userFriendlyMessage = '🚨 **Anthropic API đã hết credit.**\n\nChúng tôi đang xử lý vấn đề này. Vui lòng thử lại sau hoặc liên hệ webappsaas.ai@gmail.com để được hỗ trợ.'
           isQuotaError = true
         } else if (errorMsg.includes('network') || errorMsg.includes('timeout')) {
           errorMessage = 'Lỗi kết nối mạng'
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         error: 'AI_CONNECTION_ERROR',
         message: userFriendlyMessage,
         details: errorMessage,
-        suggestion: 'Nếu lỗi tiếp tục xảy ra, vui lòng liên hệ support@planai.io.vn'
+        suggestion: 'Nếu lỗi tiếp tục xảy ra, vui lòng liên hệ webappsaas.ai@gmail.com'
       }, { status: 500 })
     }
 

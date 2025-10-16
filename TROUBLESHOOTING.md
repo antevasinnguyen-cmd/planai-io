@@ -95,5 +95,5 @@ console.error('Error:', error);
 ## Liên hệ hỗ trợ
 
 Nếu bạn vẫn gặp vấn đề, hãy liên hệ:
-- Email: support@planai.io.vn
+- Email: webappsaas.ai@gmail.com
 - Telegram: @planai_support

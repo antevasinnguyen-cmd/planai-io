@@ -226,7 +226,7 @@ Missing SEPAY_TOKEN environment variable
 ## 📞 Liên hệ hỗ trợ:
 
 Nếu vẫn gặp vấn đề sau khi làm theo hướng dẫn:
-- Email: support@planai.io.vn
+- Email: webappsaas.ai@gmail.com
 - Gửi kèm screenshot của:
   1. Environment Variables page trên Vercel
   2. Function logs từ deployment

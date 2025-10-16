@@ -277,7 +277,7 @@ export default function CookiePolicyPage() {
               Nếu bạn có câu hỏi về chính sách cookies, vui lòng liên hệ:
             </p>
             <div className="space-y-2 text-gray-700">
-              <p><strong>Email:</strong> <a href="mailto:support@planai.io.vn" className="text-primary-600 hover:underline">support@planai.io.vn</a></p>
+              <p><strong>Email:</strong> <a href="mailto:webappsaas.ai@gmail.com" className="text-primary-600 hover:underline">webappsaas.ai@gmail.com</a></p>
               <p><strong>Website:</strong> <a href="https://planai.io.vn" className="text-primary-600 hover:underline">https://planai.io.vn</a></p>
             </div>
           </section>
