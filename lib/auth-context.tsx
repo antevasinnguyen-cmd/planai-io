@@ -42,19 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentPath = window.location.pathname
           // Chỉ redirect từ /login hoặc /signup, KHÔNG redirect từ trang chủ
           if (currentPath === '/login' || currentPath === '/signup') {
-            // Kiểm tra xem có redirect parameter không
-            const redirectTo = localStorage.getItem('auth_redirect')
-            let targetPath = '/dashboard'
-            
-            if (redirectTo) {
-              targetPath = redirectTo
-              localStorage.removeItem('auth_redirect')
-              console.log('=== AUTHCONTEXT: Đã đăng nhập, redirect đến', targetPath, '===')
-            } else {
-              console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ', currentPath, '===')
-            }
-            
-            window.location.replace(targetPath)
+            console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ', currentPath, '===')
+            window.location.replace('/dashboard')
           }
         }
       } catch (error) {
@@ -95,19 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentPath = window.location.pathname
             // Chỉ redirect từ login/signup pages
             if (currentPath === '/login' || currentPath === '/signup') {
-              // Kiểm tra xem có redirect parameter không
-              const redirectTo = localStorage.getItem('auth_redirect')
-              let targetPath = '/dashboard'
-              
-              if (redirectTo) {
-                targetPath = redirectTo
-                localStorage.removeItem('auth_redirect')
-                console.log('=== AUTHCONTEXT: SIGNED_IN - Redirect đến', targetPath, '===')
-              } else {
-                console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, 'đến dashboard ===')
-              }
-              
-              window.location.replace(targetPath)
+              console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, 'đến dashboard ===')
+              window.location.replace('/dashboard')
             }
           }
         } else if (event === 'SIGNED_OUT') {

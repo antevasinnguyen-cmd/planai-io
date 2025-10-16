@@ -1,29 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Zap } from 'lucide-react'
 import { signIn, signInWithGoogle } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Suspense } from 'react'
 
-function LoginPageContent() {
+export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect')
-  
-  useEffect(() => {
-    if (redirectTo) {
-      localStorage.setItem('auth_redirect', redirectTo)
-      console.log('=== LOGIN: Luu duong dan chuyen huong ===', redirectTo)
-    }
-  }, [redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -209,22 +199,5 @@ function LoginPageContent() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Dang tai...</p>
-          </div>
-        </div>
-      </div>
-    }>
-      <LoginPageContent />
-    </Suspense>
   )
 }

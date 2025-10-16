@@ -105,31 +105,9 @@ export async function POST(request: NextRequest) {
     const { planId, amount, userId, paymentMethod } = await request.json()
     console.log('Payment details:', { planId, amount, userId, paymentMethod })
     
-    if (!userId || userId.startsWith('anonymous-')) {
-      console.error('=== PAYMENT API: Anonymous user attempted payment ===')
-      return NextResponse.json({
-        success: false,
-        error: 'Authentication required',
-        details: 'You must be logged in to make a payment. Please sign in first.'
-      }, { status: 401 })
-    }
-    
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single()
-    
-    if (profileError || !profile) {
-      console.error('=== PAYMENT API: User profile not found ===', profileError)
-      return NextResponse.json({
-        success: false,
-        error: 'Authentication failed',
-        details: 'Your session is invalid. Please log in again.'
-      }, { status: 401 })
-    }
-    
-    console.log('=== PAYMENT API: User authenticated ===', userId)
+    // Bỏ qua hoàn toàn phần kiểm tra xác thực người dùng
+    console.log('=== PAYMENT API: Skipping user verification for all requests ===')
+    console.log('=== PAYMENT API: Requested userId ===', userId)
 
     // Generate unique transaction ID
     const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -378,6 +356,7 @@ export async function POST(request: NextRequest) {
         const payosOrderCode = urlParams.get('payosOrderCode')
         if (payosOrderCode) {
           paymentData.order_code = parseInt(payosOrderCode.replace('PLANAI_', ''))
+          paymentData.payos_payment_id = payosOrderCode
           paymentData.metadata = {
             payos_order_code: payosOrderCode,
             provider_url: paymentUrl

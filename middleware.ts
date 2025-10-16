@@ -8,29 +8,11 @@ export async function middleware(req: NextRequest) {
   
   // Khởi tạo Supabase client
   const supabase = createMiddlewareClient({ req, res })
-  const pathname = req.nextUrl.pathname
 
   try {
     // Chỉ refresh session, không redirect
     // Để auth-context xử lý redirect logic
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (pathname.startsWith('/blog/') && pathname.includes('-paid')) {
-      if (!session) {
-        return NextResponse.redirect(new URL('/login?redirect=' + pathname, req.url))
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_tier')
-        .eq('id', session.user.id)
-        .single()
-
-      const paidTiers = ['basic', 'pro', 'pro_max']
-      if (!profile || !paidTiers.includes(profile.subscription_tier)) {
-        return NextResponse.redirect(new URL('/pricing', req.url))
-      }
-    }
+    await supabase.auth.getSession()
 
     // Trả về response để tiếp tục
     return res

@@ -42,18 +42,21 @@ export default function CheckoutPage() {
     try {
       const currentUser = await getCurrentUser()
       
+      // Nếu chưa đăng nhập => redirect đến login
       if (!currentUser) {
-        console.log('No user logged in, redirecting to login')
-        router.push('/login?redirect=/pricing')
+        console.log('User not logged in, redirecting to login')
+        router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
         return
       }
       
+      // Nếu có người dùng đăng nhập, sử dụng thông tin của họ
       setUser(currentUser)
       const { data: profileData } = await getUserProfile(currentUser.id)
       setProfile(profileData)
     } catch (error) {
       console.error('Error initializing checkout:', error)
-      router.push('/login?redirect=/pricing')
+      // Nếu có lỗi, redirect đến login
+      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
       return
     }
 
