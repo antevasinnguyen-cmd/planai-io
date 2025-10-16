@@ -106,7 +106,7 @@ export default function PaymentProcessingClient({
       setCheckCount(prev => prev + 1)
 
       try {
-        const response = await fetch(`/api/payment/check-status?orderId=${orderId}`)
+        const response = await fetch(`/api/payment/check-status?orderId=${orderId}&provider=${provider}`)
         const data = await response.json()
 
         if (data.status === 'completed') {
@@ -114,6 +114,8 @@ export default function PaymentProcessingClient({
           setTimeout(() => {
             router.push(`/payment/success?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}`)
           }, 2000)
+        } else if (data.status === 'failed') {
+          setPaymentStatus('failed')
         } else if (timeRemaining <= 0) { // Hết thời gian
           setPaymentStatus('failed')
         } else {
@@ -279,13 +281,13 @@ export default function PaymentProcessingClient({
               <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2 text-red-600">
                   <XCircle className="w-5 h-5" />
-                  <span>Chưa nhận được thanh toán</span>
+                  <span>Thanh toán thất bại</span>
                 </div>
                 <button
-                  onClick={() => router.push('/pricing')}
+                  onClick={() => router.push(`/payment/failed?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}&reason=timeout`)}
                   className="mt-2 text-primary-600 hover:underline"
                 >
-                  Quay lại trang giá
+                  Xem chi tiết lỗi
                 </button>
               </div>
             )}
