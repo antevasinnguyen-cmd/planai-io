@@ -105,7 +105,7 @@ Nội dung: ${orderCode}`
       id: paymentData.paymentLinkId,
       orderCode,
       amount,
-      description,
+      description: shortDescription,
       status: PaymentStatus.PENDING,
       createdAt: new Date().toISOString(),
       paymentUrl: paymentData.checkoutUrl,
@@ -169,10 +169,10 @@ export const verifyWebhookSignature = (
 }
 
 // Helper function to get expiration time (24 hours from now)
-const getExpiredTime = (): string => {
+const getExpiredTime = (): number => {
   const date = new Date()
   date.setHours(date.getHours() + 24)
-  return Math.floor(date.getTime() / 1000).toString() // Unix timestamp
+  return Math.floor(date.getTime() / 1000) // Unix timestamp as number
 }
 
 // Process subscription payment
