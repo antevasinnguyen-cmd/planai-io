@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Zap } from 'lucide-react'
 import { signIn, signInWithGoogle } from '@/lib/supabase'
@@ -14,6 +14,15 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect')
+  
+  useEffect(() => {
+    if (redirectTo) {
+      localStorage.setItem('auth_redirect', redirectTo)
+      console.log('=== LOGIN: Luu duong dan chuyen huong ===', redirectTo)
+    }
+  }, [redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

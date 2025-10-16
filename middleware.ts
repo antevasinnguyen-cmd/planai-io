@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
 
     if (pathname.startsWith('/blog/') && pathname.includes('-paid')) {
       if (!session) {
-        return NextResponse.redirect(new URL('/auth/login?redirect=' + pathname, req.url))
+        return NextResponse.redirect(new URL('/login?redirect=' + pathname, req.url))
       }
 
       const { data: profile } = await supabase

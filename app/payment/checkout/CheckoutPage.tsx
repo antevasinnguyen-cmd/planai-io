@@ -44,7 +44,7 @@ export default function CheckoutPage() {
       
       if (!currentUser) {
         console.log('No user logged in, redirecting to login')
-        router.push('/auth/login?redirect=/pricing')
+        router.push('/login?redirect=/pricing')
         return
       }
       
@@ -53,7 +53,7 @@ export default function CheckoutPage() {
       setProfile(profileData)
     } catch (error) {
       console.error('Error initializing checkout:', error)
-      router.push('/auth/login?redirect=/pricing')
+      router.push('/login?redirect=/pricing')
       return
     }
 
