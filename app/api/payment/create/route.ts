@@ -15,29 +15,27 @@ function getSepayConfig() {
   }
 }
 
-// Hàm tạo giao dịch SePay và nhận QR code
-async function createSepayTransaction(sepayConfig: any, amount: number, transferContent: string, transactionId: string) {
-  try {
-    console.log('=== SEPAY QR: Creating QR code ===', {
-      amount,
-      transferContent,
-      accountNumber: sepayConfig.SEPAY_ACCOUNT_NUMBER
-    })
-
-    // Sử dụng trình tạo QR trực tiếp từ Sepay theo docs: https://docs.sepay.vn/tao-qr-code-vietqr-dong.html
+    // Sử dụng QR Server API miễn phí và đáng tin cậy thay vì Sepay để tránh vấn đề CORS
     const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER
-    const bankName = 'MBBank' // Tên ngân hàng theo danh sách Sepay
+    const bankName = 'MB Bank'
     const accountName = 'NGUYEN THI KHANH HUYEN'
 
-    // Tạo QR code sử dụng format chuẩn của Sepay - bank phải là tên ngân hàng, không phải BIN
-    const qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${bankName}&amount=${amount}&des=${encodeURIComponent(transferContent)}`
+    // Tạo nội dung QR code theo format chuẩn
+    const qrText = `Ngân hàng: ${bankName}
+Số tài khoản: ${accountNumber}
+Số tiền: ${amount.toLocaleString('vi-VN')} VND
+Nội dung: ${transferContent}`
 
-    console.log('=== SEPAY QR: QR code generated ===', {
+    // Sử dụng QR Server API (miễn phí, không có vấn đề CORS)
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrText)}`
+
+    console.log('=== SEPAY QR: QR code generated with QR Server ===', {
       qrUrl,
       accountNumber,
       bankName,
       amount,
-      transferContent
+      transferContent,
+      qrTextLength: qrText.length
     })
 
     return {
@@ -49,14 +47,6 @@ async function createSepayTransaction(sepayConfig: any, amount: number, transfer
         transactionId: transactionId
       }
     }
-  } catch (error) {
-    console.error('=== SEPAY QR: Error ===', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }
-  }
-}
 
 // Hàm tạo mã giao dịch duy nhất
 function generateTransactionId(prefix = 'PLANAI'): string {
