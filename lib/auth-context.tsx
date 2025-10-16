@@ -43,7 +43,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Chỉ redirect từ /login hoặc /signup, KHÔNG redirect từ trang chủ
           if (currentPath === '/login' || currentPath === '/signup') {
             console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ', currentPath, '===')
-            window.location.replace('/dashboard')
+            
+            // Kiểm tra redirect parameter từ URL hoặc localStorage
+            let redirectPath = null
+            
+            // Ưu tiên redirect từ URL hiện tại
+            const urlParams = new URLSearchParams(window.location.search)
+            redirectPath = urlParams.get('redirect')
+            
+            // Nếu không có trong URL, kiểm tra localStorage
+            if (!redirectPath) {
+              redirectPath = localStorage.getItem('auth_redirect')
+              if (redirectPath) {
+                console.log('=== AUTHCONTEXT: Sử dụng đường dẫn từ localStorage ===', redirectPath)
+                localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
+              }
+            }
+            
+            if (redirectPath && redirectPath.startsWith('/') && !redirectPath.includes('//')) {
+              console.log('=== AUTHCONTEXT: Chuyển hướng đến đường dẫn được chỉ định:', redirectPath)
+              window.location.replace(redirectPath)
+            } else {
+              window.location.replace('/dashboard')
+            }
           }
         }
       } catch (error) {
@@ -84,8 +106,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentPath = window.location.pathname
             // Chỉ redirect từ login/signup pages
             if (currentPath === '/login' || currentPath === '/signup') {
-              console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, 'đến dashboard ===')
-              window.location.replace('/dashboard')
+              console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, '===')
+              
+              // Kiểm tra redirect parameter từ URL hoặc localStorage
+              let redirectPath = null
+              
+              // Ưu tiên redirect từ URL hiện tại
+              const urlParams = new URLSearchParams(window.location.search)
+              redirectPath = urlParams.get('redirect')
+              
+              // Nếu không có trong URL, kiểm tra localStorage
+              if (!redirectPath) {
+                redirectPath = localStorage.getItem('auth_redirect')
+                if (redirectPath) {
+                  console.log('=== AUTHCONTEXT: Sử dụng đường dẫn từ localStorage ===', redirectPath)
+                  localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
+                }
+              }
+              
+              if (redirectPath && redirectPath.startsWith('/') && !redirectPath.includes('//')) {
+                console.log('=== AUTHCONTEXT: Chuyển hướng đến đường dẫn được chỉ định:', redirectPath)
+                window.location.replace(redirectPath)
+              } else {
+                window.location.replace('/dashboard')
+              }
             }
           }
         } else if (event === 'SIGNED_OUT') {

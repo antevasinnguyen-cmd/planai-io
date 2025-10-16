@@ -45,7 +45,7 @@ export default function CheckoutPage() {
       // Nếu chưa đăng nhập => redirect đến login
       if (!currentUser) {
         console.log('User not logged in, redirecting to login')
-        router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
         return
       }
       

@@ -21,6 +21,14 @@ export default function LoginPage() {
     setError('')
 
     try {
+      // Lưu đường dẫn chuyển hướng nếu có
+      const urlParams = new URLSearchParams(window.location.search)
+      const redirectPath = urlParams.get('redirect')
+      if (redirectPath) {
+        localStorage.setItem('auth_redirect', redirectPath)
+        console.log('=== LOGIN: Lưu đường dẫn chuyển hướng ===', redirectPath)
+      }
+
       const { data, error } = await signIn(email, password)
       
       if (error) {
