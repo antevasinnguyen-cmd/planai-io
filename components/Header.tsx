@@ -54,11 +54,11 @@ export default function Header() {
   }
 
   const getUserInitial = () => {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name.charAt(0).toUpperCase()
-    }
     if (user?.email) {
       return user.email.charAt(0).toUpperCase()
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name.charAt(0).toUpperCase()
     }
     return 'U'
   }
