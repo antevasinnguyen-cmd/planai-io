@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context-new'
 import AuthSuccessMessage from '@/components/auth-success-message'
@@ -29,6 +30,19 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={inter.className}>
+        {/* Google Analytics - Global site tag (gtag.js) */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-20FRPF1LFB"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-20FRPF1LFB');
+          `}
+        </Script>
         <AuthProvider>
           <AuthSuccessMessage />
           {children}
