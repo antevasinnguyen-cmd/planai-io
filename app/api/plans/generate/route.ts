@@ -5,6 +5,7 @@ import { generateFinancialPlan } from '@/lib/openai'
 import { generateFinancialPlanWithClaude } from '@/lib/claude'
 import { TaskType, selectModel, MODELS } from '@/lib/modelSelection'
 import { processFinancialPlanWithRAG } from '@/lib/rag'
+import { generateMicroTasks, generateWeeklyChecklist, generateMonthlyChecklist, generateLearningResources, formatMicroTasks, formatChecklists } from '@/lib/planGeneration'
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,8 +92,66 @@ Format: Markdown với headings, lists, và tables.`
       await saveCachedResponse(cacheKey, planContent, 30) // Cache for 30 days
     }
 
+    // Generate enhanced plan components
+    console.log('=== PLAN GENERATION: Generating micro-tasks, checklists, and resources ===');
+    
+    let microTasks, weeklyChecklist, monthlyChecklist, learningResources;
+    
+    try {
+      // Generate micro-tasks
+      microTasks = await generateMicroTasks(
+        userProfile,
+        userProfile.financial_goal || 'Mục tiêu tài chính',
+        userProfile.timeline || '1 năm'
+      )
+      console.log('=== PLAN GENERATION: Micro-tasks generated successfully ===');
+    } catch (e) {
+      console.error('=== PLAN GENERATION: Error generating micro-tasks ===', e);
+      microTasks = { weekday: { tasks: [] }, weekend: { tasks: [] } }
+    }
+    
+    try {
+      // Generate weekly checklist
+      weeklyChecklist = await generateWeeklyChecklist(
+        userProfile.financial_goal || 'Mục tiêu tài chính'
+      )
+      console.log('=== PLAN GENERATION: Weekly checklist generated successfully ===');
+    } catch (e) {
+      console.error('=== PLAN GENERATION: Error generating weekly checklist ===', e);
+      weeklyChecklist = { tasks: [] }
+    }
+    
+    try {
+      // Generate monthly checklist
+      monthlyChecklist = await generateMonthlyChecklist(
+        userProfile.financial_goal || 'Mục tiêu tài chính'
+      )
+      console.log('=== PLAN GENERATION: Monthly checklist generated successfully ===');
+    } catch (e) {
+      console.error('=== PLAN GENERATION: Error generating monthly checklist ===', e);
+      monthlyChecklist = { tasks: [] }
+    }
+    
+    try {
+      // Generate learning resources
+      learningResources = await generateLearningResources(
+        userProfile.financial_goal || 'Mục tiêu tài chính',
+        userProfile.occupation || 'Chuyên gia tài chính'
+      )
+      console.log('=== PLAN GENERATION: Learning resources generated successfully ===');
+    } catch (e) {
+      console.error('=== PLAN GENERATION: Error generating learning resources ===', e);
+      learningResources = ''
+    }
+    
+    // Combine all components into enhanced plan content
+    const enhancedPlanContent = planContent + '\n\n' +
+      formatMicroTasks(microTasks) + '\n\n' +
+      formatChecklists(weeklyChecklist, monthlyChecklist) + '\n\n' +
+      (learningResources ? '📚 TÀI LIỆU HỌC TẬP:\n' + learningResources : '')
+    
     // Calculate word count for analytics
-    const wordCount = planContent.split(/\s+/).length
+    const wordCount = enhancedPlanContent.split(/\s+/).length
 
     // Save plan to database
     const { data: plan, error } = await supabase
@@ -100,12 +159,12 @@ Format: Markdown với headings, lists, và tables.`
       .insert({
         user_id: user.id,
         title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
-        content: planContent,
+        content: enhancedPlanContent,
         collected_info: collectedInfo,
         status: 'active',
         word_count: wordCount,
         created_at: new Date().toISOString(),
-        model_used: planContent.length > 8000 ? MODELS.COMPLEX_PLANNING : MODELS.CHAT_DEFAULT,
+        model_used: enhancedPlanContent.length > 8000 ? MODELS.COMPLEX_PLANNING : MODELS.CHAT_DEFAULT,
         rag_processed: false
       })
       .select()
@@ -114,7 +173,7 @@ Format: Markdown với headings, lists, và tables.`
     if (error) throw error
     
     // Process plan with RAG in the background (don't await)
-    processFinancialPlanWithRAG(user.id, plan.id, planContent)
+    processFinancialPlanWithRAG(user.id, plan.id, enhancedPlanContent)
       .then(() => console.log(`RAG processing initiated for plan ${plan.id}`))
       .catch(err => console.error(`RAG processing failed for plan ${plan.id}:`, err))
 
