@@ -275,31 +275,31 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     const input = userInput.toLowerCase()
     const newInfo = { ...collectedInfo }
 
-    if (input.includes('mục tiêu') || input.includes('muốn') || input.includes('cần')) {
+    if (input.includes('mục tiêu') || input.includes('muốn') || input.includes('cần') || input.includes('mua') || input.includes('kiếm') || input.includes('tiền')) {
       newInfo['goal'] = true
     }
-    if (input.includes('thu nhập') || input.includes('lương') || input.includes('triệu')) {
+    if (input.includes('thu nhập') || input.includes('lương') || input.includes('triệu') || input.includes('đồng/tháng') || input.includes('kiếm')) {
       newInfo['income'] = true
     }
-    if (input.includes('nghề') || input.includes('làm') || input.includes('công việc')) {
+    if (input.includes('nghề') || input.includes('làm') || input.includes('công việc') || input.includes('kỹ năng') || input.includes('chuyên môn')) {
       newInfo['occupation'] = true
     }
-    if (input.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) {
+    if (input.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || input.match(/\d{4}-\d{1,2}-\d{1,2}/)) {
       newInfo['birth_date'] = true
     }
-    if (input.includes('tháng') || input.includes('năm') || input.includes('thời gian')) {
+    if (input.includes('tháng') || input.includes('năm') || input.includes('thời gian') || input.includes('ngắn hạn') || input.includes('dài hạn')) {
       newInfo['timeline'] = true
     }
-    if (input.includes('tiết kiệm') || input.includes('có')) {
+    if (input.includes('tiết kiệm') || input.includes('có') || input.includes('đã tiết kiệm') || input.includes('hiện có')) {
       newInfo['savings'] = true
     }
-    if (input.includes('hà nội') || input.includes('hcm') || input.includes('sài gòn')) {
+    if (input.includes('hà nội') || input.includes('hcm') || input.includes('sài gòn') || input.includes('đà nẵng') || input.includes('thành phố')) {
       newInfo['location'] = true
     }
-    if (input.includes('sẵn sàng') || input.includes('học hỏi') || input.includes('thời gian dành')) {
+    if (input.includes('sẵn sàng') || input.includes('học hỏi') || input.includes('thời gian dành') || input.includes('có thể') || input.includes('cam kết')) {
       newInfo['readiness'] = true
     }
-    if (input.length > 100) {
+    if (input.length > 50) {
       newInfo['description'] = true
     }
 
