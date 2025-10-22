@@ -106,7 +106,7 @@ export default function Header() {
                 {showUserMenu && (
                   <div 
                     ref={userMenuRef}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-2xl py-1 z-[9999] border border-gray-200 max-w-[90vw] overflow-x-hidden top-full"
+                    className="absolute right-0 mt-3 w-48 bg-white rounded-md shadow-2xl py-1 z-[10000] border border-gray-200 max-w-[90vw] overflow-x-hidden"
                   >
                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                       <div className="font-medium">{user.user_metadata?.full_name || 'User'}</div>
