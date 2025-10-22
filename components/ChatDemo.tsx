@@ -113,7 +113,7 @@ export default function ChatDemo() {
     <section id="demo" className="py-16 sm:py-20 bg-gray-50 overflow-x-hidden">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-words">Trải Ngh iệm Chat AI Ngay Bây Giờ</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-words">Trải Nghiệm Chat AI Ngay Bây Giờ</h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-700 max-w-3xl mx-auto break-words">
             Thử ngay tính năng chat với AI để cảm nhận cách PlanAI tạo kế hoạch tài chính cho bạn
           </p>

@@ -107,21 +107,21 @@ export default function Technology() {
             </p>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 text-center">
-              <div className="bg-white/10 rounded-xl p-6">
-                <div className="text-3xl font-bold text-primary-400 mb-2">99.9%</div>
-                <div className="text-gray-300">Uptime</div>
+              <div className="bg-white/10 rounded-xl p-4 sm:p-6 overflow-hidden">
+                <div className="text-2xl sm:text-3xl font-bold text-primary-400 mb-2 break-words">99.9%</div>
+                <div className="text-gray-300 text-sm sm:text-base">Uptime</div>
               </div>
-              <div className="bg-white/10 rounded-xl p-6">
-                <div className="text-3xl font-bold text-green-400 mb-2">&lt;200ms</div>
-                <div className="text-gray-300">Response Time</div>
+              <div className="bg-white/10 rounded-xl p-4 sm:p-6 overflow-hidden">
+                <div className="text-2xl sm:text-3xl font-bold text-green-400 mb-2 break-words">200ms</div>
+                <div className="text-gray-300 text-sm sm:text-base">Response Time</div>
               </div>
-              <div className="bg-white/10 rounded-xl p-6">
-                <div className="text-3xl font-bold text-blue-400 mb-2">256-bit</div>
-                <div className="text-gray-300">Encryption</div>
+              <div className="bg-white/10 rounded-xl p-4 sm:p-6 overflow-hidden">
+                <div className="text-2xl sm:text-3xl font-bold text-blue-400 mb-2 break-words">256-bit</div>
+                <div className="text-gray-300 text-sm sm:text-base">Encryption</div>
               </div>
-              <div className="bg-white/10 rounded-xl p-6">
-                <div className="text-3xl font-bold text-purple-400 mb-2">24/7</div>
-                <div className="text-gray-300">Monitoring</div>
+              <div className="bg-white/10 rounded-xl p-4 sm:p-6 overflow-hidden">
+                <div className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2 break-words">24/7</div>
+                <div className="text-gray-300 text-sm sm:text-base">Monitoring</div>
               </div>
             </div>
           </div>

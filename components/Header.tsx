@@ -91,7 +91,7 @@ export default function Header() {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <div className="relative z-40">
+              <div className="relative z-50">
                 <button
                   ref={avatarButtonRef}
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -163,7 +163,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto">
+          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto z-40">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 w-full">
               <Link href="/pricing" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
                 Pricing
