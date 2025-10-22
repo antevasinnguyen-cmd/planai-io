@@ -1,75 +1,48 @@
+// This is a temporary file to fix the header issue
+// Please copy the content below to replace the existing Header.tsx
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Menu, X, User, LogOut, Settings, ChevronDown } from 'lucide-react'
-import { getCurrentUser, signOut } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import Logo from './Logo'
+import { createClient } from '@/utils/supabase/client'
+import Logo from './ui/Logo'
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
+  const avatarButtonRef = useRef(null)
   const router = useRouter()
-  const userMenuRef = useRef<HTMLDivElement>(null)
-  const avatarButtonRef = useRef<HTMLButtonElement>(null)
+  const supabase = createClient()
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const u = await getCurrentUser()
-      setUser(u)
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
     }
-    fetchUser()
-  }, [])
 
-  // Close user menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      // Don't close if clicking on the avatar button
-      if (avatarButtonRef.current && avatarButtonRef.current.contains(event.target as Node)) {
-        return
-      }
+    getUser()
 
-      // Close if clicking outside the menu
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target) && 
+          avatarButtonRef.current && !avatarButtonRef.current.contains(event.target)) {
         setShowUserMenu(false)
       }
     }
 
-    if (showUserMenu) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showUserMenu])
+  }, [])
 
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      // Close if clicking outside both header and mobile menu
-      if (!target.closest('header') && !target.closest('.mobile-menu') && isMenuOpen) {
-        setIsMenuOpen(false)
-      }
-    }
-
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isMenuOpen])
-
-  const handleLogout = async () => {
-    await signOut()
-    setUser(null)
-    setShowUserMenu(false)
-    router.push('/')
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   const getUserInitial = () => {
@@ -114,7 +87,7 @@ export default function Header() {
                 <button
                   ref={avatarButtonRef}
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
+                  className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
                     {getUserInitial()}
@@ -148,7 +121,7 @@ export default function Header() {
                       Tài khoản
                     </Link>
                     <button
-                      onClick={handleLogout}
+                      onClick={handleSignOut}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
@@ -159,18 +132,24 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link href="/login" className="text-gray-600 hover:text-primary-600 transition-colors">
-                  Login
+                <Link
+                  href="/login"
+                  className="text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Đăng nhập
                 </Link>
-                <Link href="/signup" className="btn-primary">
-                  Bắt đầu miễn phí
+                <Link
+                  href="/signup"
+                  className="bg-gradient-to-r from-primary-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  Dùng thử miễn phí
                 </Link>
               </>
             )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-gray-600 hover:text-primary-600"
@@ -196,48 +175,59 @@ export default function Header() {
               <Link href="/about" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 About
               </Link>
-
-              {/* Divider */}
-              <div className="border-t border-gray-200 my-4"></div>
-
+              
               {user ? (
-                <>
-                  {/* User Avatar in Mobile Menu */}
-                  <div className="flex items-center space-x-3 px-2 py-3 bg-gray-50 rounded-lg mb-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
+                <div className="pt-4 mt-4 border-t border-gray-200">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white">
                       {getUserInitial()}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">{user.user_metadata?.full_name || 'User'}</div>
-                      <div className="text-gray-500 text-sm">{user.email}</div>
+                      <p className="text-sm font-medium text-gray-900">{user.user_metadata?.full_name || 'User'}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
-
-                  <Link href="/dashboard" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <Link
+                    href="/dashboard"
+                    className="block py-2 px-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
                     Dashboard
                   </Link>
-                  <Link href="/account" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <Link
+                    href="/account"
+                    className="block py-2 px-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
                     Tài khoản
                   </Link>
                   <button
                     onClick={() => {
-                      handleLogout()
+                      handleSignOut()
                       setIsMenuOpen(false)
                     }}
-                    className="block w-full text-left py-3 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                    className="w-full text-left py-2 px-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
                   >
                     Đăng xuất
                   </button>
-                </>
+                </div>
               ) : (
-                <>
-                  <Link href="/login" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium text-center" onClick={() => setIsMenuOpen(false)}>
+                <div className="pt-4 mt-4 border-t border-gray-200 space-y-3">
+                  <Link
+                    href="/login"
+                    className="block w-full text-center py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
                     Đăng nhập
                   </Link>
-                  <Link href="/signup" className="block py-3 px-2 btn-primary text-center rounded-lg font-medium" onClick={() => setIsMenuOpen(false)}>
-                    Bắt đầu miễn phí
+                  <Link
+                    href="/signup"
+                    className="block w-full text-center py-2 px-4 bg-gradient-to-r from-primary-500 to-purple-600 text-white rounded-lg font-medium hover:opacity-90"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dùng thử miễn phí
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
