@@ -7,8 +7,8 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Menu, X, User, LogOut, Settings, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
-import Logo from './ui/Logo'
+import { createClient } from '../lib/supabase/client'
+import Logo from './Logo'
 
 export default function Header() {
   const [user, setUser] = useState(null)
