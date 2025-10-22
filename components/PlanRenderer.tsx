@@ -1,0 +1,278 @@
+'use client'
+
+import { useState } from 'react'
+import { Copy, Download, Table2, FileSpreadsheet, Check } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+
+interface TableData {
+  headers: string[]
+  rows: string[][]
+}
+
+interface PlanRendererProps {
+  content: string
+  planId?: string
+  onExport?: (format: string) => void
+}
+
+export default function PlanRenderer({ content, planId, onExport }: PlanRendererProps) {
+  const [copiedTableId, setCopiedTableId] = useState<string | null>(null)
+  const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
+
+  // Parse tables from markdown content
+  const extractTables = (text: string): { content: string; tables: Map<string, TableData> } => {
+    const tables = new Map<string, TableData>()
+    let processedContent = text
+    let tableIndex = 0
+
+    // Regex to find markdown tables
+    const tableRegex = /\|(.+)\n\|[-\s|:]+\n((?:\|.+\n?)*)/g
+    let match
+
+    while ((match = tableRegex.exec(text)) !== null) {
+      const headerRow = match[1].split('|').map(cell => cell.trim()).filter(Boolean)
+      const bodyRows = match[2].trim().split('\n').map(row =>
+        row.split('|').map(cell => cell.trim()).filter(Boolean)
+      )
+
+      const tableId = `table-${tableIndex}`
+      tables.set(tableId, {
+        headers: headerRow,
+        rows: bodyRows
+      })
+
+      tableIndex++
+    }
+
+    return { content: processedContent, tables }
+  }
+
+  const { tables } = extractTables(content)
+
+  const handleCopyTable = (tableId: string) => {
+    const table = tables.get(tableId)
+    if (!table) return
+
+    const csvContent = [
+      table.headers.join('\t'),
+      ...table.rows.map(row => row.join('\t'))
+    ].join('\n')
+
+    navigator.clipboard.writeText(csvContent)
+    setCopiedTableId(tableId)
+    setTimeout(() => setCopiedTableId(null), 2000)
+  }
+
+  const handleExportTable = (tableId: string) => {
+    const table = tables.get(tableId)
+    if (!table) return
+
+    const csvContent = [
+      table.headers.join(','),
+      ...table.rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `${tableId}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const toggleTableExpand = (tableId: string) => {
+    const newExpanded = new Set(expandedTables)
+    if (newExpanded.has(tableId)) {
+      newExpanded.delete(tableId)
+    } else {
+      newExpanded.add(tableId)
+    }
+    setExpandedTables(newExpanded)
+  }
+
+  return (
+    <div className="w-full">
+      {/* Main Content */}
+      <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
+        <ReactMarkdown
+          components={{
+            table: ({ children }) => (
+              <div className="my-6 overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                <table className="w-full text-sm">
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children }) => (
+              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                {children}
+              </thead>
+            ),
+            tbody: ({ children }) => (
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {children}
+              </tbody>
+            ),
+            th: ({ children }) => (
+              <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                {children}
+              </th>
+            ),
+            td: ({ children }) => (
+              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                {children}
+              </td>
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+
+      {/* Table Export Cards */}
+      {tables.size > 0 && (
+        <div className="mt-12 space-y-4">
+          <div className="flex items-center space-x-2 mb-6">
+            <Table2 className="w-5 h-5 text-primary-600" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Xuất Dữ Liệu Bảng
+            </h3>
+          </div>
+
+          {Array.from(tables.entries()).map(([tableId, table], index) => (
+            <div
+              key={tableId}
+              className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden"
+            >
+              {/* Table Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 flex items-center justify-between">
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Bảng {index + 1}: {table.headers.join(' • ')}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {table.rows.length} hàng dữ liệu
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleTableExpand(tableId)}
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={expandedTables.has(tableId) ? 'M19 9l-7 7-7-7' : 'M9 5l7 7-7 7'}
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Expanded Table Preview */}
+              {expandedTables.has(tableId) && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-[#0f0f0f] overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        {table.headers.map((header, i) => (
+                          <th
+                            key={i}
+                            className="px-3 py-2 text-left font-semibold text-gray-900 dark:text-white"
+                          >
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {table.rows.slice(0, 5).map((row, i) => (
+                        <tr key={i} className="border-b border-gray-200 dark:border-gray-700">
+                          {row.map((cell, j) => (
+                            <td
+                              key={j}
+                              className="px-3 py-2 text-gray-700 dark:text-gray-300"
+                            >
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {table.rows.length > 5 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      ... và {table.rows.length - 5} hàng khác
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="px-6 py-4 bg-gray-50 dark:bg-[#0f0f0f] border-t border-gray-200 dark:border-gray-800 flex items-center space-x-3">
+                <button
+                  onClick={() => handleCopyTable(tableId)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  {copiedTableId === tableId ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Đã sao chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Sao chép dữ liệu</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleExportTable(tableId)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Xuất CSV</span>
+                </button>
+
+                <button
+                  onClick={() => onExport?.('sheets')}
+                  className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Google Sheets</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Export All Button */}
+      {tables.size > 0 && (
+        <div className="mt-8 p-6 bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-white">
+                Xuất Toàn Bộ Dữ Liệu
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Xuất tất cả {tables.size} bảng sang Google Sheets hoặc Excel
+              </p>
+            </div>
+            <button
+              onClick={() => onExport?.('sheets')}
+              className="flex items-center space-x-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+              <span>Xuất Tất Cả</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

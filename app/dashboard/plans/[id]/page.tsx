@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
+import PlanRenderer from '@/components/PlanRenderer'
 
 interface Plan {
   id: string
@@ -309,20 +310,21 @@ export default function PlanViewEnhanced() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Plan Content */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-8">
-              {isEditing ? (
+            {isEditing ? (
+              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-8">
                 <textarea
                   value={editedContent}
                   onChange={(e) => setEditedContent(e.target.value)}
                   className="w-full h-[600px] px-4 py-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-gray-900 dark:text-white font-mono text-sm"
                 />
-              ) : (
-                <div 
-                  className="prose dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: plan.content.replace(/\n/g, '<br/>') }}
-                />
-              )}
-            </div>
+              </div>
+            ) : (
+              <PlanRenderer 
+                content={plan.content} 
+                planId={plan.id}
+                onExport={handleExport}
+              />
+            )}
           </div>
 
           {/* Sidebar */}
