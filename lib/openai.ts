@@ -59,7 +59,7 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
       const completion = await client.chat.completions.create({
         model,
         messages: fullMessages,
-        max_tokens: 500,
+        max_tokens: 2000,
         temperature: 0.7,
       })
 
@@ -87,7 +87,7 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
         const claudeResponse = await generateClaudeResponse(
           fullMessages,
           CLAUDE_MODELS.DEFAULT,
-          500,
+          2000,
           0.7
         )
         
