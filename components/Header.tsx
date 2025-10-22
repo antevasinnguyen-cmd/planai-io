@@ -30,7 +30,7 @@ export default function Header() {
       if (avatarButtonRef.current && avatarButtonRef.current.contains(event.target as Node)) {
         return
       }
-      
+
       // Close if clicking outside the menu
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false)
@@ -40,11 +40,30 @@ export default function Header() {
     if (showUserMenu) {
       document.addEventListener('mousedown', handleClickOutside)
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showUserMenu])
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      // Close if clicking outside both header and mobile menu
+      if (!target.closest('header') && !target.closest('.mobile-menu') && isMenuOpen) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
 
   const handleLogout = async () => {
     await signOut()
@@ -64,7 +83,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50 overflow-x-hidden">
+    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 overflow-x-hidden">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 w-full">
           {/* Logo */}
@@ -163,41 +182,59 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto z-40">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 w-full">
-              <Link href="/pricing" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto z-[10001] shadow-lg mobile-menu">
+            <div className="px-4 py-4 space-y-3">
+              <Link href="/pricing" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Pricing
               </Link>
-              <Link href="/use-cases" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+              <Link href="/use-cases" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Use Cases
               </Link>
-              <Link href="/blog" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+              <Link href="/blog" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Blog
               </Link>
-              <Link href="/about" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+              <Link href="/about" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 About
               </Link>
+
+              {/* Divider */}
+              <div className="border-t border-gray-200 my-4"></div>
+
               {user ? (
                 <>
-                  <Link href="/dashboard" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+                  {/* User Avatar in Mobile Menu */}
+                  <div className="flex items-center space-x-3 px-2 py-3 bg-gray-50 rounded-lg mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
+                      {getUserInitial()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">{user.user_metadata?.full_name || 'User'}</div>
+                      <div className="text-gray-500 text-sm">{user.email}</div>
+                    </div>
+                  </div>
+
+                  <Link href="/dashboard" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                     Dashboard
                   </Link>
-                  <Link href="/account" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
+                  <Link href="/account" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                     Tài khoản
                   </Link>
                   <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 text-red-600 hover:text-red-700"
+                    onClick={() => {
+                      handleLogout()
+                      setIsMenuOpen(false)
+                    }}
+                    className="block w-full text-left py-3 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
                   >
                     Đăng xuất
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="block px-3 py-2 text-gray-600 hover:text-primary-600">
-                    Login
+                  <Link href="/login" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium text-center" onClick={() => setIsMenuOpen(false)}>
+                    Đăng nhập
                   </Link>
-                  <Link href="/signup" className="block px-3 py-2 btn-primary text-center">
+                  <Link href="/signup" className="block py-3 px-2 btn-primary text-center rounded-lg font-medium" onClick={() => setIsMenuOpen(false)}>
                     Bắt đầu miễn phí
                   </Link>
                 </>
