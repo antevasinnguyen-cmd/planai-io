@@ -83,8 +83,8 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50 overflow-x-hidden">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+      <div className="w-full px-4 sm:px-6 lg:px-8 overflow-x-hidden">
         <div className="flex justify-between items-center h-16 w-full">
           {/* Logo */}
           <div className="flex items-center">
@@ -114,7 +114,7 @@ export default function Header() {
                 <button
                   ref={avatarButtonRef}
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+                  className="flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
                     {getUserInitial()}
@@ -123,9 +123,9 @@ export default function Header() {
                 </button>
                 
                 {showUserMenu && (
-                  <div
+                  <div 
                     ref={userMenuRef}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-2xl py-1 z-[9999] border border-gray-200 max-w-[90vw] overflow-x-hidden"
+                    className="absolute right-0 mt-12 w-48 bg-white rounded-md shadow-2xl py-1 z-[10000] border border-gray-200 max-w-[90vw]"
                   >
                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                       <div className="font-medium">{user.user_metadata?.full_name || 'User'}</div>
@@ -182,7 +182,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto z-[9999] shadow-lg mobile-menu">
+          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 max-h-[calc(100vh-64px)] overflow-y-auto z-[10001] shadow-lg mobile-menu">
             <div className="px-4 py-4 space-y-3">
               <Link href="/pricing" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Pricing
