@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap, ArrowRight, Moon, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
+import MarkdownRenderer from '@/components/MarkdownRenderer'
 
 interface Message {
   role: 'assistant' | 'user'
@@ -591,7 +592,11 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                     : 'bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border border-gray-200 dark:border-gray-800'
                 } rounded-2xl px-6 py-4 shadow-sm`}
               >
-                <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                {message.role === 'user' ? (
+                  <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                ) : (
+                  <MarkdownRenderer content={message.content} />
+                )}
                 <p className={`text-xs mt-2 ${
                   message.role === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-gray-500'
                 }`}>
