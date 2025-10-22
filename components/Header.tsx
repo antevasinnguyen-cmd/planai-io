@@ -83,7 +83,7 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-50 overflow-x-hidden">
+    <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50 overflow-x-hidden">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 w-full">
           {/* Logo */}
@@ -93,16 +93,16 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            <Link href="/pricing" className="text-gray-600 hover:text-primary-600 transition-colors">
               Pricing
             </Link>
-            <Link href="/use-cases" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            <Link href="/use-cases" className="text-gray-600 hover:text-primary-600 transition-colors">
               Use Cases
             </Link>
-            <Link href="/blog" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            <Link href="/blog" className="text-gray-600 hover:text-primary-600 transition-colors">
               Blog
             </Link>
-            <Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            <Link href="/about" className="text-gray-600 hover:text-primary-600 transition-colors">
               About
             </Link>
           </nav>
@@ -114,7 +114,7 @@ export default function Header() {
                 <button
                   ref={avatarButtonRef}
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg px-2 py-1 transition-colors"
+                  className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
                     {getUserInitial()}
@@ -125,15 +125,15 @@ export default function Header() {
                 {showUserMenu && (
                   <div
                     ref={userMenuRef}
-                    className="absolute right-0 mt-3 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl py-1 z-[99999] border border-gray-200 dark:border-gray-700 max-w-[90vw] overflow-x-hidden"
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-2xl py-1 z-[9999] border border-gray-200 max-w-[90vw] overflow-x-hidden"
                   >
-                    <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700">
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                       <div className="font-medium">{user.user_metadata?.full_name || 'User'}</div>
-                      <div className="text-gray-500 dark:text-gray-400 text-xs">{user.email}</div>
+                      <div className="text-gray-500 text-xs">{user.email}</div>
                     </div>
                     <Link
                       href="/dashboard"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <User className="w-4 h-4 mr-2" />
@@ -141,7 +141,7 @@ export default function Header() {
                     </Link>
                     <Link
                       href="/account"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <Settings className="w-4 h-4 mr-2" />
@@ -149,7 +149,7 @@ export default function Header() {
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Đăng xuất
@@ -159,7 +159,7 @@ export default function Header() {
               </div>
             ) : (
               <>
-                <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <Link href="/login" className="text-gray-600 hover:text-primary-600 transition-colors">
                   Login
                 </Link>
                 <Link href="/signup" className="btn-primary">
@@ -173,7 +173,7 @@ export default function Header() {
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
+              className="text-gray-600 hover:text-primary-600"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -182,41 +182,41 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden fixed left-0 right-0 top-16 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto z-[10001] shadow-lg mobile-menu">
+          <div className="md:hidden fixed left-0 right-0 top-16 bg-white border-t border-gray-200 overflow-x-hidden max-h-[calc(100vh-64px)] overflow-y-auto z-[9999] shadow-lg mobile-menu">
             <div className="px-4 py-4 space-y-3">
-              <Link href="/pricing" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/pricing" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Pricing
               </Link>
-              <Link href="/use-cases" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/use-cases" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Use Cases
               </Link>
-              <Link href="/blog" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/blog" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Blog
               </Link>
-              <Link href="/about" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/about" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 About
               </Link>
 
               {/* Divider */}
-              <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+              <div className="border-t border-gray-200 my-4"></div>
 
               {user ? (
                 <>
                   {/* User Avatar in Mobile Menu */}
-                  <div className="flex items-center space-x-3 px-2 py-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
+                  <div className="flex items-center space-x-3 px-2 py-3 bg-gray-50 rounded-lg mb-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center font-bold text-white text-sm">
                       {getUserInitial()}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{user.user_metadata?.full_name || 'User'}</div>
-                      <div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</div>
+                      <div className="font-medium text-gray-900">{user.user_metadata?.full_name || 'User'}</div>
+                      <div className="text-gray-500 text-sm">{user.email}</div>
                     </div>
                   </div>
 
-                  <Link href="/dashboard" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <Link href="/dashboard" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                     Dashboard
                   </Link>
-                  <Link href="/account" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
+                  <Link href="/account" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                     Tài khoản
                   </Link>
                   <button
@@ -224,14 +224,14 @@ export default function Header() {
                       handleLogout()
                       setIsMenuOpen(false)
                     }}
-                    className="block w-full text-left py-3 px-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-medium"
+                    className="block w-full text-left py-3 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-medium"
                   >
                     Đăng xuất
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="block py-3 px-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium text-center" onClick={() => setIsMenuOpen(false)}>
+                  <Link href="/login" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium text-center" onClick={() => setIsMenuOpen(false)}>
                     Đăng nhập
                   </Link>
                   <Link href="/signup" className="block py-3 px-2 btn-primary text-center rounded-lg font-medium" onClick={() => setIsMenuOpen(false)}>
