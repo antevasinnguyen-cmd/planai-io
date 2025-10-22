@@ -83,9 +83,9 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full bg-white border-b border-gray-200">
-      <div className="w-full px-4 sm:px-6 lg:px-8 overflow-x-hidden relative">
-        <div className="flex justify-between items-center h-16 w-full">
+    <header className="bg-white border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
             <Logo href="/" size="md" showText={true} />
@@ -125,7 +125,7 @@ export default function Header() {
                 {showUserMenu && (
                   <div 
                     ref={userMenuRef}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-2xl py-1 z-[10000] border border-gray-200 max-w-[90vw]"
+                    className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
                   >
                     <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                       <div className="font-medium">{user.user_metadata?.full_name || 'User'}</div>
@@ -182,7 +182,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden absolute left-0 right-0 top-full bg-white border-t border-gray-200 max-h-[calc(100vh-64px)] overflow-y-auto z-[10001] shadow-lg mobile-menu">
+          <div className="md:hidden">
             <div className="px-4 py-4 space-y-3">
               <Link href="/pricing" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Pricing
