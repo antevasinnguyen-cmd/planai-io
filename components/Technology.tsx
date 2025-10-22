@@ -61,18 +61,18 @@ const technologies = [
 
 export default function Technology() {
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+    <section className="py-16 sm:py-20 bg-white overflow-x-hidden">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-words">
             Công Nghệ Tiên Tiến Được Áp Dụng
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto break-words leading-relaxed">
             PlanAI sử dụng những công nghệ AI và cloud computing hàng đầu thế giới để mang đến trải nghiệm tốt nhất
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {technologies.map((tech, index) => (
             <div
               key={index}
@@ -97,16 +97,16 @@ export default function Technology() {
         </div>
 
         {/* Technology Stack Highlight */}
-        <div className="mt-16 bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-8 md:p-12 text-white">
+        <div className="mt-12 sm:mt-16 bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-white overflow-x-hidden">
           <div className="text-center">
-            <h3 className="text-2xl md:text-3xl font-bold mb-6">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 break-words">
               Kiến Trúc Hệ Thống Hiện Đại
             </h3>
-            <p className="text-gray-300 text-lg mb-8 max-w-3xl mx-auto whitespace-nowrap">
+            <p className="text-gray-300 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 max-w-3xl mx-auto break-words leading-relaxed">
               Được xây dựng trên nền tảng cloud-native với khả năng mở rộng không giới hạn và độ tin cậy 99.9%
             </p>
             
-            <div className="grid md:grid-cols-4 gap-6 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 text-center">
               <div className="bg-white/10 rounded-xl p-6">
                 <div className="text-3xl font-bold text-primary-400 mb-2">99.9%</div>
                 <div className="text-gray-300">Uptime</div>

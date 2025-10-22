@@ -31,18 +31,18 @@ const stats = [
 
 export default function Stats() {
   return (
-    <section className="py-20 bg-gradient-to-br from-primary-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+    <section className="py-16 sm:py-20 bg-gradient-to-br from-primary-50 to-blue-50 overflow-x-hidden">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-words">
             Con Số Ấn Tượng
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto whitespace-nowrap">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto break-words leading-relaxed">
             Hàng nghìn người Việt đã tin tưởng PlanAI để xây dựng tương lai tài chính vững chắc
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {stats.map((stat, index) => (
             <div
               key={index}

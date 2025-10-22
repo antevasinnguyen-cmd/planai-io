@@ -110,39 +110,39 @@ export default function ChatDemo() {
   }
 
   return (
-    <section id="demo" className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trải Nghiệm Chat AI Ngay Bây Giờ</h2>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+    <section id="demo" className="py-16 sm:py-20 bg-gray-50 overflow-x-hidden">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 break-words">Trải Ngh iệm Chat AI Ngay Bây Giờ</h2>
+          <p className="text-base sm:text-lg md:text-xl text-gray-700 max-w-3xl mx-auto break-words">
             Thử ngay tính năng chat với AI để cảm nhận cách PlanAI tạo kế hoạch tài chính cho bạn
           </p>
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
             {/* Chat Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-white" />
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-4 sm:px-6 py-3 sm:py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">PlanAI Assistant</h3>
-                    <p className="text-primary-100 text-sm font-medium">Sẵn sàng tạo kế hoạch cho bạn</p>
+                  <div className="min-w-0">
+                    <h3 className="text-white font-semibold text-sm sm:text-lg truncate">PlanAI Assistant</h3>
+                    <p className="text-primary-100 text-xs sm:text-sm font-medium truncate">Sẵn sàng tạo kế hoạch cho bạn</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
                   <button
                     onClick={() => setShowInfoList((v) => !v)}
-                    className="inline-flex items-center text-primary-100 hover:text-white text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors"
+                    className="hidden md:inline-flex items-center text-primary-100 hover:text-white text-xs sm:text-sm bg-white/10 hover:bg-white/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors whitespace-nowrap"
                   >
-                    <HelpCircle className="w-4 h-4 mr-1.5" /> Xem danh sách thông tin cần cung cấp
+                    <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Xem danh sách
                   </button>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                    <span className="text-primary-100 text-sm">Online</span>
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full flex-shrink-0"></div>
+                    <span className="text-primary-100 text-xs sm:text-sm whitespace-nowrap">Online</span>
                   </div>
                 </div>
               </div>
