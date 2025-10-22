@@ -477,36 +477,62 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
           </div>
         </div>
         
-        {/* Spiritual Add-on Toggle */}
-        <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-lg">
-          <div className="flex items-start space-x-2">
-            <Moon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-indigo-900 dark:text-indigo-300 font-medium mb-1">
-                Tính năng Spiritual Add-on
-              </p>
-              <p className="text-xs text-indigo-700 dark:text-indigo-400 mb-2">
-                Kết hợp yếu tố tử vi, thần số học vào kế hoạch tài chính
-              </p>
-              <button 
-                onClick={() => setSpiritualEnabled(!spiritualEnabled)}
-                className="flex items-center space-x-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-600 shadow-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
-              >
-                {spiritualEnabled ? (
-                  <>
-                    <ToggleRight className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Đã bật tính năng</span>
-                  </>
-                ) : (
-                  <>
-                    <ToggleLeft className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Bật tính năng</span>
-                  </>
-                )}
-              </button>
+        {/* Spiritual Add-on Toggle - ONLY FOR PAID PLANS */}
+        {tier !== 'free' ? (
+          <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <Moon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-indigo-900 dark:text-indigo-300 font-medium mb-1">
+                  Tính năng Spiritual Add-on
+                </p>
+                <p className="text-xs text-indigo-700 dark:text-indigo-400 mb-2">
+                  Kết hợp yếu tố tử vi, thần số học vào kế hoạch tài chính
+                </p>
+                <button 
+                  onClick={() => setSpiritualEnabled(!spiritualEnabled)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-600 shadow-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
+                >
+                  {spiritualEnabled ? (
+                    <>
+                      <ToggleRight className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Đã bật tính năng</span>
+                    </>
+                  ) : (
+                    <>
+                      <ToggleLeft className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Bật tính năng</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <Moon className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-amber-900 dark:text-amber-300 font-medium mb-1">
+                  🔒 Tính năng Spiritual Add-on
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
+                  Kết hợp yếu tố tử vi, thần số học vào kế hoạch tài chính
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 font-medium mb-3">
+                  Nâng cấp gói để trải nghiệm tính năng thú vị và vượt trội
+                </p>
+                <Link 
+                  href="/pricing" 
+                  className="inline-flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-semibold rounded-lg transition-all transform hover:scale-105 shadow-md"
+                >
+                  <Crown className="w-3 h-3" />
+                  <span>Nâng cấp ngay</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tips */}
         <div className="p-4 bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-lg">

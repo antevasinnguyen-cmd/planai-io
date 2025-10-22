@@ -26,7 +26,9 @@ export default function GeneratePlanPage() {
   }, [user, router])
 
   const generatePlan = async () => {
-    const planData = localStorage.getItem('pending_plan')
+    // Get plan data from localStorage with user ID
+    const userId = user?.id || 'anonymous'
+    const planData = localStorage.getItem(`pending_plan_${userId}`)
     if (!planData) {
       router.push('/dashboard/create-plan')
       return
@@ -67,7 +69,8 @@ export default function GeneratePlanPage() {
       const result = await res.json()
       
       if (res.ok) {
-        localStorage.removeItem('pending_plan')
+        const userId = user?.id || 'anonymous'
+        localStorage.removeItem(`pending_plan_${userId}`)
         setPlanId(result.planId)
         setIsGenerating(false)
         
