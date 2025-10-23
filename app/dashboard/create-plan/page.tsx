@@ -105,11 +105,12 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         // Phiên hợp lệ, tiếp tục tải dữ liệu
         loadSubscription()
         
-        // Lấy tin nhắn đã lưu từ localStorage hoặc tạo tin nhắn chào mới
-        // Thêm user ID vào key để phân biệt dữ liệu giữa các tài khoản
+        // Lấy tin nhắn VÀ collectedInfo đã lưu từ localStorage
         const userId = data.session?.user?.id || 'anonymous'
         const chatMessagesKey = `planai_chat_messages_${userId}`
+        const collectedInfoKey = `planai_collected_info_${userId}`
         const savedMessages = localStorage.getItem(chatMessagesKey)
+        const savedCollectedInfo = localStorage.getItem(collectedInfoKey)
         
         if (savedMessages) {
           try {
@@ -121,6 +122,17 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
             }))
             setMessages(messagesWithDateObjects)
             console.log('Lấy tin nhắn đã lưu:', messagesWithDateObjects.length)
+            
+            // Restore collectedInfo
+            if (savedCollectedInfo) {
+              try {
+                const parsedCollectedInfo = JSON.parse(savedCollectedInfo)
+                setCollectedInfo(parsedCollectedInfo)
+                console.log('Lấy collected info đã lưu:', parsedCollectedInfo)
+              } catch (parseError) {
+                console.error('Lỗi khi phân tích collected info:', parseError)
+              }
+            }
           } catch (parseError) {
             console.error('Lỗi khi phân tích tin nhắn đã lưu:', parseError)
             initializeNewChat()
@@ -137,15 +149,18 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     checkAuth()
   }, [router])
   
-  // Lưu tin nhắn vào localStorage khi messages thay đổi
+  // Lưu tin nhắn VÀ collectedInfo vào localStorage khi thay đổi
   useEffect(() => {
     if (messages.length > 0 && user) {
       const userId = user.id || 'anonymous'
       const chatMessagesKey = `planai_chat_messages_${userId}`
+      const collectedInfoKey = `planai_collected_info_${userId}`
+      
       localStorage.setItem(chatMessagesKey, JSON.stringify(messages))
-      console.log(`Lưu tin nhắn vào localStorage cho user ${userId}:`, messages.length)
+      localStorage.setItem(collectedInfoKey, JSON.stringify(collectedInfo))
+      console.log(`Lưu tin nhắn (${messages.length}) và collected info vào localStorage cho user ${userId}`)
     }
-  }, [messages, user])
+  }, [messages, collectedInfo, user])
 
   // Cuộn xuống dưới khi có tin nhắn mới
   useEffect(() => {
