@@ -11,7 +11,6 @@ export default function GeneratePlanPage() {
   const [status, setStatus] = useState('Đang phân tích thông tin...')
   const [error, setError] = useState('')
   const [isGenerating, setIsGenerating] = useState(true)
-  const [modelInfo, setModelInfo] = useState({ name: 'GPT-4o-mini', type: 'primary' })
   const [planId, setPlanId] = useState('')
   const { user } = useAuth()
   const router = useRouter()
@@ -41,28 +40,31 @@ export default function GeneratePlanPage() {
       
       // Simulate plan generation with progress
       const steps = [
-        { progress: 10, status: 'Đang phân tích thông tin cá nhân...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
-        { progress: 25, status: 'Đang phân tích mục tiêu tài chính...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
-        { progress: 40, status: 'Đang tạo lộ trình chi tiết...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
-        { progress: 60, status: 'Đang tính toán ngân sách...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
-        { progress: 75, status: 'Đang tạo checklist hành động...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
-        { progress: 90, status: 'Đang tối ưu kế hoạch...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
-        { progress: 95, status: 'Đang xử lý RAG...', model: { name: 'Sắp xong rồi!', type: 'secondary' } },
-        { progress: 100, status: 'Hoàn thành!', model: { name: 'Sắp xong rồi!', type: 'primary' } }
+        { progress: 10, status: 'Đang phân tích thông tin cá nhân...' },
+        { progress: 25, status: 'Đang phân tích mục tiêu tài chính...' },
+        { progress: 40, status: 'Đang tạo lộ trình chi tiết...' },
+        { progress: 60, status: 'Đang tính toán ngân sách...' },
+        { progress: 75, status: 'Đang tạo checklist hành động...' },
+        { progress: 90, status: 'Đang tối ưu kế hoạch...' },
+        { progress: 95, status: 'Đang xử lý dữ liệu...' },
+        { progress: 100, status: 'Hoàn thành!' }
       ]
 
       // Simulate progress steps
       for (const step of steps) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 800))
         setProgress(step.progress)
         setStatus(step.status)
-        setModelInfo(step.model)
       }
 
-      // Call API to generate plan
+      // Call API to generate plan with authentication
+      // CRITICAL: Must include credentials to send authentication cookies
       const res = await fetch('/api/plans/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // IMPORTANT: Send cookies with request
         body: JSON.stringify(data)
       })
 
@@ -171,14 +173,6 @@ export default function GeneratePlanPage() {
                 />
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-500">{progress}%</p>
-
-              {/* AI Model Info */}
-              <div className="mt-4 mb-4 flex items-center justify-center space-x-2">
-                <Brain className={`w-4 h-4 ${modelInfo.type === 'primary' ? 'text-blue-500' : 'text-purple-500'}`} />
-                <span className="text-sm font-medium">
-                  {modelInfo.name}
-                </span>
-              </div>
 
               {/* AI Magic Message */}
               <div className="mt-2 p-4 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
