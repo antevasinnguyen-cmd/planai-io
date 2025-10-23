@@ -95,19 +95,34 @@ export const getCurrentUser = async (request?: Request) => {
         const { cookies } = await import('next/headers')
         const cookieStore = cookies()
         
-        // Get access token from cookies
-        const accessToken = cookieStore.get('sb-access-token')?.value || 
-                           cookieStore.get('supabase-auth-token')?.value
+        // Log all cookies for debugging
+        console.log('=== SUPABASE: Checking cookies ===')
+        const allCookies = cookieStore.getAll()
+        console.log('=== SUPABASE: Available cookies:', allCookies.map(c => c.name))
+        
+        // Supabase cookie naming: sb-{project-ref}-auth-token
+        // Try multiple possible cookie names
+        const accessToken = 
+          cookieStore.get('sb-access-token')?.value || 
+          cookieStore.get('supabase-auth-token')?.value ||
+          // Try to find any sb-*-auth-token cookie
+          allCookies.find(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'))?.value ||
+          // Try sb-{project}-auth-token.0 format
+          allCookies.find(c => c.name.startsWith('sb-') && c.name.includes('auth-token'))?.value
+        
+        console.log('=== SUPABASE: Access token found:', !!accessToken)
         
         if (accessToken) {
           const { data: { user }, error } = await supabase.auth.getUser(accessToken)
           if (user && !error) {
             console.log('=== SUPABASE: User found from cookies ===', { userId: user.id })
             return user
+          } else {
+            console.log('=== SUPABASE: Token validation failed ===', error)
           }
         }
       } catch (cookieError) {
-        console.log('=== SUPABASE: Cookie access failed (expected in some contexts) ===', cookieError)
+        console.log('=== SUPABASE: Cookie access failed ===', cookieError)
       }
     }
     
