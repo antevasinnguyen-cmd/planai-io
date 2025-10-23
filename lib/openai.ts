@@ -59,8 +59,8 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
       const completion = await client.chat.completions.create({
         model,
         messages: fullMessages,
-        max_tokens: 500, // Reduced from 2000 for faster response (200-300 words)
-        temperature: 0.5, // Reduced from 0.7 for more focused, faster responses
+        max_tokens: 1200, // Increased for depth and quality like ChatGPT web
+        temperature: 0.7, // ChatGPT standard temperature for creativity
       })
 
       const response = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
@@ -87,8 +87,8 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
         const claudeResponse = await generateClaudeResponse(
           fullMessages,
           CLAUDE_MODELS.DEFAULT,
-          500, // Reduced from 2000 for faster response
-          0.5 // Reduced from 0.7 for more focused responses
+          1200, // Increased for depth and quality
+          0.7 // Standard temperature for creativity
         )
         
         // Save Claude response to cache
