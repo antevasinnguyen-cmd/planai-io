@@ -73,9 +73,58 @@ export const signOut = async () => {
   return { error }
 }
 
-export const getCurrentUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+export const getCurrentUser = async (request?: Request) => {
+  try {
+    // For API routes, try to get user from Authorization header or session
+    if (request) {
+      console.log('=== SUPABASE: Getting user from API request ===')
+      
+      // Try to get Authorization header
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const { data: { user }, error } = await supabase.auth.getUser(token)
+        if (user && !error) {
+          console.log('=== SUPABASE: User found from Authorization header ===', { userId: user.id })
+          return user
+        }
+      }
+      
+      // Try to get user from cookies using next/headers
+      try {
+        const { cookies } = await import('next/headers')
+        const cookieStore = cookies()
+        
+        // Get access token from cookies
+        const accessToken = cookieStore.get('sb-access-token')?.value || 
+                           cookieStore.get('supabase-auth-token')?.value
+        
+        if (accessToken) {
+          const { data: { user }, error } = await supabase.auth.getUser(accessToken)
+          if (user && !error) {
+            console.log('=== SUPABASE: User found from cookies ===', { userId: user.id })
+            return user
+          }
+        }
+      } catch (cookieError) {
+        console.log('=== SUPABASE: Cookie access failed (expected in some contexts) ===', cookieError)
+      }
+    }
+    
+    // Fallback to regular supabase client
+    console.log('=== SUPABASE: Fallback to regular supabase client ===')
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (user && !error) {
+      console.log('=== SUPABASE: User found from regular client ===', { userId: user.id })
+      return user
+    }
+    
+    console.log('=== SUPABASE: No user found ===')
+    return null
+  } catch (error) {
+    console.error('=== SUPABASE: Error getting current user ===', error)
+    return null
+  }
 }
 
 // Database helpers

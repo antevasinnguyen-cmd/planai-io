@@ -9,10 +9,16 @@ import { generateMicroTasks, generateWeeklyChecklist, generateMonthlyChecklist, 
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('=== PLAN GENERATE: No user found, unauthorized ===')
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        message: 'Bạn cần đăng nhập để sử dụng tính năng này'
+      }, { status: 401 })
     }
+    
+    console.log('=== PLAN GENERATE: User authenticated ===', { userId: user.id })
 
     // Check usage limits before processing
     const usageCheck = await checkUsageLimits(user.id, 'plan')

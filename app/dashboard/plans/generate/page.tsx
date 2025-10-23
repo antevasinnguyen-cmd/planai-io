@@ -41,14 +41,14 @@ export default function GeneratePlanPage() {
       
       // Simulate plan generation with progress
       const steps = [
-        { progress: 10, status: 'Đang phân tích thông tin cá nhân...', model: { name: 'GPT-4o-mini', type: 'primary' } },
-        { progress: 25, status: 'Đang phân tích mục tiêu tài chính...', model: { name: 'GPT-4o-mini', type: 'primary' } },
-        { progress: 40, status: 'Đang tạo lộ trình chi tiết...', model: { name: 'GPT-4o', type: 'primary' } },
-        { progress: 60, status: 'Đang tính toán ngân sách...', model: { name: 'GPT-4o', type: 'primary' } },
-        { progress: 75, status: 'Đang tạo checklist hành động...', model: { name: 'GPT-4o', type: 'primary' } },
-        { progress: 90, status: 'Đang tối ưu kế hoạch...', model: { name: 'GPT-4o', type: 'primary' } },
-        { progress: 95, status: 'Đang xử lý RAG...', model: { name: 'Embedding', type: 'secondary' } },
-        { progress: 100, status: 'Hoàn thành!', model: { name: 'GPT-4o', type: 'primary' } }
+        { progress: 10, status: 'Đang phân tích thông tin cá nhân...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
+        { progress: 25, status: 'Đang phân tích mục tiêu tài chính...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
+        { progress: 40, status: 'Đang tạo lộ trình chi tiết...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
+        { progress: 60, status: 'Đang tính toán ngân sách...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
+        { progress: 75, status: 'Đang tạo checklist hành động...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
+        { progress: 90, status: 'Đang tối ưu kế hoạch...', model: { name: 'Sắp xong rồi!', type: 'primary' } },
+        { progress: 95, status: 'Đang xử lý RAG...', model: { name: 'Sắp xong rồi!', type: 'secondary' } },
+        { progress: 100, status: 'Hoàn thành!', model: { name: 'Sắp xong rồi!', type: 'primary' } }
       ]
 
       // Simulate progress steps
