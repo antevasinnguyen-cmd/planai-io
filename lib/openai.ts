@@ -131,32 +131,46 @@ export const generateFinancialPlan = async (userProfile: any): Promise<string> =
       wordRange = '15,000-20,000 từ (Gói Pro Max)'
     }
 
-    const prompt = `Tạo một kế hoạch tài chính chi tiết cho người dùng Việt Nam với thông tin sau:
+    // Build user profile summary from chat history
+    const chatSummary = userProfile.chat_history
+      ? userProfile.chat_history
+          .filter((m: any) => m.role === 'user')
+          .map((m: any) => m.content)
+          .join('\n')
+      : ''
 
-Thông tin cá nhân:
-- Họ tên: ${userProfile.full_name}
-- Tuổi: ${userProfile.age}
-- Nghề nghiệp: ${userProfile.occupation}
-- Thu nhập: ${userProfile.current_income?.toLocaleString()} VNĐ/tháng
+    const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam dựa trên thông tin sau:
+
+THÔNG TIN CÁ NHÂN:
 - Mục tiêu: ${userProfile.financial_goal}
+- Thu nhập: ${userProfile.current_income?.toLocaleString()} VĐĐ/tháng
+- Nghề nghiệp: ${userProfile.occupation || 'Không cung cấp'}
 - Thời gian: ${userProfile.timeline}
-- Mức độ rủi ro: ${userProfile.risk_tolerance}
+- Địa điểm: ${userProfile.location || 'Không cung cấp'}
+- Sẵn sàng: ${userProfile.readiness || 'Không cung cấp'}
+- Tuổi: ${userProfile.age || 'Không cung cấp'}
+- Tiết kiệm hiện có: ${userProfile.savings ? userProfile.savings.toLocaleString() + ' VĐĐ' : 'Không cung cấp'}
 
-${spiritualInsights ? `Phân tích tâm linh và số học:
+CUỌC TRÒ CHUYỆN VỚI NGƯỜI DÙNG:
+${chatSummary}
+
+${spiritualInsights ? `PHÂN TÍCH TÒ VI/THẦN SỐ HỌc:
 ${spiritualInsights}
 
 Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}
 
 Yêu cầu tạo kế hoạch:
 1. Độ dài: ${wordRange}
-2. Cấu trúc rõ ràng với các phần: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
-3. Phù hợp với thị trường tài chính Việt Nam
-4. Bao gồm lộ trình cụ thể theo tháng/quý/năm
-5. Checklist hành động hàng ngày/tuần/tháng
-6. Liên kết đến tài nguyên học tập thực tế
-7. Tích hợp phân tích tâm linh nếu có
+2. Sử dụng Dữ LIỆU CỤ THể từ thông tin trên
+3. THAM CHỮU CUỌC TRÒ CHUYỆN - chỉ ra những điều người dùng đã nói
+4. Cấu trúc rõ ràng: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
+5. Phù hợp với thị trường tài chính Việt Nam
+6. Bao gồm lộ trình cụ thể theo tháng/quý/năm
+7. Checklist hành động hàng ngày/tuần/tháng
+8. Liên kết đến tài nguyên học tập thực tế
+9. Tích hợp phân tích tờ vi nếu có
 
-QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế và có thể thực hiện được trong giới hạn này.`
+QUĂN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được.`
 
     // Generate a cache key based on user profile and prompt
     const cacheKey = generateCacheKey([
@@ -176,10 +190,13 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
       console.log('=== FINANCIAL PLAN: Trying GPT-4o-mini first ===');
       const model = selectModel(TaskType.COMPLEX_PLANNING)
     
+      // Import FINANCIAL_PLAN system prompt
+      const { getFinancialPlanSystemPrompt } = await import('./prompts')
+      
       const messages = [
         {
           role: 'system' as const,
-          content: 'Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.'
+          content: getFinancialPlanSystemPrompt()
         },
         {
           role: 'user' as const,

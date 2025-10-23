@@ -57,36 +57,49 @@ export async function POST(request: NextRequest) {
       // Generate plan content using AI with fallback mechanism
       try {
         // First try with OpenAI's GPT-4o-mini
+        // CRITICAL: Pass full userProfile with chat history
+        console.log('=== PLAN GENERATION: Starting with GPT-4o-mini ===', { 
+          goal: userProfile.financial_goal, 
+          income: userProfile.current_income,
+          messagesCount: messages.length
+        })
         planContent = await generateFinancialPlan(userProfile)
       } catch (aiError) {
         console.error('OpenAI Plan Generation Error, falling back to Claude:', aiError)
         
         try {
           // Fallback to Claude-3.5-Sonnet
-          const systemPrompt = `Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.`
-          
-          const userPrompt = `Tạo một kế hoạch tài chính chi tiết cho người dùng Việt Nam với thông tin sau:
+          const systemPrompt = `Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.
 
-Thông tin cá nhân:
-- Họ tên: ${userProfile.full_name || 'Không cung cấp'}
-- Tuổi: ${userProfile.age || 'Không cung cấp'}
-- Nghề nghiệp: ${userProfile.occupation || 'Không cung cấp'}
-- Thu nhập: ${userProfile.current_income ? userProfile.current_income.toLocaleString() + ' VNĐ/tháng' : 'Không cung cấp'}
-- Mục tiêu: ${userProfile.financial_goal || 'Không cung cấp'}
-- Thời gian: ${userProfile.timeline || 'Không cung cấp'}
+Thông tin người dùng:
+- Mục tiêu: ${userProfile.financial_goal}
+- Thu nhập: ${userProfile.current_income} VĐ/tháng
+- Nghề nghiệp: ${userProfile.occupation}
+- Thời gian: ${userProfile.timeline}
+- Địa điểm: ${userProfile.location}
+- Sẵn sàng: ${userProfile.readiness}
+
+Thông tin từ cuộc trò chuyện:
+${userProfile.description || 'Không có'}`
+          
+          const userPrompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam.
+
+Mục tiêu cụ thể: ${userProfile.financial_goal}
+Thu nhập: ${userProfile.current_income?.toLocaleString()} VĐ/tháng
+Thời gian: ${userProfile.timeline}
 
 Hãy tạo kế hoạch bao gồm:
-1. Tóm tắt mục tiêu
+1. Tóm tắt mục tiêu với số liệu cụ thể
 2. Phân tích tình hình hiện tại
-3. Lộ trình chi tiết (từng bước cụ thể)
+3. Lộ trình chi tiết theo tháng/quý/năm
 4. Ngân sách và phân bổ tài chính
-5. Timeline thực hiện
-6. Checklist hành động
-7. Rủi ro và giải pháp
-8. Lời khuyên và động viên
+5. Checklist hành động hàng ngày
+6. Tài liệu học tập
+7. Lời không và động viên
 
 Format: Markdown với headings, lists, và tables.`
           
+          console.log('=== PLAN GENERATION: Falling back to Claude ===', { goal: userProfile.financial_goal })
           planContent = await generateFinancialPlanWithClaude(systemPrompt, userPrompt)
         } catch (claudeError) {
           console.error('Claude Plan Generation Error:', claudeError)
@@ -209,36 +222,98 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
     financial_goal: '',
     timeline: '',
     risk_tolerance: 'medium',
+    birth_date: null,
+    savings: null,
+    location: '',
+    readiness: '',
+    description: '',
+    chat_history: messages // CRITICAL: Include full chat history for context
   }
   
-  // Extract information from messages
-  for (const message of messages) {
-    if (message.role === 'user') {
-      const content = message.content.toLowerCase()
-      
-      // Extract financial goal
-      if (content.includes('mục tiêu') || content.includes('muốn')) {
-        const goalMatch = message.content.match(/mục tiêu[^.!?]*|muốn[^.!?]*/i)
-        if (goalMatch) userProfile.financial_goal = goalMatch[0]
-      }
-      
-      // Extract income
-      const incomeMatch = message.content.match(/(\d+)\s*(triệu|tr|trieu)/i)
-      if (incomeMatch) {
-        userProfile.current_income = parseInt(incomeMatch[1]) * 1000000
-      }
-      
-      // Extract occupation
-      if (content.includes('nghề') || content.includes('làm việc') || content.includes('công việc')) {
-        const occupationMatch = message.content.match(/nghề[^.!?]*|làm việc[^.!?]*|công việc[^.!?]*/i)
-        if (occupationMatch) userProfile.occupation = occupationMatch[0]
-      }
-      
-      // Extract timeline
-      if (content.includes('thời gian') || content.includes('năm') || content.includes('tháng')) {
-        const timelineMatch = message.content.match(/thời gian[^.!?]*|trong\s*\d+\s*(năm|tháng)[^.!?]*/i)
-        if (timelineMatch) userProfile.timeline = timelineMatch[0]
-      }
+  // Combine all user messages into one text for better extraction
+  const allUserMessages = messages
+    .filter(m => m.role === 'user')
+    .map(m => m.content)
+    .join(' ')
+  
+  const contentLower = allUserMessages.toLowerCase()
+  
+  // Extract financial goal (IMPROVED)
+  const goalMatches = allUserMessages.match(/(?:mục tiêu|muốn|cần|mong muốn)[^.!?]*/gi)
+  if (goalMatches) {
+    userProfile.financial_goal = goalMatches[0].trim()
+  }
+  
+  // Extract income (IMPROVED - handle multiple formats)
+  const incomeMatches = allUserMessages.match(/(\d+(?:[.,]\d+)?)\s*(?:triệu|tr|trieu|vnd|đ|đồng)\/tháng/gi)
+  if (incomeMatches) {
+    const incomeNumMatch = incomeMatches[0].match(/(\d+(?:[.,]\d+)?)/)
+    if (incomeNumMatch) {
+      const incomeStr = incomeNumMatch[1].replace(/[.,]/g, '')
+      userProfile.current_income = parseInt(incomeStr) * 1000000
+    }
+  }
+  
+  // Extract occupation (IMPROVED)
+  const occupationMatches = allUserMessages.match(/(?:nghề|làm việc|công việc|kỹ năng|chuyên môn)[^.!?]*/gi)
+  if (occupationMatches) {
+    userProfile.occupation = occupationMatches[0].trim()
+  }
+  
+  // Extract timeline (IMPROVED - handle multiple formats)
+  const timelineMatches = allUserMessages.match(/(?:trong|sau|khoảng)\s*(?:\d+\s*)?(?:năm|tháng|tuần|ngày)[^.!?]*/gi)
+  if (timelineMatches) {
+    userProfile.timeline = timelineMatches[0].trim()
+  }
+  
+  // Extract age (NEW)
+  const ageMatches = allUserMessages.match(/(\d{1,2})\s*(?:tuổi|tuoi|age)/gi)
+  if (ageMatches) {
+    const ageNumMatch = ageMatches[0].match(/(\d{1,2})/)
+    if (ageNumMatch) {
+      userProfile.age = parseInt(ageNumMatch[1])
+    }
+  }
+  
+  // Extract birth date (NEW - format: dd/mm/yyyy or dd-mm-yyyy)
+  const birthDateMatches = allUserMessages.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/)
+  if (birthDateMatches) {
+    userProfile.birth_date = birthDateMatches[0]
+  }
+  
+  // Extract savings (NEW)
+  const savingsMatches = allUserMessages.match(/(?:tiết kiệm|có|đã tiết kiệm|hiện có)[^.!?]*?(\d+(?:[.,]\d+)?)\s*(?:triệu|tr|trieu|vnd|đ|đồng)/gi)
+  if (savingsMatches) {
+    const savingsNumMatch = savingsMatches[0].match(/(\d+(?:[.,]\d+)?)/)
+    if (savingsNumMatch) {
+      const savingsStr = savingsNumMatch[1].replace(/[.,]/g, '')
+      userProfile.savings = parseInt(savingsStr) * 1000000
+    }
+  }
+  
+  // Extract location (NEW)
+  const locations = ['hà nội', 'hcm', 'sài gòn', 'đà nẵng', 'hải phòng', 'cần thơ', 'nha trang', 'đà lạt']
+  for (const loc of locations) {
+    if (contentLower.includes(loc)) {
+      userProfile.location = loc
+      break
+    }
+  }
+  
+  // Extract readiness (NEW)
+  const readinessMatches = allUserMessages.match(/(?:sẵn sàng|học hỏi|thời gian dành|có thể|cam kết)[^.!?]*/gi)
+  if (readinessMatches) {
+    userProfile.readiness = readinessMatches.slice(0, 2).join('; ')
+  }
+  
+  // Extract description (NEW - longest user message)
+  const userMessages = messages.filter(m => m.role === 'user')
+  if (userMessages.length > 0) {
+    const longestMessage = userMessages.reduce((prev, curr) => 
+      curr.content.length > prev.content.length ? curr : prev
+    )
+    if (longestMessage.content.length > 50) {
+      userProfile.description = longestMessage.content
     }
   }
   
