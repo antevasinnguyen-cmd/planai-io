@@ -255,7 +255,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       
       const errorContent = `🔌 Không thể kết nối với hệ thống AI. Vui lòng kiểm tra kết nối mạng và thử lại.
 
-💡 **Gợi ý khắc phục:**
+💡 Gợi ý khắc phục:
 - Kiểm tra kết nối internet
 - Tải lại trang và thử lại
 - Liên hệ support nếu vấn đề tiếp tục`
@@ -656,20 +656,23 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
               </div>
             </div>
 
-            {/* Create Plan Button - NỔI BẬT */}
-            {canCreatePlan() && (
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl blur-xl opacity-50 animate-pulse"></div>
-                <button
-                  onClick={handleCreatePlan}
-                  className="relative w-full bg-gradient-to-r from-primary-600 via-purple-600 to-blue-600 hover:from-primary-700 hover:via-purple-700 hover:to-blue-700 text-white px-8 py-5 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02] shadow-2xl flex items-center justify-center space-x-3"
-                >
-                  <Zap className="w-6 h-6" />
-                  <span>Tạo Kế Hoạch Hoàn Chỉnh</span>
-                  <Sparkles className="w-6 h-6" />
-                </button>
-              </div>
-            )}
+            {/* Create Plan Button - ALWAYS VISIBLE */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl blur-xl opacity-50 animate-pulse"></div>
+              <button
+                onClick={handleCreatePlan}
+                disabled={!canCreatePlan()}
+                className={`relative w-full px-8 py-5 rounded-xl font-bold text-lg transition-all transform shadow-2xl flex items-center justify-center space-x-3 ${
+                  canCreatePlan()
+                    ? 'bg-gradient-to-r from-primary-600 via-purple-600 to-blue-600 hover:from-primary-700 hover:via-purple-700 hover:to-blue-700 text-white hover:scale-[1.02] cursor-pointer'
+                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <Zap className="w-6 h-6" />
+                <span>Tạo Kế Hoạch Hoàn Chỉnh</span>
+                <Sparkles className="w-6 h-6" />
+              </button>
+            </div>
 
             {!canCreatePlan() && (
               <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-500">
