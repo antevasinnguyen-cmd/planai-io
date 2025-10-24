@@ -329,8 +329,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canCreatePlan = () => {
-    const required = requiredInfo.filter(i => i.required)
-    return required.every(i => collectedInfo[i.id])
+    // ✅ LUÔN CHO PHÉP TẠO KẾ HOẠCH - User có thể tạo bất cứ lúc nào
+    // AI sẽ tạo plan dựa trên thông tin hiện có
+    return messages.length > 1 // Chỉ cần có ít nhất 1 tin nhắn từ user
   }
 
   const getTierName = (tier: string) => {
@@ -375,9 +376,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   const planLimit = getPlanLimit(tier)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex relative">
       {/* Sidebar - Info Checklist */}
-      <aside className="w-80 bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 p-6 overflow-y-auto">
+      <aside className="fixed left-0 top-0 h-screen w-80 bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 p-6 overflow-y-auto z-10">
         <div className="mb-6">
           <Link href="/dashboard" className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
             <span>←</span>
@@ -692,7 +693,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
             {!canCreatePlan() && (
               <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-500">
                 <AlertCircle className="w-4 h-4" />
-                <span>Vui lòng cung cấp đầy đủ thông tin bắt buộc (*) để tạo kế hoạch</span>
+                <span>Hãy chat với AI để bắt đầu tạo kế hoạch của bạn</span>
               </div>
             )}
           </div>
