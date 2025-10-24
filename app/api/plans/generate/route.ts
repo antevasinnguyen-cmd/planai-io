@@ -178,6 +178,7 @@ Format: Markdown với headings, lists, và tables.`
       .insert({
         user_id: user.id,
         title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
+        goal: userProfile.financial_goal || 'Kế hoạch tài chính cá nhân',
         content: enhancedPlanContent,
         collected_info: collectedInfo,
         status: 'active',

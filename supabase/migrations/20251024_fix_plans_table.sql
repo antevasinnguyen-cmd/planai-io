@@ -11,11 +11,9 @@ ADD COLUMN IF NOT EXISTS spiritual_enabled BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS spiritual_data JSONB;
 
 -- Update existing plans to have default values
-UPDATE plans 
-SET 
-  collected_info = '{}'::jsonb WHERE collected_info IS NULL,
-  rag_processed = false WHERE rag_processed IS NULL,
-  spiritual_enabled = false WHERE spiritual_enabled IS NULL;
+UPDATE plans SET collected_info = '{}'::jsonb WHERE collected_info IS NULL;
+UPDATE plans SET rag_processed = false WHERE rag_processed IS NULL;
+UPDATE plans SET spiritual_enabled = false WHERE spiritual_enabled IS NULL;
 
 -- Create index for better query performance
 CREATE INDEX IF NOT EXISTS idx_plans_user_id ON plans(user_id);

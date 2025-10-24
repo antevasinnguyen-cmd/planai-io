@@ -212,7 +212,7 @@ export default function PlansPage() {
         <div className="flex gap-4 mb-6">
           {canCreatePlan() ? (
             <Link
-              href="/dashboard/plans/create"
+              href="/dashboard/create-plan"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +258,7 @@ export default function PlansPage() {
             </p>
             {canCreatePlan() ? (
               <Link
-                href="/dashboard/plans/create"
+                href="/dashboard/create-plan"
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
               >
                 Tạo Kế Hoạch Đầu Tiên
