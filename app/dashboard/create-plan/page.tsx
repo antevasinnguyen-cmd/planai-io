@@ -6,6 +6,7 @@ import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crow
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
+import { getAIMemorySystem, resetAIMemory } from '@/lib/aiMemory'
 
 interface Message {
   role: 'assistant' | 'user'
@@ -31,6 +32,7 @@ export default function CreatePlanV2() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [collectedInfo, setCollectedInfo] = useState<Record<string, boolean>>({})
+  const aiMemory = useRef(getAIMemorySystem())
   const [subscription, setSubscription] = useState<any>(null)
   const [spiritualEnabled, setSpiritualEnabled] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -288,50 +290,35 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const updateCollectedInfo = (userInput: string) => {
-    const input = userInput.toLowerCase()
-    const newInfo = { ...collectedInfo }
-
-    if (input.includes('mục tiêu') || input.includes('muốn') || input.includes('cần') || input.includes('mua') || input.includes('kiếm') || input.includes('tiền')) {
-      newInfo['goal'] = true
-    }
-    if (input.includes('thu nhập') || input.includes('lương') || input.includes('triệu') || input.includes('đồng/tháng') || input.includes('kiếm')) {
-      newInfo['income'] = true
-    }
-    if (input.includes('nghề') || input.includes('làm') || input.includes('công việc') || input.includes('kỹ năng') || input.includes('chuyên môn')) {
-      newInfo['occupation'] = true
-    }
-    if (input.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || input.match(/\d{4}-\d{1,2}-\d{1,2}/)) {
-      newInfo['birth_date'] = true
-    }
-    if (input.includes('tháng') || input.includes('năm') || input.includes('thời gian') || input.includes('ngắn hạn') || input.includes('dài hạn')) {
-      newInfo['timeline'] = true
-    }
-    if (input.includes('tiết kiệm') || input.includes('có') || input.includes('đã tiết kiệm') || input.includes('hiện có')) {
-      newInfo['savings'] = true
-    }
-    if (input.includes('hà nội') || input.includes('hcm') || input.includes('sài gòn') || input.includes('đà nẵng') || input.includes('thành phố')) {
-      newInfo['location'] = true
-    }
-    if (input.includes('sẵn sàng') || input.includes('học hỏi') || input.includes('thời gian dành') || input.includes('có thể') || input.includes('cam kết')) {
-      newInfo['readiness'] = true
-    }
-    if (input.length > 50) {
-      newInfo['description'] = true
-    }
+    // Process message with AI Memory System
+    aiMemory.current.processMessage(userInput, true)
+    
+    // Get collected fields from AI Memory
+    const collectedFields = aiMemory.current.getCollectedFields()
+    const newInfo: Record<string, boolean> = {}
+    
+    // Map AI Memory fields to our UI fields
+    if (collectedFields.includes('financial_goal')) newInfo['goal'] = true
+    if (collectedFields.includes('current_income')) newInfo['income'] = true
+    if (collectedFields.includes('occupation')) newInfo['occupation'] = true
+    if (collectedFields.includes('birth_date')) newInfo['birth_date'] = true
+    if (collectedFields.includes('timeline')) newInfo['timeline'] = true
+    if (collectedFields.includes('savings')) newInfo['savings'] = true
+    if (collectedFields.includes('location')) newInfo['location'] = true
+    if (collectedFields.includes('readiness_level')) newInfo['readiness'] = true
+    if (collectedFields.includes('age') || userInput.length > 50) newInfo['description'] = true
 
     setCollectedInfo(newInfo)
   }
 
   const getProgress = () => {
-    const required = requiredInfo.filter(i => i.required)
-    const collected = required.filter(i => collectedInfo[i.id])
-    return Math.round((collected.length / required.length) * 100)
+    // Use AI Memory completion percentage
+    return aiMemory.current.getCompletionPercentage()
   }
 
   const canCreatePlan = () => {
-    // ✅ LUÔN CHO PHÉP TẠO KẾ HOẠCH - User có thể tạo bất cứ lúc nào
-    // AI sẽ tạo plan dựa trên thông tin hiện có
-    return messages.length > 1 // Chỉ cần có ít nhất 1 tin nhắn từ user
+    // Use AI Memory to check if ready for plan
+    return aiMemory.current.isReadyForPlan() || messages.length > 2
   }
 
   const getTierName = (tier: string) => {
@@ -354,21 +341,25 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     }
   }
 
-  const handleCreatePlan = async () => {
-    if (!canCreatePlan()) return
-    
-    // Collect all chat data and create plan
-    const planData = {
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
-      collectedInfo,
-      spiritualEnabled // Include spiritual toggle state
-    }
-    
-    // Save to localStorage temporarily with user ID
+  const handleCreatePlan = () => {
+    // Get user ID for storage
     const userId = user?.id || 'anonymous'
+    
+    // Get AI Memory data
+    const memoryData = aiMemory.current.exportForPlanGeneration()
+    
+    // Save plan data to localStorage with AI Memory data
+    const planData = {
+      messages,
+      collectedInfo,
+      spiritualEnabled,
+      aiMemoryData: memoryData,
+      userProfile: memoryData.profile,
+      timestamp: new Date().toISOString()
+    }
     localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(planData))
     
-    // Navigate to plan generation
+    // Navigate to plan generation page
     router.push('/dashboard/plans/generate')
   }
 

@@ -38,10 +38,16 @@ export async function POST(request: NextRequest) {
       }, { status: 429 })
     }
 
-    const { messages, collectedInfo } = await request.json()
+    const { messages, collectedInfo, aiMemoryData, userProfile: memoryProfile } = await request.json()
 
-    // Extract user profile information from messages and collectedInfo
-    const userProfile = extractUserProfile(messages, collectedInfo)
+    // Use AI Memory profile if available, otherwise extract from messages
+    const userProfile = memoryProfile || extractUserProfile(messages, collectedInfo)
+    
+    // Merge with extracted data for completeness
+    if (!memoryProfile && messages) {
+      const extracted = extractUserProfile(messages, collectedInfo)
+      Object.assign(userProfile, extracted)
+    }
     
     // Generate cache key for this plan request
     const cacheKey = `plan_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`

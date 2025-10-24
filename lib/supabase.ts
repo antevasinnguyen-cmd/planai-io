@@ -101,14 +101,16 @@ export const getCurrentUser = async (request?: Request) => {
         console.log('=== SUPABASE: Available cookies:', allCookies.map(c => c.name))
         
         // Supabase cookie naming: sb-{project-ref}-auth-token
-        // Try multiple possible cookie names
+        // Project ref: wjzmscsoiibzlxejqpgg
+        const projectRef = 'wjzmscsoiibzlxejqpgg'
         const accessToken = 
+          cookieStore.get(`sb-${projectRef}-auth-token`)?.value ||
+          cookieStore.get(`sb-${projectRef}-auth-token.0`)?.value ||
+          cookieStore.get(`sb-${projectRef}-auth-token.1`)?.value ||
           cookieStore.get('sb-access-token')?.value || 
           cookieStore.get('supabase-auth-token')?.value ||
           // Try to find any sb-*-auth-token cookie
-          allCookies.find(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'))?.value ||
-          // Try sb-{project}-auth-token.0 format
-          allCookies.find(c => c.name.startsWith('sb-') && c.name.includes('auth-token'))?.value
+          allCookies.find(c => c.name.startsWith('sb-') && c.name.includes('-auth-token'))?.value
         
         console.log('=== SUPABASE: Access token found:', !!accessToken)
         
