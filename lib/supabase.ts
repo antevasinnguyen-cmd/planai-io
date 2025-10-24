@@ -248,10 +248,6 @@ export const getUserPlans = async (userId: string) => {
   const { data, error } = await supabase
     .from('plans')
     .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  return { data, error }
-}
 
 // Subscription and Usage helpers
 export const getUserSubscription = async (userId: string) => {
@@ -264,73 +260,15 @@ export const getUserSubscription = async (userId: string) => {
   return { data, error }
 }
 
-// Free Trial helpers - 30 days trial, one-time only
-export const initializeFreeTrialForNewUser = async (userId: string) => {
-  // Check if user already had a free trial
-  const { data: existingTrial } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('tier', 'free')
-    .single()
-  
-  if (existingTrial) {
-    // User already had free trial, don't create another one
-    return { data: null, error: null, alreadyUsed: true }
-  }
-  
-  // Create new 30-day free trial
-  const trialStartDate = new Date()
-  const trialEndDate = new Date()
-  trialEndDate.setDate(trialEndDate.getDate() + 30)
-  
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .insert([{
-      user_id: userId,
-      tier: 'free',
-      status: 'active',
-      trial_start_date: trialStartDate.toISOString(),
-      trial_end_date: trialEndDate.toISOString(),
-      created_at: new Date().toISOString()
-    }])
-    .select()
-  
-  return { data, error, alreadyUsed: false }
-}
-
-export const checkTrialStatus = async (userId: string) => {
-  const { data: subscription } = await getUserSubscription(userId)
-  
-  if (!subscription || subscription.tier !== 'free') {
-    return { isActive: false, daysRemaining: 0, expired: true }
-  }
-  
-  const trialEndDate = new Date(subscription.trial_end_date)
-  const now = new Date()
-  const daysRemaining = Math.ceil((trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  
-  if (daysRemaining <= 0) {
-    // Trial expired, update status
-    await supabase
-      .from('subscriptions')
-      .update({ status: 'expired' })
-      .eq('id', subscription.id)
-    
-    return { isActive: false, daysRemaining: 0, expired: true }
-  }
-  
-  return { isActive: true, daysRemaining, expired: false }
-}
-
 export const getSubscriptionLimits = (tier: string) => {
-  const limits = {
+  // Default limits (fallback if database doesn't have subscription)
+  const defaultLimits = {
     'free': { plans: 1, chats: 5, words: 1000 },
-    'basic': { plans: 1, chats: 40, words: 6500 }, // Average of 5000-8000
-    'pro': { plans: 3, chats: 90, words: 10500 }, // Average of 9000-12000
-    'pro_max': { plans: 6, chats: 160, words: 17500 } // Average of 15000-20000
+    'basic': { plans: 1, chats: 40, words: 6500 },
+    'pro': { plans: 3, chats: 90, words: 10500 },
+    'pro_max': { plans: 6, chats: 160, words: 17500 }
   }
-  return limits[tier as keyof typeof limits] || limits.free
+  return defaultLimits[tier as keyof typeof defaultLimits] || defaultLimits.free
 }
 
 export const getUserUsageStats = async (userId: string) => {
@@ -338,14 +276,14 @@ export const getUserUsageStats = async (userId: string) => {
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
-  
+
   // Count plans created this month
   const { data: plansData, error: plansError } = await supabase
     .from('plans')
     .select('id')
     .eq('user_id', userId)
     .gte('created_at', startOfMonth.toISOString())
-  
+
   // Count chat messages this month (user messages only)
   const { data: chatsData, error: chatsError } = await supabase
     .from('chat_messages')
@@ -353,16 +291,16 @@ export const getUserUsageStats = async (userId: string) => {
     .eq('user_id', userId)
     .eq('type', 'user')
     .gte('created_at', startOfMonth.toISOString())
-  
+
   // Sum word count from plans this month
   const { data: wordsData, error: wordsError } = await supabase
     .from('plans')
     .select('word_count')
     .eq('user_id', userId)
     .gte('created_at', startOfMonth.toISOString())
-  
+
   const totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
-  
+
   return {
     plans: plansData?.length || 0,
     chats: chatsData?.length || 0,
@@ -374,12 +312,24 @@ export const getUserUsageStats = async (userId: string) => {
 export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') => {
   // Get user subscription
   const { data: subscription } = await getUserSubscription(userId)
-  const tier = subscription?.tier || 'free'
-  const limits = getSubscriptionLimits(tier)
-  
+
+  let tier = 'free'
+  let limits = getSubscriptionLimits(tier) // Default limits
+
+  // If subscription exists in database, use those limits
+  if (subscription) {
+    tier = subscription.tier
+    // Use database limits if they exist, otherwise fallback to defaults
+    limits = {
+      plans: subscription.plan_limit || getSubscriptionLimits(tier).plans,
+      chats: subscription.chat_limit || getSubscriptionLimits(tier).chats,
+      words: subscription.word_limit || getSubscriptionLimits(tier).words
+    }
+  }
+
   // Get current usage
   const usage = await getUserUsageStats(userId)
-  
+
   if (action === 'chat') {
     return {
       allowed: usage.chats < limits.chats,
@@ -395,128 +345,11 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') 
       tier
     }
   }
-  
+
   return { allowed: false, current: 0, limit: 0, tier }
 }
 
 // AI Response Cache helpers
-export const getCachedResponse = async (cacheKey: string) => {
-  try {
-    // Get current time for expiration check
-    const now = new Date().toISOString()
-    
-    const { data, error } = await supabase
-      .from('ai_response_cache')
-      .select('response, expires_at, created_at')
-      .eq('cache_key', cacheKey)
-      .gt('expires_at', now) // Only get non-expired cache entries
-      .single()
-    
-    if (error || !data) {
-      return { data: null, error }
-    }
-    
-    // Log cache hit for analytics
-    console.log(`Cache hit for key: ${cacheKey.substring(0, 20)}... (created ${new Date(data.created_at).toLocaleString()})`)
-    
-    return { data: data.response, error: null }
-  } catch (error) {
-    console.error('Cache retrieval error:', error)
-    return { data: null, error }
-  }
-}
-
-export const saveCachedResponse = async (cacheKey: string, response: string, expiresInDays = 7) => {
-  try {
-    // Calculate expiration date
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + expiresInDays)
-    
-    // Check response size and compress if needed
-    let processedResponse = response
-    if (response.length > 100000) { // If response is very large
-      // Simple compression by removing excessive whitespace
-      processedResponse = response.replace(/\n\s*\n\s*\n/g, '\n\n')
-      console.log(`Compressed cache response from ${response.length} to ${processedResponse.length} chars`)
-    }
-    
-    const { data, error } = await supabase
-      .from('ai_response_cache')
-      .upsert([
-        {
-          cache_key: cacheKey,
-          response: processedResponse,
-          created_at: new Date().toISOString(),
-          expires_at: expiresAt.toISOString(),
-          access_count: 1 // Initialize access count
-        }
-      ])
-    
-    if (error) {
-      console.error('Cache save error:', error)
-    } else {
-      console.log(`Cached response with key: ${cacheKey.substring(0, 20)}... (expires in ${expiresInDays} days)`)
-    }
-    
-    return { data, error }
-  } catch (error) {
-    console.error('Cache save error:', error)
-    return { data: null, error }
-  }
-}
-
-export const updateCacheAccessCount = async (cacheKey: string) => {
-  try {
-    // Increment the access count for analytics
-    await supabase.rpc('increment_cache_access', { key: cacheKey })
-  } catch (error) {
-    console.warn('Failed to update cache access count:', error)
-  }
-}
-
-export const deleteCachedResponse = async (cacheKey: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('ai_response_cache')
-      .delete()
-      .eq('cache_key', cacheKey)
-    
-    if (!error) {
-      console.log(`Deleted cache entry with key: ${cacheKey.substring(0, 20)}...`)
-    }
-    
-    return { data, error }
-  } catch (error) {
-    console.error('Cache deletion error:', error)
-    return { data: null, error }
-  }
-}
-
-export const cleanupExpiredCache = async () => {
-  try {
-    const now = new Date().toISOString()
-    
-    const { data, error } = await supabase
-      .from('ai_response_cache')
-      .delete()
-      .lt('expires_at', now)
-    
-    if (error) {
-      console.error('Cache cleanup error:', error)
-    } else if (data && Array.isArray(data)) {
-      console.log(`Cleaned up ${data.length} expired cache entries`)
-    } else {
-      console.log('Cleaned up expired cache entries')
-    }
-    
-    return { data, error }
-  } catch (error) {
-    console.error('Cache cleanup error:', error)
-    return { data: null, error }
-  }
-}
-
-// Password management functions
 export const changePassword = async (currentPassword: string, newPassword: string) => {
   try {
     // Verify current password by attempting to sign in

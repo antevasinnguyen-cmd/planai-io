@@ -107,20 +107,25 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
   }
 }
 
-export const generateFinancialPlan = async (userProfile: any): Promise<string> => {
+export const generateFinancialPlan = async (
+  planName: string,
+  goals: string,
+  collectedInfo: any,
+  signal?: AbortSignal
+): Promise<string> => {
   try {
     // Generate spiritual insights if profile has birth date
     let spiritualInsights = ''
-    if (userProfile.birth_date && userProfile.full_name) {
+    if (collectedInfo.birth_date && collectedInfo.full_name) {
       const { generateSpiritualProfile, getSpiritualFinancialInsights } = await import('./spiritual')
-      const spiritualProfile = generateSpiritualProfile(userProfile.birth_date, userProfile.full_name)
+      const spiritualProfile = generateSpiritualProfile(collectedInfo.birth_date, collectedInfo.full_name)
       spiritualInsights = getSpiritualFinancialInsights(spiritualProfile)
     }
 
     // Determine word limit based on subscription
-    const maxWords = userProfile.maxWords || 5000
+    const maxWords = collectedInfo.maxWords || 5000
     let wordRange = '5,000-8,000 từ'
-    
+
     if (maxWords <= 1000) {
       wordRange = '800-1,000 từ (Gói Free)'
     } else if (maxWords <= 6500) {
@@ -131,53 +136,43 @@ export const generateFinancialPlan = async (userProfile: any): Promise<string> =
       wordRange = '15,000-20,000 từ (Gói Pro Max)'
     }
 
-    // Build user profile summary from chat history
-    const chatSummary = userProfile.chat_history
-      ? userProfile.chat_history
-          .filter((m: any) => m.role === 'user')
-          .map((m: any) => m.content)
-          .join('\n')
-      : ''
-
+    // Build user profile summary from collected info
     const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam dựa trên thông tin sau:
 
 THÔNG TIN CÁ NHÂN:
-- Mục tiêu: ${userProfile.financial_goal}
-- Thu nhập: ${userProfile.current_income?.toLocaleString()} VĐĐ/tháng
-- Nghề nghiệp: ${userProfile.occupation || 'Không cung cấp'}
-- Thời gian: ${userProfile.timeline}
-- Địa điểm: ${userProfile.location || 'Không cung cấp'}
-- Sẵn sàng: ${userProfile.readiness || 'Không cung cấp'}
-- Tuổi: ${userProfile.age || 'Không cung cấp'}
-- Tiết kiệm hiện có: ${userProfile.savings ? userProfile.savings.toLocaleString() + ' VĐĐ' : 'Không cung cấp'}
+- Mục tiêu: ${goals}
+- Tên kế hoạch: ${planName}
+- Thu nhập: ${collectedInfo.income ? collectedInfo.income.toLocaleString() + ' VNĐ/tháng' : 'Chưa cung cấp'}
+- Nghề nghiệp: ${collectedInfo.occupation || 'Chưa cung cấp'}
+- Thời gian: ${collectedInfo.timeline || 'Chưa cung cấp'}
+- Địa điểm: ${collectedInfo.location || 'Chưa cung cấp'}
+- Sẵn sàng: ${collectedInfo.readiness || 'Chưa cung cấp'}
+- Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
+- Tiết kiệm hiện có: ${collectedInfo.savings ? collectedInfo.savings.toLocaleString() + ' VNĐ' : 'Chưa cung cấp'}
 
-CUỌC TRÒ CHUYỆN VỚI NGƯỜI DÙNG:
-${chatSummary}
-
-${spiritualInsights ? `PHÂN TÍCH TÒ VI/THẦN SỐ HỌc:
+${spiritualInsights ? `PHÂN TÍCH TỬ VI/THẦN SỐ HỌC:
 ${spiritualInsights}
 
 Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}
 
 Yêu cầu tạo kế hoạch:
 1. Độ dài: ${wordRange}
-2. Sử dụng Dữ LIỆU CỤ THể từ thông tin trên
-3. THAM CHỮU CUỌC TRÒ CHUYỆN - chỉ ra những điều người dùng đã nói
-4. Cấu trúc rõ ràng: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
-5. Phù hợp với thị trường tài chính Việt Nam
-6. Bao gồm lộ trình cụ thể theo tháng/quý/năm
-7. Checklist hành động hàng ngày/tuần/tháng
-8. Liên kết đến tài nguyên học tập thực tế
-9. Tích hợp phân tích tờ vi nếu có
+2. Sử dụng DỮ LIỆU CỤ THỂ từ thông tin trên
+3. Cấu trúc rõ ràng: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
+4. Phù hợp với thị trường tài chính Việt Nam
+5. Bao gồm lộ trình cụ thể theo tháng/quý/năm
+6. Checklist hành động hàng ngày/tuần/tháng
+7. Liên kết đến tài nguyên học tập thực tế
+8. Tích hợp phân tích tử vi nếu có
 
-QUĂN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được.`
+QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được.`
 
-    // Generate a cache key based on user profile and prompt
+    // Generate a cache key based on inputs
     const cacheKey = generateCacheKey([
       { role: 'system', content: 'Financial Plan Generation' },
-      { role: 'user', content: JSON.stringify(userProfile) }
+      { role: 'user', content: JSON.stringify({ planName, goals, collectedInfo }) }
     ])
-    
+
     // Check if we have a cached response
     const cachedResponse = await checkCache(cacheKey)
     if (cachedResponse) {
@@ -189,10 +184,10 @@ QUĂN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho
     try {
       console.log('=== FINANCIAL PLAN: Trying GPT-4o-mini first ===');
       const model = selectModel(TaskType.COMPLEX_PLANNING)
-    
+
       // Import FINANCIAL_PLAN system prompt
       const { getFinancialPlanSystemPrompt } = await import('./prompts')
-      
+
       const messages = [
         {
           role: 'system' as const,
@@ -209,33 +204,34 @@ QUĂN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho
       if (!client) {
         throw new Error('OpenAI client not initialized')
       }
-      
+
       const completion = await client.chat.completions.create({
         model,
         messages,
         max_tokens: 4000,
         temperature: 0.3,
+        ...(signal && { signal }) // Add abort signal if provided
       })
 
       const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
-      
+
       // Save response to cache
       await saveToCache(cacheKey, response)
       console.log('=== FINANCIAL PLAN: GPT-4o-mini completed successfully ===');
       return response
-      
+
     } catch (gptError) {
       console.error('=== FINANCIAL PLAN: GPT-4o-mini failed, falling back to Claude-3.5-Sonnet ===', gptError);
-      
+
       // Fallback to Claude-3.5-Sonnet
       try {
         console.log('=== FINANCIAL PLAN: Trying Claude-3.5-Sonnet ===');
         const { generateFinancialPlanWithClaude } = await import('./claude')
-        
+
         if (!process.env.ANTHROPIC_API_KEY) {
           throw new Error('Anthropic API key not configured')
         }
-        
+
         const claudeResponse = await generateFinancialPlanWithClaude(
           `Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.
 
@@ -254,25 +250,24 @@ ${spiritualInsights ? `Phân tích tâm linh và số học:
 ${spiritualInsights}
 
 Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}`,
-          `Tạo kế hoạch tài chính cho: ${userProfile.full_name}
+          `Tạo kế hoạch tài chính cho: ${planName}
 
 Thông tin cá nhân:
-- Tuổi: ${userProfile.age}
-- Nghề nghiệp: ${userProfile.occupation}
-- Thu nhập: ${userProfile.current_income?.toLocaleString()} VNĐ/tháng
-- Mục tiêu: ${userProfile.financial_goal}
-- Thời gian: ${userProfile.timeline}
-- Mức độ rủi ro: ${userProfile.risk_tolerance}
-- Tiết kiệm hiện có: ${userProfile.savings || 'Chưa có thông tin'}`,
+- Mục tiêu: ${goals}
+- Thu nhập: ${collectedInfo.income || 'Chưa có thông tin'} VNĐ/tháng
+- Nghề nghiệp: ${collectedInfo.occupation || 'Chưa có thông tin'}
+- Thời gian: ${collectedInfo.timeline || 'Chưa có thông tin'}
+- Mức độ rủi ro: ${collectedInfo.risk_tolerance || 'Trung bình'}`,
           maxWords > 5000 ? 4000 : 3000,
-          0.3
+          0.3,
+          signal // Pass signal to Claude
         )
-        
+
         // Save Claude response to cache
         await saveToCache(cacheKey, claudeResponse)
         console.log('=== FINANCIAL PLAN: Claude-3.5-Sonnet completed successfully ===');
         return claudeResponse
-        
+
       } catch (claudeError) {
         console.error('=== FINANCIAL PLAN: Claude fallback also failed ===', claudeError);
         throw new Error('Không thể tạo kế hoạch với cả GPT-4o-mini và Claude')
