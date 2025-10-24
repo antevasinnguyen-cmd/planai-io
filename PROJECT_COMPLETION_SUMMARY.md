@@ -268,6 +268,54 @@ PlanAI v3.0 đã được hoàn thiện toàn diện với:
 
 ---
 
-*Cập nhật lần cuối: 22/10/2025*
-*Version: 3.0*
+---
+
+## 🔧 Latest Fixes (24/10/2025 - v3.10)
+
+### ✅ Critical Issues Fixed
+
+1. **Chat Counter Bug** ✅
+   - Added logic to save chat messages to Supabase database
+   - Chat counter now accurately reflects user messages
+   - File: `app/dashboard/create-plan/page.tsx`
+
+2. **CSS @import Warning** ✅
+   - Moved @import to top of globals.css (before @tailwind)
+   - Follows CSS spec requirements
+   - File: `app/globals.css`
+
+3. **Plan Generation 500 Error** ✅
+   - Added subscription fallback tier
+   - Better error handling for missing subscriptions
+   - File: `app/api/plans/generate/route.ts`
+
+4. **Plans Page UX** ✅
+   - Added complete dark mode support
+   - Updated colors to use primary-600 (consistent branding)
+   - File: `app/dashboard/plans/page.tsx`
+
+5. **Tab Switching & Auth Failures** ✅
+   - Added job tracking with sessionStorage
+   - Implemented token refresh retry logic
+   - Added 60-second timeout with AbortController
+   - File: `app/dashboard/plans/generate/page.tsx`
+
+### 📊 Current Status
+- **Build:** ✅ Passing
+- **Tests:** ✅ No errors
+- **Deployment:** ✅ Ready
+- **Chat Counter:** ✅ Fixed
+- **Dark Mode:** ✅ Complete
+- **Plan Generation:** ✅ Reliable
+- **Authentication:** ✅ Robust
+
+### 🚀 Latest Commit
+- **Hash:** 374a062
+- **Message:** "fix: Complete AI & project finalization - Save chat to DB, fix CSS @import order"
+- **Status:** ✅ Pushed to main
+
+---
+
+*Cập nhật lần cuối: 24/10/2025*
+*Version: 3.10*
 *Status: Production Ready ✅*
