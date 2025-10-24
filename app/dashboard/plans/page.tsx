@@ -155,8 +155,8 @@ export default function PlansPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     )
   }
@@ -165,22 +165,22 @@ export default function PlansPage() {
   const limits = getSubscriptionLimits(tier)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f]">
       <div className="max-w-6xl mx-auto p-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-sm p-8 mb-6 border border-gray-200 dark:border-gray-800">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Kế Hoạch Tài Chính</h1>
-              <p className="text-gray-600 mt-1">Quản lý các kế hoạch tài chính được tạo bởi AI</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kế Hoạch Tài Chính</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý các kế hoạch tài chính được tạo bởi AI</p>
             </div>
             
             {usage && (
               <div className="text-right">
-                <div className="text-sm font-medium text-blue-600 mb-2">
+                <div className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">
                   {getTierName(tier)}
                 </div>
-                <div className="space-y-1 text-xs text-gray-500">
+                <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
                   <div>Kế hoạch: {usage.plans}/{limits.plans}</div>
                   <div>Chat: {usage.chats}/{limits.chats}</div>
                   <div>Từ đã dùng: {usage.words.toLocaleString()}</div>
@@ -193,13 +193,13 @@ export default function PlansPage() {
           {usage && (
             <div className="mt-4 space-y-2">
               <div>
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
                   <span>Kế hoạch trong tháng</span>
                   <span>{usage.plans}/{limits.plans}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-primary-600 dark:bg-primary-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min((usage.plans / limits.plans) * 100, 100)}%` }}
                   ></div>
                 </div>
@@ -213,7 +213,7 @@ export default function PlansPage() {
           {canCreatePlan() ? (
             <Link
               href="/dashboard/create-plan"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
+              className="bg-primary-600 dark:bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors inline-flex items-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -224,14 +224,14 @@ export default function PlansPage() {
             <div className="relative">
               <button
                 disabled
-                className="bg-gray-400 text-white px-6 py-3 rounded-lg cursor-not-allowed inline-flex items-center"
+                className="bg-gray-400 dark:bg-gray-600 text-white px-6 py-3 rounded-lg cursor-not-allowed inline-flex items-center"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Đã đạt giới hạn
               </button>
-              <div className="absolute top-full left-0 mt-2 p-2 bg-black text-white text-xs rounded whitespace-nowrap">
+              <div className="absolute top-full left-0 mt-2 p-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded whitespace-nowrap z-10">
                 Bạn đã tạo {usage?.plans}/{limits.plans} kế hoạch trong tháng này
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function PlansPage() {
           
           <Link
             href="/dashboard/chat"
-            className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center"
+            className="border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors inline-flex items-center"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -250,23 +250,23 @@ export default function PlansPage() {
 
         {/* Plans Grid */}
         {plans.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-sm p-12 text-center border border-gray-200 dark:border-gray-800">
             <div className="text-4xl mb-4">📋</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có kế hoạch nào</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Chưa có kế hoạch nào</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Bắt đầu tạo kế hoạch tài chính đầu tiên của bạn với sự hỗ trợ của AI
             </p>
             {canCreatePlan() ? (
               <Link
                 href="/dashboard/create-plan"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
+                className="bg-primary-600 dark:bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors inline-flex items-center"
               >
                 Tạo Kế Hoạch Đầu Tiên
               </Link>
             ) : (
               <Link
                 href="/pricing"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center"
+                className="bg-primary-600 dark:bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors inline-flex items-center"
               >
                 Nâng Cấp Để Tạo Kế Hoạch
               </Link>
@@ -275,10 +275,10 @@ export default function PlansPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {plans.map((plan) => (
-              <div key={plan.id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+              <div key={plan.id} className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 hover:shadow-md dark:hover:shadow-lg transition-shadow">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-gray-900 line-clamp-2">{plan.title}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2">{plan.title}</h3>
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       plan.status === 'completed' 
                         ? 'bg-green-100 text-green-800' 
@@ -288,9 +288,9 @@ export default function PlansPage() {
                     </span>
                   </div>
                   
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{plan.goal}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">{plan.goal}</p>
                   
-                  <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-4">
                     <span>{plan.word_count?.toLocaleString()} từ</span>
                     <span>{new Date(plan.created_at).toLocaleDateString('vi-VN')}</span>
                   </div>
@@ -298,13 +298,13 @@ export default function PlansPage() {
                   <div className="flex gap-2">
                     <Link
                       href={`/dashboard/plans/${plan.id}`}
-                      className="flex-1 bg-blue-600 text-white text-center py-2 rounded hover:bg-blue-700 transition-colors text-sm"
+                      className="flex-1 bg-primary-600 dark:bg-primary-600 text-white text-center py-2 rounded hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors text-sm"
                     >
                       Xem Chi Tiết
                     </Link>
                     <button
                       onClick={() => deletePlan(plan.id)}
-                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -319,17 +319,17 @@ export default function PlansPage() {
 
         {/* Upgrade Prompt */}
         {!canCreatePlan() && (
-          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+          <div className="mt-8 bg-gradient-to-r from-primary-50 dark:from-primary-500/10 to-purple-50 dark:to-purple-500/10 border border-primary-200 dark:border-primary-500/30 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Đã đạt giới hạn kế hoạch</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Đã đạt giới hạn kế hoạch</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
                   Nâng cấp gói để tạo thêm kế hoạch tài chính và nhận thêm nhiều tính năng
                 </p>
               </div>
               <Link
                 href="/pricing"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                className="bg-primary-600 dark:bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 dark:hover:bg-primary-700 transition-colors whitespace-nowrap"
               >
                 Nâng Cấp Ngay
               </Link>

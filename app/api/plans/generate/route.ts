@@ -60,8 +60,10 @@ export async function POST(request: NextRequest) {
     // Check usage limits before processing
     const usageCheck = await checkUsageLimits(user.id, 'plan')
     if (!usageCheck.allowed) {
+      // Get subscription with fallback
       const { data: subscription } = await getUserSubscription(user.id)
-      const limits = getSubscriptionLimits(usageCheck.tier)
+      const tier = subscription?.tier || usageCheck.tier || 'free'
+      const limits = getSubscriptionLimits(tier)
       
       return NextResponse.json({ 
         error: 'Đã đạt giới hạn tạo kế hoạch',
