@@ -56,7 +56,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="pt-20 pb-16 sm:pt-24 sm:pb-20 bg-gradient-to-br from-gray-50 to-white overflow-x-hidden">
+    <section className="pt-16 pb-16 sm:pt-20 sm:pb-20 bg-gradient-to-br from-gray-50 to-white overflow-x-hidden">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left side - Giới thiệu/Slogan */}

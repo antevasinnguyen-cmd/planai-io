@@ -180,7 +180,7 @@ export default function PlanViewEnhanced() {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f]">
       {/* Header */}
       <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link
@@ -306,7 +306,7 @@ export default function PlanViewEnhanced() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Plan Content */}
           <div className="lg:col-span-2">

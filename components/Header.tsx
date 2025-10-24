@@ -58,7 +58,7 @@ export default function Header() {
   return (
     <header className="bg-white border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex items-center">
             <Logo href="/" size="md" showText={true} />
@@ -161,7 +161,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden">
+          <div className="md:hidden max-h-[calc(100vh-80px)] overflow-y-auto">
             <div className="px-4 py-4 space-y-3">
               <Link href="/pricing" className="block py-3 px-2 text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors font-medium" onClick={() => setIsMenuOpen(false)}>
                 Pricing

@@ -77,7 +77,7 @@ export default function Home() {
       <PlanDemo />
       
       {/* 9. Quote */}
-      <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-800">
+      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-800">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <blockquote className="text-2xl md:text-3xl font-light text-white italic">
             "Biến dữ liệu thô thành bản kế hoạch đáng mơ ước"

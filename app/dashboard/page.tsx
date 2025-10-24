@@ -453,7 +453,7 @@ export default function DashboardFinal() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col ml-64">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-5">
           <div className="flex items-center justify-between">
             <div></div>
 
@@ -508,7 +508,7 @@ export default function DashboardFinal() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto md:ml-0">
+        <main className="flex-1 p-6 overflow-y-auto ml-0">
           {/* Welcome Message */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">

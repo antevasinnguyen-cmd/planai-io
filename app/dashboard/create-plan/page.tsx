@@ -569,9 +569,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col ml-80">
         {/* Header */}
-        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center">
