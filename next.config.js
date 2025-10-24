@@ -132,7 +132,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://*.googleapis.com https://*.gstatic.com; connect-src 'self' https://*.supabase.co https://apis.google.com https://pay.payos.vn https://api-merchant.payos.vn https://my.sepay.vn https://api.qrserver.com https://img.vietqr.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob: https://*.googleusercontent.com https://*.gstatic.com https://img.vietqr.io https://api.qrserver.com https://pay.payos.vn;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://*.googleapis.com https://*.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com; connect-src 'self' https://*.supabase.co https://apis.google.com https://pay.payos.vn https://api-merchant.payos.vn https://my.sepay.vn https://api.qrserver.com https://img.vietqr.io https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob: https://*.googleusercontent.com https://*.gstatic.com https://img.vietqr.io https://api.qrserver.com https://pay.payos.vn;",
           },
         ],
       },
