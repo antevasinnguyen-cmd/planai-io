@@ -9,12 +9,49 @@ import { generateMicroTasks, generateWeeklyChecklist, generateMonthlyChecklist, 
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request)
+    let user = await getCurrentUser(request)
+    
+    // If no user found, try to refresh session and retry
     if (!user) {
-      console.error('=== PLAN GENERATE: No user found, unauthorized ===')
+      console.log('=== PLAN GENERATE: First auth attempt failed, checking cookies ===')
+      
+      // Try to get fresh session from cookies
+      try {
+        const { cookies } = await import('next/headers')
+        const cookieStore = cookies()
+        const projectRef = 'wjzmscsoiibzlxejqpgg'
+        
+        // Try all possible cookie names
+        const possibleCookies = [
+          `sb-${projectRef}-auth-token`,
+          `sb-${projectRef}-auth-token.0`,
+          `sb-${projectRef}-auth-token.1`,
+          'sb-access-token',
+          'supabase-auth-token'
+        ]
+        
+        for (const cookieName of possibleCookies) {
+          const cookie = cookieStore.get(cookieName)
+          if (cookie?.value) {
+            console.log(`=== PLAN GENERATE: Found cookie ${cookieName}, attempting auth ===`)
+            const { data: { user: authUser }, error } = await supabase.auth.getUser(cookie.value)
+            if (authUser && !error) {
+              user = authUser
+              console.log('=== PLAN GENERATE: User authenticated via cookie retry ===', { userId: user.id })
+              break
+            }
+          }
+        }
+      } catch (cookieRetryError) {
+        console.log('=== PLAN GENERATE: Cookie retry failed ===', cookieRetryError)
+      }
+    }
+    
+    if (!user) {
+      console.error('=== PLAN GENERATE: No user found after retry, unauthorized ===')
       return NextResponse.json({ 
         error: 'Unauthorized',
-        message: 'Bạn cần đăng nhập để sử dụng tính năng này'
+        message: 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập lại.'
       }, { status: 401 })
     }
     
@@ -212,9 +249,36 @@ Format: Markdown với headings, lists, và tables.`
 
   } catch (error) {
     console.error('Generate plan error:', error)
+    
+    // Provide more specific error messages
+    let statusCode = 500
+    let errorMessage = 'Có lỗi xảy ra khi tạo kế hoạch'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('Unauthorized') || error.message.includes('401')) {
+        statusCode = 401
+        errorMessage = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
+      } else if (error.message.includes('Forbidden') || error.message.includes('403')) {
+        statusCode = 403
+        errorMessage = 'Bạn không có quyền thực hiện hành động này'
+      } else if (error.message.includes('Not Found') || error.message.includes('404')) {
+        statusCode = 404
+        errorMessage = 'Không tìm thấy tài nguyên'
+      } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+        statusCode = 408
+        errorMessage = 'Yêu cầu hết thời gian chờ. Vui lòng thử lại.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate plan' },
-      { status: 500 }
+      { 
+        error: errorMessage,
+        message: errorMessage,
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: statusCode }
     )
   }
 }

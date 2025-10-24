@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Sparkles, CheckCircle, Brain, AlertCircle, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
@@ -14,6 +14,8 @@ export default function GeneratePlanPage() {
   const [planId, setPlanId] = useState('')
   const { user } = useAuth()
   const router = useRouter()
+  const jobIdRef = useRef<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -22,10 +24,16 @@ export default function GeneratePlanPage() {
     }
 
     generatePlan()
+
+    // Cleanup on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [user, router])
 
-  const generatePlan = async () => {
-    // Get plan data from localStorage with user ID
+  const generatePlan = async (retryCount = 0) => {
     const userId = user?.id || 'anonymous'
     const planData = localStorage.getItem(`pending_plan_${userId}`)
     if (!planData) {
@@ -37,6 +45,16 @@ export default function GeneratePlanPage() {
       const data = JSON.parse(planData)
       setIsGenerating(true)
       setError('')
+      
+      // Check if we already have a job ID (tab was refreshed)
+      const existingJobId = sessionStorage.getItem(`plan_job_${userId}`)
+      if (existingJobId && jobIdRef.current !== existingJobId) {
+        console.log('Resuming existing job:', existingJobId)
+        jobIdRef.current = existingJobId
+        // Skip progress simulation and go straight to polling
+        pollJobStatus(existingJobId)
+        return
+      }
       
       // Simulate plan generation with progress
       const steps = [
@@ -58,9 +76,6 @@ export default function GeneratePlanPage() {
       }
 
       // Call API to generate plan with authentication
-      // CRITICAL: Must include credentials to send authentication cookies
-      
-      // Get session token for authentication
       const { supabase } = await import('@/lib/supabase')
       const { data: sessionData } = await supabase.auth.getSession()
       
@@ -73,35 +88,83 @@ export default function GeneratePlanPage() {
         headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
       }
       
+      // Create abort controller for timeout
+      abortControllerRef.current = new AbortController()
+      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 60000) // 60s timeout
+      
       const res = await fetch('/api/plans/generate', {
         method: 'POST',
         headers,
-        credentials: 'include', // IMPORTANT: Send cookies with request
-        body: JSON.stringify(data)
+        credentials: 'include',
+        body: JSON.stringify(data),
+        signal: abortControllerRef.current.signal
       })
 
+      clearTimeout(timeoutId)
       const result = await res.json()
       
       if (res.ok) {
-        const userId = user?.id || 'anonymous'
+        // Save job ID to session storage to track this generation
+        const jobId = result.planId || `job_${Date.now()}`
+        jobIdRef.current = jobId
+        sessionStorage.setItem(`plan_job_${userId}`, jobId)
+        
         localStorage.removeItem(`pending_plan_${userId}`)
         setPlanId(result.planId)
         setIsGenerating(false)
         
         // Redirect after a short delay to show completion
         setTimeout(() => {
+          sessionStorage.removeItem(`plan_job_${userId}`)
           router.push(`/dashboard/plans/${result.planId}`)
         }, 2000)
       } else {
-        // Handle API error
+        // Handle API error with retry logic
+        if (res.status === 401 && retryCount < 2) {
+          // Token might be expired, try to refresh
+          console.log('Token expired, attempting refresh...')
+          try {
+            await supabase.auth.refreshSession()
+            // Retry the request
+            setTimeout(() => generatePlan(retryCount + 1), 1000)
+            return
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError)
+          }
+        }
+        
         setError(result.message || result.error || 'Có lỗi xảy ra khi tạo kế hoạch')
         setIsGenerating(false)
       }
     } catch (error) {
-      console.error('Error generating plan:', error)
-      setError('Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại.')
+      if (error instanceof Error && error.name === 'AbortError') {
+        setError('Yêu cầu hết thời gian chờ. Vui lòng không chuyển tab trong lúc tạo kế hoạch.')
+      } else {
+        console.error('Error generating plan:', error)
+        setError('Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại.')
+      }
       setIsGenerating(false)
     }
+  }
+
+  const pollJobStatus = async (jobId: string) => {
+    // Poll for job status (optional - for future WebSocket implementation)
+    // For now, just wait and check if plan was created
+    const maxAttempts = 30
+    let attempts = 0
+    
+    const checkInterval = setInterval(async () => {
+      attempts++
+      if (attempts > maxAttempts) {
+        clearInterval(checkInterval)
+        setError('Quá thời gian chờ. Vui lòng thử lại.')
+        setIsGenerating(false)
+        return
+      }
+      
+      // Check if plan exists (you can add a dedicated endpoint for this)
+      // For now, just wait for the initial request to complete
+    }, 2000)
   }
 
   return (
@@ -192,6 +255,13 @@ export default function GeneratePlanPage() {
                   <Sparkles className="w-4 h-4" />
                   <span className="text-sm">AI đang tạo kế hoạch tài chính hoàn hảo cho bạn</span>
                 </div>
+              </div>
+
+              {/* Warning Message */}
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-500/10 rounded-lg border border-amber-200 dark:border-amber-500/20">
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  ⚠️ Vui lòng giữ tab này mở để tránh gián đoạn quá trình tạo kế hoạch
+                </p>
               </div>
             </>
           )}
