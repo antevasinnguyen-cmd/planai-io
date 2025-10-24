@@ -151,18 +151,55 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     checkAuth()
   }, [router])
   
-  // Lưu tin nhắn VÀ collectedInfo vào localStorage khi thay đổi
+  // Lưu tin nhắn VÀ collectedInfo vào localStorage + Database khi thay đổi
   useEffect(() => {
     if (messages.length > 0 && user) {
       const userId = user.id || 'anonymous'
       const chatMessagesKey = `planai_chat_messages_${userId}`
       const collectedInfoKey = `planai_collected_info_${userId}`
       
+      // Save to localStorage
       localStorage.setItem(chatMessagesKey, JSON.stringify(messages))
       localStorage.setItem(collectedInfoKey, JSON.stringify(collectedInfo))
       console.log(`Lưu tin nhắn (${messages.length}) và collected info vào localStorage cho user ${userId}`)
+      
+      // Save user messages to database for chat counter
+      saveChatMessagesToDatabase(messages, userId)
     }
   }, [messages, collectedInfo, user])
+
+  const saveChatMessagesToDatabase = async (msgs: Message[], userId: string) => {
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      
+      // Get only user messages that haven't been saved yet
+      const userMessages = msgs.filter(m => m.role === 'user')
+      
+      if (userMessages.length === 0) return
+      
+      // Save each user message to database
+      for (const msg of userMessages) {
+        try {
+          const { error } = await supabase
+            .from('chat_messages')
+            .insert({
+              user_id: userId,
+              message: msg.content,
+              type: 'user',
+              created_at: msg.timestamp.toISOString()
+            })
+          
+          if (error) {
+            console.warn('Error saving chat message to DB:', error)
+          }
+        } catch (e) {
+          console.warn('Exception saving chat message:', e)
+        }
+      }
+    } catch (error) {
+      console.warn('Error in saveChatMessagesToDatabase:', error)
+    }
+  }
 
   // Cuộn xuống dưới khi có tin nhắn mới
   useEffect(() => {
