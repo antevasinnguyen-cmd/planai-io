@@ -193,7 +193,54 @@ localStorage.removeItem(`pending_plan_${userId}`)
 
 ---
 
+---
+
+## 🔥 CRITICAL UPDATE: Background Job System (24/10/2025)
+
+### 4. 🚀 **Plan Generation - Background Job System** ✅
+
+**Vấn đề:**
+- AI tạo plan quá lâu (timeout 60s)
+- User phải giữ tab mở, không thể chuyển tab
+- Lỗi "Yêu cầu hết thời gian chờ"
+- "No user found when loading subscription" - 500 error
+
+**Giải pháp:**
+- Implement **Background Job System**
+- API trả job_id ngay lập tức (202 Accepted)
+- Frontend poll status mỗi 1 giây
+- User có thể đóng tab hoặc chuyển tab
+- AI tiếp tục xử lý trong nền
+
+**Files thay đổi:**
+- `BACKGROUND_JOB_SETUP.sql` - Database setup
+- `app/api/plans/generate-background/route.ts` - Start background job
+- `app/api/plans/job-status/route.ts` - Check job status
+- `app/dashboard/plans/generate/page.tsx` - Frontend polling
+
+**Key Features:**
+```
+✅ User starts plan generation
+✅ Gets job_id immediately (202 Accepted)
+✅ Can close tab or switch tabs
+✅ AI continues in background
+✅ Frontend polls status every 1 second
+✅ Auto-redirects when complete
+✅ Shows "Can switch tabs" message
+```
+
+**Expected Results:**
+- ✅ No more timeouts
+- ✅ User can switch tabs safely
+- ✅ Better UX & reliability
+- ✅ Scalable to many concurrent users
+
+---
+
 ## ✅ Status: PRODUCTION READY
 
-Tất cả 3 vấn đề đã được sửa và deployed lên production.  
+Tất cả 4 vấn đề đã được sửa và deployed lên production.  
 Sẵn sàng cho user testing & monitoring.
+
+**Latest Commit:** `feat: Implement background job system for plan generation`  
+**Deployed:** ✅ Live on Vercel
