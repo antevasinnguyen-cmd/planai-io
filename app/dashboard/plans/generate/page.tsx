@@ -59,11 +59,23 @@ export default function GeneratePlanPage() {
 
       // Call API to generate plan with authentication
       // CRITICAL: Must include credentials to send authentication cookies
+      
+      // Get session token for authentication
+      const { supabase } = await import('@/lib/supabase')
+      const { data: sessionData } = await supabase.auth.getSession()
+      
+      const headers: any = { 
+        'Content-Type': 'application/json'
+      }
+      
+      // Add Authorization header if session exists
+      if (sessionData?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+      }
+      
       const res = await fetch('/api/plans/generate', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
+        headers,
         credentials: 'include', // IMPORTANT: Send cookies with request
         body: JSON.stringify(data)
       })

@@ -128,15 +128,12 @@ export const getCurrentUser = async (request?: Request) => {
       }
     }
     
-    // Fallback to regular supabase client
-    console.log('=== SUPABASE: Fallback to regular supabase client ===')
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (user && !error) {
-      console.log('=== SUPABASE: User found from regular client ===', { userId: user.id })
-      return user
-    }
+    // In API routes, we can't use getUser() without a token
+    // If we reach here, authentication failed
+    console.log('=== SUPABASE: No authentication method worked ===')
+    console.log('=== SUPABASE: Authorization header:', request?.headers.get('Authorization') ? 'present' : 'missing')
+    console.log('=== SUPABASE: Credentials include:', request ? 'API route' : 'client-side')
     
-    console.log('=== SUPABASE: No user found ===')
     return null
   } catch (error) {
     console.error('=== SUPABASE: Error getting current user ===', error)
