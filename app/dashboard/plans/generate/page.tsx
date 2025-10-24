@@ -2,20 +2,22 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Sparkles, CheckCircle, Brain, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Loader2, Sparkles, CheckCircle, AlertCircle, ArrowLeft, Zap } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 
 export default function GeneratePlanPage() {
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending')
   const [progress, setProgress] = useState(0)
-  const [status, setStatus] = useState('Đang phân tích thông tin...')
+  const [status, setStatus] = useState('Khởi động hệ thống AI...')
   const [error, setError] = useState('')
-  const [isGenerating, setIsGenerating] = useState(true)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [planId, setPlanId] = useState('')
   const { user } = useAuth()
   const router = useRouter()
-  const jobIdRef = useRef<string | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const startTimeRef = useRef<number>(0)
 
   useEffect(() => {
     if (!user) {
@@ -23,17 +25,33 @@ export default function GeneratePlanPage() {
       return
     }
 
-    generatePlan()
+    startPlanGeneration()
 
     // Cleanup on unmount
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
       }
     }
   }, [user, router])
 
-  const generatePlan = async (retryCount = 0) => {
+  // Timer to update elapsed seconds
+  useEffect(() => {
+    if (jobStatus === 'processing' && startTimeRef.current) {
+      const timer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000)
+        setElapsedSeconds(elapsed)
+        
+        // Update progress based on elapsed time
+        const estimatedProgress = Math.min(90, 10 + (elapsed / 120) * 80)
+        setProgress(estimatedProgress)
+      }, 1000)
+      
+      return () => clearInterval(timer)
+    }
+  }, [jobStatus])
+
+  const startPlanGeneration = async () => {
     const userId = user?.id || 'anonymous'
     const planData = localStorage.getItem(`pending_plan_${userId}`)
     if (!planData) {
@@ -43,39 +61,10 @@ export default function GeneratePlanPage() {
 
     try {
       const data = JSON.parse(planData)
-      setIsGenerating(true)
-      setError('')
-      
-      // Check if we already have a job ID (tab was refreshed)
-      const existingJobId = sessionStorage.getItem(`plan_job_${userId}`)
-      if (existingJobId && jobIdRef.current !== existingJobId) {
-        console.log('Resuming existing job:', existingJobId)
-        jobIdRef.current = existingJobId
-        // Skip progress simulation and go straight to polling
-        pollJobStatus(existingJobId)
-        return
-      }
-      
-      // Simulate plan generation with progress
-      const steps = [
-        { progress: 10, status: 'Đang phân tích thông tin cá nhân...' },
-        { progress: 25, status: 'Đang phân tích mục tiêu tài chính...' },
-        { progress: 40, status: 'Đang tạo lộ trình chi tiết...' },
-        { progress: 60, status: 'Đang tính toán ngân sách...' },
-        { progress: 75, status: 'Đang tạo checklist hành động...' },
-        { progress: 90, status: 'Đang tối ưu kế hoạch...' },
-        { progress: 95, status: 'Đang xử lý dữ liệu...' },
-        { progress: 100, status: 'Hoàn thành!' }
-      ]
+      setStatus('Gửi yêu cầu tới hệ thống AI...')
+      setProgress(5)
 
-      // Simulate progress steps
-      for (const step of steps) {
-        await new Promise(resolve => setTimeout(resolve, 800))
-        setProgress(step.progress)
-        setStatus(step.status)
-      }
-
-      // Call API to generate plan with authentication
+      // Get auth token
       const { supabase } = await import('@/lib/supabase')
       const { data: sessionData } = await supabase.auth.getSession()
       
@@ -83,88 +72,122 @@ export default function GeneratePlanPage() {
         'Content-Type': 'application/json'
       }
       
-      // Add Authorization header if session exists
       if (sessionData?.session?.access_token) {
         headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
       }
-      
-      // Create abort controller for timeout
-      abortControllerRef.current = new AbortController()
-      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 60000) // 60s timeout
-      
-      const res = await fetch('/api/plans/generate', {
+
+      // Start background job (returns immediately)
+      const res = await fetch('/api/plans/generate-background', {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify(data),
-        signal: abortControllerRef.current.signal
+        body: JSON.stringify({
+          planName: data.planName || 'Kế hoạch tài chính',
+          goals: data.goals || '',
+          collectedInfo: data.collectedInfo || {}
+        })
       })
 
-      clearTimeout(timeoutId)
       const result = await res.json()
-      
-      if (res.ok) {
-        // Save job ID to session storage to track this generation
-        const jobId = result.planId || `job_${Date.now()}`
-        jobIdRef.current = jobId
-        sessionStorage.setItem(`plan_job_${userId}`, jobId)
-        
-        localStorage.removeItem(`pending_plan_${userId}`)
-        setPlanId(result.planId)
-        setIsGenerating(false)
-        
-        // Redirect after a short delay to show completion
-        setTimeout(() => {
-          sessionStorage.removeItem(`plan_job_${userId}`)
-          router.push(`/dashboard/plans/${result.planId}`)
-        }, 2000)
-      } else {
-        // Handle API error with retry logic
-        if (res.status === 401 && retryCount < 2) {
-          // Token might be expired, try to refresh
-          console.log('Token expired, attempting refresh...')
-          try {
-            await supabase.auth.refreshSession()
-            // Retry the request
-            setTimeout(() => generatePlan(retryCount + 1), 1000)
-            return
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError)
-          }
-        }
-        
-        setError(result.message || result.error || 'Có lỗi xảy ra khi tạo kế hoạch')
-        setIsGenerating(false)
+
+      if (!res.ok) {
+        setError(result.error || 'Không thể bắt đầu tạo kế hoạch')
+        return
       }
+
+      // Job started successfully
+      const newJobId = result.job_id
+      setJobId(newJobId)
+      setJobStatus('processing')
+      startTimeRef.current = Date.now()
+      setProgress(10)
+      setStatus('Hệ thống AI đang xử lý...')
+
+      // Save job ID to session storage
+      sessionStorage.setItem(`plan_job_${userId}`, newJobId)
+
+      // Start polling for job status
+      pollJobStatus(newJobId)
+
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        setError('Yêu cầu hết thời gian chờ. Vui lòng không chuyển tab trong lúc tạo kế hoạch.')
-      } else {
-        console.error('Error generating plan:', error)
-        setError('Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại.')
-      }
-      setIsGenerating(false)
+      console.error('Error starting plan generation:', error)
+      setError('Có lỗi xảy ra khi bắt đầu tạo kế hoạch. Vui lòng thử lại.')
     }
   }
 
-  const pollJobStatus = async (jobId: string) => {
-    // Poll for job status (optional - for future WebSocket implementation)
-    // For now, just wait and check if plan was created
-    const maxAttempts = 30
+  const pollJobStatus = async (id: string) => {
+    const userId = user?.id || 'anonymous'
+    const maxAttempts = 600 // 10 minutes (600 * 1 second)
     let attempts = 0
-    
-    const checkInterval = setInterval(async () => {
-      attempts++
-      if (attempts > maxAttempts) {
-        clearInterval(checkInterval)
-        setError('Quá thời gian chờ. Vui lòng thử lại.')
-        setIsGenerating(false)
-        return
+
+    const checkJob = async () => {
+      try {
+        const res = await fetch(`/api/plans/job-status?job_id=${id}`, {
+          credentials: 'include'
+        })
+
+        if (!res.ok) {
+          console.error('Error checking job status:', res.status)
+          return
+        }
+
+        const jobData = await res.json()
+        console.log('Job status:', jobData.status)
+
+        if (jobData.status === 'completed') {
+          // Success!
+          setProgress(100)
+          setStatus('Hoàn thành!')
+          setJobStatus('completed')
+          setPlanId(jobData.plan_id)
+
+          // Clear session storage
+          sessionStorage.removeItem(`plan_job_${userId}`)
+          localStorage.removeItem(`pending_plan_${userId}`)
+
+          // Redirect after 2 seconds
+          setTimeout(() => {
+            router.push(`/dashboard/plans/${jobData.plan_id}`)
+          }, 2000)
+
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current)
+          }
+
+        } else if (jobData.status === 'failed') {
+          // Failed
+          setJobStatus('failed')
+          setError(jobData.error_message || 'Tạo kế hoạch thất bại')
+          sessionStorage.removeItem(`plan_job_${userId}`)
+
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current)
+          }
+
+        } else if (jobData.status === 'processing') {
+          // Still processing
+          setStatus(`Đang xử lý... (${jobData.elapsed_seconds}s)`)
+        }
+
+      } catch (error) {
+        console.error('Error polling job status:', error)
       }
-      
-      // Check if plan exists (you can add a dedicated endpoint for this)
-      // For now, just wait for the initial request to complete
-    }, 2000)
+
+      attempts++
+      if (attempts >= maxAttempts) {
+        setError('Quá thời gian chờ. Vui lòng thử lại.')
+        sessionStorage.removeItem(`plan_job_${userId}`)
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+        }
+      }
+    }
+
+    // Poll every 1 second
+    pollIntervalRef.current = setInterval(checkJob, 1000)
+    
+    // Check immediately
+    await checkJob()
   }
 
   return (
@@ -223,7 +246,7 @@ export default function GeneratePlanPage() {
           )}
           
           {/* Loading state */}
-          {isGenerating && (
+          {(jobStatus === 'pending' || jobStatus === 'processing') && (
             <>
               {/* Icon */}
               <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
@@ -244,10 +267,10 @@ export default function GeneratePlanPage() {
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
                 <div
                   className="bg-gradient-to-r from-primary-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${Math.round(progress)}%` }}
                 />
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-500">{progress}%</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">{Math.round(progress)}%</p>
 
               {/* AI Magic Message */}
               <div className="mt-2 p-4 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
@@ -257,11 +280,14 @@ export default function GeneratePlanPage() {
                 </div>
               </div>
 
-              {/* Warning Message */}
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-500/10 rounded-lg border border-amber-200 dark:border-amber-500/20">
-                <p className="text-xs text-amber-800 dark:text-amber-200">
-                  ⚠️ Vui lòng giữ tab này mở để tránh gián đoạn quá trình tạo kế hoạch
-                </p>
+              {/* Info Message - Can Switch Tabs */}
+              <div className="mt-4 p-3 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/20">
+                <div className="flex items-start space-x-2">
+                  <Zap className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-green-800 dark:text-green-200">
+                    ✓ Bạn có thể đóng tab hoặc chuyển sang tab khác. AI sẽ tiếp tục xử lý trong nền.
+                  </p>
+                </div>
               </div>
             </>
           )}
