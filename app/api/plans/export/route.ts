@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, supabase, getUserSubscription, getTierName } from '@/lib/supabase'
 import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets'
+import { Document, Packer, Paragraph, TextRun } from 'docx'
+import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +29,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
 
+    const normalizedFormat = ((): string => {
+      if (!format) return 'txt'
+      const f = String(format).toLowerCase()
+      if (f === 'sheets' || f === 'gdocs') return 'google_sheets'
+      return f
+    })()
+
     // Tier-based feature gating
     const { data: subData } = await getUserSubscription(user.id)
     const tier = subData?.tier || 'free'
@@ -40,11 +49,11 @@ export async function POST(request: NextRequest) {
     }
 
     const allowed = allowedFormatsByTier[tier] || allowedFormatsByTier.free
-    if (!allowed.includes(format)) {
+    if (!allowed.includes(normalizedFormat)) {
       return NextResponse.json(
         {
           error: 'Tính năng chưa được mở khóa',
-          message: `Định dạng xuất "${format}" không có trong gói ${tierName}. Vui lòng nâng cấp để sử dụng định dạng này.`,
+          message: `Định dạng xuất "${normalizedFormat}" không có trong gói ${tierName}. Vui lòng nâng cấp để sử dụng định dạng này.`,
           upgradeRequired: true
         },
         { status: 403 }
@@ -52,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle different export formats
-    switch (format) {
+    switch (normalizedFormat) {
       case 'google_sheets':
         // Check if Google Sheets API is configured
         if (!isGoogleSheetsConfigured()) {
@@ -89,20 +98,56 @@ export async function POST(request: NextRequest) {
             message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
           }, { status: 500 })
         }
-        
       case 'pdf':
-        // Placeholder for PDF export
-        return NextResponse.json({
-          success: true,
-          message: 'Tính năng xuất PDF sẽ được triển khai trong thời gian tới'
+        return NextResponse.json({ success: true, message: 'Tính năng xuất PDF sẽ được triển khai trong thời gian tới' })
+      
+      case 'docx': {
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: [
+              new Paragraph({ children: [new TextRun({ text: plan.title || 'Kế hoạch tài chính', bold: true, size: 32 })] }),
+              ...String(plan.content || '')
+                .split('\n')
+                .map((line: string) => new Paragraph({ children: [new TextRun({ text: line })] }))
+            ]
+          }]
         })
+        const buffer = await Packer.toBuffer(doc)
+        return new NextResponse(buffer, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition': `attachment; filename=plan-${plan.id}.docx`
+          }
+        })
+      }
+      
+      case 'txt': {
+        const title = plan.title || 'Kế hoạch tài chính'
+        const fullContent = `${title}\n${'='.repeat(title.length)}\n\n${plan.content || ''}`
+        return new NextResponse(fullContent, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Content-Disposition': `attachment; filename=plan-${plan.id}.txt`
+          }
+        })
+      }
         
       case 'notion':
-        // Placeholder for Notion export
-        return NextResponse.json({
-          success: true,
-          message: 'Tính năng đồng bộ với Notion sẽ được triển khai trong thời gian tới'
-        })
+        try {
+          const dbId = await getOrCreateFinancialPlanDatabase(user.id)
+          const planData = { ...(plan.collected_info || {}), content: plan.content || '' }
+          const url = await exportFinancialPlanToNotion(user.id, plan.title || 'Kế hoạch tài chính', planData, dbId)
+          await supabase
+            .from('plans')
+            .update({ last_exported_at: new Date().toISOString() })
+            .eq('id', planId)
+          return NextResponse.json({ success: true, url })
+        } catch (e) {
+          return NextResponse.json({ error: 'Failed to export to Notion' }, { status: 500 })
+        }
         
       default:
         return NextResponse.json({ error: 'Unsupported export format' }, { status: 400 })

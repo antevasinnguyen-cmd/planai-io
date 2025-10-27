@@ -94,24 +94,55 @@ export default function PlanViewEnhanced() {
     if (!plan) return
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (sessionData?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+      }
+
       const res = await fetch('/api/plans/export', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: plan.id,
-          format
-        })
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ planId: plan.id, format })
       })
 
-      if (!res.ok) throw new Error('Export failed')
+      if (res.status === 403) {
+        let msg = 'Tính năng chưa được mở khóa. Vui lòng nâng cấp gói.'
+        try {
+          const data = await res.json()
+          if (data?.message) msg = data.message
+        } catch {}
+        alert(msg)
+        router.push('/pricing')
+        return
+      }
 
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `plan-${plan.id}.${format}`
-      a.click()
-      
+      if (!res.ok) {
+        let errMsg = 'Export failed'
+        try {
+          const data = await res.json()
+          errMsg = data?.error || errMsg
+        } catch {}
+        throw new Error(errMsg)
+      }
+
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await res.json()
+        if (data?.url) {
+          window.open(data.url, '_blank')
+        } else if (data?.message) {
+          alert(data.message)
+        }
+      } else {
+        const blob = await res.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `plan-${plan.id}.${format}`
+        a.click()
+      }
       setShowExportMenu(false)
     } catch (error) {
       console.error('Export error:', error)
