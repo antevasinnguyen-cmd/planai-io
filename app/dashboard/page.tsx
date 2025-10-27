@@ -7,12 +7,13 @@ import {
   Home, HelpCircle, Menu, X, ArrowRight, Target, BarChart3, Calendar, Sun, Moon,
   User, Zap, Shield, CreditCard
 } from 'lucide-react'
-import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits, checkTrialStatus } from '@/lib/supabase'
+import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits, checkTrialStatus, getTierName } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useTheme } from '@/lib/theme-context'
 import SuccessAlert from '@/components/SuccessAlert'
 import Logo from '@/components/Logo'
+import UpgradePrompt from '@/components/UpgradePrompt'
 
 interface UsageStats {
   plans: number
@@ -121,15 +122,7 @@ export default function DashboardFinal() {
     }
   }
 
-  const getTierName = (tier: string) => {
-    switch (tier) {
-      case 'free': return 'Free Plan'
-      case 'basic': return 'Gói 1'
-      case 'pro': return 'Gói 2'
-      case 'pro_max': return 'Gói 3'
-      default: return 'Free Plan'
-    }
-  }
+  
 
   const getUserInitial = () => {
     if (!user?.email) return 'U'
@@ -509,6 +502,24 @@ export default function DashboardFinal() {
 
         {/* Main Content Area */}
         <main className="flex-1 p-6 overflow-y-auto ml-0">
+          {/* Upgrade banner when near limits */}
+          {usage && limits && (
+            (() => {
+              const chatPct = Math.min(((usage.chats || 0) / (limits.chats || 1)) * 100, 100)
+              const planPct = Math.min(((usage.plans || 0) / (limits.plans || 1)) * 100, 100)
+              const showBanner = chatPct >= 80 || planPct >= 80
+              if (!showBanner) return null
+              return (
+                <UpgradePrompt
+                  variant="banner"
+                  trigger="quota_warning"
+                  currentUsage={{ chats: usage.chats || 0, plans: usage.plans || 0, words: usage.words || 0 }}
+                  limits={{ chats: limits.chats, plans: limits.plans, words: limits.words }}
+                  className="mb-6"
+                />
+              )
+            })()
+          )}
           {/* Welcome Message */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">

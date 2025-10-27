@@ -134,10 +134,9 @@ export const generateFinancialPlan = async (
       spiritualInsights = getSpiritualFinancialInsights(spiritualProfile)
     }
 
-    // Determine word limit based on subscription
+    // Determine word/token limits based on subscription (P0)
     const maxWords = collectedInfo.maxWords || 5000
     let wordRange = '5,000-8,000 từ'
-
     if (maxWords <= 1000) {
       wordRange = '800-1,000 từ (Gói Free)'
     } else if (maxWords <= 6500) {
@@ -147,6 +146,13 @@ export const generateFinancialPlan = async (
     } else if (maxWords <= 17500) {
       wordRange = '15,000-20,000 từ (Gói Pro Max)'
     }
+    const maxTokensForTier = maxWords <= 1000
+      ? 800
+      : maxWords <= 6500
+      ? 2500
+      : maxWords <= 10500
+      ? 3500
+      : 4000
 
     // Build user profile summary from collected info
     const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam dựa trên thông tin sau:
@@ -220,7 +226,7 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
       const completion = await client.chat.completions.create({
         model,
         messages,
-        max_tokens: 4000,
+        max_tokens: maxTokensForTier,
         temperature: 0.3,
         ...(signal && { signal }) // Add abort signal if provided
       })
@@ -270,9 +276,8 @@ Thông tin cá nhân:
 - Nghề nghiệp: ${collectedInfo.occupation || 'Chưa có thông tin'}
 - Thời gian: ${collectedInfo.timeline || 'Chưa có thông tin'}
 - Mức độ rủi ro: ${collectedInfo.risk_tolerance || 'Trung bình'}`,
-          maxWords > 5000 ? 4000 : 3000,
-          0.3,
-          signal // Pass signal to Claude
+          maxTokensForTier,
+          0.3
         )
 
         // Save Claude response to cache

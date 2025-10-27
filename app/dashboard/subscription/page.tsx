@@ -6,8 +6,10 @@ import {
   ArrowLeft, Crown, Check, Zap, TrendingUp, Calendar, CreditCard, 
   MessageSquare, FileText, AlertCircle, Plus, Package
 } from 'lucide-react'
-import { getUserSubscription, getUserUsageStats, getSubscriptionLimits, checkTrialStatus } from '@/lib/supabase'
+import { getUserSubscription, getUserUsageStats, getSubscriptionLimits, checkTrialStatus, getTierName } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import UsageProgressBar from '@/components/UsageProgressBar'
 import Link from 'next/link'
 
 // Pricing tiers
@@ -149,15 +151,7 @@ export default function SubscriptionPage() {
     }
   }
 
-  const getTierName = (tier: string) => {
-    const tierMap: { [key: string]: string } = {
-      'free': 'Free Plan',
-      'basic': 'Gói 1',
-      'pro': 'Gói 2',
-      'pro_max': 'Gói 3'
-    }
-    return tierMap[tier] || 'Free Plan'
-  }
+  
 
   const getColorClasses = (color: string) => {
     const colors: { [key: string]: string } = {
@@ -278,90 +272,53 @@ export default function SubscriptionPage() {
             </div>
           )}
 
+          {/* Upgrade banner when near limits */}
+          {(getUsagePercentage(usage?.plans || 0, limits.plans) >= 80 ||
+            getUsagePercentage(usage?.chats || 0, limits.chats) >= 80) && (
+            <UpgradePrompt
+              variant="banner"
+              trigger="quota_warning"
+              currentUsage={{ chats: usage?.chats || 0, plans: usage?.plans || 0, words: usage?.words || 0 }}
+              limits={{ chats: limits.chats, plans: limits.plans, words: limits.words }}
+              className="mb-6"
+            />
+          )}
+
           {/* Usage Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Plans Usage */}
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium text-gray-900 dark:text-white">Kế hoạch</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {usage?.plans || 0}/{limits.plans}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${getUsageColor(getUsagePercentage(usage?.plans || 0, limits.plans))}`}
-                  style={{ width: `${getUsagePercentage(usage?.plans || 0, limits.plans)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                {getUsagePercentage(usage?.plans || 0, limits.plans).toFixed(0)}% đã sử dụng
-              </p>
+              <UsageProgressBar
+                current={usage?.plans || 0}
+                limit={limits.plans}
+                label="Kế hoạch"
+                color="blue"
+                showUpgradePrompt
+                onUpgradeClick={() => router.push('/pricing')}
+              />
             </div>
 
-            {/* Chats Usage */}
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <span className="font-medium text-gray-900 dark:text-white">Tin nhắn</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {usage?.chats || 0}/{limits.chats}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${getUsageColor(getUsagePercentage(usage?.chats || 0, limits.chats))}`}
-                  style={{ width: `${getUsagePercentage(usage?.chats || 0, limits.chats)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                {getUsagePercentage(usage?.chats || 0, limits.chats).toFixed(0)}% đã sử dụng
-              </p>
+              <UsageProgressBar
+                current={usage?.chats || 0}
+                limit={limits.chats}
+                label="Tin nhắn"
+                color="green"
+                showUpgradePrompt
+                onUpgradeClick={() => router.push('/pricing')}
+              />
             </div>
 
-            {/* Words Usage */}
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <span className="font-medium text-gray-900 dark:text-white">Từ</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {(usage?.words || 0).toLocaleString()}/{limits.words.toLocaleString()}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all ${getUsageColor(getUsagePercentage(usage?.words || 0, limits.words))}`}
-                  style={{ width: `${getUsagePercentage(usage?.words || 0, limits.words)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                {getUsagePercentage(usage?.words || 0, limits.words).toFixed(0)}% đã sử dụng
-              </p>
+              <UsageProgressBar
+                current={usage?.words || 0}
+                limit={limits.words}
+                label="Từ"
+                color="purple"
+                showUpgradePrompt
+                onUpgradeClick={() => router.push('/pricing')}
+              />
             </div>
           </div>
-
-          {/* Warning if usage is high */}
-          {(getUsagePercentage(usage?.plans || 0, limits.plans) >= 80 || 
-            getUsagePercentage(usage?.chats || 0, limits.chats) >= 80) && (
-            <div className="mt-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-medium text-orange-900 dark:text-orange-100">Sắp hết quota</p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-                    Bạn đã sử dụng hơn 80% quota. Nâng cấp gói để tiếp tục sử dụng không giới hạn.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Available Plans */}

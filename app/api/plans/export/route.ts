@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, supabase } from '@/lib/supabase'
+import { getCurrentUser, supabase, getUserSubscription, getTierName } from '@/lib/supabase'
 import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets'
 
 export async function POST(request: NextRequest) {
@@ -25,6 +25,30 @@ export async function POST(request: NextRequest) {
 
     if (planError || !plan) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+    }
+
+    // Tier-based feature gating
+    const { data: subData } = await getUserSubscription(user.id)
+    const tier = subData?.tier || 'free'
+    const tierName = getTierName(tier)
+
+    const allowedFormatsByTier: Record<string, string[]> = {
+      free: ['txt'],
+      basic: ['txt', 'pdf', 'docx'],
+      pro: ['txt', 'pdf', 'docx', 'notion'],
+      pro_max: ['txt', 'pdf', 'docx', 'notion', 'google_sheets']
+    }
+
+    const allowed = allowedFormatsByTier[tier] || allowedFormatsByTier.free
+    if (!allowed.includes(format)) {
+      return NextResponse.json(
+        {
+          error: 'Tính năng chưa được mở khóa',
+          message: `Định dạng xuất "${format}" không có trong gói ${tierName}. Vui lòng nâng cấp để sử dụng định dạng này.`,
+          upgradeRequired: true
+        },
+        { status: 403 }
+      )
     }
 
     // Handle different export formats

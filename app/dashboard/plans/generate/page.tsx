@@ -12,6 +12,7 @@ export default function GeneratePlanPage() {
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('Khởi động hệ thống AI...')
   const [error, setError] = useState('')
+  const [upgradeRequired, setUpgradeRequired] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [planId, setPlanId] = useState('')
   const { user } = useAuth()
@@ -135,7 +136,12 @@ export default function GeneratePlanPage() {
       const result = await res.json()
 
       if (!res.ok) {
-        setError(result.error || 'Không thể bắt đầu tạo kế hoạch')
+        if (res.status === 429 && result?.upgradeRequired) {
+          setUpgradeRequired(true)
+          setError(result.message || 'Bạn đã đạt giới hạn của gói hiện tại. Vui lòng nâng cấp để tiếp tục.')
+        } else {
+          setError(result.error || 'Không thể bắt đầu tạo kế hoạch')
+        }
         return
       }
 
@@ -280,6 +286,14 @@ export default function GeneratePlanPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {error}
               </p>
+              {upgradeRequired && (
+                <Link
+                  href="/pricing"
+                  className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors inline-block mb-3"
+                >
+                  Nâng cấp gói để tiếp tục
+                </Link>
+              )}
               <button
                 onClick={() => startPlanGeneration()}
                 className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"

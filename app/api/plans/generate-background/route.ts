@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { v4 as uuidv4 } from 'uuid'
-import { getCurrentUser, getUserSubscription } from '@/lib/supabase'
+import { randomUUID } from 'crypto'
+import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
 import { generateFinancialPlan } from '@/lib/openai'
 
 /**
@@ -29,25 +29,64 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check subscription (handle missing gracefully)
-    const { data: subscription, error: subError } = await getUserSubscription(user.id)
-    
-    if (subError) {
-      console.error('=== BACKGROUND JOB: Subscription check failed ===', subError)
-      // Continue with default limits for new users
+    // Enforce tier-based plan creation limits
+    const planUsage = await checkUsageLimits(user.id, 'plan')
+    if (!planUsage.allowed) {
+      const tier = planUsage.tier || 'free'
+      const limits = getSubscriptionLimits(tier)
+      const tierName = getTierName(tier)
+      return NextResponse.json(
+        {
+          error: 'Đã đạt giới hạn kế hoạch',
+          message: `Bạn đã tạo ${planUsage.current}/${planUsage.limit} kế hoạch trong tháng của gói ${tierName}. Hãy nâng cấp gói để tiếp tục sử dụng.`,
+          usage: {
+            current: planUsage.current,
+            limit: planUsage.limit,
+            tier,
+          },
+          upgradeRequired: true,
+        },
+        { status: 429 }
+      )
     }
-    
-    if (!subscription || subscription.status !== 'active') {
-      console.log('=== BACKGROUND JOB: No active subscription, using defaults ===')
-      // Don't block - allow new users to create plans with default limits
+
+    const { data: subData } = await getUserSubscription(user.id)
+    const tier = subData?.tier || 'free'
+    const tierLimits = getSubscriptionLimits(tier)
+    const enrichedCollectedInfo = { ...(collectedInfo || {}), maxWords: tierLimits.words, tier }
+
+    const caps = getServerCapsByTier(tier)
+    const { supabase } = await import('@/lib/supabase')
+    const { count: runningCount, error: countError } = await supabase
+      .from('plan_jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .in('status', ['pending', 'processing'])
+
+    if (countError) {
+      return NextResponse.json(
+        { error: 'Không thể kiểm tra số job đang chạy' },
+        { status: 500 }
+      )
+    }
+
+    if ((runningCount || 0) >= caps.maxConcurrentJobs) {
+      const tierName = getTierName(tier)
+      return NextResponse.json(
+        {
+          error: 'Quá nhiều tác vụ đang chạy',
+          message: `Bạn đang có ${(runningCount || 0)} tác vụ tạo kế hoạch đang chạy. Giới hạn đồng thời của gói ${tierName} là ${caps.maxConcurrentJobs}. Hãy đợi tác vụ hiện tại hoàn tất hoặc nâng cấp gói.`,
+          upgradeRequired: true
+        },
+        { status: 429 }
+      )
     }
 
     // Create job ID
-    const jobId = uuidv4()
+    const jobId = randomUUID()
     console.log(`=== BACKGROUND JOB: Created job ${jobId} for user ${user.id} ===`)
 
     // Insert job record
-    const { supabase } = await import('@/lib/supabase')
     const { error: insertError } = await supabase
       .from('plan_jobs')
       .insert({
@@ -68,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Start background processing (don't await)
-    processJobInBackground(jobId, user.id, planName, goals, collectedInfo)
+    processJobInBackground(jobId, user.id, planName, goals, enrichedCollectedInfo)
       .catch(error => console.error(`Job ${jobId} failed:`, error))
 
     // Return immediately with job_id

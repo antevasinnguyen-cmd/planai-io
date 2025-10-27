@@ -286,6 +286,40 @@ export const getSubscriptionLimits = (tier: string) => {
   return defaultLimits[tier as keyof typeof defaultLimits] || defaultLimits.free
 }
 
+// Centralized tier display names
+export const getTierName = (tier: string) => {
+  switch (tier) {
+    case 'free':
+      return 'Free'
+    case 'basic':
+      return 'Gói 1'
+    case 'pro':
+      return 'Gói 2'
+    case 'pro_max':
+      return 'Gói 3'
+    default:
+      return 'Free'
+  }
+}
+
+// Convenience wrapper to fetch both name and limits
+export const getTierFeatures = (tier: string) => {
+  return {
+    name: getTierName(tier),
+    limits: getSubscriptionLimits(tier)
+  }
+}
+
+export const getServerCapsByTier = (tier: string) => {
+  const caps = {
+    free: { maxConcurrentJobs: 1 },
+    basic: { maxConcurrentJobs: 1 },
+    pro: { maxConcurrentJobs: 2 },
+    pro_max: { maxConcurrentJobs: 3 }
+  }
+  return (caps as any)[tier] || caps.free
+}
+
 export const getUserUsageStats = async (userId: string) => {
   // Get current month usage
   const startOfMonth = new Date()
