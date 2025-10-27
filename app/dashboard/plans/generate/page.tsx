@@ -151,14 +151,31 @@ export default function GeneratePlanPage() {
         goalsLength: data.goals?.length || 0
       })
       
-      // Validate required fields
+      // Validate required fields (with robust fallback from messages)
       if (!data.planName || !data.goals) {
-        console.error('=== GENERATE: Missing required fields ===', {
-          planName: data.planName,
-          goals: data.goals
-        })
-        setError('Thiếu thông tin bắt buộc. Vui lòng điền đầy đủ tên kế hoạch và mục tiêu.')
-        return
+        const userMsgs = Array.isArray(data.messages) ? data.messages.filter((m: any) => m.role === 'user') : []
+        const lastUser = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].content : ''
+        const derivedGoal = (lastUser || '').slice(0, 80).trim()
+        const derivedPlanName = derivedGoal
+          ? `Kế hoạch: ${derivedGoal}`
+          : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+
+        data.planName = data.planName || derivedPlanName
+        data.goals = data.goals || derivedGoal || 'Mục tiêu tài chính cá nhân'
+
+        // Persist the derived fields back to localStorage to avoid re-error on refresh
+        try {
+          localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(data))
+        } catch {}
+
+        if (!data.planName || !data.goals) {
+          console.error('=== GENERATE: Missing required fields even after fallback ===', {
+            planName: data.planName,
+            goals: data.goals
+          })
+          setError('Thiếu thông tin bắt buộc. Vui lòng chat với AI để mô tả mục tiêu, sau đó thử lại.')
+          return
+        }
       }
       
       setStatus('Gửi yêu cầu tới hệ thống AI...')

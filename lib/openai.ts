@@ -182,6 +182,8 @@ THÔNG TIN CÁ NHÂN:
 - Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
 - Tiết kiệm hiện có: ${collectedInfo.savings ? collectedInfo.savings.toLocaleString() + ' VNĐ' : 'Chưa cung cấp'}
 
+${collectedInfo.chat_summary ? `TÓM TẮT CUỘC TRÒ CHUYỆN (để giữ bối cảnh người dùng):\n${String(collectedInfo.chat_summary).slice(0, 4000)}\n` : ''}
+
 ${spiritualInsights ? `PHÂN TÍCH TỬ VI/THẦN SỐ HỌC:
 ${spiritualInsights}
 

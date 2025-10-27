@@ -384,14 +384,39 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     
     // Get AI Memory data
     const memoryData = aiMemory.current.exportForPlanGeneration()
+    const profile: any = memoryData?.profile || {}
+    // Derive plan name and goals from memory/profile or fallbacks
+    const mainGoal: string = String(
+      profile.financial_goal ||
+      profile.goal ||
+      (messages.findLast?.((m: any) => m.role === 'user')?.content || '').slice(0, 80)
+    ).trim()
+    const computedPlanName = mainGoal
+      ? `Kế hoạch: ${mainGoal}`
+      : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+    const computedGoals = mainGoal || (profile.description || 'Mục tiêu tài chính cá nhân')
+
+    // Build a light chat summary to help downstream generation remember context
+    const chatSummary = messages
+      .filter((m) => m.role === 'user')
+      .map((m) => m.content)
+      .join('\n')
+      .slice(0, 4000)
+    
+    const enrichedCollectedInfo = {
+      ...collectedInfo,
+      chat_summary: chatSummary
+    }
     
     // Save plan data to localStorage with AI Memory data
     const planData = {
       messages,
-      collectedInfo,
+      collectedInfo: enrichedCollectedInfo,
       spiritualEnabled,
       aiMemoryData: memoryData,
       userProfile: memoryData.profile,
+      planName: computedPlanName,
+      goals: computedGoals,
       timestamp: new Date().toISOString()
     }
     localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(planData))
