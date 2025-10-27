@@ -152,62 +152,79 @@ async function processJobInBackground(
       })
       .eq('id', jobId)
 
-    // Generate plan with timeout
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
+    // Generate plan with timeout + retry/backoff
+    const maxAttempts = 3
+    let attempt = 0
+    let lastError: any = null
+    while (attempt < maxAttempts) {
+      attempt++
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000)
+      try {
+        console.log(`=== BACKGROUND JOB: Attempt ${attempt} - Calling AI for ${jobId} ===`)
+        
+        const planContent = await generateFinancialPlan(
+          planName,
+          goals,
+          collectedInfo,
+          controller.signal
+        )
+        clearTimeout(timeoutId)
+        console.log(`=== BACKGROUND JOB: AI completed (attempt ${attempt}) for ${jobId} ===`)
 
-    try {
-      console.log(`=== BACKGROUND JOB: Calling AI for ${jobId} ===`)
-      
-      const planContent = await generateFinancialPlan(
-        planName,
-        goals,
-        collectedInfo,
-        controller.signal
-      )
+        // Save plan
+        const { data: planData, error: planError } = await supabase
+          .from('plans')
+          .insert({
+            user_id: userId,
+            title: planName,
+            goal: goals,
+            content: planContent,
+            status: 'completed',
+            word_count: planContent.split(' ').length,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single()
 
-      clearTimeout(timeoutId)
-      console.log(`=== BACKGROUND JOB: AI completed for ${jobId} ===`)
+        if (planError) {
+          throw new Error(`Failed to save plan: ${planError.message}`)
+        }
 
-      // Save plan
-      const { data: planData, error: planError } = await supabase
-        .from('plans')
-        .insert({
-          user_id: userId,
-          title: planName,
-          goal: goals,
-          content: planContent,
-          status: 'completed',
-          word_count: planContent.split(' ').length,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single()
+        // Update job status
+        await supabase
+          .from('plan_jobs')
+          .update({
+            status: 'completed',
+            plan_id: planData.id,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', jobId)
 
-      if (planError) {
-        throw new Error(`Failed to save plan: ${planError.message}`)
+        console.log(`=== BACKGROUND JOB: Completed ${jobId} with plan ${planData.id} ===`)
+        return
+      } catch (err: any) {
+        clearTimeout(timeoutId)
+        lastError = err
+        const message = err?.message || String(err)
+        console.error(`=== BACKGROUND JOB: Attempt ${attempt} failed for ${jobId} ===`, message)
+        // Update job interim status
+        await supabase
+          .from('plan_jobs')
+          .update({ status: 'processing', error_message: `attempt ${attempt} failed: ${message}` })
+          .eq('id', jobId)
+        if (err?.name === 'AbortError') {
+          // Abort/timeouts: continue retry
+        }
+        if (attempt < maxAttempts) {
+          const backoff = 1000 * Math.pow(2, attempt - 1) // 1s, 2s, 4s
+          await new Promise((r) => setTimeout(r, backoff))
+          continue
+        }
       }
-
-      // Update job status
-      await supabase
-        .from('plan_jobs')
-        .update({
-          status: 'completed',
-          plan_id: planData.id,
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', jobId)
-
-      console.log(`=== BACKGROUND JOB: Completed ${jobId} with plan ${planData.id} ===`)
-
-    } catch (aiError: any) {
-      clearTimeout(timeoutId)
-      
-      if (aiError.name === 'AbortError') {
-        throw new Error('Plan generation timeout (exceeded 2 minutes)')
-      }
-      throw aiError
     }
+    // If reached here, all attempts failed
+    throw lastError || new Error('Unknown error after retries')
 
   } catch (error: any) {
     console.error(`=== BACKGROUND JOB: Failed ${jobId} ===`, error)

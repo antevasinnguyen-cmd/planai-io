@@ -154,6 +154,20 @@ export const generateFinancialPlan = async (
       ? 3500
       : 4000
 
+    // Tier-based micro-tasks and scenario depth gating (P1)
+    const tier = String(collectedInfo.tier || 'free')
+    let dailyTasks = 3
+    let weeklyItems = 4
+    let monthlyItems = 4
+    let scenarioDepth = 'cơ bản'
+    if (tier === 'basic') {
+      dailyTasks = 5; weeklyItems = 5; monthlyItems = 5; scenarioDepth = 'khá chi tiết'
+    } else if (tier === 'pro') {
+      dailyTasks = 8; weeklyItems = 7; monthlyItems = 7; scenarioDepth = 'sâu và có ví dụ thực tế'
+    } else if (tier === 'pro_max') {
+      dailyTasks = 12; weeklyItems = 10; monthlyItems = 10; scenarioDepth = 'rất sâu, nhiều kịch bản và phương án dự phòng'
+    }
+
     // Build user profile summary from collected info
     const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam dựa trên thông tin sau:
 
@@ -182,6 +196,8 @@ Yêu cầu tạo kế hoạch:
 6. Checklist hành động hàng ngày/tuần/tháng
 7. Liên kết đến tài nguyên học tập thực tế
 8. Tích hợp phân tích tử vi nếu có
+ 9. Giới hạn theo gói (${tier}): số micro-tasks/ngày = ${dailyTasks}; checklist tuần = ${weeklyItems} mục; checklist tháng = ${monthlyItems} mục
+ 10. Mức độ kịch bản/giải pháp: ${scenarioDepth}
 
 QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được.`
 

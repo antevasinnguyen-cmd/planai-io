@@ -98,8 +98,33 @@ export async function POST(request: NextRequest) {
             message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
           }, { status: 500 })
         }
-      case 'pdf':
-        return NextResponse.json({ success: true, message: 'Tính năng xuất PDF sẽ được triển khai trong thời gian tới' })
+      case 'pdf': {
+        const PDFDocument = (await import('pdfkit')).default
+        const doc = new PDFDocument({ size: 'A4', margin: 50 })
+
+        const chunks: Buffer[] = []
+        await new Promise<void>((resolve) => {
+          doc.on('data', (chunk) => chunks.push(chunk as Buffer))
+          doc.on('end', () => resolve())
+
+          const title = String(plan.title || 'Kế hoạch tài chính')
+          const content = String(plan.content || '')
+
+          doc.fontSize(20).text(title, { align: 'left' })
+          doc.moveDown()
+          doc.fontSize(12).text(content, { align: 'left' })
+          doc.end()
+        })
+
+        const buffer = Buffer.concat(chunks)
+        return new NextResponse(new Uint8Array(buffer), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=plan-${plan.id}.pdf`
+          }
+        })
+      }
       
       case 'docx': {
         const doc = new Document({
@@ -114,7 +139,7 @@ export async function POST(request: NextRequest) {
           }]
         })
         const buffer = await Packer.toBuffer(doc)
-        return new NextResponse(buffer, {
+        return new NextResponse(new Uint8Array(buffer), {
           status: 200,
           headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

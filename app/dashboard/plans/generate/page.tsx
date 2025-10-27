@@ -19,6 +19,55 @@ export default function GeneratePlanPage() {
   const router = useRouter()
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(0)
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  const startSSE = (id: string) => {
+    try {
+      if (eventSourceRef.current) {
+        try { eventSourceRef.current.close() } catch {}
+        eventSourceRef.current = null
+      }
+      const es = new EventSource(`/api/plans/events?job_id=${id}`)
+      eventSourceRef.current = es
+
+      const handleStatus = (e: any) => {
+        try {
+          const data = JSON.parse(e.data)
+          if (!data) return
+          if (data.status === 'completed') {
+            setProgress(100)
+            setStatus('Hoàn thành!')
+            setJobStatus('completed')
+            setPlanId(data.plan_id)
+            const userId = user?.id || 'anonymous'
+            sessionStorage.removeItem(`plan_job_${userId}`)
+            localStorage.removeItem(`pending_plan_${userId}`)
+            if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
+            if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
+            setTimeout(() => { router.push(`/dashboard/plans/${data.plan_id}`) }, 1200)
+          } else if (data.status === 'failed') {
+            setJobStatus('failed')
+            setError(data.error_message || 'Tạo kế hoạch thất bại')
+            const userId = user?.id || 'anonymous'
+            sessionStorage.removeItem(`plan_job_${userId}`)
+            if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
+            if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
+          } else if (data.status === 'processing') {
+            const elapsed = Number(data.elapsed_seconds || 0)
+            const estimatedProgress = Math.min(95, Math.max(10, 10 + (elapsed / 120) * 80))
+            setProgress(estimatedProgress)
+            setStatus(`Đang xử lý... (${elapsed}s)`)
+            setJobStatus('processing')
+          }
+        } catch {}
+      }
+
+      es.addEventListener('status', handleStatus as any)
+      es.addEventListener('error', () => {
+        // Polling fallback remains active
+      })
+    } catch {}
+  }
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +96,8 @@ export default function GeneratePlanPage() {
       setStatus('Tiếp tục xử lý kế hoạch...')
       setProgress(50) // Assume it's halfway done
       startTimeRef.current = Date.now()
+      // Start SSE first; fallback to polling
+      startSSE(existingJobId)
       pollJobStatus(existingJobId)
     } else {
       startPlanGeneration()
@@ -56,6 +107,10 @@ export default function GeneratePlanPage() {
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
+      }
+      if (eventSourceRef.current) {
+        try { eventSourceRef.current.close() } catch {}
+        eventSourceRef.current = null
       }
     }
   }, [user, router])
@@ -157,6 +212,8 @@ export default function GeneratePlanPage() {
       sessionStorage.setItem(`plan_job_${userId}`, newJobId)
 
       // Start polling for job status
+      // Start SSE for real-time updates; keep polling as fallback
+      startSSE(newJobId)
       pollJobStatus(newJobId)
 
     } catch (error) {
