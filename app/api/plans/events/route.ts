@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,12 +8,14 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser(request)
     if (!user) {
+      logger.warn('SSE_UNAUTHORIZED', {})
       return new Response('Unauthorized', { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const jobId = searchParams.get('job_id')
     if (!jobId) {
+      logger.warn('SSE_MISSING_JOB_ID', {})
       return new Response('Missing job_id', { status: 400 })
     }
 
@@ -60,19 +63,23 @@ export async function GET(request: NextRequest) {
                   started_at: job.started_at,
                   completed_at: job.completed_at,
                 })
+                logger.info('SSE_TICK', { jobId: job.id, status: job.status, elapsedSeconds })
 
                 if (job.status === 'completed' || job.status === 'failed') {
                   closed = true
+                  logger.info('SSE_CLOSE', { jobId: job.id, status: job.status })
                   controller.close()
                   break
                 }
               } else {
                 send('status', { job_id: jobId, status: 'not_found' })
+                logger.warn('SSE_NOT_FOUND', { jobId })
                 closed = true
                 controller.close()
                 break
               }
             } catch (e) {
+              logger.error('SSE_LOOP_ERROR', { error: String(e), jobId })
               send('error', { message: 'internal_error' })
             }
 
@@ -84,6 +91,7 @@ export async function GET(request: NextRequest) {
 
         abort.addEventListener('abort', () => {
           closed = true
+          logger.info('SSE_ABORT', { jobId })
           try { controller.close() } catch {}
         })
       },

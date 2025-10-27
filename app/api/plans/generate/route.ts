@@ -6,6 +6,7 @@ import { generateFinancialPlanWithClaude } from '@/lib/claude'
 import { TaskType, selectModel, MODELS } from '@/lib/modelSelection'
 import { processFinancialPlanWithRAG } from '@/lib/rag'
 import { generateMicroTasks, generateWeeklyChecklist, generateMonthlyChecklist, generateLearningResources, formatMicroTasks, formatChecklists } from '@/lib/planGeneration'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     
     // If no user found, try to refresh session and retry
     if (!user) {
-      console.log('=== PLAN GENERATE: First auth attempt failed, checking cookies ===')
+      logger.warn('PLAN_GENERATE_AUTH_RETRY', {})
       
       // Try to get fresh session from cookies
       try {
@@ -33,29 +34,29 @@ export async function POST(request: NextRequest) {
         for (const cookieName of possibleCookies) {
           const cookie = cookieStore.get(cookieName)
           if (cookie?.value) {
-            console.log(`=== PLAN GENERATE: Found cookie ${cookieName}, attempting auth ===`)
+            logger.info('PLAN_GENERATE_FOUND_COOKIE', { cookieName })
             const { data: { user: authUser }, error } = await supabase.auth.getUser(cookie.value)
             if (authUser && !error) {
               user = authUser
-              console.log('=== PLAN GENERATE: User authenticated via cookie retry ===', { userId: user.id })
+              logger.info('PLAN_GENERATE_AUTH_VIA_COOKIE', { userId: user.id })
               break
             }
           }
         }
       } catch (cookieRetryError) {
-        console.log('=== PLAN GENERATE: Cookie retry failed ===', cookieRetryError)
+        logger.warn('PLAN_GENERATE_COOKIE_RETRY_FAILED', { error: String(cookieRetryError) })
       }
     }
     
     if (!user) {
-      console.error('=== PLAN GENERATE: No user found after retry, unauthorized ===')
+      logger.error('PLAN_GENERATE_UNAUTHORIZED', {})
       return NextResponse.json({ 
         error: 'Unauthorized',
         message: 'Bạn cần đăng nhập để sử dụng tính năng này. Vui lòng đăng nhập lại.'
       }, { status: 401 })
     }
     
-    console.log('=== PLAN GENERATE: User authenticated ===', { userId: user.id })
+    logger.info('PLAN_GENERATE_AUTH_OK', { userId: user.id })
 
     // Check usage limits before processing
     const usageCheck = await checkUsageLimits(user.id, 'plan')
@@ -96,21 +97,30 @@ export async function POST(request: NextRequest) {
     let planContent = ''
     
     if (cachedPlan) {
-      console.log('Using cached plan')
+      logger.info('PLAN_GENERATE_USE_CACHE', { userId: user.id })
       planContent = cachedPlan
     } else {
       // Generate plan content using AI with fallback mechanism
       try {
         // First try with OpenAI's GPT-4o-mini
         // CRITICAL: Pass full userProfile with chat history
-        console.log('=== PLAN GENERATION: Starting with GPT-4o-mini ===', { 
-          goal: userProfile.financial_goal, 
-          income: userProfile.current_income,
-          messagesCount: messages.length
-        })
-        planContent = await generateFinancialPlan(userProfile)
+        logger.info('PLAN_GENERATE_CALL_OPENAI', { goal: userProfile.financial_goal, income: userProfile.current_income, messagesCount: messages.length })
+        // Derive planName/goals + enrich collected info with chat summary
+        const chatSummary = Array.isArray(messages)
+          ? messages.filter((m: any) => m.role === 'user').map((m: any) => m.content).join('\n').slice(0, 4000)
+          : ''
+        const enrichedCollectedInfo = { ...(collectedInfo || {}), chat_summary: chatSummary }
+        const goalsText = userProfile.financial_goal || (userProfile.description || 'Mục tiêu tài chính cá nhân')
+        const planTitle = userProfile.financial_goal
+          ? `Kế hoạch: ${userProfile.financial_goal}`
+          : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+        planContent = await generateFinancialPlan(
+          planTitle,
+          goalsText,
+          enrichedCollectedInfo
+        )
       } catch (aiError) {
-        console.error('OpenAI Plan Generation Error, falling back to Claude:', aiError)
+        logger.error('PLAN_GENERATE_OPENAI_ERROR', { error: aiError instanceof Error ? aiError.message : String(aiError) })
         
         try {
           // Fallback to Claude-3.5-Sonnet
@@ -144,10 +154,10 @@ Hãy tạo kế hoạch bao gồm:
 
 Format: Markdown với headings, lists, và tables.`
           
-          console.log('=== PLAN GENERATION: Falling back to Claude ===', { goal: userProfile.financial_goal })
+          logger.info('PLAN_GENERATE_FALLBACK_CLAUDE', { goal: userProfile.financial_goal })
           planContent = await generateFinancialPlanWithClaude(systemPrompt, userPrompt)
         } catch (claudeError) {
-          console.error('Claude Plan Generation Error:', claudeError)
+          logger.error('PLAN_GENERATE_CLAUDE_ERROR', { error: claudeError instanceof Error ? claudeError.message : String(claudeError) })
           throw new Error('Không thể tạo kế hoạch tài chính. Vui lòng thử lại sau.')
         }
       }
@@ -157,7 +167,7 @@ Format: Markdown với headings, lists, và tables.`
     }
 
     // Generate enhanced plan components
-    console.log('=== PLAN GENERATION: Generating micro-tasks, checklists, and resources ===');
+    logger.info('PLAN_GENERATE_ENHANCE_COMPONENTS', {})
     
     let microTasks, weeklyChecklist, monthlyChecklist, learningResources;
     
@@ -168,9 +178,9 @@ Format: Markdown với headings, lists, và tables.`
         userProfile.financial_goal || 'Mục tiêu tài chính',
         userProfile.timeline || '1 năm'
       )
-      console.log('=== PLAN GENERATION: Micro-tasks generated successfully ===');
+      logger.info('PLAN_GENERATE_MICROTASKS_OK', {})
     } catch (e) {
-      console.error('=== PLAN GENERATION: Error generating micro-tasks ===', e);
+      logger.warn('PLAN_GENERATE_MICROTASKS_FAIL', { error: String(e) })
       microTasks = { weekday: { tasks: [] }, weekend: { tasks: [] } }
     }
     
@@ -179,9 +189,9 @@ Format: Markdown với headings, lists, và tables.`
       weeklyChecklist = await generateWeeklyChecklist(
         userProfile.financial_goal || 'Mục tiêu tài chính'
       )
-      console.log('=== PLAN GENERATION: Weekly checklist generated successfully ===');
+      logger.info('PLAN_GENERATE_WEEKLY_OK', {})
     } catch (e) {
-      console.error('=== PLAN GENERATION: Error generating weekly checklist ===', e);
+      logger.warn('PLAN_GENERATE_WEEKLY_FAIL', { error: String(e) })
       weeklyChecklist = { tasks: [] }
     }
     
@@ -190,9 +200,9 @@ Format: Markdown với headings, lists, và tables.`
       monthlyChecklist = await generateMonthlyChecklist(
         userProfile.financial_goal || 'Mục tiêu tài chính'
       )
-      console.log('=== PLAN GENERATION: Monthly checklist generated successfully ===');
+      logger.info('PLAN_GENERATE_MONTHLY_OK', {})
     } catch (e) {
-      console.error('=== PLAN GENERATION: Error generating monthly checklist ===', e);
+      logger.warn('PLAN_GENERATE_MONTHLY_FAIL', { error: String(e) })
       monthlyChecklist = { tasks: [] }
     }
     
@@ -202,9 +212,9 @@ Format: Markdown với headings, lists, và tables.`
         userProfile.financial_goal || 'Mục tiêu tài chính',
         userProfile.occupation || 'Chuyên gia tài chính'
       )
-      console.log('=== PLAN GENERATION: Learning resources generated successfully ===');
+      logger.info('PLAN_GENERATE_LEARNING_OK', {})
     } catch (e) {
-      console.error('=== PLAN GENERATION: Error generating learning resources ===', e);
+      logger.warn('PLAN_GENERATE_LEARNING_FAIL', { error: String(e) })
       learningResources = ''
     }
     
@@ -239,8 +249,8 @@ Format: Markdown với headings, lists, và tables.`
     
     // Process plan with RAG in the background (don't await)
     processFinancialPlanWithRAG(user.id, plan.id, enhancedPlanContent)
-      .then(() => console.log(`RAG processing initiated for plan ${plan.id}`))
-      .catch(err => console.error(`RAG processing failed for plan ${plan.id}:`, err))
+      .then(() => logger.info('PLAN_GENERATE_RAG_STARTED', { planId: plan.id }))
+      .catch(err => logger.warn('PLAN_GENERATE_RAG_FAILED', { planId: plan.id, error: String(err) }))
 
     return NextResponse.json({
       success: true,
@@ -250,7 +260,7 @@ Format: Markdown với headings, lists, và tables.`
     })
 
   } catch (error) {
-    console.error('Generate plan error:', error)
+    logger.error('PLAN_GENERATE_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
     
     // Provide more specific error messages
     let statusCode = 500

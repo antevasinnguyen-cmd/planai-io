@@ -3,16 +3,17 @@ import { generateChatResponse, analyzeUserInput } from '@/lib/openai'
 import { getCurrentUser, saveChatMessage, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
 import { getChatSystemPrompt } from '@/lib/prompts'
 import { createClient } from '@supabase/supabase-js'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== API CHAT: Nhận request ===');
+    logger.info('API_CHAT_REQUEST', {})
     const { message, chatHistory } = await request.json()
-    console.log('=== API CHAT: Message nhận được ===', { messageLength: message?.length, historyLength: chatHistory?.length })
+    logger.info('API_CHAT_PAYLOAD', { messageLength: message?.length, historyLength: chatHistory?.length })
     
     // Lấy token từ header Authorization
     const authHeader = request.headers.get('Authorization')
-    console.log('=== API CHAT: Auth header ===', { hasAuthHeader: !!authHeader })
+    logger.info('API_CHAT_AUTH_HEADER', { hasAuthHeader: !!authHeader })
     
     let user;
     
@@ -23,24 +24,24 @@ export async function POST(request: NextRequest) {
     // Thử cả hai cách để lấy user
     try {
       // Cách 1: Lấy user từ getCurrentUser (sử dụng cookie session)
-      console.log('=== API CHAT: Đang thử lấy user từ getCurrentUser ===');
+      logger.info('API_CHAT_TRY_SESSION', {})
       const { supabase } = await import('@/lib/supabase')
       const { data: sessionData } = await supabase.auth.getSession()
-      console.log('=== API CHAT: Session data ===', { hasSession: !!sessionData?.session, userId: sessionData?.session?.user?.id })
+      logger.info('API_CHAT_SESSION_DATA', { hasSession: !!sessionData?.session, userId: sessionData?.session?.user?.id })
       
       if (sessionData?.session?.user) {
         user = sessionData.session.user
-        console.log('=== API CHAT: Lấy user thành công từ session ===', { userId: user.id })
+        logger.info('API_CHAT_USER_FROM_SESSION', { userId: user.id })
       } else {
-        console.log('=== API CHAT: Không tìm thấy session ===');
+        logger.warn('API_CHAT_NO_SESSION', {})
       }
     } catch (sessionError) {
-      console.error('=== API CHAT: Lỗi khi lấy session ===', sessionError)
+      logger.error('API_CHAT_SESSION_ERROR', { error: String(sessionError) })
     }
     
     // Nếu không có user từ session, thử dùng token
     if (!user && authHeader && authHeader.startsWith('Bearer ')) {
-      console.log('=== API CHAT: Đang thử xác thực bằng token ===');
+      logger.info('API_CHAT_TRY_TOKEN', {})
       // Xác thực bằng token từ header
       const token = authHeader.substring(7)
       
@@ -58,21 +59,21 @@ export async function POST(request: NextRequest) {
       // Lấy user từ token
       const { data, error } = await supabase.auth.getUser()
       if (error) {
-        console.error('=== API CHAT: Lỗi xác thực token ===', error)
+        logger.error('API_CHAT_TOKEN_ERROR', { error: String(error) })
       } else if (data?.user) {
-        console.log('=== API CHAT: Lấy user thành công từ token ===', { userId: data.user.id })
+        logger.info('API_CHAT_USER_FROM_TOKEN', { userId: data.user.id })
         user = data.user
       }
     }
     
     // Nếu vẫn không có user, thử lấy từ getCurrentUser
     if (!user) {
-      console.log('=== API CHAT: Thử lấy user từ getCurrentUser ===');
+      logger.info('API_CHAT_TRY_FALLBACK_GET_USER', {})
       user = await getCurrentUser()
       if (user) {
-        console.log('=== API CHAT: Lấy user thành công từ getCurrentUser ===', { userId: user.id })
+        logger.info('API_CHAT_USER_FROM_FALLBACK', { userId: user.id })
       } else {
-        console.error('=== API CHAT: Không thể xác thực người dùng ===');
+        logger.error('API_CHAT_UNAUTHORIZED', {})
         return NextResponse.json({ 
           error: 'Unauthorized', 
           details: 'Không thể xác thực người dùng. Vui lòng đăng nhập lại.' 
@@ -86,6 +87,7 @@ export async function POST(request: NextRequest) {
       const { data: subscription } = await getUserSubscription(user.id)
       const limits = getSubscriptionLimits(usageCheck.tier)
       
+      logger.warn('API_CHAT_LIMIT_EXCEEDED', { userId: user.id, tier: usageCheck.tier, current: usageCheck.current, limit: usageCheck.limit })
       return NextResponse.json({ 
         error: 'Đã đạt giới hạn chat',
         message: `Bạn đã sử dụng ${usageCheck.current}/${usageCheck.limit} chat trong tháng này. Hãy nâng cấp gói để tiếp tục sử dụng.`,
@@ -113,11 +115,11 @@ export async function POST(request: NextRequest) {
     // Generate AI response
     let aiResponse: string
     try {
-      console.log('=== API CHAT: Đang gọi AI ===');
+      logger.info('API_CHAT_CALLING_AI', { userId: user.id })
       aiResponse = await generateChatResponse(messages)
-      console.log('=== API CHAT: Nhận phản hồi từ AI thành công ===', { responseLength: aiResponse?.length })
+      logger.info('API_CHAT_AI_SUCCESS', { responseLength: aiResponse?.length })
     } catch (aiError) {
-      console.error('=== API CHAT: Lỗi khi gọi AI ===', aiError)
+      logger.error('API_CHAT_AI_ERROR', { error: aiError instanceof Error ? aiError.message : String(aiError) })
       
       // Provide specific error messages based on error type
       let errorMessage = 'Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.'
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
           userFriendlyMessage = '🌐 Kết nối không ổn định. Vui lòng kiểm tra mạng và thử lại.'
         } else {
           // Fallback response khi AI không hoạt động
-          console.log('=== API CHAT: Sử dụng fallback response ===');
+          logger.warn('API_CHAT_USE_FALLBACK_RESPONSE', {})
           userFriendlyMessage = '🤖 **Xin chào! Tôi là PlanAI Assistant.**\n\nHiện tại hệ thống AI đang được bảo trì. Tôi sẽ giúp bạn tạo kế hoạch tài chính cơ bản bằng cách trả lời một số câu hỏi:\n\n**Hãy cho tôi biết:**\n• Mục tiêu tài chính của bạn là gì?\n• Thu nhập hàng tháng hiện tại?\n• Bạn muốn đạt được mục tiêu trong bao lâu?\n\nHoặc bạn có thể nhấn nút "Plan" để xem demo kế hoạch mẫu.'
           isQuotaError = true
         }
@@ -178,7 +180,7 @@ export async function POST(request: NextRequest) {
     try {
       analysis = await analyzeUserInput(message)
     } catch (analysisError) {
-      console.warn('Analysis failed, continuing without it:', analysisError)
+      logger.warn('API_CHAT_ANALYSIS_FAILED', { error: String(analysisError) })
       analysis = null
     }
     // Persist any structured fields into the user's profile (best-effort, ignore errors)
@@ -187,7 +189,7 @@ export async function POST(request: NextRequest) {
         await updateProfileFromAnalysis(user.id, analysis.extractedInfo)
       }
     } catch (e) {
-      console.warn('Profile update from analysis failed', e)
+      logger.warn('API_CHAT_PROFILE_UPDATE_FAILED', { error: String(e) })
     }
 
     // Save user message
@@ -212,7 +214,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('=== API CHAT: Lỗi không xác định ===', error)
+    logger.error('API_CHAT_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { 
         error: 'Internal server error',

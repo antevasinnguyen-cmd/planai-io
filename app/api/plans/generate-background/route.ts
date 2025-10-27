@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
 import { generateFinancialPlan } from '@/lib/openai'
+import { logger } from '@/lib/logger'
 
 /**
  * Background Job API - Starts plan generation in background
@@ -9,11 +10,12 @@ import { generateFinancialPlan } from '@/lib/openai'
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== BACKGROUND JOB: Starting plan generation ===')
+    logger.info('BG_START', {})
     
     // Get user
     const user = await getCurrentUser(request)
     if (!user) {
+      logger.warn('BG_UNAUTHORIZED', {})
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -22,7 +24,13 @@ export async function POST(request: NextRequest) {
 
     const { planName, goals, collectedInfo } = await request.json()
 
-    if (!planName || !goals) {
+    // Fallback: derive plan name and goals if missing from chat_summary
+    const chatSummary: string = String(collectedInfo?.chat_summary || '')
+    const derivedGoal = (goals && String(goals).trim()) || chatSummary.slice(0, 80).trim() || 'Mục tiêu tài chính cá nhân'
+    const finalPlanName = (planName && String(planName).trim()) || (derivedGoal ? `Kế hoạch: ${derivedGoal}` : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`)
+    const finalGoals = derivedGoal
+
+    if (!finalPlanName || !finalGoals) {
       return NextResponse.json(
         { error: 'Missing required fields: planName, goals' },
         { status: 400 }
@@ -53,7 +61,7 @@ export async function POST(request: NextRequest) {
     const { data: subData } = await getUserSubscription(user.id)
     const tier = subData?.tier || 'free'
     const tierLimits = getSubscriptionLimits(tier)
-    const enrichedCollectedInfo = { ...(collectedInfo || {}), maxWords: tierLimits.words, tier }
+    const enrichedCollectedInfo = { ...(collectedInfo || {}), maxWords: tierLimits.words, tier, chat_summary: chatSummary.slice(0, 4000) }
 
     const caps = getServerCapsByTier(tier)
     const { supabase } = await import('@/lib/supabase')
@@ -84,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Create job ID
     const jobId = randomUUID()
-    console.log(`=== BACKGROUND JOB: Created job ${jobId} for user ${user.id} ===`)
+    logger.info('BG_JOB_CREATED', { jobId, userId: user.id })
 
     // Insert job record
     const { error: insertError } = await supabase
@@ -92,8 +100,8 @@ export async function POST(request: NextRequest) {
       .insert({
         id: jobId,
         user_id: user.id,
-        plan_name: planName,
-        goals: goals,
+        plan_name: finalPlanName,
+        goals: finalGoals,
         status: 'pending',
         created_at: new Date().toISOString()
       })
@@ -107,8 +115,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Start background processing (don't await)
-    processJobInBackground(jobId, user.id, planName, goals, enrichedCollectedInfo)
-      .catch(error => console.error(`Job ${jobId} failed:`, error))
+    processJobInBackground(jobId, user.id, finalPlanName, finalGoals, enrichedCollectedInfo)
+      .catch(error => logger.error('BG_JOB_ASYNC_FAIL', { jobId, error: String(error) }))
 
     // Return immediately with job_id
     return NextResponse.json(
@@ -120,7 +128,7 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('=== BACKGROUND JOB: Error ===', error)
+    logger.error('BG_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

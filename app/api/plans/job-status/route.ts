@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 // Mark this route as dynamic (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser(request)
     if (!user) {
+      logger.warn('JOB_STATUS_UNAUTHORIZED', {})
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -21,6 +23,7 @@ export async function GET(request: NextRequest) {
     const jobId = searchParams.get('job_id')
 
     if (!jobId) {
+      logger.warn('JOB_STATUS_MISSING_ID', {})
       return NextResponse.json(
         { error: 'Missing job_id parameter' },
         { status: 400 }
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error fetching job:', error)
+      logger.error('JOB_STATUS_DB_ERROR', { error: String(error), jobId })
       return NextResponse.json(
         { error: 'Job not found' },
         { status: 404 }
@@ -55,6 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!job) {
+      logger.warn('JOB_STATUS_NOT_FOUND', { jobId })
       return NextResponse.json(
         { error: 'Job not found' },
         { status: 404 }
@@ -66,6 +70,7 @@ export async function GET(request: NextRequest) {
     const now = new Date()
     const elapsedSeconds = Math.floor((now.getTime() - createdAt.getTime()) / 1000)
 
+    logger.info('JOB_STATUS_OK', { jobId, status: job.status })
     return NextResponse.json({
       job_id: job.id,
       status: job.status,
@@ -79,7 +84,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('=== JOB STATUS: Error ===', error)
+    logger.error('JOB_STATUS_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

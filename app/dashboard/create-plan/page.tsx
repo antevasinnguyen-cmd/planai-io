@@ -386,10 +386,17 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     const memoryData = aiMemory.current.exportForPlanGeneration()
     const profile: any = memoryData?.profile || {}
     // Derive plan name and goals from memory/profile or fallbacks
+    const lastUserContent = (() => {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const m = messages[i]
+        if (m && m.role === 'user' && typeof m.content === 'string') return m.content
+      }
+      return ''
+    })()
     const mainGoal: string = String(
       profile.financial_goal ||
       profile.goal ||
-      (messages.findLast?.((m: any) => m.role === 'user')?.content || '').slice(0, 80)
+      (lastUserContent || '').slice(0, 80)
     ).trim()
     const computedPlanName = mainGoal
       ? `Kế hoạch: ${mainGoal}`
