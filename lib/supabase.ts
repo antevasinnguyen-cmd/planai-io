@@ -435,3 +435,91 @@ export const verifyOtpAndResetPassword = async (email: string, otp: string, newP
   }
 }
 
+// Trial and Cache helpers (stub functions for compatibility)
+export const initializeFreeTrialForNewUser = async (userId: string) => {
+  try {
+    // Check if user already has a subscription
+    const { data: subscription } = await getUserSubscription(userId)
+    if (subscription) {
+      return { alreadyUsed: true, data: null }
+    }
+    
+    // Create free trial subscription
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        tier: 'free',
+        status: 'active',
+        plan_limit: 1,
+        chat_limit: 5,
+        word_limit: 1000,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    return { alreadyUsed: false, data, error }
+  } catch (error) {
+    console.error('Error initializing free trial:', error)
+    return { alreadyUsed: false, data: null, error }
+  }
+}
+
+export const checkTrialStatus = async (userId: string) => {
+  try {
+    const { data: subscription } = await getUserSubscription(userId)
+    if (!subscription) {
+      return { hasActiveTrial: false, daysRemaining: 0 }
+    }
+    
+    return { 
+      hasActiveTrial: subscription.status === 'active',
+      daysRemaining: 30 // Default 30 days
+    }
+  } catch (error) {
+    console.error('Error checking trial status:', error)
+    return { hasActiveTrial: false, daysRemaining: 0 }
+  }
+}
+
+export const getCachedResponse = async (cacheKey: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('response_cache')
+      .select('content')
+      .eq('cache_key', cacheKey)
+      .single()
+    
+    if (error?.code === 'PGRST116') {
+      return { data: null, error: null }
+    }
+    
+    return { data: data?.content || null, error }
+  } catch (error) {
+    return { data: null, error }
+  }
+}
+
+export const saveCachedResponse = async (cacheKey: string, content: string, expiresInDays: number = 30) => {
+  try {
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays)
+    
+    const { data, error } = await supabase
+      .from('response_cache')
+      .upsert({
+        cache_key: cacheKey,
+        content,
+        expires_at: expiresAt.toISOString(),
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    return { data, error }
+  } catch (error) {
+    return { data: null, error }
+  }
+}
+

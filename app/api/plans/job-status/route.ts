@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase'
 
+// Mark this route as dynamic (uses request.headers)
+export const dynamic = 'force-dynamic'
+
 /**
  * Status Polling API - Check job status
  */

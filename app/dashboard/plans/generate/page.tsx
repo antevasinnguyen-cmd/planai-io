@@ -218,7 +218,7 @@ export default function GeneratePlanPage() {
         
         <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
           {/* Error state */}
-          {error && !isGenerating && (
+          {error && jobStatus !== 'processing' && (
             <>
               <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <AlertCircle className="w-10 h-10 text-red-500" />
@@ -230,7 +230,7 @@ export default function GeneratePlanPage() {
                 {error}
               </p>
               <button
-                onClick={() => generatePlan()}
+                onClick={() => startPlanGeneration()}
                 className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
               >
                 Thử lại
@@ -239,7 +239,7 @@ export default function GeneratePlanPage() {
           )}
           
           {/* Success state */}
-          {!error && !isGenerating && planId && (
+          {!error && jobStatus === 'completed' && planId && (
             <>
               <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-green-500" />
