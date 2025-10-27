@@ -251,13 +251,25 @@ export const getUserPlans = async (userId: string) => {
 
 // Subscription and Usage helpers
 export const getUserSubscription = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .single()
-  return { data, error }
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .single()
+    
+    // If no subscription found, return null (not error) - this is normal for new users
+    if (error?.code === 'PGRST116') {
+      console.log(`No subscription found for user ${userId}, using defaults`)
+      return { data: null, error: null }
+    }
+    
+    return { data, error }
+  } catch (err) {
+    console.error('Error getting subscription:', err)
+    return { data: null, error: err }
+  }
 }
 
 export const getSubscriptionLimits = (tier: string) => {

@@ -25,7 +25,21 @@ export default function GeneratePlanPage() {
       return
     }
 
-    startPlanGeneration()
+    // Check if there's already a job in progress (user came back from another tab)
+    const userId = user?.id || 'anonymous'
+    const existingJobId = sessionStorage.getItem(`plan_job_${userId}`)
+    
+    if (existingJobId) {
+      console.log('Found existing job, resuming:', existingJobId)
+      setJobId(existingJobId)
+      setJobStatus('processing')
+      setStatus('Tiếp tục xử lý kế hoạch...')
+      setProgress(50) // Assume it's halfway done
+      startTimeRef.current = Date.now()
+      pollJobStatus(existingJobId)
+    } else {
+      startPlanGeneration()
+    }
 
     // Cleanup on unmount
     return () => {
