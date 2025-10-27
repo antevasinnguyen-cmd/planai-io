@@ -248,6 +248,9 @@ export const getUserPlans = async (userId: string) => {
   const { data, error } = await supabase
     .from('plans')
     .select('*')
+    .eq('user_id', userId)
+  return { data, error }
+}
 
 // Subscription and Usage helpers
 export const getUserSubscription = async (userId: string) => {
