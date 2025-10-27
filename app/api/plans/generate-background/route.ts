@@ -29,13 +29,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check subscription
-    const { data: subscription } = await getUserSubscription(user.id)
+    // Check subscription (handle missing gracefully)
+    const { data: subscription, error: subError } = await getUserSubscription(user.id)
+    
+    if (subError) {
+      console.error('=== BACKGROUND JOB: Subscription check failed ===', subError)
+      // Continue with default limits for new users
+    }
+    
     if (!subscription || subscription.status !== 'active') {
-      return NextResponse.json(
-        { error: 'No active subscription' },
-        { status: 403 }
-      )
+      console.log('=== BACKGROUND JOB: No active subscription, using defaults ===')
+      // Don't block - allow new users to create plans with default limits
     }
 
     // Create job ID

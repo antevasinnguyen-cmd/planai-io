@@ -68,13 +68,33 @@ export default function GeneratePlanPage() {
   const startPlanGeneration = async () => {
     const userId = user?.id || 'anonymous'
     const planData = localStorage.getItem(`pending_plan_${userId}`)
+    
     if (!planData) {
+      console.error('=== GENERATE: No plan data found in localStorage ===')
+      setError('Không tìm thấy dữ liệu kế hoạch. Vui lòng bắt đầu lại.')
       router.push('/dashboard/create-plan')
       return
     }
 
     try {
       const data = JSON.parse(planData)
+      console.log('=== GENERATE: Plan data from localStorage ===', {
+        hasPlanName: !!data.planName,
+        hasGoals: !!data.goals,
+        planName: data.planName,
+        goalsLength: data.goals?.length || 0
+      })
+      
+      // Validate required fields
+      if (!data.planName || !data.goals) {
+        console.error('=== GENERATE: Missing required fields ===', {
+          planName: data.planName,
+          goals: data.goals
+        })
+        setError('Thiếu thông tin bắt buộc. Vui lòng điền đầy đủ tên kế hoạch và mục tiêu.')
+        return
+      }
+      
       setStatus('Gửi yêu cầu tới hệ thống AI...')
       setProgress(5)
 
