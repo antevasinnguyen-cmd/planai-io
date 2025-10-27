@@ -25,8 +25,18 @@ export default function GeneratePlanPage() {
       return
     }
 
-    // Check if there's already a job in progress (user came back from another tab)
+    // Check if user has plan data in localStorage
     const userId = user?.id || 'anonymous'
+    const planData = localStorage.getItem(`pending_plan_${userId}`)
+    
+    if (!planData) {
+      console.log('=== GENERATE: No plan data found, redirecting to create-plan ===')
+      // Redirect to create-plan to start the process
+      router.push('/dashboard/create-plan')
+      return
+    }
+
+    // Check if there's already a job in progress (user came back from another tab)
     const existingJobId = sessionStorage.getItem(`plan_job_${userId}`)
     
     if (existingJobId) {
@@ -237,6 +247,27 @@ export default function GeneratePlanPage() {
         </Link>
         
         <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+          {/* No data state */}
+          {!error && jobStatus === 'pending' && !jobId && (
+            <>
+              <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="w-10 h-10 text-yellow-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Chưa có dữ liệu kế hoạch
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Bạn cần bắt đầu quá trình tạo kế hoạch từ đầu.
+              </p>
+              <Link
+                href="/dashboard/create-plan"
+                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors inline-block"
+              >
+                Bắt đầu tạo kế hoạch
+              </Link>
+            </>
+          )}
+          
           {/* Error state */}
           {error && jobStatus !== 'processing' && (
             <>
