@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { selectModel, TaskType, generateCacheKey, checkCache, saveToCache, chunkText } from './modelSelection'
 import { getChatSystemPrompt, getFinancialPlanSystemPrompt, getUserInputAnalysisSystemPrompt } from './prompts'
+import { cleanAIResponse, enhanceResponseFormatting } from './responseCleaner'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -59,17 +60,24 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
       const completion = await client.chat.completions.create({
         model,
         messages: fullMessages,
-        max_tokens: 1200, // Increased for depth and quality like ChatGPT web
-        temperature: 0.7, // ChatGPT standard temperature for creativity
+        max_tokens: 2000, // Increased for ChatGPT Plus quality responses
+        temperature: 0.8, // Slightly higher for more creativity and personality
+        top_p: 0.9, // Focus on high probability tokens
+        frequency_penalty: 0.1, // Reduce repetition
+        presence_penalty: 0.1, // Encourage new topics
       })
 
-      const response = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
+      const rawResponse = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này. Vui lòng thử lại.'
       
-      // Save response to cache
+      // Clean and enhance response formatting
+      const cleanedResponse = cleanAIResponse(rawResponse)
+      const enhancedResponse = enhanceResponseFormatting(cleanedResponse.content)
+      
+      // Save enhanced response to cache
       console.log('=== OPENAI: Lưu phản hồi vào cache ===');
-      await saveToCache(cacheKey, response)
+      await saveToCache(cacheKey, enhancedResponse)
       
-      return response
+      return enhancedResponse
     } catch (openaiError) {
       console.error('=== OPENAI: Lỗi khi gọi OpenAI, thử fallback sang Claude ===', openaiError);
       
@@ -84,18 +92,22 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
           throw new Error('Anthropic API key không được cấu hình')
         }
         
-        const claudeResponse = await generateClaudeResponse(
+        const rawClaudeResponse = await generateClaudeResponse(
           fullMessages,
           CLAUDE_MODELS.DEFAULT,
-          1200, // Increased for depth and quality
-          0.7 // Standard temperature for creativity
+          2000, // Increased for ChatGPT Plus quality
+          0.8, // Higher creativity for better responses
         )
         
-        // Save Claude response to cache
-        console.log('=== OPENAI: Lưu phản hồi Claude vào cache ===');
-        await saveToCache(cacheKey, claudeResponse)
+        // Clean and enhance Claude response
+        const cleanedClaudeResponse = cleanAIResponse(rawClaudeResponse)
+        const enhancedClaudeResponse = enhanceResponseFormatting(cleanedClaudeResponse.content)
         
-        return claudeResponse
+        // Save enhanced Claude response to cache
+        console.log('=== OPENAI: Lưu phản hồi Claude vào cache ===');
+        await saveToCache(cacheKey, enhancedClaudeResponse)
+        
+        return enhancedClaudeResponse
       } catch (claudeError) {
         console.error('=== OPENAI: Lỗi khi gọi Claude fallback ===', claudeError);
         throw new Error('Không thể kết nối với cả OpenAI và Claude')
