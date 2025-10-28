@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     
     // Kiểm tra cookie session trực tiếp
     const cookies = request.headers.get('cookie')
-    console.log('=== API CHAT: Cookies ===', { hasCookies: !!cookies })
+    logger.info('API_CHAT_COOKIES', { hasCookies: !!cookies })
     
     // Thử cả hai cách để lấy user
     try {

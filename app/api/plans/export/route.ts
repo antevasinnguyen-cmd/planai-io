@@ -3,6 +3,7 @@ import { getCurrentUser, supabase, getUserSubscription, getTierName } from '@/li
 import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets'
 import { Document, Packer, Paragraph, TextRun } from 'docx'
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,19 +93,20 @@ export async function POST(request: NextRequest) {
             url: spreadsheetUrl
           })
         } catch (sheetsError) {
-          console.error('Google Sheets export error:', sheetsError)
+          logger.error('EXPORT_SHEETS_ERROR', { error: String(sheetsError), planId, userId: user.id })
           return NextResponse.json({ 
             error: 'Failed to export to Google Sheets', 
             message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
           }, { status: 500 })
         }
       case 'pdf': {
-        const PDFDocument = (await import('pdfkit')).default
+        const PDFModule: any = await import('pdfkit')
+        const PDFDocument = PDFModule.default || PDFModule
         const doc = new PDFDocument({ size: 'A4', margin: 50 })
 
         const chunks: Buffer[] = []
         await new Promise<void>((resolve) => {
-          doc.on('data', (chunk) => chunks.push(chunk as Buffer))
+          doc.on('data', (chunk: any) => chunks.push(chunk as Buffer))
           doc.on('end', () => resolve())
 
           const title = String(plan.title || 'Kế hoạch tài chính')
@@ -179,7 +181,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Export error:', error)
+    logger.error('EXPORT_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { error: 'Failed to export', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

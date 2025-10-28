@@ -44,7 +44,7 @@ export const signInWithGoogle = async () => {
           access_type: 'offline',
           prompt: 'consent',
         },
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: `${window.location.origin}/auth/callback${currentPath ? `?from=${encodeURIComponent(currentPath)}` : ''}`
       }
     })
     

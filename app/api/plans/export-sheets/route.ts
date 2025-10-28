@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { extractTablesFromPlan, tableToCSV } from '@/lib/planTableUtils'
+import { logger } from '@/lib/logger'
 
 /**
  * Export plan tables to Google Sheets format
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Export sheets error:', error)
+    logger.error('EXPORT_SHEETS_CSV_ERROR', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { error: 'Failed to export plan' },
       { status: 500 }
