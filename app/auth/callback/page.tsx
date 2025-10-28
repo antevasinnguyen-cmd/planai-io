@@ -1,16 +1,42 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase, initializeFreeTrialForNewUser } from '@/lib/supabase'
 
 export default function AuthCallbackPage() {
+  const [status, setStatus] = useState<'processing' | 'error'>('processing')
+  const [errorMessage, setErrorMessage] = useState('')
+
   useEffect(() => {
+    const recordFailure = (message: string, details: Record<string, unknown> = {}) => {
+      const payload = {
+        message,
+        details,
+        timestamp: new Date().toISOString()
+      }
+      console.error('=== CALLBACK: Failure ===', payload)
+      try {
+        localStorage.setItem('auth_callback_debug', JSON.stringify(payload))
+      } catch (storageError) {
+        console.error('=== CALLBACK: Unable to store debug info ===', storageError)
+      }
+      setErrorMessage(message)
+      setStatus('error')
+      setTimeout(() => {
+        window.location.replace('/login?error=callback_error')
+      }, 4000)
+    }
+
     const handleAuthCallback = async () => {
       try {
         console.log('=== CALLBACK: Starting ===')
         console.log('Current URL:', window.location.href)
         console.log('Current path:', window.location.pathname)
         console.log('Hash:', window.location.hash)
+
+        const searchParams = new URLSearchParams(window.location.search)
+        const code = searchParams.get('code')
+        const state = searchParams.get('state')
 
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const accessToken = hashParams.get('access_token')
@@ -25,8 +51,33 @@ export default function AuthCallbackPage() {
           tokenType
         })
 
-        // Đợi để đảm bảo Supabase đã xử lý xong
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        if (code) {
+          try {
+            console.log('=== CALLBACK: Found PKCE code, exchanging for session ===', { hasCode: !!code, state })
+            const { data, error } = await supabase.auth.exchangeCodeForSession({ code })
+            if (error) {
+              recordFailure('Không thể hoàn tất xác thực với Google.', {
+                step: 'exchangeCodeForSession',
+                error: error.message,
+                code,
+                state
+              })
+              return
+            }
+            console.log('=== CALLBACK: exchangeCodeForSession success ===', { userId: data?.user?.id })
+          } catch (exchangeError) {
+            recordFailure('Gặp lỗi khi xử lý mã đăng nhập từ Google.', {
+              step: 'exchangeCodeForSession_catch',
+              error: exchangeError instanceof Error ? exchangeError.message : String(exchangeError),
+              code,
+              state
+            })
+            return
+          }
+        } else {
+          // Đợi để đảm bảo Supabase đã xử lý xong
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
 
         // Lấy thông tin phiên hiện tại
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -93,12 +144,18 @@ export default function AuthCallbackPage() {
             }
           }
           
-          // Nếu không có session và không thể set thủ công, chuyển hướng về login
-          window.location.replace('/login?error=no_session')
+          recordFailure('Không thể xác thực phiên đăng nhập.', {
+            hasAccessToken: !!accessToken,
+            hasRefreshToken: !!refreshToken,
+            supabaseError: error?.message,
+            hasCode: !!code
+          })
         }
       } catch (error) {
         console.error('=== CALLBACK: Error ===', error)
-        window.location.replace('/login?error=callback_error')
+        recordFailure('Có lỗi xảy ra khi xử lý đăng nhập.', {
+          error: error instanceof Error ? error.message : String(error)
+        })
       }
     }
 
@@ -106,15 +163,28 @@ export default function AuthCallbackPage() {
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <h2 className="text-2xl font-semibold text-gray-800">Đang xử lý đăng nhập...</h2>
-        <p className="text-gray-600 mt-2">Vui lòng đợi trong giây lát</p>
-        <p className="text-sm text-gray-500 mt-4">
-          Nếu quá lâu, vui lòng thử lại hoặc kiểm tra console để debug
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 px-4">
+      {status === 'processing' ? (
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-2xl font-semibold text-gray-800">Đang xử lý đăng nhập...</h2>
+          <p className="text-gray-600 mt-2">Vui lòng đợi trong giây lát</p>
+          <p className="text-sm text-gray-500 mt-4">
+            Nếu quá lâu, vui lòng thử lại hoặc kiểm tra console để debug
+          </p>
+        </div>
+      ) : (
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <h2 className="text-2xl font-semibold text-gray-800">Không thể đăng nhập</h2>
+          <p className="text-gray-600 mt-3">
+            {errorMessage || 'Không thể hoàn tất đăng nhập với Google. Trang sẽ chuyển về màn hình đăng nhập sau ít giây.'}
+          </p>
+          <p className="text-sm text-gray-500 mt-4">
+            Bạn có thể thử lại sau hoặc liên hệ đội hỗ trợ nếu vấn đề tiếp diễn.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
