@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import { selectModel, TaskType, generateCacheKey, checkCache, saveToCache, chunkText } from './modelSelection'
 import { getChatSystemPrompt, getFinancialPlanSystemPrompt, getUserInputAnalysisSystemPrompt } from './prompts'
 import { cleanAIResponse, enhanceResponseFormatting } from './responseCleaner'
+import { logger } from '@/lib/logger'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -22,7 +23,7 @@ const getOpenAI = () => {
 
 export const generateChatResponse = async (messages: ChatMessage[]): Promise<string> => {
   try {
-    console.log('=== OPENAI: Bắt đầu tạo phản hồi chat ===');
+    logger.info('OPENAI_CHAT_START', {})
     const systemMessage = {
       role: 'system' as const,
       content: getChatSystemPrompt()
@@ -34,20 +35,20 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
     const cacheKey = generateCacheKey(fullMessages)
     
     // Check if we have a cached response
-    console.log('=== OPENAI: Kiểm tra cache ===');
+    logger.info('OPENAI_CHAT_CHECK_CACHE', {})
     const cachedResponse = await checkCache(cacheKey)
     if (cachedResponse) {
-      console.log('=== OPENAI: Sử dụng phản hồi từ cache ===');
+      logger.info('OPENAI_CHAT_CACHE_HIT', {})
       return cachedResponse
     }
     
     // Kiểm tra API key OpenAI
     if (!process.env.OPENAI_API_KEY) {
-      console.error('=== OPENAI: Thiếu API key ===');
+      logger.error('OPENAI_MISSING_API_KEY', {})
       throw new Error('OpenAI API key không được cấu hình')
     }
     
-    console.log('=== OPENAI: Thử gọi OpenAI API ===');
+    logger.info('OPENAI_CHAT_CALL', {})
     try {
       // Select the appropriate model for regular chat
       const model = selectModel(TaskType.REGULAR_CHAT)
@@ -74,21 +75,21 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
       const enhancedResponse = enhanceResponseFormatting(cleanedResponse.content)
       
       // Save enhanced response to cache
-      console.log('=== OPENAI: Lưu phản hồi vào cache ===');
+      logger.info('OPENAI_CHAT_CACHE_SAVE', {})
       await saveToCache(cacheKey, enhancedResponse)
       
       return enhancedResponse
     } catch (openaiError) {
-      console.error('=== OPENAI: Lỗi khi gọi OpenAI, thử fallback sang Claude ===', openaiError);
+      logger.error('OPENAI_CHAT_ERROR', { error: String(openaiError) })
       
       // Fallback to Claude
       try {
-        console.log('=== OPENAI: Đang gọi Claude fallback ===');
+        logger.info('OPENAI_CHAT_FALLBACK_CLAUDE', {})
         const { generateClaudeResponse, CLAUDE_MODELS } = await import('./claude')
         
         // Kiểm tra API key Anthropic
         if (!process.env.ANTHROPIC_API_KEY) {
-          console.error('=== OPENAI: Thiếu Anthropic API key cho fallback ===');
+          logger.error('OPENAI_MISSING_ANTHROPIC_KEY', {})
           throw new Error('Anthropic API key không được cấu hình')
         }
         
@@ -104,17 +105,17 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
         const enhancedClaudeResponse = enhanceResponseFormatting(cleanedClaudeResponse.content)
         
         // Save enhanced Claude response to cache
-        console.log('=== OPENAI: Lưu phản hồi Claude vào cache ===');
+        logger.info('OPENAI_CLAUDE_CACHE_SAVE', {})
         await saveToCache(cacheKey, enhancedClaudeResponse)
         
         return enhancedClaudeResponse
       } catch (claudeError) {
-        console.error('=== OPENAI: Lỗi khi gọi Claude fallback ===', claudeError);
+        logger.error('OPENAI_CLAUDE_ERROR', { error: String(claudeError) })
         throw new Error('Không thể kết nối với cả OpenAI và Claude')
       }
     }
   } catch (error) {
-    console.error('=== OPENAI: Lỗi không xử lý được ===', error);
+    logger.error('OPENAI_CHAT_UNHANDLED', { error: String(error) })
     return 'Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.'
   }
 }
@@ -212,13 +213,13 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
     // Check if we have a cached response
     const cachedResponse = await checkCache(cacheKey)
     if (cachedResponse) {
-      console.log('Using cached financial plan')
+      logger.info('OPENAI_PLAN_CACHE_HIT', {})
       return cachedResponse
     }
 
     // This is a complex planning task, prioritize GPT-4o-mini for better cost-efficiency
     try {
-      console.log('=== FINANCIAL PLAN: Trying GPT-4o-mini first ===');
+      logger.info('OPENAI_PLAN_CALL_OPENAI', {})
       const model = selectModel(TaskType.COMPLEX_PLANNING)
 
       // Import FINANCIAL_PLAN system prompt
@@ -253,15 +254,15 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
 
       // Save response to cache
       await saveToCache(cacheKey, response)
-      console.log('=== FINANCIAL PLAN: GPT-4o-mini completed successfully ===');
+      logger.info('OPENAI_PLAN_OPENAI_DONE', {})
       return response
 
     } catch (gptError) {
-      console.error('=== FINANCIAL PLAN: GPT-4o-mini failed, falling back to Claude-3.5-Sonnet ===', gptError);
+      logger.error('OPENAI_PLAN_OPENAI_ERROR', { error: String(gptError) })
 
       // Fallback to Claude-3.5-Sonnet
       try {
-        console.log('=== FINANCIAL PLAN: Trying Claude-3.5-Sonnet ===');
+        logger.info('OPENAI_PLAN_FALLBACK_CLAUDE', {})
         const { generateFinancialPlanWithClaude } = await import('./claude')
 
         if (!process.env.ANTHROPIC_API_KEY) {
@@ -300,16 +301,16 @@ Thông tin cá nhân:
 
         // Save Claude response to cache
         await saveToCache(cacheKey, claudeResponse)
-        console.log('=== FINANCIAL PLAN: Claude-3.5-Sonnet completed successfully ===');
+        logger.info('OPENAI_PLAN_CLAUDE_DONE', {})
         return claudeResponse
 
       } catch (claudeError) {
-        console.error('=== FINANCIAL PLAN: Claude fallback also failed ===', claudeError);
+        logger.error('OPENAI_PLAN_CLAUDE_ERROR', { error: String(claudeError) })
         throw new Error('Không thể tạo kế hoạch với cả GPT-4o-mini và Claude')
       }
     }
   } catch (error) {
-    console.error('Financial Plan Generation Error:', error)
+    logger.error('OPENAI_PLAN_UNHANDLED', { error: String(error) })
     return 'Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại sau.'
   }
 }
@@ -378,7 +379,7 @@ export const analyzeUserInput = async (input: string): Promise<{
       }
     }
   } catch (error) {
-    console.error('OpenAI Analysis Error:', error)
+    logger.error('OPENAI_ANALYSIS_ERROR', { error: String(error) })
     return {
       intent: 'khác',
       extractedInfo: {},

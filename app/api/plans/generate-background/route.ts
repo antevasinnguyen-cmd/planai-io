@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (insertError) {
-      console.error('Error inserting job:', insertError)
+      logger.error('BG_DB_INSERT_ERROR', { jobId, userId: user.id, error: String(insertError) })
       return NextResponse.json(
         { error: 'Failed to create job' },
         { status: 500 }
@@ -149,7 +149,7 @@ async function processJobInBackground(
   const { supabase } = await import('@/lib/supabase')
   
   try {
-    console.log(`=== BACKGROUND JOB: Processing ${jobId} ===`)
+    logger.info('BG_PROCESS_START', { jobId, userId })
 
     // Update status to processing
     await supabase
@@ -169,7 +169,7 @@ async function processJobInBackground(
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 120000)
       try {
-        console.log(`=== BACKGROUND JOB: Attempt ${attempt} - Calling AI for ${jobId} ===`)
+        logger.info('BG_ATTEMPT_CALL_AI', { jobId, attempt })
         
         const planContent = await generateFinancialPlan(
           planName,
@@ -178,7 +178,7 @@ async function processJobInBackground(
           controller.signal
         )
         clearTimeout(timeoutId)
-        console.log(`=== BACKGROUND JOB: AI completed (attempt ${attempt}) for ${jobId} ===`)
+        logger.info('BG_ATTEMPT_AI_DONE', { jobId, attempt })
 
         // Save plan
         const { data: planData, error: planError } = await supabase
@@ -209,13 +209,13 @@ async function processJobInBackground(
           })
           .eq('id', jobId)
 
-        console.log(`=== BACKGROUND JOB: Completed ${jobId} with plan ${planData.id} ===`)
+        logger.info('BG_JOB_COMPLETED', { jobId, planId: planData.id })
         return
       } catch (err: any) {
         clearTimeout(timeoutId)
         lastError = err
         const message = err?.message || String(err)
-        console.error(`=== BACKGROUND JOB: Attempt ${attempt} failed for ${jobId} ===`, message)
+        logger.warn('BG_ATTEMPT_FAILED', { jobId, attempt, error: message })
         // Update job interim status
         await supabase
           .from('plan_jobs')
@@ -235,7 +235,7 @@ async function processJobInBackground(
     throw lastError || new Error('Unknown error after retries')
 
   } catch (error: any) {
-    console.error(`=== BACKGROUND JOB: Failed ${jobId} ===`, error)
+    logger.error('BG_JOB_FAILED', { jobId, error: error?.message || String(error) })
 
     // Update job with error
     await supabase
