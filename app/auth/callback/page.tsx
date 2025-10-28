@@ -12,18 +12,12 @@ export default function AuthCallbackPage() {
         console.log('Current path:', window.location.pathname)
         console.log('Hash:', window.location.hash)
 
-        // Parse both query and hash params (Supabase PKCE returns ?code)
-        const searchParams = new URLSearchParams(window.location.search)
-        const code = searchParams.get('code')
-        const state = searchParams.get('state')
-        const fromParam = searchParams.get('from')
-
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const accessToken = hashParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token')
         const expiresIn = hashParams.get('expires_in')
         const tokenType = hashParams.get('token_type')
-        
+
         console.log('=== CALLBACK: Hash params ===', {
           hasAccessToken: !!accessToken,
           hasRefreshToken: !!refreshToken,
@@ -31,23 +25,8 @@ export default function AuthCallbackPage() {
           tokenType
         })
 
-        // If Supabase returned a code (PKCE), exchange it for a session first
-        if (code) {
-          try {
-            console.log('=== CALLBACK: Exchanging code for session ===', { hasCode: !!code, state })
-            const { data, error } = await supabase.auth.exchangeCodeForSession({ code })
-            if (error) {
-              console.error('=== CALLBACK: exchangeCodeForSession error ===', error)
-            } else {
-              console.log('=== CALLBACK: exchangeCodeForSession success ===', { userId: data?.user?.id })
-            }
-          } catch (exErr) {
-            console.error('=== CALLBACK: exchangeCodeForSession threw ===', exErr)
-          }
-        } else {
-          // Small delay otherwise to allow automatic handling if any
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
+        // Đợi để đảm bảo Supabase đã xử lý xong
+        await new Promise(resolve => setTimeout(resolve, 2000))
 
         // Lấy thông tin phiên hiện tại
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -79,9 +58,8 @@ export default function AuthCallbackPage() {
           localStorage.setItem('auth_success', 'true')
           localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Determine redirect target: prioritize ?from=, then localStorage, then /dashboard
-          const storedRedirect = localStorage.getItem('auth_redirect')
-          const redirectTo = (fromParam && fromParam.startsWith('/') ? fromParam : null) || storedRedirect || '/dashboard'
+          // Lấy đường dẫn chuyển hướng nếu có
+          const redirectTo = localStorage.getItem('auth_redirect') || '/dashboard'
           localStorage.removeItem('auth_redirect')
 
           // Chuyển hướng đến dashboard hoặc đường dẫn được yêu cầu
@@ -105,10 +83,7 @@ export default function AuthCallbackPage() {
                 console.log('=== CALLBACK: Manual session set success ===')
                 localStorage.setItem('auth_success', 'true')
                 localStorage.setItem('auth_user_email', data.session.user?.email || '')
-                const storedRedirect = localStorage.getItem('auth_redirect')
-                const redirectTo = (fromParam && fromParam.startsWith('/') ? fromParam : null) || storedRedirect || '/dashboard'
-                localStorage.removeItem('auth_redirect')
-                window.location.replace(redirectTo)
+                window.location.replace('/dashboard')
                 return
               } else {
                 console.error('=== CALLBACK: Manual session set failed ===', error)
