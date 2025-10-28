@@ -409,7 +409,7 @@ export default function DashboardFinal() {
               <div className="mb-2">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-gray-600 dark:text-gray-400">Tin nhắn</span>
-                  <span className="font-medium">{usage?.chats || 0}/{limits.chats}</span>
+                  <span className="font-medium">{Math.min(usage?.chats || 0, limits.chats)}/{limits.chats}</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
@@ -423,7 +423,7 @@ export default function DashboardFinal() {
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-gray-600 dark:text-gray-400">Kế hoạch</span>
-                  <span className="font-medium">{usage?.plans || 0}/{limits.plans}</span>
+                  <span className="font-medium">{Math.min(usage?.plans || 0, limits.plans)}/{limits.plans}</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                   <div
@@ -513,7 +513,11 @@ export default function DashboardFinal() {
                 <UpgradePrompt
                   variant="banner"
                   trigger="quota_warning"
-                  currentUsage={{ chats: usage.chats || 0, plans: usage.plans || 0, words: usage.words || 0 }}
+                  currentUsage={{
+                    chats: Math.min(usage.chats || 0, limits.chats),
+                    plans: Math.min(usage.plans || 0, limits.plans),
+                    words: usage.words || 0
+                  }}
                   limits={{ chats: limits.chats, plans: limits.plans, words: limits.words }}
                   className="mb-6"
                 />

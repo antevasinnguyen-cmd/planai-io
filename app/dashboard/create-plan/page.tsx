@@ -151,7 +151,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     checkAuth()
   }, [router])
   
-  // Lưu tin nhắn VÀ collectedInfo vào localStorage + Database khi thay đổi
+  // Lưu tin nhắn VÀ collectedInfo vào localStorage khi thay đổi
   useEffect(() => {
     if (messages.length > 0 && user) {
       const userId = user.id || 'anonymous'
@@ -162,44 +162,10 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       localStorage.setItem(chatMessagesKey, JSON.stringify(messages))
       localStorage.setItem(collectedInfoKey, JSON.stringify(collectedInfo))
       console.log(`Lưu tin nhắn (${messages.length}) và collected info vào localStorage cho user ${userId}`)
-      
-      // Save user messages to database for chat counter
-      saveChatMessagesToDatabase(messages, userId)
     }
   }, [messages, collectedInfo, user])
 
-  const saveChatMessagesToDatabase = async (msgs: Message[], userId: string) => {
-    try {
-      const { supabase } = await import('@/lib/supabase')
-      
-      // Get only user messages that haven't been saved yet
-      const userMessages = msgs.filter(m => m.role === 'user')
-      
-      if (userMessages.length === 0) return
-      
-      // Save each user message to database
-      for (const msg of userMessages) {
-        try {
-          const { error } = await supabase
-            .from('chat_messages')
-            .insert({
-              user_id: userId,
-              message: msg.content,
-              type: 'user',
-              created_at: msg.timestamp.toISOString()
-            })
-          
-          if (error) {
-            console.warn('Error saving chat message to DB:', error)
-          }
-        } catch (e) {
-          console.warn('Exception saving chat message:', e)
-        }
-      }
-    } catch (error) {
-      console.warn('Error in saveChatMessagesToDatabase:', error)
-    }
-  }
+  // Ghi chú: Việc lưu chat vào DB sẽ do API chat xử lý để đảm bảo RLS và tránh double-count.
 
   // Cuộn xuống dưới khi có tin nhắn mới
   useEffect(() => {
@@ -345,7 +311,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     if (collectedFields.includes('readiness_level')) newInfo['readiness'] = true
     if (collectedFields.includes('age') || userInput.length > 50) newInfo['description'] = true
 
-    setCollectedInfo(newInfo)
+    setCollectedInfo(prev => ({ ...prev, ...newInfo }))
   }
 
   const getProgress = () => {
@@ -460,7 +426,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
               <span className="bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-primary-900 dark:text-primary-300">AI</span>
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (confirm('Bạn có chắc muốn xóa toàn bộ cuộc trò chuyện và bắt đầu lại?')) {
                   initializeNewChat()
                 }

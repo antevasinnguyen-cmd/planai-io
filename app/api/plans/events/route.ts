@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +24,8 @@ export async function GET(request: NextRequest) {
     const encoder = new TextEncoder()
     const stream = new ReadableStream<Uint8Array>({
       start: async (controller) => {
-        const { supabase } = await import('@/lib/supabase')
+        const cookieStore = cookies()
+        const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
         let closed = false
         const send = (event: string, data: any) => {

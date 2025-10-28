@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateChatResponse, analyzeUserInput } from '@/lib/openai'
-import { getCurrentUser, saveChatMessage, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
+import { getCurrentUser, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
 import { getChatSystemPrompt } from '@/lib/prompts'
 import { createClient } from '@supabase/supabase-js'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
@@ -17,9 +19,9 @@ export async function POST(request: NextRequest) {
     
     let user;
     
-    // Kiểm tra cookie session trực tiếp
-    const cookies = request.headers.get('cookie')
-    logger.info('API_CHAT_COOKIES', { hasCookies: !!cookies })
+    // Kiểm tra cookie session trực tiếp (header string)
+    const cookieHeader = request.headers.get('cookie')
+    logger.info('API_CHAT_COOKIES', { hasCookies: !!cookieHeader })
     
     // Thử cả hai cách để lấy user
     try {
@@ -192,23 +194,35 @@ export async function POST(request: NextRequest) {
       logger.warn('API_CHAT_PROFILE_UPDATE_FAILED', { error: String(e) })
     }
 
-    // Save user message
-    await saveChatMessage(user.id, message, 'user')
-    
-    // Save AI response
-    await saveChatMessage(user.id, aiResponse, 'ai')
+    // Save messages to DB under session (RLS-safe)
+    try {
+      const cookieStore = cookies()
+      const rhSupabase = createRouteHandlerClient({ cookies: () => cookieStore })
+      // user message
+      await rhSupabase
+        .from('chat_messages')
+        .insert({ user_id: user.id, message, type: 'user', created_at: new Date().toISOString(), source: 'api' })
+      // ai response
+      await rhSupabase
+        .from('chat_messages')
+        .insert({ user_id: user.id, message: aiResponse, type: 'ai', created_at: new Date().toISOString(), source: 'api' })
+    } catch (e) {
+      logger.warn('API_CHAT_SAVE_DB_FAILED', { error: String(e) })
+    }
 
-    // Return response with usage info
+    // Return response with usage info (clamped)
     const updatedUsage = await checkUsageLimits(user.id, 'chat')
+    const nextCount = Math.min(updatedUsage.current + 1, updatedUsage.limit)
+    const remaining = Math.max(updatedUsage.limit - nextCount, 0)
     
     return NextResponse.json({ 
       response: aiResponse,
       success: true,
       usage: {
-        current: updatedUsage.current + 1, // +1 for the message just sent
+        current: nextCount,
         limit: updatedUsage.limit,
         tier: updatedUsage.tier,
-        remaining: updatedUsage.limit - (updatedUsage.current + 1)
+        remaining
       },
       analysis
     })

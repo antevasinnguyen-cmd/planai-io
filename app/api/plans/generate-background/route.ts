@@ -3,6 +3,9 @@ import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
 import { generateFinancialPlan } from '@/lib/openai'
 import { logger } from '@/lib/logger'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * Background Job API - Starts plan generation in background
@@ -12,8 +15,11 @@ export async function POST(request: NextRequest) {
   try {
     logger.info('BG_START', {})
     
-    // Get user
-    const user = await getCurrentUser(request)
+    // Prefer session-bound client for RLS operations
+    const cookieStore = cookies()
+    const rhSupabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const { data: authData } = await rhSupabase.auth.getUser()
+    const user = authData?.user
     if (!user) {
       logger.warn('BG_UNAUTHORIZED', {})
       return NextResponse.json(
@@ -23,6 +29,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { planName, goals, collectedInfo } = await request.json()
+
+    // Capture Authorization token (for background processing)
+    const authHeader = request.headers.get('Authorization') || ''
 
     // Fallback: derive plan name and goals if missing from chat_summary
     const chatSummary: string = String(collectedInfo?.chat_summary || '')
@@ -64,8 +73,8 @@ export async function POST(request: NextRequest) {
     const enrichedCollectedInfo = { ...(collectedInfo || {}), maxWords: tierLimits.words, tier, chat_summary: chatSummary.slice(0, 4000) }
 
     const caps = getServerCapsByTier(tier)
-    const { supabase } = await import('@/lib/supabase')
-    const { count: runningCount, error: countError } = await supabase
+    // Use session-bound client for counting running jobs
+    const { count: runningCount, error: countError } = await rhSupabase
       .from('plan_jobs')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
@@ -95,7 +104,7 @@ export async function POST(request: NextRequest) {
     logger.info('BG_JOB_CREATED', { jobId, userId: user.id })
 
     // Insert job record
-    const { error: insertError } = await supabase
+    const { error: insertError } = await rhSupabase
       .from('plan_jobs')
       .insert({
         id: jobId,
@@ -115,7 +124,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Start background processing (don't await)
-    processJobInBackground(jobId, user.id, finalPlanName, finalGoals, enrichedCollectedInfo)
+    processJobInBackground(jobId, user.id, finalPlanName, finalGoals, enrichedCollectedInfo, authHeader)
       .catch(error => logger.error('BG_JOB_ASYNC_FAIL', { jobId, error: String(error) }))
 
     // Return immediately with job_id
@@ -144,9 +153,14 @@ async function processJobInBackground(
   userId: string,
   planName: string,
   goals: string,
-  collectedInfo: any
+  collectedInfo: any,
+  authHeader: string
 ) {
-  const { supabase } = await import('@/lib/supabase')
+  // Create an authenticated Supabase client using the passed token for RLS-compliant operations
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : ''
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : {})
   
   try {
     logger.info('BG_PROCESS_START', { jobId, userId })

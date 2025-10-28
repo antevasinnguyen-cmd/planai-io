@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 // Mark this route as dynamic (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -30,7 +32,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { supabase } = await import('@/lib/supabase')
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Get job status
     const { data: job, error } = await supabase

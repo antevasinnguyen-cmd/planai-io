@@ -333,13 +333,34 @@ export const getUserUsageStats = async (userId: string) => {
     .eq('user_id', userId)
     .gte('created_at', startOfMonth.toISOString())
 
-  // Count chat messages this month (user messages only)
-  const { data: chatsData, error: chatsError } = await supabase
-    .from('chat_messages')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('type', 'user')
-    .gte('created_at', startOfMonth.toISOString())
+  // Count chat messages this month (user messages only, server-sourced to avoid duplicates)
+  let chatsData: any[] | null = null
+  let chatsError: any = null
+  try {
+    const res = await supabase
+      .from('chat_messages')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('type', 'user')
+      .eq('source', 'api')
+      .gte('created_at', startOfMonth.toISOString())
+    chatsData = res.data as any[] | null
+    chatsError = res.error
+    // If column 'source' does not exist, fallback without it
+    if (chatsError && String(chatsError.message || '').toLowerCase().includes('column') && String(chatsError.message || '').toLowerCase().includes('source')) {
+      const resFallback = await supabase
+        .from('chat_messages')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('type', 'user')
+        .gte('created_at', startOfMonth.toISOString())
+      chatsData = resFallback.data as any[] | null
+      chatsError = resFallback.error
+    }
+  } catch (e) {
+    chatsData = []
+    chatsError = e
+  }
 
   // Sum word count from plans this month
   const { data: wordsData, error: wordsError } = await supabase
