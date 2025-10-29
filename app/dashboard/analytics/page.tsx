@@ -7,7 +7,8 @@ import {
   ArrowLeft, TrendingUp, BarChart3, PieChart, Calendar,
   DollarSign, Target, Clock, Award
 } from 'lucide-react'
-import { getTierName } from '@/lib/supabase'
+import { getTierName, getUserSubscription, getUserUsageStats, getUserPlans } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
 
 export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
