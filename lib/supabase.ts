@@ -534,16 +534,32 @@ export const checkTrialStatus = async (userId: string) => {
   try {
     const { data: subscription } = await getUserSubscription(userId)
     if (!subscription) {
-      return { hasActiveTrial: false, daysRemaining: 0 }
+      return { hasActiveTrial: false, daysRemaining: 0, isActive: false }
     }
-    
-    return { 
-      hasActiveTrial: subscription.status === 'active',
-      daysRemaining: 30 // Default 30 days
+
+    // For free tier, calculate trial period (30 days from account creation)
+    if (subscription.tier === 'free') {
+      const createdAt = new Date(subscription.created_at)
+      const trialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      const now = new Date()
+      const daysRemaining = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+
+      return {
+        hasActiveTrial: daysRemaining > 0,
+        daysRemaining: daysRemaining,
+        isActive: daysRemaining > 0
+      }
+    }
+
+    // For paid tiers, no trial
+    return {
+      hasActiveTrial: false,
+      daysRemaining: 0,
+      isActive: false
     }
   } catch (error) {
     console.error('Error checking trial status:', error)
-    return { hasActiveTrial: false, daysRemaining: 0 }
+    return { hasActiveTrial: false, daysRemaining: 0, isActive: false }
   }
 }
 

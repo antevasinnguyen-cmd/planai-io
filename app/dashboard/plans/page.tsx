@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { Home, ArrowLeft } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
+import { getUserPlans, getUserUsageStats, getUserSubscription, getSubscriptionLimits, getTierName, supabase } from '@/lib/supabase'
 
 interface Plan {
   id: string
@@ -28,31 +29,25 @@ export default function PlansPage() {
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
 
   useEffect(() => {
-    checkAuth()
-    loadPlans()
-    loadUsageStats()
-  }, [])
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/login')
       return
     }
-  }
+
+    if (user) {
+      loadPlans()
+      loadUsageStats()
+    }
+  }, [user, authLoading, router])
 
   const loadPlans = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      const { data, error } = await getUserPlans(user.id)
 
       if (error) throw error
       setPlans(data || [])
@@ -65,45 +60,15 @@ export default function PlansPage() {
 
   const loadUsageStats = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       // Get subscription
-      const { data: subData } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .single()
-
+      const { data: subData } = await getUserSubscription(user.id)
       setSubscription(subData)
 
       // Get usage stats
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-
-      const { data: plansData } = await supabase
-        .from('plans')
-        .select('id, word_count')
-        .eq('user_id', user.id)
-        .gte('created_at', startOfMonth.toISOString())
-
-      const { data: chatsData } = await supabase
-        .from('chat_messages')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('type', 'user')
-        .gte('created_at', startOfMonth.toISOString())
-
-      const totalWords = plansData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
-
-      setUsage({
-        plans: plansData?.length || 0,
-        chats: chatsData?.length || 0,
-        words: totalWords,
-        error: null
-      })
+      const usageStats = await getUserUsageStats(user.id)
+      setUsage(usageStats)
     } catch (error) {
       console.error('Error loading usage stats:', error)
     }

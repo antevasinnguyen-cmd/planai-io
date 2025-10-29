@@ -386,7 +386,7 @@ export default function DashboardFinal() {
                     <span>Hết hạn: {new Date(subscription.current_period_end).toLocaleDateString('vi-VN')}</span>
                   )}
                   {tier === 'free' && trialStatus?.isActive && (
-                    <span>Hết hạn: {new Date(new Date().getTime() + trialStatus.daysRemaining * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')}</span>
+                    <span>Hết hạn: {new Date(new Date(subscription.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')}</span>
                   )}
                 </div>
               </div>

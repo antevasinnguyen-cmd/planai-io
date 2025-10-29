@@ -7,8 +7,7 @@ import {
   ArrowLeft, TrendingUp, BarChart3, PieChart, Calendar,
   DollarSign, Target, Clock, Award
 } from 'lucide-react'
-import { useAuth } from '@/lib/auth-context'
-import { getUserSubscription, getUserUsageStats, getUserPlans } from '@/lib/supabase'
+import { getTierName } from '@/lib/supabase'
 
 export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
@@ -126,7 +125,7 @@ export default function AnalyticsPage() {
                 <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-500" />
               </div>
               <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stats?.subscription?.tier === 'free' ? 'Free' : 'Pro'}
+                {getTierName(stats?.subscription?.tier || 'free')}
               </span>
             </div>
             <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Gói hiện tại</h3>
