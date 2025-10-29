@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send, Sparkles, CheckCircle, Info, Loader2, FileText, AlertCircle, Crown, Zap, ArrowRight, Moon, ToggleLeft, ToggleRight } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
 import { getAIMemorySystem, resetAIMemory } from '@/lib/aiMemory'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface Message {
   role: 'assistant' | 'user'
@@ -36,8 +37,9 @@ export default function CreatePlanV2() {
   const [subscription, setSubscription] = useState<any>(null)
   const [spiritualEnabled, setSpiritualEnabled] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { user } = useAuth()
+  const { user, session, loading } = useAuth()
   const router = useRouter()
+  const supabaseClient = useMemo(() => createClientComponentClient(), [])
   
   // Khai báo hàm initializeNewChat ở phạm vi component
   const initializeNewChat = () => {
@@ -88,70 +90,56 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Kiểm tra phiên trực tiếp từ supabase
-        const { supabase } = await import('@/lib/supabase')
-        const { data, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error('Auth session error:', error)
-          router.push('/login')
-          return
-        }
-        
-        if (!data.session) {
-          console.log('No active session found')
-          router.push('/login')
-          return
-        }
-        
-        // Phiên hợp lệ, tiếp tục tải dữ liệu
-        loadSubscription()
-        
-        // Lấy tin nhắn VÀ collectedInfo đã lưu từ localStorage
-        const userId = data.session?.user?.id || 'anonymous'
-        const chatMessagesKey = `planai_chat_messages_${userId}`
-        const collectedInfoKey = `planai_collected_info_${userId}`
-        const savedMessages = localStorage.getItem(chatMessagesKey)
-        const savedCollectedInfo = localStorage.getItem(collectedInfoKey)
-        
-        if (savedMessages) {
-          try {
-            const parsedMessages = JSON.parse(savedMessages)
-            // Chuyển đổi timestamp từ string sang Date
-            const messagesWithDateObjects = parsedMessages.map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            }))
-            setMessages(messagesWithDateObjects)
-            console.log('Lấy tin nhắn đã lưu:', messagesWithDateObjects.length)
-            
-            // Restore collectedInfo
-            if (savedCollectedInfo) {
-              try {
-                const parsedCollectedInfo = JSON.parse(savedCollectedInfo)
-                setCollectedInfo(parsedCollectedInfo)
-                console.log('Lấy collected info đã lưu:', parsedCollectedInfo)
-              } catch (parseError) {
-                console.error('Lỗi khi phân tích collected info:', parseError)
-              }
-            }
-          } catch (parseError) {
-            console.error('Lỗi khi phân tích tin nhắn đã lưu:', parseError)
-            initializeNewChat()
-          }
-        } else {
-          initializeNewChat()
-        }
-      } catch (error) {
-        console.error('Authentication check failed:', error)
+    const initializeForUser = async () => {
+      if (!session?.user) {
+        console.log('No active session in context, redirecting to login')
         router.push('/login')
+        return
       }
+
+      const userId = session.user.id
+      await loadSubscription(userId)
+      restoreConversation(userId)
     }
-    
-    checkAuth()
-  }, [router])
+
+    if (!loading) {
+      initializeForUser()
+    }
+  }, [loading, session, router])
+
+  const restoreConversation = (userId: string) => {
+    try {
+      const chatMessagesKey = `planai_chat_messages_${userId}`
+      const collectedInfoKey = `planai_collected_info_${userId}`
+      const savedMessages = localStorage.getItem(chatMessagesKey)
+      const savedCollectedInfo = localStorage.getItem(collectedInfoKey)
+
+      if (savedMessages) {
+        const parsedMessages = JSON.parse(savedMessages)
+        const messagesWithDateObjects = parsedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+        setMessages(messagesWithDateObjects)
+        console.log('Lấy tin nhắn đã lưu:', messagesWithDateObjects.length)
+
+        if (savedCollectedInfo) {
+          try {
+            const parsedCollectedInfo = JSON.parse(savedCollectedInfo)
+            setCollectedInfo(parsedCollectedInfo)
+            console.log('Lấy collected info đã lưu:', parsedCollectedInfo)
+          } catch (parseError) {
+            console.error('Lỗi khi phân tích collected info:', parseError)
+          }
+        }
+      } else {
+        initializeNewChat()
+      }
+    } catch (error) {
+      console.error('Lỗi khi khôi phục hội thoại:', error)
+      initializeNewChat()
+    }
+  }
   
   // Lưu tin nhắn VÀ collectedInfo vào localStorage khi thay đổi
   useEffect(() => {
@@ -178,19 +166,20 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     return () => clearTimeout(timer)
   }, [messages])
 
-  const loadSubscription = async () => {
-    // Load subscription info
+  const loadSubscription = async (userId: string) => {
     try {
-      const { getUserSubscription, getCurrentUser } = await import('@/lib/supabase')
-      const currentUser = await getCurrentUser()
-      
-      if (!currentUser) {
-        console.error('No user found when loading subscription')
-        return
+      const { data, error } = await supabaseClient
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') {
+        throw error
       }
-      
-      const { data } = await getUserSubscription(currentUser.id)
-      setSubscription(data)
+
+      setSubscription(data || null)
     } catch (error) {
       console.error('Error loading subscription:', error)
     }
@@ -219,9 +208,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
     try {
       // Ensure we have a valid session before sending request
-      const { supabase } = await import('@/lib/supabase')
-      const { data: sessionData } = await supabase.auth.getSession()
-      
+      const { data: sessionData } = await supabaseClient.auth.getSession()
+
       if (!sessionData.session) {
         throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
       }
