@@ -161,18 +161,25 @@ async function processJobInBackground(
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : ''
   const supabase = createClient(supabaseUrl, supabaseAnonKey, token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : {})
+  // Admin client (no RLS) for robust job status updates
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
+  const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
   
   try {
     logger.info('BG_PROCESS_START', { jobId, userId })
 
-    // Update status to processing
-    await supabase
-      .from('plan_jobs')
-      .update({ 
-        status: 'processing',
-        started_at: new Date().toISOString()
-      })
-      .eq('id', jobId)
+    // Update status to processing (prefer admin client to avoid RLS/token issues)
+    if (admin) {
+      await admin
+        .from('plan_jobs')
+        .update({ status: 'processing', started_at: new Date().toISOString() })
+        .eq('id', jobId)
+    } else {
+      await supabase
+        .from('plan_jobs')
+        .update({ status: 'processing', started_at: new Date().toISOString() })
+        .eq('id', jobId)
+    }
 
     // Generate plan with timeout + retry/backoff
     const maxAttempts = 3
@@ -195,33 +202,61 @@ async function processJobInBackground(
         logger.info('BG_ATTEMPT_AI_DONE', { jobId, attempt })
 
         // Save plan
-        const { data: planData, error: planError } = await supabase
-          .from('plans')
-          .insert({
-            user_id: userId,
-            title: planName,
-            goal: goals,
-            content: planContent,
-            status: 'completed',
-            word_count: planContent.split(' ').length,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single()
+        // First, try to save plan with user-scoped client (RLS)
+        let planData: any = null
+        let planError: any = null
+        {
+          const resp = await supabase
+            .from('plans')
+            .insert({
+              user_id: userId,
+              title: planName,
+              goal: goals,
+              content: planContent,
+              status: 'completed',
+              word_count: planContent.split(' ').length,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single()
+          planData = resp.data
+          planError = resp.error
+        }
+        // Fallback to admin client if RLS/token fails
+        if (planError && admin) {
+          const resp = await admin
+            .from('plans')
+            .insert({
+              user_id: userId,
+              title: planName,
+              goal: goals,
+              content: planContent,
+              status: 'completed',
+              word_count: planContent.split(' ').length,
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single()
+          planData = resp.data
+          planError = resp.error
+        }
 
         if (planError) {
           throw new Error(`Failed to save plan: ${planError.message}`)
         }
 
-        // Update job status
-        await supabase
-          .from('plan_jobs')
-          .update({
-            status: 'completed',
-            plan_id: planData.id,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', jobId)
+        // Update job status (prefer admin)
+        if (admin) {
+          await admin
+            .from('plan_jobs')
+            .update({ status: 'completed', plan_id: planData.id, completed_at: new Date().toISOString() })
+            .eq('id', jobId)
+        } else {
+          await supabase
+            .from('plan_jobs')
+            .update({ status: 'completed', plan_id: planData.id, completed_at: new Date().toISOString() })
+            .eq('id', jobId)
+        }
 
         logger.info('BG_JOB_COMPLETED', { jobId, planId: planData.id })
         return
@@ -231,10 +266,17 @@ async function processJobInBackground(
         const message = err?.message || String(err)
         logger.warn('BG_ATTEMPT_FAILED', { jobId, attempt, error: message })
         // Update job interim status
-        await supabase
-          .from('plan_jobs')
-          .update({ status: 'processing', error_message: `attempt ${attempt} failed: ${message}` })
-          .eq('id', jobId)
+        if (admin) {
+          await admin
+            .from('plan_jobs')
+            .update({ status: 'processing', error_message: `attempt ${attempt} failed: ${message}` })
+            .eq('id', jobId)
+        } else {
+          await supabase
+            .from('plan_jobs')
+            .update({ status: 'processing', error_message: `attempt ${attempt} failed: ${message}` })
+            .eq('id', jobId)
+        }
         if (err?.name === 'AbortError') {
           // Abort/timeouts: continue retry
         }
@@ -251,14 +293,18 @@ async function processJobInBackground(
   } catch (error: any) {
     logger.error('BG_JOB_FAILED', { jobId, error: error?.message || String(error) })
 
-    // Update job with error
-    await supabase
-      .from('plan_jobs')
-      .update({
-        status: 'failed',
-        error_message: error.message || 'Unknown error',
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', jobId)
+    // Update job with error (prefer admin to guarantee write)
+    const errMsg = (error?.message || 'Unknown error').slice(0, 500)
+    if (admin) {
+      await admin
+        .from('plan_jobs')
+        .update({ status: 'failed', error_message: errMsg, completed_at: new Date().toISOString() })
+        .eq('id', jobId)
+    } else {
+      await supabase
+        .from('plan_jobs')
+        .update({ status: 'failed', error_message: errMsg, completed_at: new Date().toISOString() })
+        .eq('id', jobId)
+    }
   }
 }

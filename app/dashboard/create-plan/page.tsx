@@ -44,6 +44,7 @@ export default function CreatePlanV2() {
   // Khai báo hàm initializeNewChat ở phạm vi component
   const initializeNewChat = () => {
     console.log('Khởi tạo chat mới với các tin nhắn chào mừng')
+    resetAIMemory()
     
     // Xóa dữ liệu cũ trước khi tạo mới
     if (user?.id) {
@@ -121,6 +122,14 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
           timestamp: new Date(msg.timestamp)
         }))
         setMessages(messagesWithDateObjects)
+        try {
+          aiMemory.current.reset()
+          for (const m of messagesWithDateObjects) {
+            if (m && m.role === 'user' && typeof m.content === 'string') {
+              aiMemory.current.processMessage(m.content, true)
+            }
+          }
+        } catch {}
         console.log('Lấy tin nhắn đã lưu:', messagesWithDateObjects.length)
 
         if (savedCollectedInfo) {
