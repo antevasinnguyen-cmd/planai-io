@@ -76,13 +76,6 @@ export default function GeneratePlanPage() {
     // Check both user-specific and stable fallback keys
     const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
     
-    if (!planData) {
-      console.log('=== GENERATE: No plan data found, redirecting to create-plan ===')
-      // Redirect to create-plan to start the process
-      router.push('/dashboard/create-plan')
-      return
-    }
-
     // Check if there's already a job in progress (user came back from another tab)
     const existingJobId = sessionStorage.getItem(`plan_job_${userId}`)
     
@@ -131,16 +124,20 @@ export default function GeneratePlanPage() {
   const startPlanGeneration = async () => {
     const userId = user?.id || 'anonymous'
     const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
-    
+
     if (!planData) {
-      console.error('=== GENERATE: No plan data found in localStorage ===')
-      setError('Không tìm thấy dữ liệu kế hoạch. Vui lòng bắt đầu lại.')
-      router.push('/dashboard/create-plan')
-      return
+      console.warn('=== GENERATE: No plan data found in localStorage, creating placeholder ===')
+      const placeholder = {
+        planName: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
+        goals: 'Mục tiêu tài chính cá nhân',
+        collectedInfo: {}
+      }
+      localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(placeholder))
+      localStorage.setItem('pending_plan_latest', JSON.stringify(placeholder))
     }
 
     try {
-      const data = JSON.parse(planData)
+      const data = planData ? JSON.parse(planData) : JSON.parse(localStorage.getItem(`pending_plan_${userId}`) || '{}')
       console.log('=== GENERATE: Plan data from localStorage ===', {
         hasPlanName: !!data.planName,
         hasGoals: !!data.goals,
@@ -149,32 +146,23 @@ export default function GeneratePlanPage() {
       })
       
       // Validate required fields (with robust fallback from messages)
-      if (!data.planName || !data.goals) {
-        const userMsgs = Array.isArray(data.messages) ? data.messages.filter((m: any) => m.role === 'user') : []
-        const lastUser = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].content : ''
-        const derivedGoal = (lastUser || '').slice(0, 80).trim()
-        const derivedPlanName = derivedGoal
-          ? `Kế hoạch: ${derivedGoal}`
-          : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+      const userMsgs = Array.isArray(data?.messages) ? data.messages.filter((m: any) => m.role === 'user') : []
+      const lastUser = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].content : ''
+      const derivedGoal = (data?.goals && String(data.goals).trim()) || (lastUser || '').slice(0, 80).trim()
+      const derivedPlanName = (data?.planName && String(data.planName).trim())
+        || (derivedGoal ? `Kế hoạch: ${derivedGoal}` : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`)
 
-        data.planName = data.planName || derivedPlanName
-        data.goals = data.goals || derivedGoal || 'Mục tiêu tài chính cá nhân'
+      const finalPlanName = derivedPlanName || 'Kế hoạch tài chính cá nhân'
+      const finalGoals = derivedGoal || 'Mục tiêu tài chính cá nhân'
 
-        // Persist the derived fields back to localStorage to avoid re-error on refresh
-        try {
-          localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(data))
-        } catch {}
+      data.planName = finalPlanName
+      data.goals = finalGoals
 
-        if (!data.planName || !data.goals) {
-          console.error('=== GENERATE: Missing required fields even after fallback ===', {
-            planName: data.planName,
-            goals: data.goals
-          })
-          setError('Thiếu thông tin bắt buộc. Vui lòng chat với AI để mô tả mục tiêu, sau đó thử lại.')
-          return
-        }
-      }
-      
+      try {
+        localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(data))
+        localStorage.setItem('pending_plan_latest', JSON.stringify(data))
+      } catch {}
+
       setStatus('Gửi yêu cầu tới hệ thống AI...')
       setProgress(5)
 
@@ -196,8 +184,8 @@ export default function GeneratePlanPage() {
         headers,
         credentials: 'include',
         body: JSON.stringify({
-          planName: data.planName || 'Kế hoạch tài chính',
-          goals: data.goals || '',
+          planName: finalPlanName || 'Kế hoạch tài chính',
+          goals: finalGoals || '',
           collectedInfo: data.collectedInfo || {}
         })
       })
@@ -288,7 +276,10 @@ export default function GeneratePlanPage() {
 
         } else if (jobData.status === 'processing') {
           // Still processing
-          setStatus(`Đang xử lý... (${jobData.elapsed_seconds}s)`)
+          const elapsed = Number(jobData.elapsed_seconds || 0)
+          setStatus(`Đang xử lý... (${elapsed}s)`)
+          const runtimeProgress = Math.min(95, Math.max(progress, 10 + (elapsed / 120) * 80))
+          setProgress(runtimeProgress)
         }
 
       } catch (error) {
@@ -329,20 +320,14 @@ export default function GeneratePlanPage() {
           {!error && jobStatus === 'pending' && !jobId && (
             <>
               <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertCircle className="w-10 h-10 text-yellow-500" />
+                <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Chưa có dữ liệu kế hoạch
+                Đang chuẩn bị dữ liệu kế hoạch...
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Bạn cần bắt đầu quá trình tạo kế hoạch từ đầu.
+                AI đang hoàn thiện các thông tin còn thiếu trước khi tạo kế hoạch.
               </p>
-              <Link
-                href="/dashboard/create-plan"
-                className="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors inline-block"
-              >
-                Bắt đầu tạo kế hoạch
-              </Link>
             </>
           )}
           
