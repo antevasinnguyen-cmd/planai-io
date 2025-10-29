@@ -6,6 +6,46 @@ import { Loader2, Sparkles, CheckCircle, AlertCircle, ArrowLeft, Zap } from 'luc
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 
+interface JobMeta {
+  jobId: string
+  startedAt?: number
+  progress?: number
+  status?: 'pending' | 'processing' | 'completed' | 'failed'
+  statusText?: string
+  elapsedSeconds?: number
+}
+
+const JOB_META_PREFIX = 'plan_job_meta_'
+
+const calculateProgress = (elapsedSeconds: number) => {
+  if (!elapsedSeconds || elapsedSeconds < 0) return 10
+  return Math.min(95, Math.max(10, 10 + (elapsedSeconds / 120) * 80))
+}
+
+const loadJobMeta = (userId: string): JobMeta | null => {
+  if (!userId) return null
+  try {
+    const raw = localStorage.getItem(`${JOB_META_PREFIX}${userId}`)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+const saveJobMeta = (userId: string, meta: Partial<JobMeta>) => {
+  if (!userId) return
+  try {
+    const current = loadJobMeta(userId) || {}
+    const merged = { ...current, ...meta }
+    localStorage.setItem(`${JOB_META_PREFIX}${userId}`, JSON.stringify(merged))
+  } catch {}
+}
+
+const clearJobMeta = (userId: string) => {
+  if (!userId) return
+  try { localStorage.removeItem(`${JOB_META_PREFIX}${userId}`) } catch {}
+}
+
 export default function GeneratePlanPage() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobStatus, setJobStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending')
@@ -41,6 +81,7 @@ export default function GeneratePlanPage() {
             setPlanId(data.plan_id)
             const userId = user?.id || 'anonymous'
             sessionStorage.removeItem(`plan_job_${userId}`)
+            clearJobMeta(userId)
             localStorage.removeItem(`pending_plan_${userId}`)
             try { localStorage.removeItem('pending_plan_latest') } catch {}
             if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
@@ -51,6 +92,7 @@ export default function GeneratePlanPage() {
             setError(data.error_message || 'Tạo kế hoạch thất bại')
             const userId = user?.id || 'anonymous'
             sessionStorage.removeItem(`plan_job_${userId}`)
+            clearJobMeta(userId)
             if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
             if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
           } else if (data.status === 'processing') {
@@ -59,6 +101,14 @@ export default function GeneratePlanPage() {
             setProgress(estimatedProgress)
             setStatus(`Đang xử lý... (${elapsed}s)`)
             setJobStatus('processing')
+            const userId = user?.id || 'anonymous'
+            saveJobMeta(userId, {
+              jobId: id,
+              progress: estimatedProgress,
+              status: 'processing',
+              statusText: `Đang xử lý... (${elapsed}s)`,
+              elapsedSeconds: elapsed
+            })
           }
         } catch {}
       }
@@ -77,15 +127,27 @@ export default function GeneratePlanPage() {
     const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
     
     // Check if there's already a job in progress (user came back from another tab)
-    const existingJobId = sessionStorage.getItem(`plan_job_${userId}`)
-    
+    const storedMeta = loadJobMeta(userId)
+    const existingJobId = sessionStorage.getItem(`plan_job_${userId}`) || storedMeta?.jobId || null
+
     if (existingJobId) {
       console.log('Found existing job, resuming:', existingJobId)
       setJobId(existingJobId)
-      setJobStatus('processing')
-      setStatus('Tiếp tục xử lý kế hoạch...')
-      setProgress(50) // Assume it's halfway done
-      startTimeRef.current = Date.now()
+      const restoredStatus = storedMeta?.status || 'processing'
+      setJobStatus(restoredStatus)
+
+      const restoredStatusText = storedMeta?.statusText || 'Tiếp tục xử lý kế hoạch...'
+      setStatus(restoredStatusText)
+
+      const elapsed = storedMeta?.elapsedSeconds ?? (storedMeta?.startedAt ? Math.floor((Date.now() - storedMeta.startedAt) / 1000) : 0)
+      if (elapsed && elapsed > 0) {
+        setElapsedSeconds(elapsed)
+      }
+      const restoredProgress = storedMeta?.progress ?? calculateProgress(elapsed)
+      setProgress(restoredProgress)
+
+      startTimeRef.current = storedMeta?.startedAt || Date.now()
+
       // Start SSE first; fallback to polling
       startSSE(existingJobId)
       pollJobStatus(existingJobId)
@@ -204,14 +266,23 @@ export default function GeneratePlanPage() {
 
       // Job started successfully
       const newJobId = result.job_id
+      const startedAt = Date.now()
       setJobId(newJobId)
       setJobStatus('processing')
-      startTimeRef.current = Date.now()
+      startTimeRef.current = startedAt
       setProgress(10)
       setStatus('Hệ thống AI đang xử lý...')
 
-      // Save job ID to session storage
+      // Save job metadata
       sessionStorage.setItem(`plan_job_${userId}`, newJobId)
+      saveJobMeta(userId, {
+        jobId: newJobId,
+        startedAt,
+        progress: 10,
+        status: 'processing',
+        statusText: 'Hệ thống AI đang xử lý...',
+        elapsedSeconds: 0
+      })
 
       // Start polling for job status
       // Start SSE for real-time updates; keep polling as fallback
@@ -250,8 +321,9 @@ export default function GeneratePlanPage() {
           setJobStatus('completed')
           setPlanId(jobData.plan_id)
 
-          // Clear session storage
+          // Clear storage
           sessionStorage.removeItem(`plan_job_${userId}`)
+          clearJobMeta(userId)
           localStorage.removeItem(`pending_plan_${userId}`)
           try { localStorage.removeItem('pending_plan_latest') } catch {}
 
@@ -269,6 +341,7 @@ export default function GeneratePlanPage() {
           setJobStatus('failed')
           setError(jobData.error_message || 'Tạo kế hoạch thất bại')
           sessionStorage.removeItem(`plan_job_${userId}`)
+          clearJobMeta(userId)
 
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current)
@@ -280,6 +353,13 @@ export default function GeneratePlanPage() {
           setStatus(`Đang xử lý... (${elapsed}s)`)
           const runtimeProgress = Math.min(95, Math.max(progress, 10 + (elapsed / 120) * 80))
           setProgress(runtimeProgress)
+          saveJobMeta(userId, {
+            jobId: id,
+            progress: runtimeProgress,
+            status: 'processing',
+            statusText: `Đang xử lý... (${elapsed}s)`,
+            elapsedSeconds: elapsed
+          })
         }
 
       } catch (error) {
@@ -290,6 +370,7 @@ export default function GeneratePlanPage() {
       if (attempts >= maxAttempts) {
         setError('Quá thời gian chờ. Vui lòng thử lại.')
         sessionStorage.removeItem(`plan_job_${userId}`)
+        clearJobMeta(userId)
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current)
         }
