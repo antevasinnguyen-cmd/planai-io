@@ -62,10 +62,12 @@ export const signInWithGoogle = async () => {
     
     if (error) {
       console.error('=== SUPABASE: Lỗi đăng nhập Google ===', error)
+    } else if (data?.url) {
+      console.log('=== SUPABASE: Chuyển hướng người dùng tới Google OAuth ===', data.url)
+      window.location.href = data.url
+      return { data, error: null }
     } else {
-      console.log('=== SUPABASE: Supabase sẽ xử lý chuyển hướng OAuth ===', {
-        hasUrl: !!data?.url
-      })
+      console.warn('=== SUPABASE: Không nhận được URL chuyển hướng từ Supabase ===')
     }
 
     return { data, error }
