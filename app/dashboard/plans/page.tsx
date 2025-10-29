@@ -3,9 +3,29 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ArrowLeft } from 'lucide-react'
+import { Home } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { getUserPlans, getUserUsageStats, getUserSubscription, getSubscriptionLimits, getTierName, supabase } from '@/lib/supabase'
+
+const buildSubscription = (subscriptionData: any | null = null) => {
+  const tier = subscriptionData?.tier || 'free'
+  const baseLimits = getSubscriptionLimits(tier)
+
+  return {
+    ...subscriptionData,
+    tier,
+    status: subscriptionData?.status ?? 'active',
+    plan_limit: subscriptionData?.plan_limit && subscriptionData.plan_limit > 0
+      ? subscriptionData.plan_limit
+      : baseLimits.plans,
+    chat_limit: subscriptionData?.chat_limit && subscriptionData.chat_limit > 0
+      ? subscriptionData.chat_limit
+      : baseLimits.chats,
+    word_limit: subscriptionData?.word_limit && subscriptionData.word_limit > 0
+      ? subscriptionData.word_limit
+      : baseLimits.words
+  }
+}
 
 interface Plan {
   id: string
@@ -26,62 +46,56 @@ interface UsageInfo {
 export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [usage, setUsage] = useState<UsageInfo | null>(null)
-  const [subscription, setSubscription] = useState<any>(null)
+  const [subscription, setSubscription] = useState<any>(buildSubscription())
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
 
   useEffect(() => {
+    const loadData = async (userId: string) => {
+      try {
+        await Promise.all([loadPlans(userId), loadUsageStats(userId)])
+      } catch (error) {
+        console.error('Error loading plans data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (!authLoading && !user) {
       router.push('/login')
       return
     }
 
     if (user) {
-      loadPlans()
-      loadUsageStats()
+      setLoading(true)
+      loadData(user.id)
     }
   }, [user, authLoading, router])
 
-  const loadPlans = async () => {
-    try {
-      if (!user) return
+  const loadPlans = async (userId: string) => {
+    const { data, error } = await getUserPlans(userId)
+    if (error) throw error
 
-      const { data, error } = await getUserPlans(user.id)
+    const sortedPlans = (data || []).sort((a, b) => {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
 
-      if (error) throw error
-      setPlans(data || [])
-    } catch (error) {
-      console.error('Error loading plans:', error)
-    } finally {
-      setLoading(false)
-    }
+    setPlans(sortedPlans)
   }
 
-  const loadUsageStats = async () => {
-    try {
-      if (!user) return
+  const loadUsageStats = async (userId: string) => {
+    const { data: subData } = await getUserSubscription(userId)
+    const resolvedSubscription = buildSubscription(subData)
+    setSubscription(resolvedSubscription)
 
-      // Get subscription
-      const { data: subData } = await getUserSubscription(user.id)
-      setSubscription(subData)
-
-      // Get usage stats
-      const usageStats = await getUserUsageStats(user.id)
-      setUsage(usageStats)
-    } catch (error) {
-      console.error('Error loading usage stats:', error)
-    }
-  }
-
-  const getSubscriptionLimits = (tier: string) => {
-    const limits = {
-      'free': { plans: 1, chats: 5, words: 1000 },
-      'basic': { plans: 1, chats: 20, words: 2000 },
-      'pro': { plans: 3, chats: 50, words: 5000 },
-      'pro_max': { plans: 6, chats: 999999, words: 10000 }
-    }
-    return limits[tier as keyof typeof limits] || limits.free
+    const usageStats = await getUserUsageStats(userId)
+    setUsage({
+      plans: usageStats.plans || 0,
+      chats: usageStats.chats || 0,
+      words: usageStats.words || 0,
+      error: usageStats.error
+    })
   }
 
   const getTierName = (tier: string) => {
@@ -96,7 +110,6 @@ export default function PlansPage() {
 
   const canCreatePlan = () => {
     if (!usage || !subscription) return false
-    const limits = getSubscriptionLimits(subscription.tier || 'free')
     return usage.plans < limits.plans
   }
 
@@ -128,7 +141,12 @@ export default function PlansPage() {
   }
 
   const tier = subscription?.tier || 'free'
-  const limits = getSubscriptionLimits(tier)
+  const baseLimits = getSubscriptionLimits(tier)
+  const limits = {
+    plans: subscription?.plan_limit ?? baseLimits.plans,
+    chats: subscription?.chat_limit ?? baseLimits.chats,
+    words: subscription?.word_limit ?? baseLimits.words
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f]">
