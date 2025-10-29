@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -44,7 +45,10 @@ export const signInWithGoogle = async () => {
       localStorage.setItem('auth_redirect', currentPath)
     }
     
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    // Sử dụng client từ auth-helpers để Supabase tự quản lý PKCE qua cookie
+    const browserSupabase = createClientComponentClient()
+
+    const { data, error } = await browserSupabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         queryParams: {
@@ -56,19 +60,14 @@ export const signInWithGoogle = async () => {
       }
     })
     
-    // Kiểm tra kết quả
     if (error) {
       console.error('=== SUPABASE: Lỗi đăng nhập Google ===', error)
-    } else if (data?.url) {
-      console.log('=== SUPABASE: Đăng nhập thành công, chuyển hướng đến ===', data.url)
-      
-      // Chuyển hướng đến URL của Google
-      window.location.href = data.url
-      return { data, error: null }
     } else {
-      console.log('=== SUPABASE: Không có URL chuyển hướng ===', data)
+      console.log('=== SUPABASE: Supabase sẽ xử lý chuyển hướng OAuth ===', {
+        hasUrl: !!data?.url
+      })
     }
-    
+
     return { data, error }
   } catch (err) {
     console.error('=== SUPABASE: Lỗi không xác định khi đăng nhập Google ===', err)
