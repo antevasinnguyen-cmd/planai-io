@@ -49,6 +49,8 @@ export default function CreatePlanV2() {
       localStorage.removeItem(`planai_chat_messages_${userId}`)
       localStorage.removeItem(`pending_plan_${userId}`)
     }
+    // Also clear the stable fallback key
+    try { localStorage.removeItem('pending_plan_latest') } catch {}
     
     // Auto-start conversation with sequential messages
     const welcomeMessage1: Message = {
@@ -311,6 +313,20 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     if (collectedFields.includes('readiness_level')) newInfo['readiness'] = true
     if (collectedFields.includes('age') || userInput.length > 50) newInfo['description'] = true
 
+    // Robust fallback detection for timeline (e.g., "2-3 năm", "6 tháng", "trong 2 năm", "sau 3 tháng")
+    try {
+      const text = userInput.toLowerCase()
+      const timelinePatterns = [
+        /\b\d{1,2}\s*[-–—]\s*\d{1,2}\s*(năm|nam|tháng|thang|tuần|tuan|ngày|ngay|quý|quy)\b/i,
+        /\b\d{1,2}\s*(năm|nam|tháng|thang|tuần|tuan|ngày|ngay|quý|quy)\b/i,
+        /\btrong\s*\d{1,2}\s*(năm|nam|tháng|thang|tuần|tuan|ngày|ngay|quý|quy)\b/i,
+        /\bsau\s*\d{1,2}\s*(năm|nam|tháng|thang|tuần|tuan|ngày|ngay|quý|quy)\b/i
+      ]
+      if (!newInfo['timeline'] && timelinePatterns.some((re) => re.test(text))) {
+        newInfo['timeline'] = true
+      }
+    } catch {}
+
     setCollectedInfo(prev => ({ ...prev, ...newInfo }))
   }
 
@@ -320,8 +336,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canCreatePlan = () => {
-    // Use AI Memory to check if ready for plan
-    return aiMemory.current.isReadyForPlan() || messages.length > 2
+    return true
   }
 
   const getTierName = (tier: string) => {
@@ -392,7 +407,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       goals: computedGoals,
       timestamp: new Date().toISOString()
     }
+    // Save under user-specific key and a stable fallback key
     localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(planData))
+    try { localStorage.setItem('pending_plan_latest', JSON.stringify(planData)) } catch {}
     
     // Navigate to plan generation page
     router.push('/dashboard/plans/generate')

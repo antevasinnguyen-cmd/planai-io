@@ -42,6 +42,7 @@ export default function GeneratePlanPage() {
             const userId = user?.id || 'anonymous'
             sessionStorage.removeItem(`plan_job_${userId}`)
             localStorage.removeItem(`pending_plan_${userId}`)
+            try { localStorage.removeItem('pending_plan_latest') } catch {}
             if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
             if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
             setTimeout(() => { router.push(`/dashboard/plans/${data.plan_id}`) }, 1200)
@@ -70,14 +71,10 @@ export default function GeneratePlanPage() {
   }
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
-
-    // Check if user has plan data in localStorage
+    // Do not force redirect immediately; attempt to proceed using cookies if available
     const userId = user?.id || 'anonymous'
-    const planData = localStorage.getItem(`pending_plan_${userId}`)
+    // Check both user-specific and stable fallback keys
+    const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
     
     if (!planData) {
       console.log('=== GENERATE: No plan data found, redirecting to create-plan ===')
@@ -133,7 +130,7 @@ export default function GeneratePlanPage() {
 
   const startPlanGeneration = async () => {
     const userId = user?.id || 'anonymous'
-    const planData = localStorage.getItem(`pending_plan_${userId}`)
+    const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
     
     if (!planData) {
       console.error('=== GENERATE: No plan data found in localStorage ===')
@@ -268,6 +265,7 @@ export default function GeneratePlanPage() {
           // Clear session storage
           sessionStorage.removeItem(`plan_job_${userId}`)
           localStorage.removeItem(`pending_plan_${userId}`)
+          try { localStorage.removeItem('pending_plan_latest') } catch {}
 
           // Redirect after 2 seconds
           setTimeout(() => {

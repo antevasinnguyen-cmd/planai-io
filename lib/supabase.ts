@@ -44,7 +44,8 @@ export const signInWithGoogle = async () => {
           access_type: 'offline',
           prompt: 'consent',
         },
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: `${window.location.origin}/auth/callback`,
+        flowType: 'pkce'
       }
     })
     
