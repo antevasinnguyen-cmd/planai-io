@@ -351,7 +351,7 @@ export const getUserUsageStats = async (userId: string) => {
       .select('id')
       .eq('user_id', userId)
       .eq('type', 'user')
-      .eq('source', 'api')
+      .or('source.eq.api,source.is.null')
       .gte('created_at', startOfMonth.toISOString())
     chatsData = res.data as any[] | null
     chatsError = res.error

@@ -234,6 +234,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionData.session.access_token}`
         },
+        credentials: 'include',
         body: JSON.stringify({
           message: currentInput,
           chatHistory

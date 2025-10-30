@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       // Khởi tạo Supabase client với token
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      const tokenClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: {
           headers: {
             Authorization: `Bearer ${token}`
@@ -59,12 +59,13 @@ export async function POST(request: NextRequest) {
       })
       
       // Lấy user từ token
-      const { data, error } = await supabase.auth.getUser()
+      const { data, error } = await tokenClient.auth.getUser()
       if (error) {
         logger.error('API_CHAT_TOKEN_ERROR', { error: String(error) })
       } else if (data?.user) {
         logger.info('API_CHAT_USER_FROM_TOKEN', { userId: data.user.id })
         user = data.user
+        ;(request as any)._tokenClient = tokenClient // store for later fallback inserts
       }
     }
     
@@ -194,7 +195,7 @@ export async function POST(request: NextRequest) {
       logger.warn('API_CHAT_PROFILE_UPDATE_FAILED', { error: String(e) })
     }
 
-    // Save messages to DB under session (RLS-safe)
+    // Save messages to DB under session (RLS-safe). If it fails (no cookies), fallback to token client when possible.
     try {
       const cookieStore = cookies()
       const rhSupabase = createRouteHandlerClient({ cookies: () => cookieStore })
@@ -208,6 +209,21 @@ export async function POST(request: NextRequest) {
         .insert({ user_id: user.id, message: aiResponse, type: 'ai', created_at: new Date().toISOString(), source: 'api' })
     } catch (e) {
       logger.warn('API_CHAT_SAVE_DB_FAILED', { error: String(e) })
+      // Fallback using token-auth client if available
+      try {
+        const tokenClient = (request as any)._tokenClient
+        if (tokenClient) {
+          await tokenClient
+            .from('chat_messages')
+            .insert({ user_id: user.id, message, type: 'user', created_at: new Date().toISOString(), source: 'api' })
+          await tokenClient
+            .from('chat_messages')
+            .insert({ user_id: user.id, message: aiResponse, type: 'ai', created_at: new Date().toISOString(), source: 'api' })
+          logger.info('API_CHAT_SAVE_DB_FALLBACK_TOKEN_OK', { userId: user.id })
+        }
+      } catch (e2) {
+        logger.error('API_CHAT_SAVE_DB_FALLBACK_TOKEN_FAILED', { error: String(e2) })
+      }
     }
 
     // Return response with usage info (clamped)
