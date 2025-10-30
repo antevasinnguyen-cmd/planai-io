@@ -200,6 +200,23 @@ async function processJobInBackground(
         .eq('id', jobId)
     }
 
+    // Ensure profile exists to satisfy potential FK (plans.user_id -> profiles.id)
+    try {
+      const client = admin || supabase
+      const { data: prof } = await client
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!prof) {
+        await client
+          .from('profiles')
+          .insert({ id: userId, created_at: new Date().toISOString() })
+      }
+    } catch (ensureErr) {
+      logger.warn('BG_ENSURE_PROFILE_FAIL', { userId, error: String(ensureErr) })
+    }
+
     // Generate plan with timeout + retry/backoff
     const maxAttempts = 3
     let attempt = 0

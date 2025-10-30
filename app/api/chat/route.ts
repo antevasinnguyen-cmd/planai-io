@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateChatResponse, analyzeUserInput } from '@/lib/openai'
+import { generateChatResponse, generateChatResponseWithSystemPrompt, analyzeUserInput } from '@/lib/openai'
 import { getCurrentUser, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
 import { getChatSystemPrompt } from '@/lib/prompts'
 import { createClient } from '@supabase/supabase-js'
@@ -115,11 +115,34 @@ export async function POST(request: NextRequest) {
       }
     ]
 
+    // Build tier-aware, formatting-rich system prompt
+    const { data: subData } = await getUserSubscription(user.id)
+    const tier = subData?.tier || usageCheck.tier || 'free'
+    // simple timeline extraction from current message and last few history items
+    const recentText = [message, ...(chatHistory?.slice(-3)?.map((h: any) => h?.message || '') || [])].join(' \n ')
+    const tlMatch = recentText.match(/(\d+)\s*[-–—]?\s*(\d+)?\s*(năm|tháng|year|month)/i)
+    const timelineHint = tlMatch ? (tlMatch[2] ? `${tlMatch[1]}-${tlMatch[2]} ${tlMatch[3]}` : `${tlMatch[1]} ${tlMatch[3]}`) : ''
+    const basePrompt = getChatSystemPrompt()
+    const tierAddons = (() => {
+      if (tier === 'free') {
+        return `\n\nFormatting: Sử dụng **Markdown cơ bản** (tiêu đề ##, bullet, in đậm số liệu). Tập trung gợi ý ngắn gọn, giá trị ngay.`
+      }
+      if (tier === 'basic') {
+        return `\n\nFormatting nâng cao cho gói trả phí:\n- Dùng **Markdown đầy đủ**: ##, ###, ####, **đậm**, *nghiêng*\n- Thêm 1 bảng tóm tắt số liệu chính (Markdown table)\n- Lộ trình (Roadmap) chia mốc theo tháng/quý${timelineHint ? ` để phù hợp thời gian: ${timelineHint}` : ''}\n- Đưa ví dụ/công thức và 3 nguồn tham khảo (link).`
+      }
+      if (tier === 'pro') {
+        return `\n\nFormatting chuyên sâu:\n- Nhiều mục H2/H3, bullet nested\n- Ít nhất 2 bảng: (1) Dòng tiền, (2) Kế hoạch tiết kiệm/đầu tư\n- Roadmap theo mốc thời gian cụ thể${timelineHint ? ` (${timelineHint})` : ''}\n- Tính toán chi tiết, tỷ lệ %, kịch bản A/B, rủi ro và cách giảm thiểu.`
+      }
+      return `\n\nFormatting tối đa (Gói 3):\n- Cấu trúc như tài liệu tư vấn: Mục lục, H2/H3/H4, tóm tắt điều hành\n- Ít nhất 3 bảng (dòng tiền, danh mục, KPI), biểu đồ dưới dạng bảng ASCII nếu phù hợp\n- Roadmap 5 năm với mốc theo quý${timelineHint ? ` (khớp timeline: ${timelineHint})` : ''}\n- Tài liệu tham khảo, link học tập, checklist hàng tuần/tháng, KPI đo lường.`
+    })()
+    const timelineDirective = timelineHint ? `\n\nQuan trọng: Mọi đề xuất phải **phù hợp với thời gian** người dùng đã nói: ${timelineHint}. Không đưa mốc vượt quá thời gian này trừ khi giải thích rõ lý do.` : ''
+    const customSystemPrompt = `${basePrompt}${tierAddons}${timelineDirective}`
+
     // Generate AI response
     let aiResponse: string
     try {
       logger.info('API_CHAT_CALLING_AI', { userId: user.id })
-      aiResponse = await generateChatResponse(messages)
+      aiResponse = await generateChatResponseWithSystemPrompt(messages, customSystemPrompt)
       logger.info('API_CHAT_AI_SUCCESS', { responseLength: aiResponse?.length })
     } catch (aiError) {
       logger.error('API_CHAT_AI_ERROR', { error: aiError instanceof Error ? aiError.message : String(aiError) })

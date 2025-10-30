@@ -382,28 +382,43 @@ export class AIMemorySystem {
   }
   
   private extractTimeline(text: string) {
-    // Pattern: "trong 2 năm", "5 năm nữa", "6 tháng", "ngắn hạn", "dài hạn"
+    // Pattern: "trong 2 năm", "5 năm nữa", "6 tháng", "2 - 3 năm", "2–3 năm", "2—3 năm", "ngắn hạn", "dài hạn"
     const patterns = [
       /(?:trong|within)\s*(\d+)\s*(năm|tháng|year|month)/i,
-      /(\d+)\s*(năm|tháng|year|month)\s*(?:nữa|tới|next)/i
+      /(\d+)\s*(năm|tháng|year|month)\s*(?:nữa|tới|next)/i,
+      /(\d+)\s*[-–—]\s*(\d+)\s*(năm|tháng|year|month)/i
     ]
     
     for (const pattern of patterns) {
       const match = text.match(pattern)
       if (match) {
-        const number = parseInt(match[1])
-        const unit = match[2].toLowerCase()
-        
-        this.profile.timeline = match[0]
-        this.collectedFields.add('timeline')
-        
-        // Convert to months
-        if (unit.includes('năm') || unit.includes('year')) {
-          this.profile.timeline_months = number * 12
+        if (match.length === 4) {
+          // Range form: e.g., 2 - 3 năm
+          const n1 = parseInt(match[1])
+          const n2 = parseInt(match[2])
+          const unit = match[3].toLowerCase()
+          this.profile.timeline = match[0]
+          this.collectedFields.add('timeline')
+          // Use the midpoint as representative months
+          const mid = Math.round((n1 + n2) / 2)
+          if (unit.includes('năm') || unit.includes('year')) {
+            this.profile.timeline_months = mid * 12
+          } else {
+            this.profile.timeline_months = mid
+          }
+          this.collectedFields.add('timeline_months')
         } else {
-          this.profile.timeline_months = number
+          const number = parseInt(match[1])
+          const unit = match[2].toLowerCase()
+          this.profile.timeline = match[0]
+          this.collectedFields.add('timeline')
+          if (unit.includes('năm') || unit.includes('year')) {
+            this.profile.timeline_months = number * 12
+          } else {
+            this.profile.timeline_months = number
+          }
+          this.collectedFields.add('timeline_months')
         }
-        this.collectedFields.add('timeline_months')
         break
       }
     }

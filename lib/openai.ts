@@ -9,6 +9,82 @@ export interface ChatMessage {
   content: string
 }
 
+// Variant that accepts a custom system prompt (tier-aware formatting)
+export const generateChatResponseWithSystemPrompt = async (
+  messages: ChatMessage[],
+  systemPrompt: string
+): Promise<string> => {
+  try {
+    logger.info('OPENAI_CHAT_START_CUSTOM', {})
+    const systemMessage = {
+      role: 'system' as const,
+      content: systemPrompt || getChatSystemPrompt()
+    }
+    const fullMessages = [systemMessage, ...messages]
+
+    const cacheKey = generateCacheKey(fullMessages)
+    logger.info('OPENAI_CHAT_CHECK_CACHE', {})
+    const cachedResponse = await checkCache(cacheKey)
+    if (cachedResponse) {
+      logger.info('OPENAI_CHAT_CACHE_HIT', {})
+      return cachedResponse
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      logger.error('OPENAI_MISSING_API_KEY', {})
+      throw new Error('OpenAI API key không được cấu hình')
+    }
+
+    try {
+      const model = selectModel(TaskType.REGULAR_CHAT)
+      const client = getOpenAI()
+      if (!client) throw new Error('OpenAI client không được khởi tạo')
+
+      const completion = await client.chat.completions.create({
+        model,
+        messages: fullMessages,
+        max_tokens: 2200,
+        temperature: 0.75,
+        top_p: 0.9,
+        frequency_penalty: 0.1,
+        presence_penalty: 0.1,
+      })
+
+      const rawResponse = completion.choices[0]?.message?.content || 'Xin lỗi, tôi không thể trả lời lúc này.'
+      const cleanedResponse = cleanAIResponse(rawResponse)
+      const enhancedResponse = enhanceResponseFormatting(cleanedResponse.content)
+      await saveToCache(cacheKey, enhancedResponse)
+      return enhancedResponse
+    } catch (openaiError) {
+      logger.error('OPENAI_CHAT_ERROR_CUSTOM', { error: String(openaiError) })
+      // Fallback to Claude
+      try {
+        const { generateClaudeResponse, CLAUDE_MODELS } = await import('./claude')
+        if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key không được cấu hình')
+        const rawClaudeResponse = await generateClaudeResponse(
+          [
+            { role: 'system', content: systemPrompt || getChatSystemPrompt() },
+            ...messages,
+          ] as any,
+          CLAUDE_MODELS.DEFAULT,
+          2200,
+          0.75,
+        )
+        const cleanedClaudeResponse = cleanAIResponse(rawClaudeResponse)
+        const enhancedClaudeResponse = enhanceResponseFormatting(cleanedClaudeResponse.content)
+        await saveToCache(cacheKey, enhancedClaudeResponse)
+        return enhancedClaudeResponse
+      } catch (claudeError) {
+        logger.error('OPENAI_CLAUDE_ERROR_CUSTOM', { error: String(claudeError) })
+        throw new Error('Không thể kết nối với cả OpenAI và Claude')
+      }
+    }
+  } catch (error) {
+    logger.error('OPENAI_CHAT_UNHANDLED_CUSTOM', { error: String(error) })
+    return 'Ui, có lỗi xảy ra khi kết nối với AI. Bạn vui lòng thử lại sau ít phút nữa nhé.'
+  }
+}
+
 // Initialize OpenAI client (lazy initialization)
 let openai: OpenAI | null = null
 

@@ -98,7 +98,7 @@ export default function GeneratePlanPage() {
           } else if (data.status === 'processing') {
             const elapsed = Number(data.elapsed_seconds || 0)
             const estimatedProgress = Math.min(95, Math.max(10, 10 + (elapsed / 120) * 80))
-            setProgress(estimatedProgress)
+            setProgress((p) => Math.max(p, estimatedProgress))
             setStatus(`Đang xử lý... (${elapsed}s)`)
             setJobStatus('processing')
             const userId = user?.id || 'anonymous'
@@ -176,7 +176,7 @@ export default function GeneratePlanPage() {
         
         // Update progress based on elapsed time
         const estimatedProgress = Math.min(90, 10 + (elapsed / 120) * 80)
-        setProgress(estimatedProgress)
+        setProgress((p) => Math.max(p, estimatedProgress))
       }, 1000)
       
       return () => clearInterval(timer)
@@ -362,7 +362,7 @@ export default function GeneratePlanPage() {
           const elapsed = Number(jobData.elapsed_seconds || 0)
           setStatus(`Đang xử lý... (${elapsed}s)`)
           const runtimeProgress = Math.min(95, Math.max(progress, 10 + (elapsed / 120) * 80))
-          setProgress(runtimeProgress)
+          setProgress((p) => Math.max(p, runtimeProgress))
           saveJobMeta(userId, {
             jobId: id,
             progress: runtimeProgress,
