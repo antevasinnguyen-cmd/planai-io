@@ -101,27 +101,7 @@ export const generateChatResponseWithSystemPrompt = async (
       return enhancedResponse
     } catch (openaiError) {
       logger.error('OPENAI_CHAT_ERROR_CUSTOM', { error: String(openaiError) })
-      // Fallback to Claude
-      try {
-        const { generateClaudeResponse, CLAUDE_MODELS } = await import('./claude')
-        if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key không được cấu hình')
-        const rawClaudeResponse = await generateClaudeResponse(
-          [
-            { role: 'system', content: systemPrompt || getChatSystemPrompt() },
-            ...messages,
-          ] as any,
-          CLAUDE_MODELS.DEFAULT,
-          2200,
-          0.75,
-        )
-        const cleanedClaudeResponse = cleanAIResponse(rawClaudeResponse)
-        const enhancedClaudeResponse = enhanceResponseFormatting(cleanedClaudeResponse.content)
-        await saveToCache(cacheKey, enhancedClaudeResponse)
-        return enhancedClaudeResponse
-      } catch (claudeError) {
-        logger.error('OPENAI_CLAUDE_ERROR_CUSTOM', { error: String(claudeError) })
-        throw new Error('Không thể kết nối với cả OpenAI và Claude')
-      }
+      throw new Error('Không thể kết nối OpenAI')
     }
   } catch (error) {
     logger.error('OPENAI_CHAT_UNHANDLED_CUSTOM', { error: String(error) })
@@ -139,6 +119,39 @@ const getOpenAI = () => {
     })
   }
   return openai
+}
+
+const raceWithAbort = async <T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> => {
+  if (!signal) {
+    return promise
+  }
+
+  if (signal.aborted) {
+    const abortError = new Error('AbortError')
+    abortError.name = 'AbortError'
+    throw abortError
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const abortHandler = () => {
+      signal.removeEventListener('abort', abortHandler)
+      const abortError = new Error('AbortError')
+      abortError.name = 'AbortError'
+      reject(abortError)
+    }
+
+    signal.addEventListener('abort', abortHandler, { once: true })
+
+    promise
+      .then(result => {
+        signal.removeEventListener('abort', abortHandler)
+        resolve(result)
+      })
+      .catch(error => {
+        signal.removeEventListener('abort', abortHandler)
+        reject(error)
+      })
+  })
 }
 
 export const generateChatResponse = async (messages: ChatMessage[]): Promise<string> => {
@@ -201,38 +214,7 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
       return enhancedResponse
     } catch (openaiError) {
       logger.error('OPENAI_CHAT_ERROR', { error: String(openaiError) })
-      
-      // Fallback to Claude
-      try {
-        logger.info('OPENAI_CHAT_FALLBACK_CLAUDE', {})
-        const { generateClaudeResponse, CLAUDE_MODELS } = await import('./claude')
-        
-        // Kiểm tra API key Anthropic
-        if (!process.env.ANTHROPIC_API_KEY) {
-          logger.error('OPENAI_MISSING_ANTHROPIC_KEY', {})
-          throw new Error('Anthropic API key không được cấu hình')
-        }
-        
-        const rawClaudeResponse = await generateClaudeResponse(
-          fullMessages,
-          CLAUDE_MODELS.DEFAULT,
-          2000, // Increased for ChatGPT Plus quality
-          0.8, // Higher creativity for better responses
-        )
-        
-        // Clean and enhance Claude response
-        const cleanedClaudeResponse = cleanAIResponse(rawClaudeResponse)
-        const enhancedClaudeResponse = enhanceResponseFormatting(cleanedClaudeResponse.content)
-        
-        // Save enhanced Claude response to cache
-        logger.info('OPENAI_CLAUDE_CACHE_SAVE', {})
-        await saveToCache(cacheKey, enhancedClaudeResponse)
-        
-        return enhancedClaudeResponse
-      } catch (claudeError) {
-        logger.error('OPENAI_CLAUDE_ERROR', { error: String(claudeError) })
-        throw new Error('Không thể kết nối với cả OpenAI và Claude')
-      }
+      throw new Error('Không thể kết nối OpenAI')
     }
   } catch (error) {
     logger.error('OPENAI_CHAT_UNHANDLED', { error: String(error) })
@@ -362,13 +344,15 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
         throw new Error('OpenAI client not initialized')
       }
 
-      const completion = await client.chat.completions.create({
-        model,
-        messages,
-        max_tokens: maxTokensForTier,
-        temperature: 0.3,
-        ...(signal && { signal }) // Add abort signal if provided
-      })
+      const completion = await raceWithAbort(
+        client.chat.completions.create({
+          model,
+          messages,
+          max_tokens: maxTokensForTier,
+          temperature: 0.3
+        }),
+        signal
+      )
 
       const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
 
@@ -379,55 +363,7 @@ QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế ho�
 
     } catch (gptError) {
       logger.error('OPENAI_PLAN_OPENAI_ERROR', { error: String(gptError) })
-
-      // Fallback to Claude-3.5-Sonnet
-      try {
-        logger.info('OPENAI_PLAN_FALLBACK_CLAUDE', {})
-        const { generateFinancialPlanWithClaude } = await import('./claude')
-
-        if (!process.env.ANTHROPIC_API_KEY) {
-          throw new Error('Anthropic API key not configured')
-        }
-
-        const claudeResponse = await generateFinancialPlanWithClaude(
-          `Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.
-
-Yêu cầu tạo kế hoạch:
-1. Độ dài: ${wordRange}
-2. Cấu trúc rõ ràng với các phần: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
-3. Phù hợp với thị trường tài chính Việt Nam
-4. Bao gồm lộ trình cụ thể theo tháng/quý/năm
-5. Checklist hành động hàng ngày/tuần/tháng
-6. Liên kết đến tài nguyên học tập thực tế
-7. Tích hợp phân tích tâm linh nếu có
-
-QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế và có thể thực hiện được trong giới hạn này.
-
-${spiritualInsights ? `Phân tích tâm linh và số học:
-${spiritualInsights}
-
-Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}`,
-          `Tạo kế hoạch tài chính cho: ${planName}
-
-Thông tin cá nhân:
-- Mục tiêu: ${goals}
-- Thu nhập: ${collectedInfo.income || 'Chưa có thông tin'} VNĐ/tháng
-- Nghề nghiệp: ${collectedInfo.occupation || 'Chưa có thông tin'}
-- Thời gian: ${collectedInfo.timeline || 'Chưa có thông tin'}
-- Mức độ rủi ro: ${collectedInfo.risk_tolerance || 'Trung bình'}`,
-          maxTokensForTier,
-          0.3
-        )
-
-        // Save Claude response to cache
-        await saveToCache(cacheKey, claudeResponse)
-        logger.info('OPENAI_PLAN_CLAUDE_DONE', {})
-        return claudeResponse
-
-      } catch (claudeError) {
-        logger.error('OPENAI_PLAN_CLAUDE_ERROR', { error: String(claudeError) })
-        throw new Error('Không thể tạo kế hoạch với cả GPT-4o-mini và Claude')
-      }
+      throw gptError
     }
   } catch (error) {
     logger.error('OPENAI_PLAN_UNHANDLED', { error: String(error) })

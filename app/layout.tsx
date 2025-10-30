@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description: 'Ứng dụng công nghệ giúp người dùng lập kế hoạch / xây dựng chiến lược cá nhân hoá cho mục tiêu tài chính, kiếm tiền, tăng thu nhập.',
   keywords: 'AI, kế hoạch tài chính, kiếm tiền, tăng thu nhập, Việt Nam, SaaS',
   authors: [{ name: 'PlanAI Team' }],
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'),
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -24,11 +25,10 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
-  themeColor: '#4F46E5',
   openGraph: {
     title: 'PlanAI - AI Financial Planning',
     description: 'Biến dữ liệu thô thành bản kế hoạch đáng mơ ước',
-    url: 'https://planai.io',
+    url: 'https://planai.io.vn',
     siteName: 'PlanAI',
     locale: 'vi_VN',
     type: 'website',
@@ -41,6 +41,10 @@ export const metadata: Metadata = {
       },
     ],
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#4F46E5'
 }
 
 export default function RootLayout({

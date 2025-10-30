@@ -1,9 +1,5 @@
 import OpenAI from 'openai'
-import { createClient } from '@supabase/supabase-js'
-import { generateClaudeResponse, CLAUDE_MODELS } from './claude'
-
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+import { getCachedResponse, saveCachedResponse } from './supabase'
 
 // Initialize OpenAI client (lazy initialization to handle missing API key during build)
 let openai: OpenAI | null = null
@@ -17,16 +13,10 @@ const getOpenAI = () => {
   return openai
 }
 
-// Initialize Supabase client for caching
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 // Model configuration
 export const MODELS = {
   CHAT_DEFAULT: 'gpt-4o-mini',  // Upgraded from gpt-3.5-turbo for better quality
   COMPLEX_PLANNING: 'gpt-4o-mini',
-  FALLBACK_PRIMARY: 'claude-3-5-sonnet',
-  FALLBACK_SECONDARY: 'claude-3-5-haiku',
   EMBEDDING: 'text-embedding-3-small'
 }
 
@@ -65,17 +55,8 @@ export const generateCacheKey = (messages: any[]): string => {
 // Function to check cache for existing response
 export const checkCache = async (cacheKey: string): Promise<string | null> => {
   try {
-    const { data, error } = await supabase
-      .from('ai_response_cache')
-      .select('response')
-      .eq('cache_key', cacheKey)
-      .single()
-    
-    if (error || !data) {
-      return null
-    }
-    
-    return data.response
+    const { data } = await getCachedResponse(cacheKey)
+    return data || null
   } catch (error) {
     console.error('Cache check error:', error)
     return null
@@ -85,19 +66,7 @@ export const checkCache = async (cacheKey: string): Promise<string | null> => {
 // Function to save response to cache
 export const saveToCache = async (cacheKey: string, response: string): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('ai_response_cache')
-      .insert([
-        {
-          cache_key: cacheKey,
-          response,
-          created_at: new Date().toISOString(),
-        }
-      ])
-    
-    if (error) {
-      console.error('Cache save error:', error)
-    }
+    await saveCachedResponse(cacheKey, response)
   } catch (error) {
     console.error('Cache save error:', error)
   }
@@ -154,36 +123,22 @@ export const fallbackToClaudeIfNeeded = async (
   maxTokens: number = 500,
   temperature: number = 0.7
 ): Promise<string> => {
+  // Pure OpenAI only, no external fallback per product requirement
   const client = getOpenAI()
-  
+  if (!client) {
+    console.error('OpenAI client not initialized')
+    return 'Hệ thống AI đang bận. Vui lòng thử lại sau.'
+  }
   try {
-    // First try with OpenAI if available
-    if (client) {
-      const completion = await client.chat.completions.create({
-        model: MODELS.CHAT_DEFAULT,
-        messages,
-        max_tokens: maxTokens,
-        temperature,
-      })
-      
-      return completion.choices[0]?.message?.content || ''
-    } else {
-      throw new Error('OpenAI client not initialized')
-    }
+    const completion = await client.chat.completions.create({
+      model: MODELS.CHAT_DEFAULT,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+    })
+    return completion.choices[0]?.message?.content || ''
   } catch (error) {
-    console.error('OpenAI API Error, falling back to Claude:', error)
-    
-    try {
-      // Fall back to Claude
-      return await generateClaudeResponse(
-        messages,
-        CLAUDE_MODELS.DEFAULT,
-        maxTokens,
-        temperature
-      )
-    } catch (claudeError) {
-      console.error('Claude API Error after fallback:', claudeError)
-      return 'Có lỗi xảy ra khi kết nối với AI. Vui lòng thử lại sau.'
-    }
+    console.error('OpenAI API Error:', error)
+    return 'Hệ thống AI đang bận. Vui lòng thử lại sau.'
   }
 }

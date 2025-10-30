@@ -65,45 +65,105 @@ export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [checklist, setChecklist] = useState<ChecklistItem[]>([])
   const [notes, setNotes] = useState<UserNote[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<string[]>([])
+  const [reloadToken, setReloadToken] = useState(0)
+
+  const emptySummary = useMemo<AnalyticsSummary>(
+    () => ({
+      total: 0,
+      completed: 0,
+      active: 0,
+      failed: 0,
+      totalWords: 0,
+      heatmap: {},
+      averageDuration: null,
+      plans: []
+    }),
+    []
+  )
 
   useEffect(() => {
     if (!user) {
+      setIsLoading(false)
       router.push('/login')
       return
     }
+    let cancelled = false
     ;(async () => {
+      setIsLoading(true)
+      const newErrors: string[] = []
+
       try {
-        setIsLoading(true)
-        const [subscriptionRes, usageRes, summaryRes, checklistRes, notesRes] = await Promise.all([
+        const [subscriptionRes, usageRes] = await Promise.all([
           getUserSubscription(user.id),
-          getUserUsageStats(user.id),
-          fetch('/api/analytics/summary', { credentials: 'include' }).then(res => res.json()),
-          fetch('/api/analytics/checklist', { credentials: 'include' }).then(res => res.json()),
-          fetch('/api/analytics/notes', { credentials: 'include' }).then(res => res.json())
+          getUserUsageStats(user.id)
         ])
 
-        if (summaryRes.error) throw new Error(summaryRes.error)
-        if (checklistRes.error) throw new Error(checklistRes.error)
-        if (notesRes.error) throw new Error(notesRes.error)
+        if (!cancelled) {
+          if (subscriptionRes.error) {
+            console.error('Failed to load subscription:', subscriptionRes.error)
+            newErrors.push('Không thể tải thông tin gói hiện tại. Đang hiển thị giới hạn mặc định.')
+          }
+          setSubscription(subscriptionRes.data)
 
-        setSubscription(subscriptionRes.data)
-        setUsage({
-          plans: usageRes.plans,
-          chats: usageRes.chats,
-          words: usageRes.words
-        })
-        setSummary(summaryRes as AnalyticsSummary)
-        setChecklist(checklistRes.items || [])
-        setNotes(notesRes.notes || [])
+          if (usageRes.error) {
+            console.error('Failed to load usage stats:', usageRes.error)
+            newErrors.push('Không thể tải thống kê sử dụng. Các chỉ số sẽ hiển thị 0.')
+          }
+          setUsage({
+            plans: usageRes.plans || 0,
+            chats: usageRes.chats || 0,
+            words: usageRes.words || 0
+          })
+        }
+
+        const loadJson = async <T,>(url: string, errorMessage: string): Promise<T | null> => {
+          try {
+            const res = await fetch(url, { credentials: 'include' })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || data?.error) {
+              throw new Error(data?.error || `Request failed with status ${res.status}`)
+            }
+            return data as T
+          } catch (err) {
+            console.error(`Failed to load ${url}:`, err)
+            if (!cancelled) newErrors.push(errorMessage)
+            return null
+          }
+        }
+
+        const [summaryData, checklistData, notesData] = await Promise.all([
+          loadJson<AnalyticsSummary>('/api/analytics/summary', 'Không thể tải thống kê tổng quan. Dữ liệu đang hiển thị trống.'),
+          loadJson<{ items: ChecklistItem[] }>('/api/analytics/checklist', 'Không thể tải checklist. Danh sách nhiệm vụ sẽ để trống.'),
+          loadJson<{ notes: UserNote[] }>('/api/analytics/notes', 'Không thể tải ghi chú chiến lược. Danh sách ghi chú sẽ để trống.')
+        ])
+
+        if (!cancelled) {
+          setSummary(summaryData || emptySummary)
+          setChecklist(checklistData?.items || [])
+          setNotes(notesData?.notes || [])
+        }
       } catch (err) {
-        console.error('Failed to load analytics:', err)
-        setError('Không thể tải dữ liệu phân tích. Vui lòng thử lại sau.')
+        console.error('Unexpected analytics load error:', err)
+        if (!cancelled) {
+          newErrors.push('Đã xảy ra lỗi không xác định. Một số dữ liệu có thể chưa hiển thị đầy đủ.')
+          setSummary(emptySummary)
+          setChecklist([])
+          setNotes([])
+          setUsage(prev => prev || { plans: 0, chats: 0, words: 0 })
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) {
+          setErrors(newErrors)
+          setIsLoading(false)
+        }
       }
     })()
-  }, [user, router])
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, router, emptySummary, reloadToken])
 
   const tier = subscription?.tier || 'free'
   const limits = useMemo(() => getSubscriptionLimits(tier), [tier])
@@ -151,27 +211,29 @@ export default function AnalyticsPage() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white dark:bg-[#1a1a1a] border border-rose-200 dark:border-rose-900/50 rounded-xl p-6 text-center space-y-3">
-          <Flame className="w-10 h-10 text-rose-500 mx-auto" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Không thể tải dữ liệu phân tích</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{error}</p>
-          <button
-            onClick={() => router.refresh()}
-            className="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Thử lại
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] p-6">
       <div className="max-w-7xl mx-auto space-y-8">
+        {errors.length > 0 && (
+          <div className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-semibold">Một số dữ liệu chưa thể tải. Dữ liệu còn lại đang hiển thị với giá trị trống.</p>
+                <ul className="mt-2 list-disc list-inside space-y-1">
+                  {errors.map((message, index) => (
+                    <li key={index}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+              <button
+                onClick={() => setReloadToken(token => token + 1)}
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary-700"
+              >
+                Thử tải lại
+              </button>
+            </div>
+          </div>
+        )}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <Link
