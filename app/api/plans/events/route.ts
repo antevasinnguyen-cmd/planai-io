@@ -8,9 +8,14 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request)
-    if (!user) {
-      logger.warn('SSE_UNAUTHORIZED', {})
+    // Use createRouteHandlerClient directly for better auth handling
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    // Get user from session
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (!user || authError) {
+      logger.warn('SSE_UNAUTHORIZED', { authError: authError?.message })
       return new Response('Unauthorized', { status: 401 })
     }
 
@@ -24,8 +29,6 @@ export async function GET(request: NextRequest) {
     const encoder = new TextEncoder()
     const stream = new ReadableStream<Uint8Array>({
       start: async (controller) => {
-        const cookieStore = cookies()
-        const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
         let closed = false
         const send = (event: string, data: any) => {

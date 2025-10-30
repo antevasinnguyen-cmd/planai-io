@@ -302,8 +302,18 @@ export default function GeneratePlanPage() {
 
     const checkJob = async () => {
       try {
+        // Get auth token
+        const { supabase } = await import('@/lib/supabase')
+        const { data: sessionData } = await supabase.auth.getSession()
+        
+        const headers: any = {}
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+        }
+        
         const res = await fetch(`/api/plans/job-status?job_id=${id}`, {
-          credentials: 'include'
+          credentials: 'include',
+          headers
         })
 
         if (!res.ok) {

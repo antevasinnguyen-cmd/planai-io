@@ -12,9 +12,14 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request)
-    if (!user) {
-      logger.warn('JOB_STATUS_UNAUTHORIZED', {})
+    // Use createRouteHandlerClient directly for better auth handling
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    // Get user from session
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (!user || authError) {
+      logger.warn('JOB_STATUS_UNAUTHORIZED', { authError: authError?.message })
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -31,9 +36,6 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Get job status
     const { data: job, error } = await supabase
