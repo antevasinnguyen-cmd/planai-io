@@ -7,7 +7,7 @@ import {
   Home, HelpCircle, Menu, X, ArrowRight, Target, BarChart3, Calendar, Sun, Moon,
   User, Zap, Shield, CreditCard
 } from 'lucide-react'
-import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits, checkTrialStatus, getTierName } from '@/lib/supabase'
+import { supabase, getUserSubscription, getUserUsageStats, getUserPlans, getSubscriptionLimits, checkTrialStatus, getTierName, initializeFreeTrialForNewUser } from '@/lib/supabase'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useTheme } from '@/lib/theme-context'
@@ -58,13 +58,13 @@ export default function DashboardFinal() {
   const initializeDashboard = async () => {
     if (!user) return
 
+    // Run sequentially to ensure trial creation (for brand-new users) happens before reading trial status
+    await loadSubscription(user.id)
     await Promise.all([
-      loadSubscription(user.id),
       loadUsageStats(user.id),
       loadRecentPlans(user.id),
       loadTrialStatus(user.id)
     ])
-    
     setIsLoading(false)
   }
 
@@ -89,6 +89,14 @@ export default function DashboardFinal() {
     try {
       const { data } = await getUserSubscription(userId)
       console.log('Subscription data:', data) // Debug log
+      if (!data) {
+        // Initialize free trial on first dashboard visit for new users
+        const init = await initializeFreeTrialForNewUser(userId)
+        if (init?.data) {
+          setSubscription(init.data)
+          return
+        }
+      }
       setSubscription(data)
     } catch (error) {
       console.error('Error loading subscription:', error)
@@ -403,10 +411,12 @@ export default function DashboardFinal() {
                       return null
                     }
 
-                    if (typeof trialStatus?.daysRemaining === 'number') {
+                    // For free tier, only use daysRemaining when trial is active and > 0
+                    if (trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && trialStatus.daysRemaining > 0) {
                       return new Date(now.getTime() + trialStatus.daysRemaining * DAY_MS)
                     }
 
+                    // Fallback: compute from subscription created_at if exists, otherwise from user.created_at
                     const createdSource = normalizeDate(subscription?.created_at) || normalizeDate(user?.created_at)
                     if (createdSource) {
                       return new Date(createdSource.getTime() + 30 * DAY_MS)
