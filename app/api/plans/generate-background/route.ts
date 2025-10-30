@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .in('status', ['pending', 'processing'])
+      .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
 
     if (countError) {
       return NextResponse.json(
