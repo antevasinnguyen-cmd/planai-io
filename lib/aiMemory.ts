@@ -253,22 +253,20 @@ export class AIMemorySystem {
     ]
     
     for (const pattern of patterns) {
-      const matches = text.matchAll(pattern)
-      for (const match of matches) {
-        let amount = match[1].replace(/[.,]/g, '')
-        
-        // Check if it's in millions or actual amount
+      let m: RegExpExecArray | null
+      const re = new RegExp(pattern.source, pattern.flags)
+      while ((m = re.exec(text)) !== null) {
+        let amountStr = (m[1] || '').replace(/[.,]/g, '')
+        let amountNum: number
         if (text.toLowerCase().includes('triệu') || text.toLowerCase().includes('tr')) {
-          amount = parseFloat(amount) * 1000000
-        } else if (amount.length > 6) {
-          amount = parseFloat(amount)
+          amountNum = parseFloat(amountStr) * 1000000
+        } else if (amountStr.length > 6) {
+          amountNum = parseFloat(amountStr)
         } else {
           continue
         }
-        
-        // Only set if it's a reasonable monthly income (1M - 1B VND)
-        if (amount >= 1000000 && amount <= 1000000000) {
-          this.profile.current_income = amount
+        if (amountNum >= 1000000 && amountNum <= 1000000000) {
+          this.profile.current_income = amountNum
           this.collectedFields.add('current_income')
           break
         }
@@ -286,19 +284,16 @@ export class AIMemorySystem {
     ]
     
     for (const pattern of patterns) {
-      const matches = text.matchAll(pattern)
-      for (const match of matches) {
-        let amount = parseFloat(match[1].replace(/[.,]/g, ''))
-        
-        // Check if it's in billions or millions
-        const matchText = match[0].toLowerCase()
+      let m: RegExpExecArray | null
+      const re = new RegExp(pattern.source, pattern.flags)
+      while ((m = re.exec(text)) !== null) {
+        let amount = parseFloat((m[1] || '').replace(/[.,]/g, ''))
+        const matchText = (m[0] || '').toLowerCase()
         if (matchText.includes('tỷ') || matchText.includes('ty') || matchText.includes('billion')) {
           amount *= 1000000000
         } else {
           amount *= 1000000
         }
-        
-        // Only set if it's reasonable savings (100K - 100B VND)
         if (amount >= 100000 && amount <= 100000000000) {
           this.profile.savings = amount
           this.collectedFields.add('savings')
