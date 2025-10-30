@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
 import { getAIMemorySystem, resetAIMemory } from '@/lib/aiMemory'
+import { getUserSubscription as fetchUserSubscription } from '@/lib/supabase'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface Message {
@@ -177,17 +178,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
   const loadSubscription = async (userId: string) => {
     try {
-      const { data, error } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .maybeSingle()
-
-      if (error && error.code !== 'PGRST116') {
-        throw error
-      }
-
+      const { data } = await fetchUserSubscription(userId)
       setSubscription(data || null)
     } catch (error) {
       console.error('Error loading subscription:', error)

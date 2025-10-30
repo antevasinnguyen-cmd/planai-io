@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateChatResponse, generateChatResponseWithSystemPrompt, analyzeUserInput } from '@/lib/openai'
-import { getCurrentUser, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis } from '@/lib/supabase'
+import { getCurrentUser, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis, getUserProfile } from '@/lib/supabase'
 import { getChatSystemPrompt } from '@/lib/prompts'
 import { createClient } from '@supabase/supabase-js'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
@@ -123,6 +123,25 @@ export async function POST(request: NextRequest) {
     const tlMatch = recentText.match(/(\d+)\s*[-–—]?\s*(\d+)?\s*(năm|tháng|year|month)/i)
     const timelineHint = tlMatch ? (tlMatch[2] ? `${tlMatch[1]}-${tlMatch[2]} ${tlMatch[3]}` : `${tlMatch[1]} ${tlMatch[3]}`) : ''
     const basePrompt = getChatSystemPrompt()
+    // Fetch profile for deeper personalization
+    let profileBlock = ''
+    try {
+      const { data: profile } = await getUserProfile(user.id)
+      if (profile) {
+        const lines: string[] = []
+        if (profile.full_name) lines.push(`Họ tên: ${profile.full_name}`)
+        if (profile.age) lines.push(`Tuổi: ${profile.age}`)
+        if (profile.occupation) lines.push(`Nghề nghiệp: ${profile.occupation}`)
+        if (profile.location) lines.push(`Khu vực: ${profile.location}`)
+        if (profile.current_income) lines.push(`Thu nhập: ${Number(profile.current_income).toLocaleString('vi-VN')} VNĐ/tháng`)
+        if (profile.savings) lines.push(`Tiết kiệm: ${Number(profile.savings).toLocaleString('vi-VN')} VNĐ`)
+        if (profile.timeline) lines.push(`Thời gian mục tiêu: ${profile.timeline}`)
+        if (profile.financial_goal) lines.push(`Mục tiêu: ${profile.financial_goal}`)
+        if (lines.length) {
+          profileBlock = `\n\nHỒ SƠ NGƯỜI DÙNG (tóm tắt):\n- ${lines.join('\n- ')}`
+        }
+      }
+    } catch {}
     const tierAddons = (() => {
       if (tier === 'free') {
         return `\n\nFormatting: Sử dụng **Markdown cơ bản** (tiêu đề ##, bullet, in đậm số liệu). Tập trung gợi ý ngắn gọn, giá trị ngay.`
@@ -136,7 +155,8 @@ export async function POST(request: NextRequest) {
       return `\n\nFormatting tối đa (Gói 3):\n- Cấu trúc như tài liệu tư vấn: Mục lục, H2/H3/H4, tóm tắt điều hành\n- Ít nhất 3 bảng (dòng tiền, danh mục, KPI), biểu đồ dưới dạng bảng ASCII nếu phù hợp\n- Roadmap 5 năm với mốc theo quý${timelineHint ? ` (khớp timeline: ${timelineHint})` : ''}\n- Tài liệu tham khảo, link học tập, checklist hàng tuần/tháng, KPI đo lường.`
     })()
     const timelineDirective = timelineHint ? `\n\nQuan trọng: Mọi đề xuất phải **phù hợp với thời gian** người dùng đã nói: ${timelineHint}. Không đưa mốc vượt quá thời gian này trừ khi giải thích rõ lý do.` : ''
-    const customSystemPrompt = `${basePrompt}${tierAddons}${timelineDirective}`
+    const personalizationDirectives = `\n\nYÊU CẦU CÁ NHÂN HÓA MẠNH (không máy móc):\n- Trích dẫn lại dữ liệu của người dùng trong câu trả lời.\n- Giải thích tại sao gợi ý phù hợp với hồ sơ hiện tại.\n- Đề xuất kịch bản A/B (an toàn vs tăng trưởng) và điều kiện chuyển đổi.\n- Đưa KPI đo lường, con số cụ thể, ước tính chi phí/lợi ích.\n- Cuối câu luôn có 🎯 1-2 câu hỏi chiến lược tiếp theo.\n${tier !== 'free' ? '- Thêm bảng số liệu, roadmap, và 2-3 tài liệu tham khảo đáng tin cậy.\n' : ''}`
+    const customSystemPrompt = `${basePrompt}${profileBlock}${tierAddons}${timelineDirective}${personalizationDirectives}`
 
     // Generate AI response
     let aiResponse: string

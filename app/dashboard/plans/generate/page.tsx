@@ -99,14 +99,14 @@ export default function GeneratePlanPage() {
             const elapsed = Number(data.elapsed_seconds || 0)
             const estimatedProgress = Math.min(95, Math.max(10, 10 + (elapsed / 120) * 80))
             setProgress((p) => Math.max(p, estimatedProgress))
-            setStatus(`Đang xử lý... (${elapsed}s)`)
+            setStatus('Đang xử lý...')
             setJobStatus('processing')
             const userId = user?.id || 'anonymous'
             saveJobMeta(userId, {
               jobId: id,
               progress: estimatedProgress,
               status: 'processing',
-              statusText: `Đang xử lý... (${elapsed}s)`,
+              statusText: 'Đang xử lý...',
               elapsedSeconds: elapsed
             })
           }
@@ -360,14 +360,14 @@ export default function GeneratePlanPage() {
         } else if (jobData.status === 'processing') {
           // Still processing
           const elapsed = Number(jobData.elapsed_seconds || 0)
-          setStatus(`Đang xử lý... (${elapsed}s)`)
+          setStatus('Đang xử lý...')
           const runtimeProgress = Math.min(95, Math.max(progress, 10 + (elapsed / 120) * 80))
           setProgress((p) => Math.max(p, runtimeProgress))
           saveJobMeta(userId, {
             jobId: id,
             progress: runtimeProgress,
             status: 'processing',
-            statusText: `Đang xử lý... (${elapsed}s)`,
+            statusText: 'Đang xử lý...',
             elapsedSeconds: elapsed
           })
         }

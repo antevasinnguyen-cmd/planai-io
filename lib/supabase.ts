@@ -269,15 +269,15 @@ export const getUserSubscription = async (userId: string) => {
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
-      .single()
-    
-    // If no subscription found, return null (not error) - this is normal for new users
-    if (error?.code === 'PGRST116') {
+      .order('created_at', { ascending: false })
+      .limit(1)
+    // PostgREST returns array here; pick first row if exists
+    const row = Array.isArray(data) ? (data[0] || null) : (data as any)
+    if (!row) {
       console.log(`No subscription found for user ${userId}, using defaults`)
       return { data: null, error: null }
     }
-    
-    return { data, error }
+    return { data: row, error }
   } catch (err) {
     console.error('Error getting subscription:', err)
     return { data: null, error: err }

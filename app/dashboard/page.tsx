@@ -90,12 +90,15 @@ export default function DashboardFinal() {
       const { data } = await getUserSubscription(userId)
       console.log('Subscription data:', data) // Debug log
       if (!data) {
-        // Initialize free trial on first dashboard visit for new users
-        const init = await initializeFreeTrialForNewUser(userId)
-        if (init?.data) {
-          setSubscription(init.data)
-          return
-        }
+        // Initialize free trial via secure API route (service role)
+        try {
+          const res = await fetch('/api/subscriptions/init', { method: 'POST' })
+          const init = await res.json()
+          if (res.ok && init?.data) {
+            setSubscription(init.data)
+            return
+          }
+        } catch {}
       }
       setSubscription(data)
     } catch (error) {
