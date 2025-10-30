@@ -381,14 +381,34 @@ export default function DashboardFinal() {
                 </div>
                 
                 {/* Hiển thị thời gian hết hạn */}
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {subscription?.status === 'active' && subscription?.current_period_end && (
-                    <span>Hết hạn: {new Date(subscription.current_period_end).toLocaleDateString('vi-VN')}</span>
-                  )}
-                  {tier === 'free' && trialStatus?.isActive && (
-                    <span>Hết hạn: {new Date(new Date(subscription.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')}</span>
-                  )}
-                </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {(() => {
+                  const now = new Date()
+                  
+                  // Xử lý cho gói trả phí
+                  if (tier !== 'free' && subscription) {
+                    // Nếu có current_period_end
+                    if (subscription.current_period_end) {
+                      const endDate = new Date(subscription.current_period_end)
+                      return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}</span>
+                    }
+                    // Fallback: created_at + 30 ngày
+                    if (subscription.created_at) {
+                      const endDate = new Date(new Date(subscription.created_at).getTime() + 30 * 24 * 60 * 60 * 1000)
+                      return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}</span>
+                    }
+                  }
+                  
+                  // Xử lý cho gói free
+                  if (tier === 'free' && trialStatus?.isActive) {
+                    const endDate = new Date(now.getTime() + (trialStatus.daysRemaining || 0) * 24 * 60 * 60 * 1000)
+                    return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}</span>
+                  }
+                  
+                  // Mặc định nếu không xác định được
+                  return <span>Hết hạn: Không xác định</span>
+                })()}
+              </div>
               </div>
               
               {/* Cảnh báo khi gói sắp hết hạn */}
