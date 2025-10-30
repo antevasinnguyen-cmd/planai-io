@@ -394,6 +394,8 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') 
 
   let tier = 'free'
   let limits = getSubscriptionLimits(tier) // Default limits
+  const DAY_MS = 24 * 60 * 60 * 1000
+  let isExpired = false
 
   // If subscription exists in database, use those limits
   if (subscription) {
@@ -404,10 +406,50 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') 
       chats: subscription.chat_limit || getSubscriptionLimits(tier).chats,
       words: subscription.word_limit || getSubscriptionLimits(tier).words
     }
+
+    // Enforce 30-day window
+    try {
+      const now = Date.now()
+      if (subscription.tier === 'free') {
+        const createdAt = subscription.created_at ? new Date(subscription.created_at).getTime() : 0
+        if (createdAt) {
+          const trialEnd = createdAt + 30 * DAY_MS
+          isExpired = now > trialEnd
+        }
+      } else {
+        const periodEnd = subscription.current_period_end ? new Date(subscription.current_period_end).getTime() : 0
+        if (periodEnd) {
+          isExpired = Date.now() > periodEnd
+        }
+      }
+    } catch {}
   }
 
   // Get current usage
   const usage = await getUserUsageStats(userId)
+
+  // If subscription window expired, block further actions
+  if (isExpired) {
+    if (action === 'chat') {
+      return {
+        allowed: false,
+        current: usage.chats,
+        limit: limits.chats,
+        tier,
+        expired: true,
+        reason: 'expired'
+      }
+    } else {
+      return {
+        allowed: false,
+        current: usage.plans,
+        limit: limits.plans,
+        tier,
+        expired: true,
+        reason: 'expired'
+      }
+    }
+  }
 
   if (action === 'chat') {
     return {
