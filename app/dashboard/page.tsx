@@ -384,29 +384,47 @@ export default function DashboardFinal() {
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {(() => {
                   const now = new Date()
-                  
-                  // Xử lý cho gói trả phí
-                  if (tier !== 'free' && subscription) {
-                    // Nếu có current_period_end
-                    if (subscription.current_period_end) {
-                      const endDate = new Date(subscription.current_period_end)
-                      return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}</span>
-                    }
-                    // Fallback: created_at + 30 ngày
-                    if (subscription.created_at) {
-                      const endDate = new Date(new Date(subscription.created_at).getTime() + 30 * 24 * 60 * 60 * 1000)
-                      return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}</span>
-                    }
+                  const DAY_MS = 24 * 60 * 60 * 1000
+
+                  const normalizeDate = (input?: string | null) => {
+                    if (!input) return null
+                    const parsed = new Date(input)
+                    return Number.isNaN(parsed.getTime()) ? null : parsed
                   }
-                  
-                  // Xử lý cho gói free
-                  if (tier === 'free' && trialStatus?.isActive) {
-                    const endDate = new Date(now.getTime() + (trialStatus.daysRemaining || 0) * 24 * 60 * 60 * 1000)
-                    return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}</span>
+
+                  const computeEndDate = () => {
+                    if (tier !== 'free') {
+                      const periodEnd = normalizeDate(subscription?.current_period_end)
+                      if (periodEnd) return periodEnd
+                      const createdDate = normalizeDate(subscription?.created_at)
+                      if (createdDate) {
+                        return new Date(createdDate.getTime() + 30 * DAY_MS)
+                      }
+                      return null
+                    }
+
+                    if (typeof trialStatus?.daysRemaining === 'number') {
+                      return new Date(now.getTime() + trialStatus.daysRemaining * DAY_MS)
+                    }
+
+                    const createdSource = normalizeDate(subscription?.created_at) || normalizeDate(user?.created_at)
+                    if (createdSource) {
+                      return new Date(createdSource.getTime() + 30 * DAY_MS)
+                    }
+
+                    return null
                   }
-                  
-                  // Mặc định nếu không xác định được
-                  return <span>Hết hạn: Không xác định</span>
+
+                  const endDate = computeEndDate()
+                  if (!endDate) return null
+
+                  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / DAY_MS)
+                  const suffix =
+                    daysLeft < 0 ? ' (đã hết hạn)' :
+                    daysLeft === 0 ? ' (hôm nay)' :
+                    ''
+
+                  return <span>Hết hạn: {endDate.toLocaleDateString('vi-VN')}{suffix}</span>
                 })()}
               </div>
               </div>

@@ -202,7 +202,15 @@ export class AIMemorySystem {
     const cities = [
       'hà nội', 'hồ chí minh', 'hcm', 'sài gòn', 'đà nẵng', 'hải phòng',
       'cần thơ', 'biên hòa', 'nha trang', 'huế', 'quy nhơn', 'vũng tàu',
-      'long xuyên', 'nam định', 'thái nguyên', 'buôn ma thuột', 'cà mau'
+      'long xuyên', 'nam định', 'thái nguyên', 'buôn ma thuột', 'cà mau',
+      'hải dương', 'bắc ninh', 'bắc giang', 'quảng ninh', 'thanh hóa',
+      'nghệ an', 'hà tĩnh', 'quảng bình', 'quảng trị', 'thừa thiên huế',
+      'quảng nam', 'quảng ngãi', 'bình định', 'phú yên', 'khánh hòa',
+      'ninh thuận', 'bình thuận', 'kon tum', 'gia lai', 'đắk lắk',
+      'đắk nông', 'lâm đồng', 'bình phước', 'tây ninh', 'bình dương',
+      'đồng nai', 'bà rịa', 'long an', 'tiền giang', 'bến tre',
+      'trà vinh', 'vĩnh long', 'đồng tháp', 'an giang', 'kiên giang',
+      'sóc trăng', 'bạc liêu', 'hậu giang'
     ]
     
     const lowerText = text.toLowerCase()
@@ -214,19 +222,23 @@ export class AIMemorySystem {
       }
     }
     
-    // Pattern: "sống ở", "ở tại", "đang ở"
+    // Enhanced patterns: "sinh sống", "khu vực sinh sống", "sống ở", "ở tại", "đang ở"
     if (!this.profile.location) {
       const patterns = [
-        /(?:sống|ở|live|living)\s+(?:tại|ở)?\s*([^,.\n]+)/i,
-        /(?:đến từ|from)\s+([^,.\n]+)/i
+        /(?:khu\s*vực\s*)?(?:sinh\s*sống|sống|ở|đang\s*ở|hiện\s*sống|đang\s*sinh\s*sống|live|living)\s*(?:tại|ở)?\s*([^,.\n]+)/i,
+        /(?:đến từ|quê|from)\s+([^,.\n]+)/i,
+        /(?:khu\s*vực)\s*[:\-]?\s*([^,.\n]+)/i
       ]
       
       for (const pattern of patterns) {
         const match = text.match(pattern)
         if (match && match[1]) {
-          this.profile.location = match[1].trim()
-          this.collectedFields.add('location')
-          break
+          const location = match[1].trim()
+          if (location.length >= 3) {
+            this.profile.location = location
+            this.collectedFields.add('location')
+            break
+          }
         }
       }
     }
@@ -266,16 +278,25 @@ export class AIMemorySystem {
   }
   
   private extractSavings(text: string) {
-    // Pattern: "tiết kiệm 100 triệu", "có 100tr", "để dành 100 triệu"
+    // Enhanced patterns: "tiết kiệm hiện có", "tiết kiệm hiện tại", "tiết kiệm 100 triệu", "có 100tr", "để dành 100 triệu"
     const patterns = [
-      /(?:tiết kiệm|có|để dành|saved|saving)\s*(?:được|khoảng|tầm)?\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr|million)/gi,
-      /(?:hiện|currently)\s+(?:có|tại|have)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)/gi
+      /(?:tiết\s*kiệm\s*(?:hiện\s*có|hiện\s*tại|được)?|có|để\s*dành|saved|saving)\s*(?:được|khoảng|tầm|là)?\s*(\d+(?:[.,]\d+)?)\s*(?:tỷ|ty|billion|triệu|tr|million)/gi,
+      /(?:hiện|currently)\s+(?:có|tại|have)\s*(\d+(?:[.,]\d+)?)\s*(?:tỷ|ty|triệu|tr)/gi,
+      /(?:số\s*tiền\s*)?(?:tiết\s*kiệm|để\s*dành)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)\s*(?:tỷ|ty|triệu|tr)/gi
     ]
     
     for (const pattern of patterns) {
       const matches = text.matchAll(pattern)
       for (const match of matches) {
-        let amount = parseFloat(match[1].replace(/[.,]/g, '')) * 1000000
+        let amount = parseFloat(match[1].replace(/[.,]/g, ''))
+        
+        // Check if it's in billions or millions
+        const matchText = match[0].toLowerCase()
+        if (matchText.includes('tỷ') || matchText.includes('ty') || matchText.includes('billion')) {
+          amount *= 1000000000
+        } else {
+          amount *= 1000000
+        }
         
         // Only set if it's reasonable savings (100K - 100B VND)
         if (amount >= 100000 && amount <= 100000000000) {
