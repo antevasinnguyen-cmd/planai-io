@@ -73,6 +73,24 @@ export async function POST(request: NextRequest) {
     const enrichedCollectedInfo = { ...(collectedInfo || {}), maxWords: tierLimits.words, tier, chat_summary: chatSummary.slice(0, 4000) }
 
     const caps = getServerCapsByTier(tier)
+
+    // --- Auto-clean stale jobs (>10m) to prevent blocking ---
+    try {
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
+      const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
+      if (admin) {
+        await admin
+          .from('plan_jobs')
+          .update({ status: 'failed', error_message: 'auto-timeout', completed_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .in('status', ['pending', 'processing'])
+          .lte('created_at', tenMinAgo)
+      }
+    } catch (cleanErr) {
+      logger.warn('BG_CLEAN_STALE_FAIL', { error: String(cleanErr) })
+    }
     // Use session-bound client for counting running jobs
     const { count: runningCount, error: countError } = await rhSupabase
       .from('plan_jobs')
