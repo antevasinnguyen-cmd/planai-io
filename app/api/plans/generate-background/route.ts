@@ -200,9 +200,17 @@ async function processJobInBackground(
         .eq('id', jobId)
     }
 
-    // Ensure profile exists to satisfy potential FK (plans.user_id -> profiles.id)
+    // Ensure profile exists to satisfy potential FK (plans.user_id -> profiles.id or auth.users.id)
     try {
       const client = admin || supabase
+      // Fetch email from auth if possible (service role only)
+      let email: string | null = null
+      try {
+        if (admin && (admin as any).auth?.admin?.getUserById) {
+          const { data: authUser } = await (admin as any).auth.admin.getUserById(userId)
+          email = authUser?.user?.email || null
+        }
+      } catch {}
       const { data: prof } = await client
         .from('profiles')
         .select('id')
@@ -211,7 +219,7 @@ async function processJobInBackground(
       if (!prof) {
         await client
           .from('profiles')
-          .insert({ id: userId, created_at: new Date().toISOString() })
+          .insert({ id: userId, email: email || undefined, created_at: new Date().toISOString() })
       }
     } catch (ensureErr) {
       logger.warn('BG_ENSURE_PROFILE_FAIL', { userId, error: String(ensureErr) })
@@ -278,7 +286,34 @@ async function processJobInBackground(
         }
 
         if (planError) {
-          throw new Error(`Failed to save plan: ${planError.message}`)
+          // If FK violation, try once more after ensuring profile again
+          const isFK = String(planError.message || '').toLowerCase().includes('foreign key')
+          if (isFK) {
+            try {
+              // Re-ensure profile, then retry once
+              const client = admin || supabase
+              await client.from('profiles').upsert({ id: userId, created_at: new Date().toISOString() })
+              const retry = await (admin || supabase)
+                .from('plans')
+                .insert({
+                  user_id: userId,
+                  title: planName,
+                  goal: goals,
+                  content: planContent,
+                  status: 'completed',
+                  word_count: planContent.split(' ').length,
+                  created_at: new Date().toISOString()
+                })
+                .select()
+                .single()
+              if (retry.error) throw new Error(`Failed to save plan (retry): ${retry.error.message}`)
+              planData = retry.data
+            } catch (retryErr: any) {
+              throw new Error(`Failed to save plan: ${retryErr.message || String(retryErr)}`)
+            }
+          } else {
+            throw new Error(`Failed to save plan: ${planError.message}`)
+          }
         }
 
         // Update job status (prefer admin)
