@@ -9,6 +9,50 @@ export interface ChatMessage {
   content: string
 }
 
+// Generate 3 strategic assumptions from profile and chat history
+export const generateStrategicAssumptions = async (
+  profile: any,
+  chatHistory: { role: 'user' | 'assistant'; content: string }[],
+  tier: string
+): Promise<{ markdown: string; json: any } | null> => {
+  try {
+    const model = selectModel(TaskType.REGULAR_CHAT)
+    const client = getOpenAI()
+    if (!client) return null
+    const system = {
+      role: 'system' as const,
+      content: `Bạn là chuyên gia lập kế hoạch tài chính. Hãy tạo 3 GIẢ ĐỊNH CHIẾN LƯỢC dựa trên hồ sơ người dùng và lịch sử hội thoại để định hướng trả lời tiếp theo.
+
+YÊU CẦU:
+- Trả về JSON hợp lệ với khóa "assumptions": mỗi assumption có: assumption, rationale, risk, kpi, confidence (0-1).
+- Không thêm văn bản ngoài JSON ở phản hồi đầu tiên.
+`
+    }
+    const userPayload = {
+      role: 'user' as const,
+      content: JSON.stringify({ profile, chatHistory: chatHistory.slice(-10) }).slice(0, 12000)
+    }
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [system, userPayload],
+      max_tokens: 500,
+      temperature: 0.2,
+    })
+    const raw = completion.choices[0]?.message?.content || '{}'
+    let parsed: any
+    try { parsed = JSON.parse(raw) } catch { return null }
+    const arr = Array.isArray(parsed?.assumptions) ? parsed.assumptions.slice(0,3) : []
+    if (!arr.length) return null
+    const md = [
+      '## Giả định chiến lược (tạm thời)',
+      ...arr.map((a: any, i: number) => `- **${i+1}. ${a.assumption || 'Giả định'}** — *${Math.round((a.confidence||0)*100)}% tin cậy*\n  - Lý do: ${a.rationale || ''}\n  - Rủi ro: ${a.risk || ''}\n  - KPI: ${a.kpi || ''}`)
+    ].join('\n')
+    return { markdown: md, json: parsed }
+  } catch {
+    return null
+  }
+}
+
 // Variant that accepts a custom system prompt (tier-aware formatting)
 export const generateChatResponseWithSystemPrompt = async (
   messages: ChatMessage[],

@@ -87,6 +87,20 @@ export const getCurrentUser = async (request?: Request) => {
     // For API routes, try to get user from Authorization header or session
     if (request) {
       console.log('=== SUPABASE: Getting user from API request ===')
+      // Preferred: use auth-helpers with server cookies (works reliably with RLS)
+      try {
+        const { cookies } = await import('next/headers')
+        const { createRouteHandlerClient } = await import('@supabase/auth-helpers-nextjs')
+        const cookieStore = cookies()
+        const rh = createRouteHandlerClient({ cookies: () => cookieStore })
+        const { data } = await rh.auth.getUser()
+        if (data?.user) {
+          console.log('=== SUPABASE: User from routeHandlerClient ===', { userId: data.user.id })
+          return data.user
+        }
+      } catch (e) {
+        console.log('=== SUPABASE: routeHandlerClient user fetch failed, fallback ===', e)
+      }
       
       // Try to get Authorization header
       const authHeader = request.headers.get('Authorization')

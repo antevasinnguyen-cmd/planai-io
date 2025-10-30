@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateChatResponse, generateChatResponseWithSystemPrompt, analyzeUserInput } from '@/lib/openai'
+import { generateChatResponse, generateChatResponseWithSystemPrompt, analyzeUserInput, generateStrategicAssumptions } from '@/lib/openai'
 import { getCurrentUser, checkUsageLimits, getUserSubscription, getSubscriptionLimits, updateProfileFromAnalysis, getUserProfile } from '@/lib/supabase'
 import { getChatSystemPrompt } from '@/lib/prompts'
 import { createClient } from '@supabase/supabase-js'
@@ -156,7 +156,21 @@ export async function POST(request: NextRequest) {
     })()
     const timelineDirective = timelineHint ? `\n\nQuan trọng: Mọi đề xuất phải **phù hợp với thời gian** người dùng đã nói: ${timelineHint}. Không đưa mốc vượt quá thời gian này trừ khi giải thích rõ lý do.` : ''
     const personalizationDirectives = `\n\nYÊU CẦU CÁ NHÂN HÓA MẠNH (không máy móc):\n- Trích dẫn lại dữ liệu của người dùng trong câu trả lời.\n- Giải thích tại sao gợi ý phù hợp với hồ sơ hiện tại.\n- Đề xuất kịch bản A/B (an toàn vs tăng trưởng) và điều kiện chuyển đổi.\n- Đưa KPI đo lường, con số cụ thể, ước tính chi phí/lợi ích.\n- Cuối câu luôn có 🎯 1-2 câu hỏi chiến lược tiếp theo.\n${tier !== 'free' ? '- Thêm bảng số liệu, roadmap, và 2-3 tài liệu tham khảo đáng tin cậy.\n' : ''}`
-    const customSystemPrompt = `${basePrompt}${profileBlock}${tierAddons}${timelineDirective}${personalizationDirectives}`
+
+    // Generate strategic assumptions block
+    let assumptionsBlock = ''
+    try {
+      const assumptions = await generateStrategicAssumptions(
+        (await getUserProfile(user.id)).data || {},
+        messages.filter(m => m.role === 'user' || m.role === 'assistant') as any,
+        tier
+      )
+      if (assumptions?.markdown) {
+        assumptionsBlock = `\n\n${assumptions.markdown}`
+      }
+    } catch {}
+
+    const customSystemPrompt = `${basePrompt}${profileBlock}${assumptionsBlock}${tierAddons}${timelineDirective}${personalizationDirectives}`
 
     // Generate AI response
     let aiResponse: string
