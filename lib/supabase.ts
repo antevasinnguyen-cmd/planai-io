@@ -356,31 +356,27 @@ export const getUserUsageStats = async (userId: string) => {
     .eq('user_id', userId)
     .gte('created_at', startOfMonth.toISOString())
 
-  // Count chat messages this month (user messages only, server-sourced to avoid duplicates)
+  // Count chat messages this month (user messages only)
+  // Query: type='user' AND created_at >= startOfMonth
   let chatsData: any[] | null = null
   let chatsError: any = null
   try {
+    // First try with source column filter
     const res = await supabase
       .from('chat_messages')
       .select('id')
       .eq('user_id', userId)
       .eq('type', 'user')
-      .or('source.eq.api,source.is.null')
       .gte('created_at', startOfMonth.toISOString())
+    
     chatsData = res.data as any[] | null
     chatsError = res.error
-    // If column 'source' does not exist, fallback without it
-    if (chatsError && String(chatsError.message || '').toLowerCase().includes('column') && String(chatsError.message || '').toLowerCase().includes('source')) {
-      const resFallback = await supabase
-        .from('chat_messages')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('type', 'user')
-        .gte('created_at', startOfMonth.toISOString())
-      chatsData = resFallback.data as any[] | null
-      chatsError = resFallback.error
+    
+    if (chatsError) {
+      console.warn('getUserUsageStats: chat query error', chatsError)
     }
   } catch (e) {
+    console.error('getUserUsageStats: chat query exception', e)
     chatsData = []
     chatsError = e
   }
@@ -393,6 +389,14 @@ export const getUserUsageStats = async (userId: string) => {
     .gte('created_at', startOfMonth.toISOString())
 
   const totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
+
+  console.log('=== USER USAGE STATS ===', {
+    userId,
+    month: startOfMonth.toISOString(),
+    plans: plansData?.length || 0,
+    chats: chatsData?.length || 0,
+    words: totalWords
+  })
 
   return {
     plans: plansData?.length || 0,
