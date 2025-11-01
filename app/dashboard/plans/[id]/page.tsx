@@ -47,16 +47,22 @@ export default function PlanViewEnhanced() {
 
   const loadPlan = async () => {
     try {
+      // CRITICAL: Must include user_id for RLS
       const { data, error } = await supabase
         .from('plans')
         .select('*')
         .eq('id', planId)
+        .eq('user_id', user!.id)
         .maybeSingle()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error loading plan:', error)
+        throw error
+      }
+      
       if (!data) {
         console.error('Error loading plan: not found')
-        alert('Không thể tải kế hoạch')
+        alert('Không thể tải kế hoạch. Kế hoạch không tồn tại hoặc bạn không có quyền truy cập.')
         router.push('/dashboard/plans')
         return
       }
