@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { planName, goals, collectedInfo } = await request.json()
+    const { planName, goals, collectedInfo, messages } = await request.json()
 
     // Capture Authorization token (for background processing)
     const authHeader = request.headers.get('Authorization') || ''
@@ -70,7 +70,23 @@ export async function POST(request: NextRequest) {
     const { data: subData } = await getUserSubscription(user.id)
     const tier = subData?.tier || 'free'
     const tierLimits = getSubscriptionLimits(tier)
-    const enrichedCollectedInfo = { ...(collectedInfo || {}), maxWords: tierLimits.words, tier, chat_summary: chatSummary.slice(0, 4000) }
+    
+    // Build full chat summary from messages array (not just collectedInfo.chat_summary)
+    const fullChatSummary = Array.isArray(messages)
+      ? messages
+          .filter((m: any) => m && m.role === 'user')
+          .map((m: any) => m.content || m.message)
+          .join('\n')
+          .slice(0, 4000)
+      : chatSummary.slice(0, 4000)
+    
+    const enrichedCollectedInfo = { 
+      ...(collectedInfo || {}), 
+      maxWords: tierLimits.words, 
+      tier, 
+      chat_summary: fullChatSummary,
+      messages: messages // Pass full messages array for AI context
+    }
 
     const caps = getServerCapsByTier(tier)
 

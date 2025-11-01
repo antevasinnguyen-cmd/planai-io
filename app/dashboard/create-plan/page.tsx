@@ -439,6 +439,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     router.push('/dashboard/plans/generate')
   }
 
+  const tier = subscription?.tier || 'free'
   const planLimit = getPlanLimit(tier)
 
   return (

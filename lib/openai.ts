@@ -271,6 +271,15 @@ export const generateFinancialPlan = async (
       dailyTasks = 12; weeklyItems = 10; monthlyItems = 10; scenarioDepth = 'rất sâu, nhiều kịch bản và phương án dự phòng'
     }
 
+    // Build full chat context from messages array
+    const chatContext = Array.isArray(collectedInfo.messages)
+      ? collectedInfo.messages
+          .filter((m: any) => m && m.role === 'user')
+          .map((m: any) => m.content || m.message)
+          .join('\n')
+          .slice(0, 5000)
+      : (collectedInfo.chat_summary || '')
+
     // Build user profile summary from collected info
     const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam dựa trên thông tin sau:
 
@@ -285,7 +294,7 @@ THÔNG TIN CÁ NHÂN:
 - Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
 - Tiết kiệm hiện có: ${collectedInfo.savings ? collectedInfo.savings.toLocaleString() + ' VNĐ' : 'Chưa cung cấp'}
 
-${collectedInfo.chat_summary ? `TÓM TẮT CUỘC TRÒ CHUYỆN (để giữ bối cảnh người dùng):\n${String(collectedInfo.chat_summary).slice(0, 4000)}\n` : ''}
+${chatContext ? `TOÀN BỘ CUỘC TRÒ CHUYỆN VỚI NGƯỜI DÙNG (để giữ bối cảnh và chi tiết):\n${chatContext}\n` : ''}
 
 ${spiritualInsights ? `PHÂN TÍCH TỬ VI/THẦN SỐ HỌC:
 ${spiritualInsights}
