@@ -3,11 +3,11 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { Menu, X, User, LogOut, Settings, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '../lib/supabase/client'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Logo from './Logo'
 
 export default function Header() {
@@ -17,7 +17,7 @@ export default function Header() {
   const userMenuRef = useRef(null)
   const avatarButtonRef = useRef(null)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClientComponentClient(), [])
 
   useEffect(() => {
     const getUser = async () => {
