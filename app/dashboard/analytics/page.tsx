@@ -66,6 +66,9 @@ export default function AnalyticsPage() {
   const [notes, setNotes] = useState<UserNote[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [reloadToken, setReloadToken] = useState(0)
+  const [newNote, setNewNote] = useState('')
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editingNoteContent, setEditingNoteContent] = useState('')
 
   const emptySummary = useMemo<AnalyticsSummary>(
     () => ({
@@ -283,71 +286,76 @@ export default function AnalyticsPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl" />
-                <div className="flex items-center justify-between mb-4 relative z-10">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Hoạt động gần đây</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">Các cột mốc quan trọng trong 30 ngày qua</p>
-                  </div>
-                  <Calendar className="w-5 h-5 text-primary-500" />
+            {/* Hoạt động gần đây */}
+            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl" />
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Hoạt động gần đây</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">Các cột mốc quan trọng trong 30 ngày qua</p>
                 </div>
-                <div className="space-y-3">
-                  {summary?.plans.slice(0, 4).map(plan => (
-                    <div key={plan.id} className="flex items-start justify-between border border-gray-200 dark:border-gray-800 rounded-lg p-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{plan.title || 'Kế hoạch tài chính'}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">
-                          Tạo {new Date(plan.created_at).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                        plan.status === 'completed'
-                          ? 'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400'
-                          : plan.status === 'failed'
-                            ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                            : 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                      }`}>
-                        {plan.status === 'completed' ? 'Hoàn tất' : plan.status === 'failed' ? 'Thất bại' : 'Đang thực hiện'}
-                      </span>
-                    </div>
-                  ))}
-                  {!summary?.plans?.length && (
-                    <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-                      Chưa có kế hoạch nào được tạo.
-                    </div>
-                  )}
-                </div>
+                <Calendar className="w-5 h-5 text-primary-500" />
               </div>
+              <div className="space-y-3">
+                {summary?.plans.slice(0, 4).map(plan => (
+                  <div key={plan.id} className="flex items-start justify-between border border-gray-200 dark:border-gray-800 rounded-lg p-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{plan.title || 'Kế hoạch tài chính'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        Tạo {new Date(plan.created_at).toLocaleDateString('vi-VN')}
+                      </p>
+                    </div>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      plan.status === 'completed'
+                        ? 'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400'
+                        : plan.status === 'failed'
+                          ? 'bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                          : 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                    }`}>
+                      {plan.status === 'completed' ? 'Hoàn tất' : plan.status === 'failed' ? 'Thất bại' : 'Đang thực hiện'}
+                    </span>
+                  </div>
+                ))}
+                {!summary?.plans?.length && (
+                  <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                    Chưa có kế hoạch nào được tạo.
+                  </div>
+                )}
+              </div>
+            </div>
 
-              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Phân tích sử dụng</h3>
-                  <Sparkles className="w-5 h-5 text-primary-500" />
-                </div>
-                <div className="space-y-4">
-                  {activitySummary.map(item => (
-                    <div key={item.label} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center text-white`}>
-                          <item.icon className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{item.value.toLocaleString()} / {item.limit.toLocaleString()}</p>
-                        </div>
+            {/* Phân tích sử dụng */}
+            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Phân tích sử dụng</h3>
+                <Sparkles className="w-5 h-5 text-primary-500" />
+              </div>
+              <div className="space-y-4">
+                {activitySummary.map(item => (
+                  <div key={item.label} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center text-white`}>
+                        <item.icon className="w-5 h-5" />
                       </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-semibold ${item.value >= item.limit ? 'text-rose-500' : 'text-primary-500'}`}>
-                          {Math.min(Math.round((item.value / item.limit) * 100), 999)}%
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.value >= item.limit ? 'Đã đạt giới hạn' : 'Còn ' + Math.max(item.limit - item.value, 0)}</p>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.value.toLocaleString()} / {item.limit.toLocaleString()}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-semibold ${item.value >= item.limit ? 'text-rose-500' : 'text-primary-500'}`}>
+                        {Math.min(Math.round((item.value / item.limit) * 100), 999)}%
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{item.value >= item.limit ? 'Đã đạt giới hạn' : 'Còn ' + Math.max(item.limit - item.value, 0)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
+            {/* Checklist hành động */}
+            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Checklist hành động</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Theo sát các nhiệm vụ quan trọng trong kế hoạch của bạn</p>
@@ -395,11 +403,89 @@ export default function AnalyticsPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ghi chú chiến lược</h3>
                 <StickyNote className="w-5 h-5 text-amber-500" />
               </div>
+              
+              {/* Thêm ghi chú mới */}
+              <div className="mb-4 space-y-2">
+                <textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Ghi lại insight, chiến lược hoặc ghi chú quan trọng..."
+                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  rows={3}
+                />
+                <button
+                  onClick={() => {
+                    if (newNote.trim()) {
+                      setNotes([{
+                        id: Date.now().toString(),
+                        plan_id: '',
+                        content: newNote,
+                        created_at: new Date().toISOString()
+                      }, ...notes])
+                      setNewNote('')
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Lưu ghi chú
+                </button>
+              </div>
+
+              {/* Danh sách ghi chú */}
               <div className="space-y-3">
                 {notes.slice(0, 5).map(note => (
-                  <div key={note.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-800">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{note.content}</p>
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">{new Date(note.created_at).toLocaleString('vi-VN')}</p>
+                  <div key={note.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-800 group">
+                    {editingNoteId === note.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editingNoteContent}
+                          onChange={(e) => setEditingNoteContent(e.target.value)}
+                          className="w-full px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          rows={2}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setNotes(notes.map(n => n.id === note.id ? {...n, content: editingNoteContent} : n))
+                              setEditingNoteId(null)
+                            }}
+                            className="flex-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
+                          >
+                            Lưu
+                          </button>
+                          <button
+                            onClick={() => setEditingNoteId(null)}
+                            className="flex-1 px-2 py-1 bg-gray-400 hover:bg-gray-500 text-white text-xs font-medium rounded transition-colors"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">{note.content}</p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <p className="text-xs text-gray-500 dark:text-gray-500">{new Date(note.created_at).toLocaleString('vi-VN')}</p>
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => {
+                                setEditingNoteId(note.id)
+                                setEditingNoteContent(note.content)
+                              }}
+                              className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-500/30 transition-colors"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={() => setNotes(notes.filter(n => n.id !== note.id))}
+                              className="text-xs px-2 py-1 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
                 {!notes.length && (
