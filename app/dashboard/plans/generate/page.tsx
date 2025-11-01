@@ -295,13 +295,15 @@ export default function GeneratePlanPage() {
 
       const result = await res.json()
 
-      if (!res.ok) {
+      // Accept both 200 OK and 202 Accepted
+      if (res.status !== 200 && res.status !== 202) {
         if (res.status === 429 && result?.upgradeRequired) {
           setUpgradeRequired(true)
           setError(result.message || 'Bạn đã đạt giới hạn của gói hiện tại. Vui lòng nâng cấp để tiếp tục.')
         } else {
-          setError(result.error || 'Không thể bắt đầu tạo kế hoạch')
+          setError(result.error || result.message || 'Không thể bắt đầu tạo kế hoạch')
         }
+        console.error('=== GENERATE: API Error ===', { status: res.status, error: result })
         return
       }
 
