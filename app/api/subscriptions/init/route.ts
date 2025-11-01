@@ -15,8 +15,27 @@ export async function POST(_req: NextRequest) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
+    // If service key is not configured, gracefully fallback to user client for reads
     if (!serviceKey) {
-      return NextResponse.json({ error: 'Service key not configured' }, { status: 500 })
+      // Try to read existing active subscription via RLS (view policy)
+      const { data: rows, error: rlsErr } = await rhSupabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (!rlsErr && rows && rows.length > 0) {
+        return NextResponse.json({ alreadyUsed: true, data: rows[0], warning: 'Service key missing, returned existing subscription.' })
+      }
+
+      // If cannot read or not exists, assume free in memory (non-blocking)
+      return NextResponse.json({
+        alreadyUsed: true,
+        data: { user_id: user.id, tier: 'free', status: 'active' },
+        warning: 'Service key missing; skipping creation. Assuming free tier.'
+      })
     }
     const admin = createClient(supabaseUrl, serviceKey)
 

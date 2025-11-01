@@ -51,17 +51,49 @@ export default function PlanViewEnhanced() {
         .from('plans')
         .select('*')
         .eq('id', planId)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
+      if (!data) {
+        console.error('Error loading plan: not found')
+        alert('Không thể tải kế hoạch')
+        router.push('/dashboard/plans')
+        return
+      }
       
       setPlan(data)
       setEditedContent(data.content)
       setSpiritualEnabled(data.spiritual_enabled || false)
     } catch (error) {
-      console.error('Error loading plan:', error)
-      alert('Không thể tải kế hoạch')
-      router.push('/dashboard/plans')
+      console.error('Error loading plan via client, trying server API fallback:', error)
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { data: sessionData } = await supabase.auth.getSession()
+        const headers: any = {}
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+        }
+        const res = await fetch(`/api/plans/get?id=${encodeURIComponent(planId)}`, {
+          credentials: 'include',
+          headers
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json?.plan) {
+            setPlan(json.plan)
+            setEditedContent(json.plan.content)
+            setSpiritualEnabled(json.plan.spiritual_enabled || false)
+            return
+          }
+        }
+        // Fallback failed
+        alert('Không thể tải kế hoạch')
+        router.push('/dashboard/plans')
+      } catch (e) {
+        console.error('Fallback API failed:', e)
+        alert('Không thể tải kế hoạch')
+        router.push('/dashboard/plans')
+      }
     } finally {
       setLoading(false)
     }

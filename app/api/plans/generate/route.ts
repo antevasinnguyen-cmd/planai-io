@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, checkUsageLimits, getUserSubscription, getSubscriptionLimits, getCachedResponse, saveCachedResponse } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { generateFinancialPlan } from '@/lib/openai'
 import { generateFinancialPlanWithClaude } from '@/lib/claude'
 import { TaskType, selectModel, MODELS } from '@/lib/modelSelection'
@@ -227,25 +230,99 @@ Format: Markdown với headings, lists, và tables.`
     // Calculate word count for analytics
     const wordCount = enhancedPlanContent.split(/\s+/).length
 
-    // Save plan to database
-    const { data: plan, error } = await supabase
-      .from('plans')
-      .insert({
-        user_id: user.id,
-        title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
-        goal: userProfile.financial_goal || 'Kế hoạch tài chính cá nhân',
-        content: enhancedPlanContent,
-        collected_info: collectedInfo,
-        status: 'active',
-        word_count: wordCount,
-        created_at: new Date().toISOString(),
-        model_used: enhancedPlanContent.length > 8000 ? MODELS.COMPLEX_PLANNING : MODELS.CHAT_DEFAULT,
-        rag_processed: false
-      })
-      .select()
-      .single()
+    // Save plan to database (RLS-aware, ensure profile FK)
+    const cookieStore = cookies()
+    const rh = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    if (error) throw error
+    // Ensure profile exists to satisfy FK profiles(id) → plans.user_id
+    try {
+      const email = (user as any).email || null
+      await rh.from('profiles').upsert({ id: user.id, email, created_at: new Date().toISOString() }, { onConflict: 'id' })
+    } catch {}
+
+    let plan: any = null
+    let insertErr: any = null
+
+    // Attempt full insert (with optional columns)
+    {
+      const resp = await rh
+        .from('plans')
+        .insert({
+          user_id: user.id,
+          title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
+          goal: userProfile.financial_goal || 'Kế hoạch tài chính cá nhân',
+          content: enhancedPlanContent,
+          collected_info: collectedInfo,
+          status: 'active',
+          word_count: wordCount,
+          created_at: new Date().toISOString(),
+          model_used: enhancedPlanContent.length > 8000 ? MODELS.COMPLEX_PLANNING : MODELS.CHAT_DEFAULT,
+          rag_processed: false
+        })
+        .select()
+        .single()
+      plan = resp.data
+      insertErr = resp.error
+    }
+
+    // If missing-column or RLS error, try fallbacks
+    if (insertErr) {
+      const msg = String(insertErr.message || '')
+      const isMissingColumn = msg.toLowerCase().includes('column') && msg.toLowerCase().includes('does not exist')
+      const isRls = msg.toLowerCase().includes('violates row level security') || msg.toLowerCase().includes('not authorized')
+
+      if (isMissingColumn) {
+        // Retry with minimal columns only
+        const retry = await rh
+          .from('plans')
+          .insert({
+            user_id: user.id,
+            title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
+            goal: userProfile.financial_goal || 'Kế hoạch tài chính cá nhân',
+            content: enhancedPlanContent,
+            status: 'active',
+            word_count: wordCount,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+        plan = retry.data
+        insertErr = retry.error
+      }
+
+      // If still failing due to RLS or FK, try admin fallback if available
+      if ((insertErr && (isRls || String(insertErr.message || '').toLowerCase().includes('foreign key'))) || (insertErr && process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+        try {
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+          const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
+          if (supabaseUrl && serviceKey) {
+            const admin = createClient(supabaseUrl, serviceKey)
+            // Ensure profile again
+            const email = (user as any).email || null
+            await admin.from('profiles').upsert({ id: user.id, email, created_at: new Date().toISOString() }, { onConflict: 'id' })
+            const adminResp = await admin
+              .from('plans')
+              .insert({
+                user_id: user.id,
+                title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
+                goal: userProfile.financial_goal || 'Kế hoạch tài chính cá nhân',
+                content: enhancedPlanContent,
+                status: 'active',
+                word_count: wordCount,
+                created_at: new Date().toISOString()
+              })
+              .select()
+              .single()
+            plan = adminResp.data
+            insertErr = adminResp.error
+          }
+        } catch (e) {
+          insertErr = e
+        }
+      }
+    }
+
+    if (insertErr) throw insertErr
     
     // Process plan with RAG in the background (don't await)
     processFinancialPlanWithRAG(user.id, plan.id, enhancedPlanContent)

@@ -125,7 +125,9 @@ export default function PlansPage() {
       if (error) throw error
       
       setPlans(plans.filter(plan => plan.id !== planId))
-      loadUsageStats() // Refresh usage stats
+      if (user?.id) {
+        await loadUsageStats(user.id) // Refresh usage stats
+      }
     } catch (error) {
       console.error('Error deleting plan:', error)
       alert('Có lỗi xảy ra khi xóa kế hoạch')
@@ -147,6 +149,29 @@ export default function PlansPage() {
     chats: subscription?.chat_limit ?? baseLimits.chats,
     words: subscription?.word_limit ?? baseLimits.words
   }
+
+  // Compute remaining days
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const computeDaysLeft = () => {
+    try {
+      const now = Date.now()
+      if (tier !== 'free') {
+        const end = subscription?.current_period_end ? new Date(subscription.current_period_end).getTime() : 0
+        if (end) return Math.max(0, Math.ceil((end - now) / DAY_MS))
+        // fallback: created_at + 30 days if period end missing
+        const created = subscription?.created_at ? new Date(subscription.created_at).getTime() : 0
+        if (created) return Math.max(0, Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS))
+        return 0
+      }
+      // free tier: 30 days from created_at
+      const created = subscription?.created_at ? new Date(subscription.created_at).getTime() : 0
+      if (created) return Math.max(0, Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS))
+      return 0
+    } catch {
+      return 0
+    }
+  }
+  const daysLeft = computeDaysLeft()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f]">
@@ -171,7 +196,7 @@ export default function PlansPage() {
             {usage && (
               <div className="text-right">
                 <div className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">
-                  {getTierName(tier)}
+                  {getTierName(tier)}{typeof daysLeft === 'number' ? ` • Còn ${daysLeft} ngày` : ''}
                 </div>
                 <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
                   <div>Kế hoạch: {usage.plans}/{limits.plans}</div>
