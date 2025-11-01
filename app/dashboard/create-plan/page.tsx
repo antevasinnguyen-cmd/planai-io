@@ -179,9 +179,34 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   const loadSubscription = async (userId: string) => {
     try {
       const { data } = await fetchUserSubscription(userId)
-      setSubscription(data || null)
+      
+      // Ensure subscription has default values for usage tracking
+      if (data) {
+        const subscription = {
+          ...data,
+          chat_count: data.chat_count ?? 0,
+          plan_count: data.plan_count ?? 0
+        }
+        setSubscription(subscription)
+        console.log('=== SUBSCRIPTION LOADED ===', subscription)
+      } else {
+        // Create default free tier subscription
+        const defaultSub = {
+          tier: 'free',
+          chat_count: 0,
+          plan_count: 0
+        }
+        setSubscription(defaultSub)
+        console.log('=== DEFAULT SUBSCRIPTION CREATED ===', defaultSub)
+      }
     } catch (error) {
       console.error('Error loading subscription:', error)
+      // Fallback to default free tier
+      setSubscription({
+        tier: 'free',
+        chat_count: 0,
+        plan_count: 0
+      })
     }
   }
 
@@ -338,41 +363,43 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canCreatePlan = () => {
-    if (!subscription) return false
+    // Nếu subscription chưa load, cho phép tạo (sẽ kiểm tra khi gửi)
+    if (!subscription) return true
     
     const tier = subscription.tier || 'free'
     const planLimit = getPlanLimit(tier)
-    
-    // Lấy usage từ subscription hoặc default
     const planCount = subscription.plan_count || 0
+    
+    const canCreate = planCount < planLimit
     
     console.log('=== CAN CREATE PLAN ===', {
       tier,
       planLimit,
       planCount,
-      canCreate: planCount < planLimit
+      canCreate
     })
     
-    return planCount < planLimit
+    return canCreate
   }
 
   const canChat = () => {
-    if (!subscription) return false
+    // Nếu subscription chưa load, cho phép chat (sẽ kiểm tra khi gửi)
+    if (!subscription) return true
     
     const tier = subscription.tier || 'free'
     const chatLimit = getChatLimit(tier)
-    
-    // Lấy usage từ subscription hoặc default
     const chatCount = subscription.chat_count || 0
+    
+    const canChat = chatCount < chatLimit
     
     console.log('=== CAN CHAT ===', {
       tier,
       chatLimit,
       chatCount,
-      canChat: chatCount < chatLimit
+      canChat
     })
     
-    return chatCount < chatLimit
+    return canChat
   }
 
   const getChatLimit = (tier: string) => {
