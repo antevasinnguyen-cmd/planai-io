@@ -14,6 +14,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const isEmailVerified = (user: User | null | undefined) => {
+  if (!user) return false
+  const metadata = user.user_metadata || {}
+  return Boolean(
+    user.email_confirmed_at ||
+    (user as any).confirmed_at ||
+    metadata.email_verified ||
+    metadata.emailConfirmed ||
+    metadata.emailConfirmedAt
+  )
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -34,12 +46,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error: error?.message,
           timestamp: new Date().toISOString()
         })
-        
-        setSession(session)
-        setUser(session?.user ?? null)
-        
+
+        const verifiedSession = session && isEmailVerified(session.user) ? session : null
+
+        if (session && !isEmailVerified(session.user)) {
+          console.log('=== AUTHCONTEXT: Phiên chưa xác thực email, giữ nguyên tại trang auth ===')
+        }
+
+        setSession(verifiedSession)
+        setUser(verifiedSession?.user ?? null)
+
         // Kiểm tra xem có cần chuyển hướng không
-        if (session && typeof window !== 'undefined') {
+        if (verifiedSession && typeof window !== 'undefined') {
           const currentPath = window.location.pathname
           // Chỉ redirect từ /login hoặc /signup, KHÔNG redirect từ trang chủ
           if (currentPath === '/login' || currentPath === '/signup') {
@@ -90,8 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           timestamp: new Date().toISOString()
         })
 
-        setSession(session)
-        setUser(session?.user ?? null)
+        const verifiedSession = session && isEmailVerified(session.user) ? session : null
+
+        setSession(verifiedSession)
+        setUser(verifiedSession?.user ?? null)
         setLoading(false)
 
         // Xử lý các thay đổi trạng thái xác thực
@@ -106,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname
             // Chỉ redirect từ login/signup pages
-            if (currentPath === '/login' || currentPath === '/signup') {
+            if ((currentPath === '/login' || currentPath === '/signup') && isEmailVerified(session.user)) {
               console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, '===')
               
               // Kiểm tra redirect parameter từ URL hoặc localStorage
@@ -131,6 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               } else {
                 window.location.replace('/dashboard')
               }
+            } else if (!isEmailVerified(session.user)) {
+              console.log('=== AUTHCONTEXT: SIGNED_IN - Tài khoản chưa xác thực email, không chuyển hướng ===')
+              localStorage.removeItem('auth_success')
+              localStorage.removeItem('auth_user_email')
             }
           }
         } else if (event === 'SIGNED_OUT') {

@@ -404,18 +404,18 @@ export default function DashboardFinal() {
               <div className="flex flex-col mb-2">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    {getTierName(tier)}{typeof daysLeft === 'number' ? ` • Còn ${Math.max(daysLeft, 0)} ngày` : ''}
+                    {getTierName(tier)}
                   </p>
                   {typeof daysLeft === 'number' && (
                     daysLeft <= 7
                       ? (
                         <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                          {daysLeft >= 0 ? `${daysLeft} ngày còn lại` : 'Đã hết hạn'}
+                          {daysLeft >= 0 ? `Còn ${daysLeft} ngày` : 'Đã hết hạn'}
                         </span>
                       )
                       : (
                         <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                          {daysLeft} ngày còn lại
+                          Còn {daysLeft} ngày
                         </span>
                       )
                   )}
@@ -487,7 +487,7 @@ export default function DashboardFinal() {
               {(typeof daysLeft === 'number' && daysLeft <= 7) && (
                 <div className="mb-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md flex items-center space-x-2">
                   <div className="w-5 h-5 rounded-full bg-orange-100 dark:bg-orange-800 flex items-center justify-center flex-shrink-0">
-                    <span className="text-orange-600 dark:text-orange-400 text-xs font-bold">!</span>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white">Còn {daysLeft} ngày</span>
                   </div>
                   <div className="text-xs text-orange-700 dark:text-orange-400">
                     <Link href="/pricing" className="font-medium hover:underline">Nâng cấp ngay</Link> để tiếp tục sử dụng
@@ -716,7 +716,7 @@ export default function DashboardFinal() {
                         <p className="text-sm font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400">
                           {plan.title || 'Kế hoạch tài chính'}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           {new Date(plan.created_at).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
