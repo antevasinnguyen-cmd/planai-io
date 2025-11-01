@@ -98,6 +98,7 @@ export default function GeneratePlanPage() {
           const data = JSON.parse(e.data)
           if (!data) return
           if (data.status === 'completed') {
+            console.log('=== PLAN GENERATION: COMPLETED ===', { planId: data.plan_id })
             setProgress(100)
             setStatus('Hoàn thành!')
             setJobStatus('completed')
@@ -129,10 +130,12 @@ export default function GeneratePlanPage() {
             if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
           } else if (data.status === 'processing') {
             const elapsed = Number(data.elapsed_seconds || 0)
-            const estimatedProgress = Math.min(95, Math.max(10, 10 + (elapsed / 120) * 80))
+            // Progress: 10% at start, 95% at 2 minutes, stay at 95% until completed
+            const estimatedProgress = Math.min(95, Math.max(10, 10 + (elapsed / 120) * 85))
             setProgress((p) => Math.max(p, estimatedProgress))
             setStatus('Đang xử lý...')
             setJobStatus('processing')
+            console.log('=== PLAN GENERATION: Processing ===', { elapsed, progress: estimatedProgress })
             const userId = user?.id || 'anonymous'
             saveJobMeta(userId, {
               jobId: id,

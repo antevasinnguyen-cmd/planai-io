@@ -397,17 +397,31 @@ async function processJobInBackground(
           }
         }
 
-        // Update job status (prefer admin)
+        // Update job status (prefer admin) - CRITICAL: Ensure update succeeds
+        const updatePayload = { 
+          status: 'completed', 
+          plan_id: planData.id, 
+          completed_at: new Date().toISOString() 
+        }
+        
+        let statusUpdateError: any = null
         if (admin) {
-          await admin
+          const { error: updateErr } = await admin
             .from('plan_jobs')
-            .update({ status: 'completed', plan_id: planData.id, completed_at: new Date().toISOString() })
+            .update(updatePayload)
             .eq('id', jobId)
+          statusUpdateError = updateErr
         } else {
-          await supabase
+          const { error: updateErr } = await supabase
             .from('plan_jobs')
-            .update({ status: 'completed', plan_id: planData.id, completed_at: new Date().toISOString() })
+            .update(updatePayload)
             .eq('id', jobId)
+          statusUpdateError = updateErr
+        }
+        
+        if (statusUpdateError) {
+          logger.error('BG_JOB_STATUS_UPDATE_FAILED', { jobId, error: String(statusUpdateError) })
+          throw new Error(`Failed to update job status: ${statusUpdateError.message}`)
         }
 
         logger.info('BG_JOB_COMPLETED', { jobId, planId: planData.id })

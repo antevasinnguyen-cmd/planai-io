@@ -225,19 +225,6 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
     const currentInput = input // Store input before clearing
     
-    // CRITICAL: Cập nhật usage ngay lập tức
-    if (subscription && user?.id) {
-      const newChatCount = (subscription.chat_count || 0) + 1
-      setSubscription({
-        ...subscription,
-        chat_count: newChatCount
-      })
-      console.log('=== CHAT SENT: Updated chat_count ===', {
-        oldCount: subscription.chat_count,
-        newCount: newChatCount
-      })
-    }
-    
     // Chỉ cập nhật state, không lưu vào localStorage ở đây
     // useEffect sẽ tự động lưu khi messages thay đổi
     setMessages([...messages, userMessage])
@@ -299,6 +286,22 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       // Chỉ cập nhật state, không lưu vào localStorage ở đây
       setMessages([...messages, userMessage, assistantMessage])
       updateCollectedInfo(currentInput)
+      
+      // CRITICAL: Update usage from API response (server-authoritative)
+      if (data.usage && subscription) {
+        const updatedSubscription = {
+          ...subscription,
+          chat_count: data.usage.current,
+          tier: data.usage.tier
+        }
+        setSubscription(updatedSubscription)
+        console.log('=== CHAT USAGE UPDATED FROM API ===', {
+          current: data.usage.current,
+          limit: data.usage.limit,
+          tier: data.usage.tier,
+          remaining: data.usage.remaining
+        })
+      }
     } catch (error) {
       console.error('Chat Error:', error)
       
