@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Sparkles, CheckCircle, AlertCircle, ArrowLeft, Zap } from 'lucide-react'
+import { Loader2, Sparkles, CheckCircle, AlertCircle, ArrowLeft, Zap, Info } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
 
@@ -504,6 +504,16 @@ export default function GeneratePlanPage() {
                 <div className="flex items-center justify-center space-x-2 text-purple-700 dark:text-purple-400">
                   <Sparkles className="w-4 h-4" />
                   <span className="text-sm">AI đang tạo kế hoạch tài chính hoàn hảo cho bạn</span>
+                </div>
+              </div>
+
+              {/* Wait Time Note */}
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-lg border border-blue-200 dark:border-blue-500/20">
+                <div className="flex items-start space-x-2">
+                  <Info className="w-4 h-4 text-blue-600 dark:text-blue-300 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700 dark:text-blue-200 text-left">
+                    Việc tạo kế hoạch cá nhân hoá có thể mất nhiều thời gian để cho ra tác phẩm phù hợp nhất dành cho bạn. Bạn đợi xíu nhé, sẽ xong ngay thôi!
+                  </p>
                 </div>
               </div>
 
