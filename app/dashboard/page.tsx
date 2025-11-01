@@ -163,6 +163,47 @@ export default function DashboardFinal() {
 
   const tier = subscription?.tier || 'free'
   const limits = getSubscriptionLimits(tier)
+
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const normalizeDate = (input?: string | null) => {
+    if (!input) return null
+    const parsed = new Date(input)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  const computeEndDate = () => {
+    const now = new Date()
+    if (tier !== 'free') {
+      const periodEnd = normalizeDate(subscription?.current_period_end)
+      if (periodEnd) return periodEnd
+      const createdDate = normalizeDate(subscription?.created_at)
+      if (createdDate) {
+        return new Date(createdDate.getTime() + 30 * DAY_MS)
+      }
+      return null
+    }
+
+    if (trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && trialStatus.daysRemaining > 0) {
+      return new Date(now.getTime() + trialStatus.daysRemaining * DAY_MS)
+    }
+
+    const createdSource = normalizeDate(subscription?.created_at) || normalizeDate(user?.created_at)
+    if (createdSource) {
+      return new Date(createdSource.getTime() + 30 * DAY_MS)
+    }
+
+    return null
+  }
+
+  const planEndDate = computeEndDate()
+  const daysLeft = planEndDate ? Math.ceil((planEndDate.getTime() - new Date().getTime()) / DAY_MS) : null
+  const endDateSuffix = daysLeft === null
+    ? ''
+    : daysLeft < 0
+      ? ' (đã hết hạn)'
+      : daysLeft === 0
+        ? ' (hôm nay)'
+        : ''
   
   // Tính năng nổi bật
   const features = [
@@ -362,32 +403,32 @@ export default function DashboardFinal() {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
               <div className="flex flex-col mb-2">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{getTierName(tier)}</p>
-                  {(subscription?.status === 'active' && subscription?.current_period_end) && (
-                    <>
-                      {Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 7 ? (
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                    {getTierName(tier)}{typeof daysLeft === 'number' ? ` • Còn ${Math.max(daysLeft, 0)} ngày` : ''}
+                  </p>
+                  {typeof daysLeft === 'number' && (
+                    daysLeft <= 7
+                      ? (
                         <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                          {Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} ngày còn lại
+                          {daysLeft >= 0 ? `${daysLeft} ngày còn lại` : 'Đã hết hạn'}
                         </span>
-                      ) : (
+                      )
+                      : (
                         <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                          {Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} ngày còn lại
+                          {daysLeft} ngày còn lại
                         </span>
-                      )}
-                    </>
+                      )
                   )}
-                  {tier === 'free' && trialStatus?.isActive && (
-                    <>
-                      {trialStatus.daysRemaining <= 7 ? (
-                        <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                          {trialStatus.daysRemaining} ngày dùng thử
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
-                          {trialStatus.daysRemaining} ngày dùng thử
-                        </span>
-                      )}
-                    </>
+                  {tier === 'free' && trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && (
+                    trialStatus.daysRemaining <= 7 ? (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                        {trialStatus.daysRemaining} ngày dùng thử
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                        {trialStatus.daysRemaining} ngày dùng thử
+                      </span>
+                    )
                   )}
                 </div>
                 
@@ -443,9 +484,7 @@ export default function DashboardFinal() {
               </div>
               
               {/* Cảnh báo khi gói sắp hết hạn */}
-              {((subscription?.status === 'active' && subscription?.current_period_end && 
-                Math.ceil((new Date(subscription.current_period_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 7) || 
-                (tier === 'free' && trialStatus?.isActive && trialStatus.daysRemaining <= 7)) && (
+              {(typeof daysLeft === 'number' && daysLeft <= 7) && (
                 <div className="mb-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md flex items-center space-x-2">
                   <div className="w-5 h-5 rounded-full bg-orange-100 dark:bg-orange-800 flex items-center justify-center flex-shrink-0">
                     <span className="text-orange-600 dark:text-orange-400 text-xs font-bold">!</span>
