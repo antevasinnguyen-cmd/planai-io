@@ -47,6 +47,7 @@ export default function PlansPage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [usage, setUsage] = useState<UsageInfo | null>(null)
   const [subscription, setSubscription] = useState<any>(buildSubscription())
+  const [trialStatus, setTrialStatus] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
@@ -54,7 +55,7 @@ export default function PlansPage() {
   useEffect(() => {
     const loadData = async (userId: string) => {
       try {
-        await Promise.all([loadPlans(userId), loadUsageStats(userId)])
+        await Promise.all([loadPlans(userId), loadUsageStats(userId), loadTrialStatus(userId)])
       } catch (error) {
         console.error('Error loading plans data:', error)
       } finally {
@@ -96,6 +97,17 @@ export default function PlansPage() {
       words: usageStats.words || 0,
       error: usageStats.error
     })
+  }
+
+  const loadTrialStatus = async (userId: string) => {
+    try {
+      const status = await checkTrialStatus(userId)
+      setTrialStatus(status)
+      console.log('=== PLANS PAGE: Trial status loaded ===', status)
+    } catch (error) {
+      console.error('Error loading trial status:', error)
+      setTrialStatus(null)
+    }
   }
 
   const getTierName = (tier: string) => {
@@ -155,19 +167,28 @@ export default function PlansPage() {
   const computeDaysLeft = () => {
     try {
       const now = Date.now()
+      const tier = subscription?.tier || 'free'
       
-      // CRITICAL: Kiểm tra current_period_end trước (được set khi thanh toán)
-      if (subscription?.current_period_end) {
+      // CRITICAL: For free tier, use trialStatus if available
+      if (tier === 'free' && trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && trialStatus.daysRemaining > 0) {
+        console.log('=== PLANS: Using trialStatus for free tier ===', {
+          daysRemaining: trialStatus.daysRemaining
+        })
+        return trialStatus.daysRemaining
+      }
+      
+      // For paid tiers, check current_period_end
+      if (tier !== 'free' && subscription?.current_period_end) {
         const end = new Date(subscription.current_period_end).getTime()
         const days = Math.ceil((end - now) / DAY_MS)
-        console.log('=== PLANS: Using current_period_end ===', {
+        console.log('=== PLANS: Using current_period_end for paid tier ===', {
           current_period_end: subscription.current_period_end,
           daysLeft: days
         })
         return Math.max(0, days)
       }
       
-      // Fallback: tính từ created_at + 30 ngày (cho free tier hoặc khi không có period_end)
+      // Fallback: tính từ created_at + 30 ngày
       const created = subscription?.created_at ? new Date(subscription.created_at).getTime() : 0
       if (created) {
         const days = Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS)

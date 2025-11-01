@@ -239,27 +239,45 @@ async function processJobInBackground(
 
     // Ensure profile exists to satisfy potential FK (plans.user_id -> profiles.id or auth.users.id)
     try {
-      const client = admin || supabase
-      // Fetch email from auth if possible (service role only)
-      let email: string | null = null
-      try {
-        if (admin && (admin as any).auth?.admin?.getUserById) {
-          const { data: authUser } = await (admin as any).auth.admin.getUserById(userId)
-          email = authUser?.user?.email || null
-        }
-      } catch {}
-      const { data: prof } = await client
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle()
-      if (!prof) {
-        await client
+      // Try with admin client first (most reliable)
+      if (admin) {
+        const { data: prof } = await admin
           .from('profiles')
-          .insert({ id: userId, email: email || undefined, created_at: new Date().toISOString() })
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle()
+        
+        if (!prof) {
+          const { error: insertErr } = await admin
+            .from('profiles')
+            .insert({ id: userId, created_at: new Date().toISOString() })
+          
+          if (insertErr) {
+            logger.warn('BG_ENSURE_PROFILE_INSERT_FAIL', { userId, error: String(insertErr) })
+          } else {
+            logger.info('BG_ENSURE_PROFILE_CREATED', { userId })
+          }
+        }
+      } else {
+        // Fallback to user-scoped client
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle()
+        
+        if (!prof) {
+          const { error: insertErr } = await supabase
+            .from('profiles')
+            .insert({ id: userId, created_at: new Date().toISOString() })
+          
+          if (insertErr) {
+            logger.warn('BG_ENSURE_PROFILE_INSERT_FAIL_FALLBACK', { userId, error: String(insertErr) })
+          }
+        }
       }
     } catch (ensureErr) {
-      logger.warn('BG_ENSURE_PROFILE_FAIL', { userId, error: String(ensureErr) })
+      logger.error('BG_ENSURE_PROFILE_FAIL', { userId, error: String(ensureErr) })
     }
 
     // Generate plan with timeout + retry/backoff
