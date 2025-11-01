@@ -190,7 +190,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return
+    if (!input.trim() || isLoading || !canChat()) return
 
     const userMessage: Message = {
       role: 'user',
@@ -199,6 +199,19 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     }
 
     const currentInput = input // Store input before clearing
+    
+    // CRITICAL: Cập nhật usage ngay lập tức
+    if (subscription && user?.id) {
+      const newChatCount = (subscription.chat_count || 0) + 1
+      setSubscription({
+        ...subscription,
+        chat_count: newChatCount
+      })
+      console.log('=== CHAT SENT: Updated chat_count ===', {
+        oldCount: subscription.chat_count,
+        newCount: newChatCount
+      })
+    }
     
     // Chỉ cập nhật state, không lưu vào localStorage ở đây
     // useEffect sẽ tự động lưu khi messages thay đổi
@@ -325,7 +338,51 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canCreatePlan = () => {
-    return true
+    if (!subscription) return false
+    
+    const tier = subscription.tier || 'free'
+    const planLimit = getPlanLimit(tier)
+    
+    // Lấy usage từ subscription hoặc default
+    const planCount = subscription.plan_count || 0
+    
+    console.log('=== CAN CREATE PLAN ===', {
+      tier,
+      planLimit,
+      planCount,
+      canCreate: planCount < planLimit
+    })
+    
+    return planCount < planLimit
+  }
+
+  const canChat = () => {
+    if (!subscription) return false
+    
+    const tier = subscription.tier || 'free'
+    const chatLimit = getChatLimit(tier)
+    
+    // Lấy usage từ subscription hoặc default
+    const chatCount = subscription.chat_count || 0
+    
+    console.log('=== CAN CHAT ===', {
+      tier,
+      chatLimit,
+      chatCount,
+      canChat: chatCount < chatLimit
+    })
+    
+    return chatCount < chatLimit
+  }
+
+  const getChatLimit = (tier: string) => {
+    switch (tier) {
+      case 'free': return 5
+      case 'basic': return 40
+      case 'pro': return 90
+      case 'pro_max': return 160
+      default: return 5
+    }
   }
 
   const getTierName = (tier: string) => {
@@ -434,6 +491,19 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     try { localStorage.setItem('pending_plan_latest', JSON.stringify(planData)) } catch {}
     
     console.log('Lưu pending_plan với', currentMessages.length, 'tin nhắn')
+    
+    // CRITICAL: Cập nhật usage ngay lập tức khi tạo plan
+    if (subscription && user?.id) {
+      const newPlanCount = (subscription.plan_count || 0) + 1
+      setSubscription({
+        ...subscription,
+        plan_count: newPlanCount
+      })
+      console.log('=== PLAN CREATED: Updated plan_count ===', {
+        oldCount: subscription.plan_count,
+        newCount: newPlanCount
+      })
+    }
     
     // Navigate to plan generation page
     router.push('/dashboard/plans/generate')
@@ -727,15 +797,23 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                   />
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim() || isLoading}
+                    disabled={!input.trim() || isLoading || !canChat()}
                     className="absolute right-2 bottom-2 p-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                    title={!canChat() ? `Bạn đã hết lượt chat (${subscription?.chat_count || 0}/${getChatLimit(subscription?.tier || 'free')})` : ''}
                   >
                     <Send className="w-5 h-5" />
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
-                </p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
+                  </p>
+                  {!canChat() && (
+                    <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                      ⚠️ Bạn đã hết lượt chat ({subscription?.chat_count || 0}/{getChatLimit(subscription?.tier || 'free')}). Hãy nâng cấp gói để tiếp tục.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -758,9 +836,18 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
             </div>
 
             {!canCreatePlan() && (
-              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-500">
+              <div className={`flex items-center justify-center space-x-2 text-sm ${
+                (subscription?.plan_count || 0) >= getPlanLimit(subscription?.tier || 'free')
+                  ? 'text-red-600 dark:text-red-400 font-medium'
+                  : 'text-gray-500 dark:text-gray-500'
+              }`}>
                 <AlertCircle className="w-4 h-4" />
-                <span>Hãy chat với AI để bắt đầu tạo kế hoạch của bạn</span>
+                <span>
+                  {(subscription?.plan_count || 0) >= getPlanLimit(subscription?.tier || 'free')
+                    ? `⚠️ Bạn đã hết lượt tạo kế hoạch (${subscription?.plan_count || 0}/${getPlanLimit(subscription?.tier || 'free')}). Hãy nâng cấp gói để tiếp tục.`
+                    : 'Hãy chat với AI để bắt đầu tạo kế hoạch của bạn'
+                  }
+                </span>
               </div>
             )}
           </div>
