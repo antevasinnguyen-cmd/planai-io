@@ -181,6 +181,14 @@ export default function DashboardFinal() {
 
   const computeEndDate = () => {
     const now = new Date()
+    
+    // Nếu có trial status active, sử dụng nó (cho free tier)
+    if (trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && trialStatus.daysRemaining > 0) {
+      console.log('=== DASHBOARD: Using trial status ===', trialStatus)
+      return new Date(now.getTime() + trialStatus.daysRemaining * DAY_MS)
+    }
+    
+    // Nếu không phải free tier, kiểm tra current_period_end
     if (tier !== 'free') {
       const periodEnd = normalizeDate(subscription?.current_period_end)
       if (periodEnd) return periodEnd
@@ -191,12 +199,10 @@ export default function DashboardFinal() {
       return null
     }
 
-    if (trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && trialStatus.daysRemaining > 0) {
-      return new Date(now.getTime() + trialStatus.daysRemaining * DAY_MS)
-    }
-
+    // Fallback cho free tier: 30 ngày từ created_at
     const createdSource = normalizeDate(subscription?.created_at) || normalizeDate(user?.created_at)
     if (createdSource) {
+      console.log('=== DASHBOARD: Using created_at fallback ===', createdSource)
       return new Date(createdSource.getTime() + 30 * DAY_MS)
     }
 

@@ -589,29 +589,45 @@ export const initializeFreeTrialForNewUser = async (userId: string) => {
 export const checkTrialStatus = async (userId: string) => {
   try {
     const { data: subscription } = await getUserSubscription(userId)
-    if (!subscription) {
-      return { hasActiveTrial: false, daysRemaining: 0, isActive: false }
-    }
-
-    // For free tier, calculate trial period (30 days from account creation)
-    if (subscription.tier === 'free') {
-      const createdAt = new Date(subscription.created_at)
-      const trialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
-      const now = new Date()
-      const daysRemaining = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-
-      return {
-        hasActiveTrial: daysRemaining > 0,
-        daysRemaining: daysRemaining,
-        isActive: daysRemaining > 0
+    
+    // CRITICAL: Nếu không có subscription, lấy user creation date từ profiles table
+    let createdAt: Date
+    if (subscription) {
+      createdAt = new Date(subscription.created_at)
+    } else {
+      // Lấy từ profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .eq('id', userId)
+        .single()
+      
+      if (profile?.created_at) {
+        createdAt = new Date(profile.created_at)
+      } else {
+        // Fallback: Lấy từ auth user
+        const { data: { user } } = await supabase.auth.getUser()
+        createdAt = user?.created_at ? new Date(user.created_at) : new Date()
       }
     }
 
-    // For paid tiers, no trial
+    // For free tier, calculate trial period (30 days from account creation)
+    const trialEnd = new Date(createdAt.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    const now = new Date()
+    const daysRemaining = Math.max(0, Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+
+    console.log('=== TRIAL STATUS ===', {
+      userId,
+      createdAt: createdAt.toISOString(),
+      trialEnd: trialEnd.toISOString(),
+      daysRemaining,
+      isActive: daysRemaining > 0
+    })
+
     return {
-      hasActiveTrial: false,
-      daysRemaining: 0,
-      isActive: false
+      hasActiveTrial: daysRemaining > 0,
+      daysRemaining: daysRemaining,
+      isActive: daysRemaining > 0
     }
   } catch (error) {
     console.error('Error checking trial status:', error)

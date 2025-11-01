@@ -167,12 +167,23 @@ export default function PlansPage() {
         return Math.max(0, days)
       }
       
-      // Fallback: tính từ created_at + 30 ngày
+      // Fallback: tính từ created_at + 30 ngày (cho free tier hoặc khi không có period_end)
       const created = subscription?.created_at ? new Date(subscription.created_at).getTime() : 0
       if (created) {
         const days = Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS)
         console.log('=== PLANS: Using created_at fallback ===', {
           created_at: subscription?.created_at,
+          daysLeft: days
+        })
+        return Math.max(0, days)
+      }
+      
+      // Nếu không có subscription, lấy từ user created_at
+      if (user?.created_at) {
+        const userCreated = new Date(user.created_at).getTime()
+        const days = Math.ceil(((userCreated + 30 * DAY_MS) - now) / DAY_MS)
+        console.log('=== PLANS: Using user created_at ===', {
+          user_created_at: user.created_at,
           daysLeft: days
         })
         return Math.max(0, days)
