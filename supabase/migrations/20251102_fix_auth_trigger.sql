@@ -48,8 +48,18 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Ensure profiles table has proper constraints
-ALTER TABLE public.profiles
-  ADD CONSTRAINT profiles_email_not_null CHECK (email IS NOT NULL);
+-- Only add if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE table_name = 'profiles' 
+    AND constraint_name = 'profiles_email_not_null'
+  ) THEN
+    ALTER TABLE public.profiles
+      ADD CONSTRAINT profiles_email_not_null CHECK (email IS NOT NULL);
+  END IF;
+END $$;
 
 -- Create profiles for any existing auth users without profiles
 INSERT INTO public.profiles (id, email, created_at, updated_at)
