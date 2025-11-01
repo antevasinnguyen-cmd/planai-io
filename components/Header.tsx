@@ -27,6 +27,11 @@ export default function Header() {
 
     getUser()
 
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null)
+    })
+
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target) && 
           avatarButtonRef.current && !avatarButtonRef.current.contains(event.target)) {
@@ -37,8 +42,9 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      subscription?.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

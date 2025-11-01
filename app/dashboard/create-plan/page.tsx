@@ -349,62 +349,96 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const handleCreatePlan = () => {
-    // Get user ID for storage
+    if (!canCreatePlan()) return
+    
     const userId = user?.id || 'anonymous'
+    
+    // Lấy messages từ localStorage nếu state bị mất (user thoát trang)
+    let currentMessages = messages
+    if (currentMessages.length === 0) {
+      try {
+        const savedMessages = localStorage.getItem(`planai_chat_messages_${userId}`)
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages)
+          currentMessages = parsed
+          console.log('Lấy messages từ localStorage:', currentMessages.length, 'tin nhắn')
+        }
+      } catch (e) {
+        console.warn('Không thể lấy messages từ localStorage:', e)
+      }
+    }
+    
+    // Lấy collectedInfo từ localStorage nếu state bị mất
+    let currentCollectedInfo = collectedInfo
+    if (Object.keys(currentCollectedInfo).length === 0) {
+      try {
+        const savedCollectedInfo = localStorage.getItem(`planai_collected_info_${userId}`)
+        if (savedCollectedInfo) {
+          currentCollectedInfo = JSON.parse(savedCollectedInfo)
+          console.log('Lấy collectedInfo từ localStorage')
+        }
+      } catch (e) {
+        console.warn('Không thể lấy collectedInfo từ localStorage:', e)
+      }
+    }
     
     // Get AI Memory data
     const memoryData = aiMemory.current.exportForPlanGeneration()
     const profile: any = memoryData?.profile || {}
+    
     // Derive plan name and goals from memory/profile or fallbacks
     const lastUserContent = (() => {
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const m = messages[i]
+      for (let i = currentMessages.length - 1; i >= 0; i--) {
+        const m = currentMessages[i]
         if (m && m.role === 'user' && typeof m.content === 'string') return m.content
       }
       return ''
     })()
+    
     const mainGoal: string = String(
       profile.financial_goal ||
       profile.goal ||
       (lastUserContent || '').slice(0, 80)
     ).trim()
+    
     const computedPlanName = mainGoal
       ? `Kế hoạch: ${mainGoal}`
       : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+    
     const computedGoals = mainGoal || (profile.description || 'Mục tiêu tài chính cá nhân')
 
     // Build a light chat summary to help downstream generation remember context
-    const chatSummary = messages
+    const chatSummary = currentMessages
       .filter((m) => m.role === 'user')
       .map((m) => m.content)
       .join('\n')
       .slice(0, 4000)
     
     const enrichedCollectedInfo = {
-      ...collectedInfo,
+      ...currentCollectedInfo,
       chat_summary: chatSummary
     }
-    
-    // Save plan data to localStorage with AI Memory data
+
     const planData = {
-      messages,
-      collectedInfo: enrichedCollectedInfo,
-      spiritualEnabled,
-      aiMemoryData: memoryData,
-      userProfile: memoryData.profile,
       planName: computedPlanName,
       goals: computedGoals,
+      messages: currentMessages,
+      collectedInfo: enrichedCollectedInfo,
+      spiritualEnabled: spiritualEnabled,
+      aiMemoryData: memoryData,
+      userProfile: memoryData.profile,
       timestamp: new Date().toISOString()
     }
-    // Save under user-specific key and a stable fallback key
+    
     localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(planData))
     try { localStorage.setItem('pending_plan_latest', JSON.stringify(planData)) } catch {}
+    
+    console.log('Lưu pending_plan với', currentMessages.length, 'tin nhắn')
     
     // Navigate to plan generation page
     router.push('/dashboard/plans/generate')
   }
 
-  const tier = subscription?.tier || 'free'
   const planLimit = getPlanLimit(tier)
 
   return (
