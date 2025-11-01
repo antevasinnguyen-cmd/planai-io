@@ -36,21 +36,27 @@ export default function DashboardFinal() {
   const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
-    // Chỉ xử lý khi auth loading hoàn thành
+    // CRITICAL: Chỉ xử lý khi auth loading hoàn thành
     if (authLoading) {
-      console.log('=== DASHBOARD: Auth đang loading ===')
+      console.log('=== DASHBOARD: Auth đang loading, chờ... ===')
       return
     }
 
-    // Nếu không có user, redirect đến login
+    // CRITICAL: Nếu không có user sau khi loading xong, redirect đến login
     if (!user) {
-      console.log('=== DASHBOARD: Không có user, redirect đến login ===')
-      router.push('/login')
-      return
+      console.log('=== DASHBOARD: Không có user sau khi auth loading xong, redirect đến login ===')
+      // Add small delay to ensure session is fully loaded
+      const timer = setTimeout(() => {
+        router.push('/login')
+      }, 100)
+      return () => clearTimeout(timer)
     }
 
     // User tồn tại, khởi tạo dashboard
-    console.log('=== DASHBOARD: User đã đăng nhập, khởi tạo dashboard ===', user.email)
+    console.log('=== DASHBOARD: User đã đăng nhập, khởi tạo dashboard ===', {
+      email: user.email,
+      id: user.id
+    })
     initializeDashboard()
     
     const hasAuthSuccess = localStorage.getItem('auth_success')

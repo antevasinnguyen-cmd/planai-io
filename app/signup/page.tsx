@@ -74,12 +74,14 @@ export default function SignupPage() {
         console.log('Đăng ký thành công:', data.user.email)
         
         if (data.session) {
-          // Đăng ký và đăng nhập thành công, AuthContext sẽ xử lý chuyển hướng
-          console.log('Có session, AuthContext sẽ xử lý chuyển hướng')
+          // CRITICAL: Đăng ký và đăng nhập thành công, redirect to dashboard
+          console.log('Có session, redirect to dashboard')
+          localStorage.setItem('auth_success', 'true')
+          router.push('/dashboard')
         } else {
           // Cần xác thực email
           alert('Vui lòng kiểm tra email của bạn để xác thực tài khoản!')
-          window.location.href = '/login'
+          router.push('/login')
         }
       }
     } catch (err) {

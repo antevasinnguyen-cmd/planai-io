@@ -38,7 +38,16 @@ export default function LoginPage() {
 
       if (data.user) {
         console.log('Đăng nhập thành công:', data.user.email)
-        // AuthContext sẽ xử lý chuyển hướng
+        
+        // CRITICAL: Redirect to dashboard or saved redirect path
+        const savedRedirect = localStorage.getItem('auth_redirect')
+        const targetPath = savedRedirect || redirectPath || '/dashboard'
+        
+        localStorage.removeItem('auth_redirect')
+        localStorage.setItem('auth_success', 'true')
+        
+        console.log('=== LOGIN: Redirect to ===', targetPath)
+        router.push(targetPath)
       }
     } catch (err) {
       console.error('Lỗi đăng nhập:', err)
