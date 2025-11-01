@@ -203,6 +203,27 @@ async function processJobInBackground(
   try {
     logger.info('BG_PROCESS_START', { jobId, userId })
 
+    const getJobStatus = async (): Promise<string | null> => {
+      try {
+        const client = admin || supabase
+        const { data } = await client
+          .from('plan_jobs')
+          .select('status')
+          .eq('id', jobId)
+          .maybeSingle()
+        return (data as any)?.status || null
+      } catch {
+        return null
+      }
+    }
+
+    // If job already cancelled before processing, exit
+    const initialStatus = await getJobStatus()
+    if (initialStatus === 'cancelled') {
+      logger.info('BG_JOB_CANCELLED_EARLY', { jobId })
+      return
+    }
+
     // Update status to processing (prefer admin client to avoid RLS/token issues)
     if (admin) {
       await admin
@@ -251,6 +272,13 @@ async function processJobInBackground(
       const timeoutId = setTimeout(() => controller.abort(), 120000)
       try {
         logger.info('BG_ATTEMPT_CALL_AI', { jobId, attempt })
+        // Check cancellation before calling AI
+        const statusBefore = await getJobStatus()
+        if (statusBefore === 'cancelled') {
+          clearTimeout(timeoutId)
+          logger.info('BG_CANCEL_BEFORE_AI', { jobId, attempt })
+          return
+        }
         
         const planContent = await generateFinancialPlan(
           planName,
@@ -260,6 +288,13 @@ async function processJobInBackground(
         )
         clearTimeout(timeoutId)
         logger.info('BG_ATTEMPT_AI_DONE', { jobId, attempt })
+
+        // If cancelled during AI call, do not save plan
+        const statusAfter = await getJobStatus()
+        if (statusAfter === 'cancelled') {
+          logger.info('BG_CANCEL_AFTER_AI', { jobId, attempt })
+          return
+        }
 
         // Save plan
         // First, try to save plan with user-scoped client (RLS)

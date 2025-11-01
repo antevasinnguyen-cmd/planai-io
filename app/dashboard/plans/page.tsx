@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Home } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import { getUserPlans, getUserUsageStats, getUserSubscription, getSubscriptionLimits, getTierName, supabase } from '@/lib/supabase'
+import { getUserPlans, getUserUsageStats, getUserSubscription, getSubscriptionLimits, getTierName, supabase, checkTrialStatus } from '@/lib/supabase'
 
 const buildSubscription = (subscriptionData: any | null = null) => {
   const tier = subscriptionData?.tier || 'free'
@@ -201,7 +201,6 @@ export default function PlansPage() {
                 <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
                   <div>Kế hoạch: {usage.plans}/{limits.plans}</div>
                   <div>Chat: {usage.chats}/{limits.chats}</div>
-                  <div>Từ đã dùng: {usage.words.toLocaleString()}</div>
                 </div>
               </div>
             )}

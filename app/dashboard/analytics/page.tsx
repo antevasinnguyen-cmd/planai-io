@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  TrendingUp,
   BarChart3,
   LucideIcon,
   Calendar,
@@ -184,13 +183,6 @@ export default function AnalyticsPage() {
         limit: limits.chats,
         icon: BarChart3,
         color: 'bg-green-500'
-      },
-      {
-        label: 'Tổng số từ phân tích',
-        value: usage.words,
-        limit: limits.words,
-        icon: TrendingUp,
-        color: 'bg-purple-500'
       }
     ]
   }, [usage, limits])
@@ -307,7 +299,7 @@ export default function AnalyticsPage() {
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{plan.title || 'Kế hoạch tài chính'}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-500">
-                          Tạo {new Date(plan.created_at).toLocaleDateString('vi-VN')} • {plan.word_count?.toLocaleString() || 0} từ
+                          Tạo {new Date(plan.created_at).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
@@ -355,11 +347,7 @@ export default function AnalyticsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Checklist hành động</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Theo sát các nhiệm vụ quan trọng trong kế hoạch của bạn</p>

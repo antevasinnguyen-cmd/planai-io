@@ -61,6 +61,29 @@ export default function GeneratePlanPage() {
   const startTimeRef = useRef<number>(0)
   const eventSourceRef = useRef<EventSource | null>(null)
 
+  const cancelCurrentJob = async (id: string | null) => {
+    try {
+      if (!id) return
+      if (jobStatus === 'completed') return
+      const userId = user?.id || 'anonymous'
+      const payload = JSON.stringify({ job_id: id })
+      if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+        const blob = new Blob([payload], { type: 'application/json' })
+        navigator.sendBeacon('/api/plans/cancel', blob)
+      } else {
+        await fetch('/api/plans/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: payload,
+        })
+      }
+      // local cleanup
+      sessionStorage.removeItem(`plan_job_${userId}`)
+      clearJobMeta(userId)
+    } catch {}
+  }
+
   const startSSE = (id: string) => {
     try {
       if (eventSourceRef.current) {
@@ -90,6 +113,15 @@ export default function GeneratePlanPage() {
           } else if (data.status === 'failed') {
             setJobStatus('failed')
             setError(data.error_message || 'Tạo kế hoạch thất bại')
+            const userId = user?.id || 'anonymous'
+            sessionStorage.removeItem(`plan_job_${userId}`)
+            clearJobMeta(userId)
+            if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
+            if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
+          } else if (data.status === 'cancelled') {
+            // treat as gracefully cancelled
+            setJobStatus('failed')
+            setError('Bạn đã hủy tạo kế hoạch.')
             const userId = user?.id || 'anonymous'
             sessionStorage.removeItem(`plan_job_${userId}`)
             clearJobMeta(userId)
@@ -155,17 +187,24 @@ export default function GeneratePlanPage() {
       startPlanGeneration()
     }
 
-    // Cleanup on unmount
+    // Cleanup on unmount: cancel job if leaving before completion
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
-      if (eventSourceRef.current) {
-        try { eventSourceRef.current.close() } catch {}
-        eventSourceRef.current = null
-      }
+      if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
+      if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} ; eventSourceRef.current = null }
+      if (jobStatus !== 'completed') { cancelCurrentJob(jobId) }
     }
   }, [user, router])
+
+  // Cancel when tab/window is closed or navigated away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (jobStatus !== 'completed') {
+        cancelCurrentJob(jobId)
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [jobId, jobStatus])
 
   // Timer to update elapsed seconds
   useEffect(() => {
@@ -248,7 +287,8 @@ export default function GeneratePlanPage() {
         body: JSON.stringify({
           planName: finalPlanName || 'Kế hoạch tài chính',
           goals: finalGoals || '',
-          collectedInfo: data.collectedInfo || {}
+          collectedInfo: data.collectedInfo || {},
+          messages: Array.isArray(data?.messages) ? data.messages : undefined
         })
       })
 
@@ -357,6 +397,14 @@ export default function GeneratePlanPage() {
             clearInterval(pollIntervalRef.current)
           }
 
+        } else if (jobData.status === 'cancelled') {
+          setJobStatus('failed')
+          setError('Bạn đã hủy tạo kế hoạch.')
+          sessionStorage.removeItem(`plan_job_${userId}`)
+          clearJobMeta(userId)
+          if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
+          if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
+
         } else if (jobData.status === 'processing') {
           // Still processing
           const elapsed = Number(jobData.elapsed_seconds || 0)
@@ -400,6 +448,7 @@ export default function GeneratePlanPage() {
         {/* Back button */}
         <Link 
           href="/dashboard/create-plan" 
+          onClick={() => { if (jobStatus !== 'completed') cancelCurrentJob(jobId) }}
           className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />

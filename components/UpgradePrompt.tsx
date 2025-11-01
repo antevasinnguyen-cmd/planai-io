@@ -10,12 +10,12 @@ interface UpgradePromptProps {
   currentUsage?: {
     chats: number
     plans: number
-    words: number
+    words?: number
   }
   limits?: {
     chats: number
     plans: number
-    words: number
+    words?: number
   }
   onClose?: () => void
   className?: string

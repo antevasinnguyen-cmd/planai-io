@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
                 })
                 logger.info('SSE_TICK', { jobId: job.id, status: job.status, elapsedSeconds })
 
-                if (job.status === 'completed' || job.status === 'failed') {
+                if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') {
                   closed = true
                   logger.info('SSE_CLOSE', { jobId: job.id, status: job.status })
                   controller.close()

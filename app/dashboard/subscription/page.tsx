@@ -278,14 +278,14 @@ export default function SubscriptionPage() {
             <UpgradePrompt
               variant="banner"
               trigger="quota_warning"
-              currentUsage={{ chats: usage?.chats || 0, plans: usage?.plans || 0, words: usage?.words || 0 }}
-              limits={{ chats: limits.chats, plans: limits.plans, words: limits.words }}
+              currentUsage={{ chats: usage?.chats || 0, plans: usage?.plans || 0 }}
+              limits={{ chats: limits.chats, plans: limits.plans }}
               className="mb-6"
             />
           )}
 
           {/* Usage Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
               <UsageProgressBar
                 current={usage?.plans || 0}
@@ -303,17 +303,6 @@ export default function SubscriptionPage() {
                 limit={limits.chats}
                 label="Tin nhắn"
                 color="green"
-                showUpgradePrompt
-                onUpgradeClick={() => router.push('/pricing')}
-              />
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-              <UsageProgressBar
-                current={usage?.words || 0}
-                limit={limits.words}
-                label="Từ"
-                color="purple"
                 showUpgradePrompt
                 onUpgradeClick={() => router.push('/pricing')}
               />
