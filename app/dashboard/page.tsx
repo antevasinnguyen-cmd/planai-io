@@ -36,11 +36,11 @@ export default function DashboardFinal() {
   const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
-    // CRITICAL FIX: Kiểm tra session thay vì chỉ user
-    // Để tránh vòng lặp khi email chưa xác thực
+    // CRITICAL FIX: Middleware xử lý redirect
+    // Dashboard chỉ khởi tạo nếu user tồn tại
+    // Không redirect từ đây để tránh vòng lặp
     if (!authLoading && !user) {
-      console.log('=== DASHBOARD: Không có user, redirect đến login ===')
-      window.location.href = '/login'
+      console.log('=== DASHBOARD: Không có user, middleware sẽ redirect ===')
       return
     }
 

@@ -57,37 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('=== AUTHCONTEXT: Phiên chưa xác thực email, user sẽ ở trang auth ===')
         }
 
-        // Kiểm tra xem có cần chuyển hướng không
-        // Chỉ redirect nếu email ĐÃ xác thực
-        if (session && isEmailVerified(session.user) && typeof window !== 'undefined') {
-          const currentPath = window.location.pathname
-          // Chỉ redirect từ /login hoặc /signup, KHÔNG redirect từ trang chủ
-          if (currentPath === '/login' || currentPath === '/signup') {
-            console.log('=== AUTHCONTEXT: Đã đăng nhập và xác thực email, chuyển hướng từ', currentPath, '===')
-            
-            // Kiểm tra redirect parameter từ URL hoặc localStorage
-            let redirectPath = null
-            
-            // Ưu tiên redirect từ URL hiện tại
-            const urlParams = new URLSearchParams(window.location.search)
-            redirectPath = urlParams.get('redirect')
-            
-            // Nếu không có trong URL, kiểm tra localStorage
-            if (!redirectPath) {
-              redirectPath = localStorage.getItem('auth_redirect')
-              if (redirectPath) {
-                console.log('=== AUTHCONTEXT: Sử dụng đường dẫn từ localStorage ===', redirectPath)
-                localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
-              }
-            }
-            
-            if (redirectPath && redirectPath.startsWith('/') && !redirectPath.includes('//')) {
-              console.log('=== AUTHCONTEXT: Chuyển hướng đến đường dẫn được chỉ định:', redirectPath)
-              window.location.replace(redirectPath)
-            } else {
-              window.location.replace('/dashboard')
-            }
-          }
+        // CRITICAL FIX: Không redirect từ AuthContext nếu email xác thực
+        // Middleware sẽ xử lý redirect logic
+        // AuthContext chỉ quản lý state, không redirect
+        if (session && !isEmailVerified(session.user)) {
+          console.log('=== AUTHCONTEXT: Email chưa xác thực, giữ nguyên tại trang hiện tại ===')
         }
       } catch (error) {
         console.error('=== AUTHCONTEXT: Lỗi khi lấy phiên ===', error)
@@ -124,39 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('auth_success', 'true')
           localStorage.setItem('auth_user_email', session.user.email || '')
 
-          // Chỉ chuyển hướng từ /login hoặc /signup, KHÔNG từ trang chủ
-          if (typeof window !== 'undefined') {
-            const currentPath = window.location.pathname
-            // Chỉ redirect từ login/signup pages nếu email ĐÃ xác thực
-            if ((currentPath === '/login' || currentPath === '/signup') && isEmailVerified(session.user)) {
-              console.log('=== AUTHCONTEXT: SIGNED_IN - Email xác thực, chuyển hướng từ', currentPath, '===')
-              
-              // Kiểm tra redirect parameter từ URL hoặc localStorage
-              let redirectPath = null
-              
-              // Ưu tiên redirect từ URL hiện tại
-              const urlParams = new URLSearchParams(window.location.search)
-              redirectPath = urlParams.get('redirect')
-              
-              // Nếu không có trong URL, kiểm tra localStorage
-              if (!redirectPath) {
-                redirectPath = localStorage.getItem('auth_redirect')
-                if (redirectPath) {
-                  console.log('=== AUTHCONTEXT: Sử dụng đường dẫn từ localStorage ===', redirectPath)
-                  localStorage.removeItem('auth_redirect') // Xóa sau khi sử dụng
-                }
-              }
-              
-              if (redirectPath && redirectPath.startsWith('/') && !redirectPath.includes('//')) {
-                console.log('=== AUTHCONTEXT: Chuyển hướng đến đường dẫn được chỉ định:', redirectPath)
-                window.location.replace(redirectPath)
-              } else {
-                window.location.replace('/dashboard')
-              }
-            } else if (!isEmailVerified(session.user)) {
-              console.log('=== AUTHCONTEXT: SIGNED_IN - Email chưa xác thực, giữ nguyên tại trang hiện tại ===')
-              // Không xóa auth_success, để user có thể thấy popup xác thực email
-            }
+          // CRITICAL FIX: Không redirect từ AuthContext
+          // Middleware sẽ xử lý redirect logic
+          // AuthContext chỉ cập nhật state
+          if (!isEmailVerified(session.user)) {
+            console.log('=== AUTHCONTEXT: SIGNED_IN - Email chưa xác thực ===')
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('=== AUTHCONTEXT: SIGNED_OUT event ===')
