@@ -36,12 +36,16 @@ export default function DashboardFinal() {
   const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
+    // CRITICAL FIX: Kiểm tra session thay vì chỉ user
+    // Để tránh vòng lặp khi email chưa xác thực
     if (!authLoading && !user) {
+      console.log('=== DASHBOARD: Không có user, redirect đến login ===')
       window.location.href = '/login'
       return
     }
 
     if (user) {
+      console.log('=== DASHBOARD: User đã đăng nhập, khởi tạo dashboard ===', user.email)
       initializeDashboard()
       
       const hasAuthSuccess = localStorage.getItem('auth_success')

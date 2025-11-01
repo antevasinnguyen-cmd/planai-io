@@ -43,25 +43,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           hasSession: !!session,
           userEmail: session?.user?.email,
           userId: session?.user?.id,
+          isEmailVerified: session ? isEmailVerified(session.user) : false,
           error: error?.message,
           timestamp: new Date().toISOString()
         })
 
-        const verifiedSession = session && isEmailVerified(session.user) ? session : null
+        // CRITICAL FIX: Luôn set session (dù email chưa xác thực)
+        // Để dashboard có thể kiểm tra session.user.email thay vì chỉ user
+        setSession(session)
+        setUser(session?.user ?? null)
 
         if (session && !isEmailVerified(session.user)) {
-          console.log('=== AUTHCONTEXT: Phiên chưa xác thực email, giữ nguyên tại trang auth ===')
+          console.log('=== AUTHCONTEXT: Phiên chưa xác thực email, user sẽ ở trang auth ===')
         }
 
-        setSession(verifiedSession)
-        setUser(verifiedSession?.user ?? null)
-
         // Kiểm tra xem có cần chuyển hướng không
-        if (verifiedSession && typeof window !== 'undefined') {
+        // Chỉ redirect nếu email ĐÃ xác thực
+        if (session && isEmailVerified(session.user) && typeof window !== 'undefined') {
           const currentPath = window.location.pathname
           // Chỉ redirect từ /login hoặc /signup, KHÔNG redirect từ trang chủ
           if (currentPath === '/login' || currentPath === '/signup') {
-            console.log('=== AUTHCONTEXT: Đã đăng nhập, chuyển hướng từ', currentPath, '===')
+            console.log('=== AUTHCONTEXT: Đã đăng nhập và xác thực email, chuyển hướng từ', currentPath, '===')
             
             // Kiểm tra redirect parameter từ URL hoặc localStorage
             let redirectPath = null
@@ -104,14 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           hasSession: !!session,
           userEmail: session?.user?.email,
           userId: session?.user?.id,
+          isEmailVerified: session ? isEmailVerified(session.user) : false,
           currentPath: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
           timestamp: new Date().toISOString()
         })
 
-        const verifiedSession = session && isEmailVerified(session.user) ? session : null
-
-        setSession(verifiedSession)
-        setUser(verifiedSession?.user ?? null)
+        // CRITICAL FIX: Luôn set session (dù email chưa xác thực)
+        setSession(session)
+        setUser(session?.user ?? null)
         setLoading(false)
 
         // Xử lý các thay đổi trạng thái xác thực
@@ -125,9 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Chỉ chuyển hướng từ /login hoặc /signup, KHÔNG từ trang chủ
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname
-            // Chỉ redirect từ login/signup pages
+            // Chỉ redirect từ login/signup pages nếu email ĐÃ xác thực
             if ((currentPath === '/login' || currentPath === '/signup') && isEmailVerified(session.user)) {
-              console.log('=== AUTHCONTEXT: SIGNED_IN - Chuyển hướng từ', currentPath, '===')
+              console.log('=== AUTHCONTEXT: SIGNED_IN - Email xác thực, chuyển hướng từ', currentPath, '===')
               
               // Kiểm tra redirect parameter từ URL hoặc localStorage
               let redirectPath = null
@@ -152,9 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 window.location.replace('/dashboard')
               }
             } else if (!isEmailVerified(session.user)) {
-              console.log('=== AUTHCONTEXT: SIGNED_IN - Tài khoản chưa xác thực email, không chuyển hướng ===')
-              localStorage.removeItem('auth_success')
-              localStorage.removeItem('auth_user_email')
+              console.log('=== AUTHCONTEXT: SIGNED_IN - Email chưa xác thực, giữ nguyên tại trang hiện tại ===')
+              // Không xóa auth_success, để user có thể thấy popup xác thực email
             }
           }
         } else if (event === 'SIGNED_OUT') {
