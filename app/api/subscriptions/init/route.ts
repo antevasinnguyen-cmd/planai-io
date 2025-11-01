@@ -39,6 +39,30 @@ export async function POST(_req: NextRequest) {
     }
     const admin = createClient(supabaseUrl, serviceKey)
 
+    // CRITICAL: Ensure profile exists before creating subscription
+    try {
+      const { data: existingProfile } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle()
+      
+      if (!existingProfile) {
+        // Profile doesn't exist, create it
+        await admin
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+      }
+    } catch (profileErr) {
+      console.warn('Error ensuring profile exists:', profileErr)
+      // Continue anyway - subscription creation might still work
+    }
+
     // Get latest active subscription
     const { data: rows, error: selErr } = await admin
       .from('subscriptions')

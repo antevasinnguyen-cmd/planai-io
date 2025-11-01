@@ -595,17 +595,22 @@ export const checkTrialStatus = async (userId: string) => {
     if (subscription) {
       createdAt = new Date(subscription.created_at)
     } else {
-      // Lấy từ profiles table
-      const { data: profile } = await supabase
+      // Lấy từ profiles table - handle 406 error gracefully
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('created_at')
         .eq('id', userId)
-        .single()
+        .maybeSingle() // Use maybeSingle to handle missing profile gracefully
       
       if (profile?.created_at) {
         createdAt = new Date(profile.created_at)
+      } else if (profileError) {
+        // Profile query failed (e.g., 406 error) - fallback to auth user
+        console.warn('Profile query failed:', profileError.message)
+        const { data: { user } } = await supabase.auth.getUser()
+        createdAt = user?.created_at ? new Date(user.created_at) : new Date()
       } else {
-        // Fallback: Lấy từ auth user
+        // Profile doesn't exist yet - fallback to auth user
         const { data: { user } } = await supabase.auth.getUser()
         createdAt = user?.created_at ? new Date(user.created_at) : new Date()
       }

@@ -248,9 +248,15 @@ async function processJobInBackground(
           .maybeSingle()
         
         if (!prof) {
+          // Profile doesn't exist, create it with required email field
           const { error: insertErr } = await admin
             .from('profiles')
-            .insert({ id: userId, created_at: new Date().toISOString() })
+            .insert({ 
+              id: userId, 
+              email: `user_${userId}@planai.io`, // Fallback email if not available
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
           
           if (insertErr) {
             logger.warn('BG_ENSURE_PROFILE_INSERT_FAIL', { userId, error: String(insertErr) })
@@ -267,9 +273,15 @@ async function processJobInBackground(
           .maybeSingle()
         
         if (!prof) {
+          // Profile doesn't exist, create it with required email field
           const { error: insertErr } = await supabase
             .from('profiles')
-            .insert({ id: userId, created_at: new Date().toISOString() })
+            .insert({ 
+              id: userId, 
+              email: `user_${userId}@planai.io`, // Fallback email if not available
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
           
           if (insertErr) {
             logger.warn('BG_ENSURE_PROFILE_INSERT_FAIL_FALLBACK', { userId, error: String(insertErr) })
