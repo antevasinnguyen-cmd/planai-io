@@ -35,6 +35,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     // Chỉ áp dụng middleware cho các đường dẫn không phải static assets
-    '/((?!_next/static|_next/image|favicon.ico|api|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)',
+    // Exclude: _next/static, _next/image, public assets, api routes
+    '/((?!_next/static|_next/image|favicon\\.ico|public/|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)).*)',
   ],
 }
