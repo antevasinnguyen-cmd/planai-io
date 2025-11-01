@@ -82,9 +82,9 @@ CREATE TABLE IF NOT EXISTS subscription_tiers (
 -- Insert default subscription tiers
 INSERT INTO subscription_tiers (id, name, price, chat_limit, plan_limit, word_limit, features, is_popular) VALUES
 ('free', 'Free', 0, 5, 1, 1500, '["Phân tích cơ bản", "1 kế hoạch ngắn", "Export PDF"]', false),
-('basic', 'Gói 1', 169000, 30, 1, 8000, '["30 Chat với AI", "1 Ebook plan (5-8k từ)", "Export PDF/Word/Docs", "Google Sheets/Notion", "Phân tích tử vi"]', false),
-('pro', 'Gói 2 - Pro', 289000, 70, 3, 12000, '["70 Chat với AI", "3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ / mỗi ebook)", "Export tất cả định dạng", "Phân tích tử vi", "Blog trả phí", "Tính năng mới sớm"]', true),
-('pro_max', 'Gói 3 - Pro Max', 499000, 150, 6, 20000, '["150 Chat với AI", "6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ / mỗi ebook)", "Export tất cả định dạng", "Phân tích tử vi", "Blog trả phí", "Tính năng mới sớm", "Hỗ trợ ưu tiên"]', false);
+('basic', 'Gói 1', 169000, 40, 1, 8000, '["40 Chat với AI", "1 Ebook plan (5-8k từ)", "Export PDF/Word/Docs", "Google Sheets/Notion", "Phân tích tử vi"]', false),
+('pro', 'Gói 2 - Pro', 289000, 90, 3, 12000, '["90 Chat với AI", "3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ / mỗi ebook)", "Export tất cả định dạng", "Phân tích tử vi", "Blog trả phí", "Tính năng mới sớm"]', true),
+('pro_max', 'Gói 3 - Pro Max', 499000, 160, 6, 20000, '["160 Chat với AI", "6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ / mỗi ebook)", "Export tất cả định dạng", "Phân tích tử vi", "Blog trả phí", "Tính năng mới sớm", "Hỗ trợ ưu tiên"]', false);
 
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
