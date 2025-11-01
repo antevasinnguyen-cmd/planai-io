@@ -302,18 +302,20 @@ ${spiritualInsights}
 Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}
 
 Yêu cầu tạo kế hoạch:
-1. Độ dài: ${wordRange}
-2. Sử dụng DỮ LIỆU CỤ THỂ từ thông tin trên
-3. Cấu trúc rõ ràng: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
-4. Phù hợp với thị trường tài chính Việt Nam
-5. Bao gồm lộ trình cụ thể theo tháng/quý/năm
-6. Checklist hành động hàng ngày/tuần/tháng
-7. Liên kết đến tài nguyên học tập thực tế
-8. Tích hợp phân tích tử vi nếu có
- 9. Giới hạn theo gói (${tier}): số micro-tasks/ngày = ${dailyTasks}; checklist tuần = ${weeklyItems} mục; checklist tháng = ${monthlyItems} mục
- 10. Mức độ kịch bản/giải pháp: ${scenarioDepth}
+1. Sử dụng DỮ LIỆU CỤ THỂ từ thông tin trên
+2. Cấu trúc rõ ràng: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
+3. Phù hợp với thị trường tài chính Việt Nam
+4. Bao gồm lộ trình cụ thể theo tháng/quý/năm
+5. Checklist hành động hàng ngày/tuần/tháng
+6. Liên kết đến tài nguyên học tập thực tế
+7. Tích hợp phân tích tử vi nếu có
+8. Giới hạn theo gói (${tier}): số micro-tasks/ngày = ${dailyTasks}; checklist tuần = ${weeklyItems} mục; checklist tháng = ${monthlyItems} mục
+9. Mức độ kịch bản/giải pháp: ${scenarioDepth}
 
-QUAN TRỌNG: Giới hạn tối đa ${maxWords} từ. Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được.`
+QUAN TRỌNG: 
+- Giới hạn tối đa ${maxWords} từ
+- KHÔNG bao gồm số từ hoặc thống kê từ trong nội dung
+- Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được`
 
     // Generate a cache key based on inputs
     const cacheKey = generateCacheKey([

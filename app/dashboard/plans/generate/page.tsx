@@ -214,7 +214,8 @@ export default function GeneratePlanPage() {
         setElapsedSeconds(elapsed)
         
         // Update progress based on elapsed time
-        const estimatedProgress = Math.min(90, 10 + (elapsed / 120) * 80)
+        // Smooth progression: 10% at start, 95% at 2 minutes, stays at 95% until completion
+        const estimatedProgress = Math.min(95, 10 + (elapsed / 120) * 85)
         setProgress((p) => Math.max(p, estimatedProgress))
       }, 1000)
       
@@ -337,7 +338,7 @@ export default function GeneratePlanPage() {
 
   const pollJobStatus = async (id: string) => {
     const userId = user?.id || 'anonymous'
-    const maxAttempts = 600 // 10 minutes (600 * 1 second)
+    const maxAttempts = 1200 // 20 minutes (1200 * 1 second) - increased from 10 to handle slower AI calls
     let attempts = 0
 
     const checkJob = async () => {
@@ -426,7 +427,7 @@ export default function GeneratePlanPage() {
 
       attempts++
       if (attempts >= maxAttempts) {
-        setError('Quá thời gian chờ. Vui lòng thử lại.')
+        setError('Quá thời gian chờ (20 phút). Hệ thống có thể đang bận. Vui lòng thử lại sau.')
         sessionStorage.removeItem(`plan_job_${userId}`)
         clearJobMeta(userId)
         if (pollIntervalRef.current) {
