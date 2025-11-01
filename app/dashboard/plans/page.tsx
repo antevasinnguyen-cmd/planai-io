@@ -155,19 +155,32 @@ export default function PlansPage() {
   const computeDaysLeft = () => {
     try {
       const now = Date.now()
-      if (tier !== 'free') {
-        const end = subscription?.current_period_end ? new Date(subscription.current_period_end).getTime() : 0
-        if (end) return Math.max(0, Math.ceil((end - now) / DAY_MS))
-        // fallback: created_at + 30 days if period end missing
-        const created = subscription?.created_at ? new Date(subscription.created_at).getTime() : 0
-        if (created) return Math.max(0, Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS))
-        return 0
+      
+      // CRITICAL: Kiểm tra current_period_end trước (được set khi thanh toán)
+      if (subscription?.current_period_end) {
+        const end = new Date(subscription.current_period_end).getTime()
+        const days = Math.ceil((end - now) / DAY_MS)
+        console.log('=== PLANS: Using current_period_end ===', {
+          current_period_end: subscription.current_period_end,
+          daysLeft: days
+        })
+        return Math.max(0, days)
       }
-      // free tier: 30 days from created_at
+      
+      // Fallback: tính từ created_at + 30 ngày
       const created = subscription?.created_at ? new Date(subscription.created_at).getTime() : 0
-      if (created) return Math.max(0, Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS))
+      if (created) {
+        const days = Math.ceil(((created + 30 * DAY_MS) - now) / DAY_MS)
+        console.log('=== PLANS: Using created_at fallback ===', {
+          created_at: subscription?.created_at,
+          daysLeft: days
+        })
+        return Math.max(0, days)
+      }
+      
       return 0
-    } catch {
+    } catch (error) {
+      console.error('=== PLANS: Error computing days left ===', error)
       return 0
     }
   }

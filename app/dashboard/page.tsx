@@ -36,26 +36,30 @@ export default function DashboardFinal() {
   const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
-    // CRITICAL FIX: Middleware xử lý redirect
-    // Dashboard chỉ khởi tạo nếu user tồn tại
-    // Không redirect từ đây để tránh vòng lặp
-    if (!authLoading && !user) {
-      console.log('=== DASHBOARD: Không có user, middleware sẽ redirect ===')
+    // Chỉ xử lý khi auth loading hoàn thành
+    if (authLoading) {
+      console.log('=== DASHBOARD: Auth đang loading ===')
       return
     }
 
-    if (user) {
-      console.log('=== DASHBOARD: User đã đăng nhập, khởi tạo dashboard ===', user.email)
-      initializeDashboard()
-      
-      const hasAuthSuccess = localStorage.getItem('auth_success')
-      const hasShownWelcome = sessionStorage.getItem('welcome_shown')
-      if (hasAuthSuccess === 'true' && !hasShownWelcome) {
-        setShowSuccessMessage(true)
-        sessionStorage.setItem('welcome_shown', 'true')
-        localStorage.removeItem('auth_success')
-        localStorage.removeItem('auth_user_email')
-      }
+    // Nếu không có user, redirect đến login
+    if (!user) {
+      console.log('=== DASHBOARD: Không có user, redirect đến login ===')
+      router.push('/login')
+      return
+    }
+
+    // User tồn tại, khởi tạo dashboard
+    console.log('=== DASHBOARD: User đã đăng nhập, khởi tạo dashboard ===', user.email)
+    initializeDashboard()
+    
+    const hasAuthSuccess = localStorage.getItem('auth_success')
+    const hasShownWelcome = sessionStorage.getItem('welcome_shown')
+    if (hasAuthSuccess === 'true' && !hasShownWelcome) {
+      setShowSuccessMessage(true)
+      sessionStorage.setItem('welcome_shown', 'true')
+      localStorage.removeItem('auth_success')
+      localStorage.removeItem('auth_user_email')
     }
   }, [user, authLoading, router])
 

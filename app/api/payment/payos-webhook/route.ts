@@ -98,6 +98,42 @@ export async function POST(request: NextRequest) {
     
     // Nếu thanh toán thành công, cập nhật thông tin người dùng
     if (status === 'completed') {
+      // Tính toán ngày kết thúc (30 ngày từ bây giờ)
+      const now = new Date()
+      const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+      // Cập nhật hoặc tạo subscription record
+      const { data: existingSub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('user_id', payment.user_id)
+        .eq('status', 'active')
+        .single()
+
+      if (existingSub) {
+        // Cập nhật subscription hiện tại
+        await supabase
+          .from('subscriptions')
+          .update({
+            tier: payment.subscription_tier,
+            current_period_end: endDate.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSub.id)
+      } else {
+        // Tạo subscription mới
+        await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: payment.user_id,
+            tier: payment.subscription_tier,
+            status: 'active',
+            current_period_start: now.toISOString(),
+            current_period_end: endDate.toISOString(),
+            created_at: now.toISOString()
+          })
+      }
+
       const { error: subscriptionError } = await supabase
         .from('profiles')
         .update({
