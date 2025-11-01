@@ -237,8 +237,15 @@ Format: Markdown với headings, lists, và tables.`
     // Ensure profile exists to satisfy FK profiles(id) → plans.user_id
     try {
       const email = (user as any).email || null
-      await rh.from('profiles').upsert({ id: user.id, email, created_at: new Date().toISOString() }, { onConflict: 'id' })
-    } catch {}
+      const profileResp = await rh.from('profiles').upsert({ id: user.id, email, created_at: new Date().toISOString() }, { onConflict: 'id' })
+      if (profileResp.error) {
+        logger.warn('PLAN_GENERATE_PROFILE_UPSERT_FAIL', { error: String(profileResp.error) })
+      } else {
+        logger.info('PLAN_GENERATE_PROFILE_UPSERT_OK', { userId: user.id })
+      }
+    } catch (profileErr) {
+      logger.error('PLAN_GENERATE_PROFILE_UPSERT_ERROR', { error: String(profileErr) })
+    }
 
     let plan: any = null
     let insertErr: any = null
@@ -322,7 +329,17 @@ Format: Markdown với headings, lists, và tables.`
       }
     }
 
-    if (insertErr) throw insertErr
+    if (insertErr) {
+      logger.error('PLAN_GENERATE_INSERT_FINAL_FAIL', { 
+        error: String(insertErr),
+        message: insertErr?.message,
+        code: insertErr?.code,
+        userId: user.id
+      })
+      throw insertErr
+    }
+    
+    logger.info('PLAN_GENERATE_INSERT_SUCCESS', { planId: plan?.id, userId: user.id })
     
     // Process plan with RAG in the background (don't await)
     processFinancialPlanWithRAG(user.id, plan.id, enhancedPlanContent)
