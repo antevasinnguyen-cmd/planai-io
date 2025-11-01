@@ -52,6 +52,39 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString()
         })
 
+        // CRITICAL: Ensure profile exists (fallback if trigger failed)
+        try {
+          const userId = data.session.user?.id
+          const userEmail = data.session.user?.email
+          
+          if (userId && userEmail) {
+            // Try to create profile if it doesn't exist
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .upsert({
+                id: userId,
+                email: userEmail,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'id'
+              })
+            
+            if (profileError) {
+              console.warn('=== ROUTE HANDLER: Profile upsert warning ===', {
+                userId,
+                error: profileError.message
+              })
+              // Don't fail - continue anyway
+            } else {
+              console.log('=== ROUTE HANDLER: Profile ensured ===', { userId })
+            }
+          }
+        } catch (profileErr) {
+          console.warn('=== ROUTE HANDLER: Profile ensure failed ===', profileErr)
+          // Don't fail - continue anyway
+        }
+
         // Lưu thông báo thành công
         const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
         
