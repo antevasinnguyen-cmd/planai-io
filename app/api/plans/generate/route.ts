@@ -377,11 +377,28 @@ Format: Markdown với headings, lists, và tables.`
       .then(() => logger.info('PLAN_GENERATE_RAG_STARTED', { planId: plan.id }))
       .catch(err => logger.warn('PLAN_GENERATE_RAG_FAILED', { planId: plan.id, error: String(err) }))
 
+    // Get UPDATED usage stats after plan creation
+    const updatedUsageAfterPlan = await checkUsageLimits(user.id, 'plan')
+    const remainingPlans = Math.max(updatedUsageAfterPlan.limit - updatedUsageAfterPlan.current, 0)
+    
+    logger.info('PLAN_GENERATE_RESPONSE_USAGE', { 
+      current: updatedUsageAfterPlan.current, 
+      limit: updatedUsageAfterPlan.limit, 
+      remaining: remainingPlans,
+      tier: updatedUsageAfterPlan.tier 
+    })
+
     return NextResponse.json({
       success: true,
       planId: plan.id,
       message: 'Kế hoạch đã được tạo thành công',
-      wordCount
+      wordCount,
+      usage: {
+        current: updatedUsageAfterPlan.current,  // UPDATED count after saving
+        limit: updatedUsageAfterPlan.limit,
+        tier: updatedUsageAfterPlan.tier,
+        remaining: remainingPlans
+      }
     })
 
   } catch (error) {

@@ -283,16 +283,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return response with usage info (clamped)
+    // Return response with UPDATED usage info (after saving message)
+    // CRITICAL: Re-check usage AFTER saving to get accurate count
     const updatedUsage = await checkUsageLimits(user.id, 'chat')
-    const nextCount = Math.min(updatedUsage.current + 1, updatedUsage.limit)
-    const remaining = Math.max(updatedUsage.limit - nextCount, 0)
+    // After saving, the count should be updated by 1 (for the user message we just saved)
+    const remaining = Math.max(updatedUsage.limit - updatedUsage.current, 0)
+    
+    logger.info('API_CHAT_RESPONSE_USAGE', { 
+      current: updatedUsage.current, 
+      limit: updatedUsage.limit, 
+      remaining,
+      tier: updatedUsage.tier 
+    })
     
     return NextResponse.json({ 
       response: aiResponse,
       success: true,
       usage: {
-        current: nextCount,
+        current: updatedUsage.current,  // UPDATED count after saving
         limit: updatedUsage.limit,
         tier: updatedUsage.tier,
         remaining

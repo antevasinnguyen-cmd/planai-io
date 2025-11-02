@@ -346,17 +346,13 @@ export const getServerCapsByTier = (tier: string) => {
 }
 
 export const getUserUsageStats = async (userId: string) => {
-  const isServer = typeof window === 'undefined'
-  const serviceKey = isServer ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined
-  const client = serviceKey ? createClient(supabaseUrl, serviceKey) : supabase
-
   // Get current month usage
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
 
   // Count plans created this month
-  const { data: plansData, error: plansError } = await client
+  const { data: plansData, error: plansError } = await supabase
     .from('plans')
     .select('id')
     .eq('user_id', userId)
@@ -368,7 +364,7 @@ export const getUserUsageStats = async (userId: string) => {
   let chatsError: any = null
   try {
     // First try with source column filter
-    const res = await client
+    const res = await supabase
       .from('chat_messages')
       .select('id')
       .eq('user_id', userId)
@@ -388,7 +384,7 @@ export const getUserUsageStats = async (userId: string) => {
   }
 
   // Sum word count from plans this month
-  const { data: wordsData, error: wordsError } = await client
+  const { data: wordsData, error: wordsError } = await supabase
     .from('plans')
     .select('word_count')
     .eq('user_id', userId)

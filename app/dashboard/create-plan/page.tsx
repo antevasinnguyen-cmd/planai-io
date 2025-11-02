@@ -319,11 +319,13 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       updateCollectedInfo(currentInput)
       
       // CRITICAL: Update usage from API response (server-authoritative)
-      if (data.usage && subscription) {
+      if (data.usage) {
         const updatedSubscription = {
           ...subscription,
           chat_count: data.usage.current,
-          tier: data.usage.tier
+          limit: data.usage.limit,
+          tier: data.usage.tier,
+          remaining: data.usage.remaining
         }
         setSubscription(updatedSubscription)
         console.log('=== CHAT USAGE UPDATED FROM API ===', {
@@ -334,10 +336,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         })
       }
       
-      // Refresh usage stats from server after a short delay
-      setTimeout(() => {
-        refreshUsageStats()
-      }, 500)
+      // Refresh usage stats from server immediately (don't wait)
+      await refreshUsageStats()
     } catch (error) {
       console.error('Chat Error:', error)
       
@@ -402,8 +402,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canCreatePlan = () => {
-    // Nếu subscription chưa load, cho phép tạo (sẽ kiểm tra khi gửi)
-    if (!subscription) return true
+    // CRITICAL: Default to FALSE if subscription not loaded (prevent bypass)
+    if (!subscription) return false
     
     const tier = subscription.tier || 'free'
     const planLimit = getPlanLimit(tier)
@@ -422,8 +422,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canChat = () => {
-    // Nếu subscription chưa load, cho phép chat (sẽ kiểm tra khi gửi)
-    if (!subscription) return true
+    // CRITICAL: Default to FALSE if subscription not loaded (prevent bypass)
+    if (!subscription) return false
     
     const tier = subscription.tier || 'free'
     const chatLimit = getChatLimit(tier)
@@ -569,6 +569,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         oldCount: subscription.plan_count,
         newCount: newPlanCount
       })
+      refreshUsageStats() // Add this line
     }
     
     // Navigate to plan generation page
