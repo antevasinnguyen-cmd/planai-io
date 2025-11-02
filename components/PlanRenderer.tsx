@@ -30,12 +30,16 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
   // Auto-fix markdown tables: add separator row if missing
   const fixedContent = useMemo(() => {
     let fixed = cleanContent
-    // Pattern: | header | header | followed by | data | data | (no separator)
-    const tableRegex = /(\|[^\n|]+\|)\n(?!\|[-\s|:]+\|)(\|[^\n|]+\|)/g
-    fixed = fixed.replace(tableRegex, (match, header, firstData) => {
-      const headerCells = header.split('|').filter(c => c.trim()).length
-      const separator = '|' + Array(headerCells).fill('---').join('|') + '|'
-      return `${header}\n${separator}\n${firstData}`
+    // Robust pattern: a header row starting with '|' and containing multiple cells,
+    // next line also starts with '|' (data) but there is NO separator line between them.
+    // We work in multiline mode and ensure we don't match if a separator already exists.
+    const missingSeparatorRegex = /(^\|(?:[^|\n]+\|)+\s*$)\n(?!^\|[-\s|:]+\|$)(^\|(?:[^|\n]+\|)+\s*$)/gm
+    fixed = fixed.replace(missingSeparatorRegex, (_m, headerLine, firstDataLine) => {
+      // Count columns by counting non-empty cells between pipes in header
+      const headerCells = headerLine.split('|').filter(c => c.trim().length > 0)
+      const colCount = headerCells.length
+      const separator = '|' + Array(colCount).fill('---').join('|') + '|'
+      return `${headerLine}\n${separator}\n${firstDataLine}`
     })
     return fixed
   }, [cleanContent])
