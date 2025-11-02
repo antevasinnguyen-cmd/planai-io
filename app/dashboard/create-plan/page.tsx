@@ -210,6 +210,37 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     }
   }
 
+  // Refresh subscription usage stats from server
+  const refreshUsageStats = async () => {
+    if (!user?.id) return
+    try {
+      const res = await fetch(`/api/usage/stats?userId=${user.id}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        if (data.usage) {
+          const updatedSubscription = {
+            ...subscription,
+            chat_count: data.usage.chats || 0,
+            plan_count: data.usage.plans || 0,
+            tier: subscription?.tier || 'free'
+          }
+          setSubscription(updatedSubscription)
+          console.log('=== USAGE STATS REFRESHED FROM SERVER ===', {
+            chats: data.usage.chats,
+            plans: data.usage.plans
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing usage stats:', error)
+    }
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -302,6 +333,11 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
           remaining: data.usage.remaining
         })
       }
+      
+      // Refresh usage stats from server after a short delay
+      setTimeout(() => {
+        refreshUsageStats()
+      }, 500)
     } catch (error) {
       console.error('Chat Error:', error)
       

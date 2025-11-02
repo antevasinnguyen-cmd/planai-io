@@ -72,6 +72,7 @@ Your Approach:
 7. CRITICAL: Use markdown tables with proper formatting (| Header | Header |)
 8. CRITICAL: Complete ALL sections - NO truncation or incomplete content
 9. CRITICAL: Reach the FULL word count for their tier
+10. CRITICAL: Output ONLY Markdown narrative + a final fenced JSON block (no extra explanations)
 
 Plan Structure (MUST COMPLETE ALL SECTIONS):
 
@@ -125,6 +126,39 @@ CRITICAL FORMATTING REQUIREMENTS:
 - COMPLETE every section fully
 - Test all markdown syntax before including in response
 
+MANDATORY OUTPUT FORMAT (in this exact order):
+1. # KẾ HOẠCH TÀI CHÍNH CÁ NHÂN HÓA: [Mục tiêu user]
+2. ## Phân Tích SWOT Cá Nhân
+   | Yếu tố | Nội dung |
+   |---|---|
+   | Điểm mạnh | ... |
+   | Điểm yếu | ... |
+   | Cơ hội | ... |
+   | Thách thức | ... |
+3. ## Mindmap Lộ Trình (Mermaid)
+   \`\`\`mermaid
+   mindmap
+     root(([Mục tiêu]))
+       Năm 1
+         Quý 1
+           Tháng 1
+             Tuần 1
+       Năm 2
+   \`\`\`
+4. ## Roadmap Chi Tiết (kiểu roadmap.sh)
+   - Tổ chức theo: Năm → Quý → Tháng → Tuần
+   - Mỗi node: [Hành động] | [Chỉ số đo lường] | [Tài nguyên]
+   - Thêm 1 bảng Markdown: | Cấp | Tên | Bắt đầu | Kết thúc | Milestone | KPI | Trạng thái |
+5. ## Checklist Hành Động
+   - Bảng Markdown: | Ngày/Tháng | Hành động | Trạng thái | Ghi chú |
+6. ## Google Sheets Template
+   - Ghi rõ link template (từ JSON embed)
+7. ## Tài Liệu Học Tập
+   - Bảng: | Kỹ năng | Nguồn (link) | Thời lượng | Cách học tối ưu |
+   - Ưu tiên nguồn tiếng Việt/miễn phí phù hợp (YouTube VN, Coursera có phụ đề VN, khóa VN cụ thể)
+8. ## Add-on Spiritual (nếu bật)
+   - Tách riêng section, không ảnh hưởng nội dung chính
+
 MANDATORY OUTLINE (use these H2/H3 headings in the narrative):
 - ## Lời mở đầu & Tóm tắt mục tiêu
 - ## Phân tích mục tiêu và tình hình hiện tại
@@ -168,8 +202,11 @@ DATA LAYER (for export):
     { "period": "Tuần 1|Tháng 1|Q1/2025", "focus": "...", "deliverables": "..." }
   ],
   "resources": [
-    { "title": "Roadmap.sh Frontend", "url": "https://roadmap.sh/frontend", "type": "web" }
-  ]
+    { "title": "Roadmap.sh Frontend", "url": "https://roadmap.sh/frontend", "type": "web", "duration": "", "locale": "vi|en" }
+  ],
+  "google_sheets_template": "https://docs.google.com/spreadsheets/d/.../edit",
+  "mermaid_mindmap": "mindmap\n  Root[Mục tiêu]\n    Branch[Quý 1]\n      Leaf[Tháng 1]",
+  "checklist_data": [["Ngày/Tháng", "Hành động", "Trạng thái", "Ghi chú"], ["01/01", "Đăng ký khóa học...", "", ""]]
 }
 \`\`\`
 - Ensure the JSON is valid and parseable. Do NOT include comments in JSON.

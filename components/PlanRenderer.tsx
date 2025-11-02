@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Copy, Download, Table2, FileSpreadsheet, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import mermaid from 'mermaid'
 
 interface TableData {
   headers: string[]
@@ -18,6 +19,26 @@ interface PlanRendererProps {
 export default function PlanRenderer({ content, planId, onExport }: PlanRendererProps) {
   const [copiedTableId, setCopiedTableId] = useState<string | null>(null)
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
+
+  // Strip JSON Data Layer from content (hide from user)
+  const cleanContent = useMemo(() => {
+    // Remove JSON block at end of content (Data Layer for export only)
+    const jsonBlockRegex = /```json\s*\{[\s\S]*?\}\s*```\s*$/
+    return content.replace(jsonBlockRegex, '').trim()
+  }, [content])
+
+  // Auto-fix markdown tables: add separator row if missing
+  const fixedContent = useMemo(() => {
+    let fixed = cleanContent
+    // Pattern: | header | header | followed by | data | data | (no separator)
+    const tableRegex = /(\|[^\n|]+\|)\n(?!\|[-\s|:]+\|)(\|[^\n|]+\|)/g
+    fixed = fixed.replace(tableRegex, (match, header, firstData) => {
+      const headerCells = header.split('|').filter(c => c.trim()).length
+      const separator = '|' + Array(headerCells).fill('---').join('|') + '|'
+      return `${header}\n${separator}\n${firstData}`
+    })
+    return fixed
+  }, [cleanContent])
 
   // Parse tables from markdown content
   const extractTables = (text: string): { content: string; tables: Map<string, TableData> } => {
@@ -47,7 +68,7 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
     return { content: processedContent, tables }
   }
 
-  const { tables } = extractTables(content)
+  const { tables } = extractTables(fixedContent)
 
   const handleCopyTable = (tableId: string) => {
     const table = tables.get(tableId)
@@ -126,9 +147,27 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
                 {children}
               </td>
             ),
+            code: ({ node, inline, className, children, ...props }: any) => {
+              const match = /language-(\w+)/.exec(className || '')
+              const lang = match ? match[1] : ''
+              
+              // Render mermaid diagrams
+              if (lang === 'mermaid' && !inline) {
+                return (
+                  <MermaidDiagram code={String(children).replace(/\n$/, '')} />
+                )
+              }
+              
+              // Default code block
+              return (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              )
+            },
           }}
         >
-          {content}
+          {fixedContent}
         </ReactMarkdown>
       </div>
 
@@ -273,6 +312,52 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Mermaid diagram renderer component
+function MermaidDiagram({ code }: { code: string }) {
+  const [svg, setSvg] = useState<string>('')
+  const [error, setError] = useState<string>('')
+
+  useMemo(() => {
+    const renderMermaid = async () => {
+      try {
+        mermaid.initialize({ startOnLoad: true, theme: 'default' })
+        const { svg: renderedSvg } = await mermaid.render('mermaid-diagram', code)
+        setSvg(renderedSvg)
+        setError('')
+      } catch (err) {
+        setError('Không thể render sơ đồ')
+        console.error('Mermaid render error:', err)
+      }
+    }
+    renderMermaid()
+  }, [code])
+
+  if (error) {
+    return (
+      <div className="my-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
+          {code}
+        </pre>
+      </div>
+    )
+  }
+
+  if (!svg) {
+    return (
+      <div className="my-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg animate-pulse">
+        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="my-6 p-4 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
+      <div dangerouslySetInnerHTML={{ __html: svg }} className="flex justify-center" />
     </div>
   )
 }
