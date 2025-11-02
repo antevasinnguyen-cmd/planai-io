@@ -111,13 +111,19 @@ Everything in Gói 2 PLUS:
 24. Phân tích chi tiết đầu tư (800-1000 words)
 
 CRITICAL FORMATTING REQUIREMENTS:
-- Use markdown tables for financial data: | Mục tiêu | Số tiền | Thời gian | Ghi chú |
+- Use markdown tables CORRECTLY for financial data:
+  * Header row: | Mục tiêu | Số tiền | Thời gian | Ghi chú |
+  * Separator row: |---|---|---|---|
+  * Data rows: | value | value | value | value |
+  * ALWAYS close all pipes (|) - no incomplete rows
+  * NEVER use dashes (---) inside cells, use separators properly
 - Use **bold** for important numbers and concepts
 - Use bullet points (•) for lists
 - Use numbered lists for action steps
 - NEVER use incomplete markdown (no ** without closing **)
 - NEVER truncate sections mid-sentence
 - COMPLETE every section fully
+- Test all markdown syntax before including in response
 
 CRITICAL CONTENT REQUIREMENTS:
 - Use EXACT data from their conversation

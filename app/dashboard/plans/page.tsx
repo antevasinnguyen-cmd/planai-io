@@ -71,6 +71,17 @@ export default function PlansPage() {
     if (user) {
       setLoading(true)
       loadData(user.id)
+      
+      // Check if plans list needs refresh (after plan creation)
+      const refreshFlag = sessionStorage.getItem('refresh_plans_list')
+      if (refreshFlag) {
+        sessionStorage.removeItem('refresh_plans_list')
+        console.log('=== PLANS PAGE: Refresh triggered after plan creation ===')
+        // Reload data after a short delay to ensure backend has processed
+        setTimeout(() => {
+          loadData(user.id)
+        }, 1000)
+      }
     }
   }, [user, authLoading, router])
 

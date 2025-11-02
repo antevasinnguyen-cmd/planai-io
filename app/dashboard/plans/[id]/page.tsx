@@ -34,6 +34,7 @@ export default function PlanViewEnhanced() {
   const [spiritualEnabled, setSpiritualEnabled] = useState(false)
   const [subscription, setSubscription] = useState<any>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeReason, setUpgradeReason] = useState<'spiritual' | 'export' | null>(null)
   const { user } = useAuth()
   const router = useRouter()
   const params = useParams()
@@ -212,12 +213,25 @@ export default function PlanViewEnhanced() {
     }
   }
 
+  const handleExportClick = () => {
+    // Check subscription tier - only allow for paid tiers
+    const tier = subscription?.tier || 'free'
+    if (tier === 'free') {
+      setUpgradeReason('export')
+      setShowUpgradeModal(true)
+      return
+    }
+    // If paid tier, show export menu
+    setShowExportMenu(!showExportMenu)
+  }
+
   const toggleSpiritual = async () => {
     if (!plan) return
 
     // Check subscription tier - only allow for paid tiers
     const tier = subscription?.tier || 'free'
     if (tier === 'free') {
+      setUpgradeReason('spiritual')
       setShowUpgradeModal(true)
       return
     }
@@ -333,8 +347,14 @@ export default function PlanViewEnhanced() {
               {/* Export Menu */}
               <div className="relative">
                 <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  onClick={handleExportClick}
+                  disabled={subscription?.tier === 'free'}
+                  title={subscription?.tier === 'free' ? 'Tính năng này chỉ có sẵn cho gói trả phí' : 'Xuất file'}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    subscription?.tier === 'free'
+                      ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
                 >
                   <Download className="w-4 h-4" />
                   <span>Xuất file</span>
@@ -524,10 +544,12 @@ export default function PlanViewEnhanced() {
               <Lock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
-              Tính năng Tử vi
+              {upgradeReason === 'export' ? 'Xuất file' : 'Tính năng Tử vi'}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-              Tính năng phân tích Tử vi chỉ có sẵn cho các gói trả phí (Gói 1, Gói 2, Gói 3). Hãy nâng cấp để truy cập tính năng này.
+              {upgradeReason === 'export' 
+                ? 'Tính năng xuất file chỉ có sẵn cho các gói trả phí (Gói 1, Gói 2, Gói 3). Hãy nâng cấp để truy cập tính năng này.'
+                : 'Tính năng phân tích Tử vi chỉ có sẵn cho các gói trả phí (Gói 1, Gói 2, Gói 3). Hãy nâng cấp để truy cập tính năng này.'}
             </p>
             <div className="space-y-3">
               <button
@@ -537,7 +559,10 @@ export default function PlanViewEnhanced() {
                 Xem các gói nâng cấp
               </button>
               <button
-                onClick={() => setShowUpgradeModal(false)}
+                onClick={() => {
+                  setShowUpgradeModal(false)
+                  setUpgradeReason(null)
+                }}
                 className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
               >
                 Đóng

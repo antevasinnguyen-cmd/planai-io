@@ -110,6 +110,12 @@ export default function GeneratePlanPage() {
             try { localStorage.removeItem('pending_plan_latest') } catch {}
             if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
             if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
+            
+            // CRITICAL: Trigger plans list refresh by setting a flag
+            try {
+              sessionStorage.setItem('refresh_plans_list', 'true')
+            } catch {}
+            
             setTimeout(() => { router.push(`/dashboard/plans/${data.plan_id}`) }, 1200)
           } else if (data.status === 'failed') {
             setJobStatus('failed')
