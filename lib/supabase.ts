@@ -300,11 +300,13 @@ export const getUserSubscription = async (userId: string) => {
 
 export const getSubscriptionLimits = (tier: string) => {
   // Default limits (fallback if database doesn't have subscription)
+  // Updated per user requirements:
+  // Free: 1000-1500 words, Gói 1: 6000-9000, Gói 2: 10000-12000, Gói 3: 15000-20000
   const defaultLimits = {
-    'free': { plans: 1, chats: 5, words: 1000 },
-    'basic': { plans: 1, chats: 40, words: 6500 },
-    'pro': { plans: 3, chats: 90, words: 10500 },
-    'pro_max': { plans: 6, chats: 160, words: 17500 }
+    'free': { plans: 1, chats: 5, words: 1500 },      // Free tier: 1000-1500 words
+    'basic': { plans: 1, chats: 40, words: 9000 },    // Gói 1: 6000-9000 words
+    'pro': { plans: 3, chats: 90, words: 12000 },     // Gói 2: 10000-12000 words
+    'pro_max': { plans: 6, chats: 160, words: 20000 } // Gói 3: 15000-20000 words
   }
   return defaultLimits[tier as keyof typeof defaultLimits] || defaultLimits.free
 }

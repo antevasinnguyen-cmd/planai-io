@@ -6,10 +6,10 @@ import Link from 'next/link'
 import { 
   ArrowLeft, Download, Edit, Share2, Trash2, FileText, 
   Clock, Sparkles, FileDown, FileSpreadsheet, Globe,
-  Star, Moon, Zap, History, Save, Eye, Code
+  Star, Moon, Zap, History, Save, Eye, Code, Lock
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import { supabase } from '@/lib/supabase'
+import { supabase, getUserSubscription } from '@/lib/supabase'
 import PlanRenderer from '@/components/PlanRenderer'
 
 interface Plan {
@@ -32,6 +32,8 @@ export default function PlanViewEnhanced() {
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [showSpiritualMenu, setShowSpiritualMenu] = useState(false)
   const [spiritualEnabled, setSpiritualEnabled] = useState(false)
+  const [subscription, setSubscription] = useState<any>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
   const params = useParams()
@@ -43,7 +45,17 @@ export default function PlanViewEnhanced() {
       return
     }
     loadPlan()
+    loadSubscription()
   }, [user, planId, router])
+
+  const loadSubscription = async () => {
+    try {
+      const { data } = await getUserSubscription(user!.id)
+      setSubscription(data)
+    } catch (error) {
+      console.error('Error loading subscription:', error)
+    }
+  }
 
   const loadPlan = async () => {
     try {
@@ -202,6 +214,13 @@ export default function PlanViewEnhanced() {
 
   const toggleSpiritual = async () => {
     if (!plan) return
+
+    // Check subscription tier - only allow for paid tiers
+    const tier = subscription?.tier || 'free'
+    if (tier === 'free') {
+      setShowUpgradeModal(true)
+      return
+    }
 
     const newValue = !spiritualEnabled
 
@@ -369,16 +388,24 @@ export default function PlanViewEnhanced() {
                 )}
               </div>
 
-              {/* Spiritual Toggle */}
+              {/* Spiritual Toggle - Only for paid tiers */}
               <button
                 onClick={toggleSpiritual}
+                disabled={subscription?.tier === 'free'}
+                title={subscription?.tier === 'free' ? 'Tính năng này chỉ có sẵn cho gói trả phí' : 'Phân tích tử vi'}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  spiritualEnabled
+                  subscription?.tier === 'free'
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                    : spiritualEnabled
                     ? 'bg-purple-600 hover:bg-purple-700 text-white'
                     : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
-                <Star className="w-4 h-4" />
+                {subscription?.tier === 'free' ? (
+                  <Lock className="w-4 h-4" />
+                ) : (
+                  <Star className="w-4 h-4" />
+                )}
                 <span>Tử vi</span>
               </button>
             </div>
@@ -488,6 +515,37 @@ export default function PlanViewEnhanced() {
           </div>
         </div>
       </main>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-8 max-w-md mx-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-500/20 mx-auto mb-4">
+              <Lock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              Tính năng Tử vi
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+              Tính năng phân tích Tử vi chỉ có sẵn cho các gói trả phí (Gói 1, Gói 2, Gói 3). Hãy nâng cấp để truy cập tính năng này.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/pricing')}
+                className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Xem các gói nâng cấp
+              </button>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

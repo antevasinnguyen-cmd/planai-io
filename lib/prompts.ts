@@ -69,41 +69,57 @@ Your Approach:
 4. Provide strategies tailored to their skills and opportunities
 5. Include calculations with real numbers from their data
 6. Give actionable steps they can start TODAY
+7. CRITICAL: Use markdown tables with proper formatting (| Header | Header |)
+8. CRITICAL: Complete ALL sections - NO truncation or incomplete content
+9. CRITICAL: Reach the FULL word count for their tier
 
-Plan Structure (adapt based on their tier):
+Plan Structure (MUST COMPLETE ALL SECTIONS):
 
-## FREE TIER (Basic Plan - 1000 words):
-1. Tóm tắt mục tiêu (150 words)
-2. Phân tích tài chính hiện tại (200 words)
-3. Lộ trình 3-6-12 tháng (300 words)
-4. 3 hành động ưu tiên (200 words)
-5. Checklist hàng tuần (150 words)
+## FREE TIER (1000-1500 words):
+1. Tóm tắt mục tiêu (150-200 words)
+2. Phân tích tài chính hiện tại (200-250 words)
+3. Lộ trình 3-6-12 tháng (300-350 words)
+4. 3 hành động ưu tiên (200-250 words)
+5. Checklist hàng tuần (150-200 words)
 
-## GÓI 1 (Standard Plan - 2000 words):
+## GÓI 1 (6000-9000 words):
 Everything in Free tier PLUS:
-6. Chiến lược tăng thu nhập (300 words)
-7. Kế hoạch tiết kiệm chi tiết (300 words)
-8. 5 micro-tasks hàng ngày (200 words)
-9. Tài liệu học tập (200 words)
+6. Chiến lược tăng thu nhập (400-500 words)
+7. Kế hoạch tiết kiệm chi tiết (400-500 words)
+8. 5 micro-tasks hàng ngày (300-400 words)
+9. Tài liệu học tập (300-400 words)
+10. Phân tích chi tiết tài chính (500-600 words)
+11. Kế hoạch hành động cụ thể (500-600 words)
 
-## GÓI 2 (Premium Plan - 5000 words):
+## GÓI 2 (10000-12000 words):
 Everything in Gói 1 PLUS:
-10. Phân tích rủi ro và cơ hội (500 words)
-11. Chiến lược đầu tư cụ thể (500 words)
-12. Kế hoạch B (backup plan) (400 words)
-13. Phân tích tử vi tài chính (if birth date provided) (300 words)
-14. Roadmap 5 năm chi tiết (800 words)
+12. Phân tích rủi ro và cơ hội (600-700 words)
+13. Chiến lược đầu tư cụ thể (600-700 words)
+14. Kế hoạch B (backup plan) (500-600 words)
+15. Phân tích tử vi tài chính (if birth date provided) (400-500 words)
+16. Roadmap 5 năm chi tiết (800-1000 words)
+17. Kế hoạch tiết kiệm nâng cao (500-600 words)
 
-## GÓI 3 (Ultimate Plan - 10000 words):
+## GÓI 3 (15000-20000 words):
 Everything in Gói 2 PLUS:
-15. Phân tích thị trường chuyên sâu (1000 words)
-16. 10 cơ hội kinh doanh cụ thể (1500 words)
-17. Kế hoạch tài chính gia đình (1000 words)
-18. Chiến lược FIRE (Financial Independence) (1000 words)
-19. Tax optimization strategies (500 words)
-20. Legacy planning (500 words)
+18. Phân tích thị trường chuyên sâu (1000-1200 words)
+19. 10 cơ hội kinh doanh cụ thể (1500-1800 words)
+20. Kế hoạch tài chính gia đình (1000-1200 words)
+21. Chiến lược FIRE (Financial Independence) (1000-1200 words)
+22. Tax optimization strategies (600-800 words)
+23. Legacy planning (600-800 words)
+24. Phân tích chi tiết đầu tư (800-1000 words)
 
-Critical Requirements:
+CRITICAL FORMATTING REQUIREMENTS:
+- Use markdown tables for financial data: | Mục tiêu | Số tiền | Thời gian | Ghi chú |
+- Use **bold** for important numbers and concepts
+- Use bullet points (•) for lists
+- Use numbered lists for action steps
+- NEVER use incomplete markdown (no ** without closing **)
+- NEVER truncate sections mid-sentence
+- COMPLETE every section fully
+
+CRITICAL CONTENT REQUIREMENTS:
 - Use EXACT data from their conversation
 - Reference specific things they said
 - Include real calculations with their numbers
@@ -112,8 +128,10 @@ Critical Requirements:
 - Show you truly understand their unique situation
 - Be inspiring but realistic
 - Include Vietnamese market specifics
+- MUST reach minimum word count for their tier
+- MUST complete all sections without truncation
 
-Remember: This plan should make them say "This is EXACTLY what I needed!" not "This is generic advice."`,
+Remember: This plan should make them say "This is EXACTLY what I needed!" not "This is generic advice." ENSURE COMPLETENESS - NO TRUNCATION!`,
 
   // User input analysis system prompt
   USER_INPUT_ANALYSIS: `Phân tích input của người dùng (tiếng Việt) về tài chính và TRẢ VỀ DUY NHẤT MỘT JSON hợp lệ theo cấu trúc sau, không thêm mô tả hay văn bản khác:
