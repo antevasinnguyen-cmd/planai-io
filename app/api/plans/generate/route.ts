@@ -112,7 +112,11 @@ export async function POST(request: NextRequest) {
         const chatSummary = Array.isArray(messages)
           ? messages.filter((m: any) => m.role === 'user').map((m: any) => m.content).join('\n').slice(0, 4000)
           : ''
-        const enrichedCollectedInfo = { ...(collectedInfo || {}), chat_summary: chatSummary }
+        // Resolve tier + words for deeper personalization limits
+        const { data: subscription } = await getUserSubscription(user.id)
+        const resolvedTier = subscription?.tier || usageCheck.tier || 'free'
+        const tierLimits = getSubscriptionLimits(resolvedTier)
+        const enrichedCollectedInfo = { ...(collectedInfo || {}), chat_summary: chatSummary, tier: resolvedTier, maxWords: tierLimits.words }
         const goalsText = userProfile.financial_goal || (userProfile.description || 'Mục tiêu tài chính cá nhân')
         const planTitle = userProfile.financial_goal
           ? `Kế hoạch: ${userProfile.financial_goal}`
@@ -169,6 +173,28 @@ Format: Markdown với headings, lists, và tables.`
       await saveCachedResponse(cacheKey, planContent, 30) // Cache for 30 days
     }
 
+    // Helper: extract JSON Data Layer at the end of plan (if any)
+    const extractJsonFromMarkdown = (md: string): any | null => {
+      try {
+        const codeFenceRegex = /```json\s*([\s\S]*?)\s*```/gi
+        let match: RegExpExecArray | null = null
+        let last: string | null = null
+        while ((match = codeFenceRegex.exec(md)) !== null) {
+          last = match[1]
+        }
+        if (!last) return null
+        return JSON.parse(last)
+      } catch {
+        return null
+      }
+    }
+
+    // Parse structured data and strip JSON block from content shown to users
+    const structuredData = extractJsonFromMarkdown(planContent)
+    const displayContent = structuredData
+      ? planContent.replace(/```json[\s\S]*?```\s*$/i, '').trim()
+      : planContent
+
     // Generate enhanced plan components
     logger.info('PLAN_GENERATE_ENHANCE_COMPONENTS', {})
     
@@ -222,7 +248,7 @@ Format: Markdown với headings, lists, và tables.`
     }
     
     // Combine all components into enhanced plan content
-    const enhancedPlanContent = planContent + '\n\n' +
+    const enhancedPlanContent = displayContent + '\n\n' +
       formatMicroTasks(microTasks) + '\n\n' +
       formatChecklists(weeklyChecklist, monthlyChecklist) + '\n\n' +
       (learningResources ? '📚 TÀI LIỆU HỌC TẬP:\n' + learningResources : '')
@@ -259,7 +285,12 @@ Format: Markdown với headings, lists, và tables.`
           title: `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`,
           goal: userProfile.financial_goal || 'Kế hoạch tài chính cá nhân',
           content: enhancedPlanContent,
-          collected_info: collectedInfo,
+          collected_info: {
+            ...(collectedInfo || {}),
+            tier: (structuredData && structuredData.tier) ? structuredData.tier : (usageCheck.tier || 'free'),
+            maxWords: (collectedInfo && (collectedInfo as any).maxWords) || undefined,
+            structured_data: structuredData || null
+          },
           status: 'active',
           word_count: wordCount,
           created_at: new Date().toISOString(),

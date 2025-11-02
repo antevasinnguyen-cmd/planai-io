@@ -55,6 +55,19 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
   }
 }
 
+// Ensure required sheets exist
+const ensureSheets = async (spreadsheetId: string, names: string[]) => {
+  const sheets = getGoogleSheetsClient()
+  const meta = await sheets.spreadsheets.get({ spreadsheetId })
+  const existing = new Set((meta.data.sheets || []).map(s => s.properties?.title || ''))
+  const requests = names
+    .filter(n => n && !existing.has(n))
+    .map(n => ({ addSheet: { properties: { title: n } } }))
+  if (requests.length) {
+    await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } })
+  }
+}
+
 // Export financial plan to Google Sheets
 export const exportPlanToGoogleSheets = async (
   planData: any,
@@ -68,6 +81,7 @@ export const exportPlanToGoogleSheets = async (
     
     // Extract data from plan
     const { title, content, created_at } = planData
+    const structured = planData?.collected_info?.structured_data || null
     
     // Parse content to extract sections
     const sections = parsePlanContent(content)
@@ -145,6 +159,98 @@ export const exportPlanToGoogleSheets = async (
       })
     }
     
+    // If structured data exists, ensure dedicated sheets and write tabular data
+    if (structured && typeof structured === 'object') {
+      const roadmapRows = Array.isArray(structured.roadmap) ? structured.roadmap : []
+      const actionsRows = Array.isArray(structured.actions) ? structured.actions : []
+      const budgetRows = Array.isArray(structured.budget) ? structured.budget : []
+      const timelineRows = Array.isArray(structured.timeline) ? structured.timeline : []
+      const resourcesRows = Array.isArray(structured.resources) ? structured.resources : []
+
+      const sheetNames = ['Roadmap', 'Actions', 'BudgetTable', 'TimelineTable', 'Resources']
+      await ensureSheets(spreadsheetId, sheetNames)
+
+      const tableUpdates: Array<{ range: string; values: any[][] }> = []
+
+      // Roadmap
+      tableUpdates.push({
+        range: 'Roadmap!A1',
+        values: [[
+          'Cấp', 'Tên', 'Bắt đầu', 'Kết thúc', 'Milestone', 'KPI', 'Phụ thuộc', 'Trạng thái'
+        ]]
+      })
+      if (roadmapRows.length) {
+        tableUpdates.push({
+          range: 'Roadmap!A2',
+          values: roadmapRows.map((r: any) => [
+            r.level || '', r.name || '', r.start || '', r.end || '', r.milestone || '', r.kpi || '', r.dependencies || '', r.status || ''
+          ])
+        })
+      }
+
+      // Actions
+      tableUpdates.push({
+        range: 'Actions!A1',
+        values: [[ 'Priority', 'Area', 'Task', 'Owner', 'Estimate', 'Deadline', 'KPI' ]]
+      })
+      if (actionsRows.length) {
+        tableUpdates.push({
+          range: 'Actions!A2',
+          values: actionsRows.map((a: any) => [
+            a.priority || '', a.area || '', a.task || '', a.owner || 'Bạn', a.estimate || '', a.deadline || '', a.kpi || ''
+          ])
+        })
+      }
+
+      // Budget
+      tableUpdates.push({
+        range: 'BudgetTable!A1',
+        values: [[ 'Category', 'Item', 'Amount', 'Frequency' ]]
+      })
+      if (budgetRows.length) {
+        tableUpdates.push({
+          range: 'BudgetTable!A2',
+          values: budgetRows.map((b: any) => [
+            b.category || '', b.item || '', b.amount ?? '', b.frequency || ''
+          ])
+        })
+      }
+
+      // Timeline
+      tableUpdates.push({
+        range: 'TimelineTable!A1',
+        values: [[ 'Period', 'Focus', 'Deliverables' ]]
+      })
+      if (timelineRows.length) {
+        tableUpdates.push({
+          range: 'TimelineTable!A2',
+          values: timelineRows.map((t: any) => [ t.period || '', t.focus || '', t.deliverables || '' ])
+        })
+      }
+
+      // Resources
+      tableUpdates.push({
+        range: 'Resources!A1',
+        values: [[ 'Title', 'URL', 'Type' ]]
+      })
+      if (resourcesRows.length) {
+        tableUpdates.push({
+          range: 'Resources!A2',
+          values: resourcesRows.map((r: any) => [ r.title || '', r.url || '', r.type || '' ])
+        })
+      }
+
+      // Apply table updates
+      for (const u of tableUpdates) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: u.range,
+          valueInputOption: 'RAW',
+          requestBody: { values: u.values }
+        })
+      }
+    }
+
     // Update the spreadsheet
     await Promise.all(
       updates.map(update => 

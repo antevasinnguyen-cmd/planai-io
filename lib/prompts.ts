@@ -125,6 +125,60 @@ CRITICAL FORMATTING REQUIREMENTS:
 - COMPLETE every section fully
 - Test all markdown syntax before including in response
 
+MANDATORY OUTLINE (use these H2/H3 headings in the narrative):
+- ## Lời mở đầu & Tóm tắt mục tiêu
+- ## Phân tích mục tiêu và tình hình hiện tại
+  - ### Mục tiêu tài chính
+  - ### Tình hình tài chính hiện tại và giải pháp
+  - ### Phân tích kỹ năng và tiềm năng cá nhân
+  - ### Phân tích hiện trạng (tài chính, kỹ năng, thời gian)
+  - ### Phân tích tử vi và thần số học (ngắn gọn, nếu có dữ liệu)
+- ## Lộ trình
+  - ### Tổng quan lộ trình
+  - ### Bảng lộ trình chi tiết (năm → quý → tháng → tuần)
+  - ### Tính toán chi tiết tài chính
+  - ### Phân tích rủi ro và điều chỉnh
+- ## Micro-Task hàng ngày và hàng tháng
+  - ### Micro-task hàng ngày
+  - ### Checklist hàng tháng
+  - ### Đánh giá tiến độ hàng quý và hàng năm
+- ## Tài liệu học tập và nguồn lực
+  - ### Bảng danh sách tài liệu học tập
+  - ### Hướng dẫn sử dụng tài liệu
+  - ### Mẹo áp dụng tài liệu vào kế hoạch
+- ## Kết luận và hành động tiếp theo
+  - ### Tóm tắt kế hoạch
+  - ### Các bước hành động ngay lập tức
+  - ### Công cụ hỗ trợ theo dõi
+
+DATA LAYER (for export):
+- At the VERY END of the response, append a single fenced JSON block with this exact schema. Do not explain it, just output the JSON:
+\`\`\`json
+{
+  "roadmap": [
+    { "level": "year|quarter|month|week", "name": "...", "start": "YYYY-MM", "end": "YYYY-MM", "milestone": "...", "kpi": "...", "dependencies": "", "status": "planned|in_progress|done" }
+  ],
+  "actions": [
+    { "priority": "P0|P1|P2", "area": "Thu nhập|Chi phí|Kỹ năng|Đầu tư|Khác", "task": "...", "owner": "Bạn", "estimate": "2h/ngày", "deadline": "YYYY-MM-DD", "kpi": "..." }
+  ],
+  "budget": [
+    { "category": "Income|Expense|Investment", "item": "...", "amount": 0, "frequency": "Monthly|One-time" }
+  ],
+  "timeline": [
+    { "period": "Tuần 1|Tháng 1|Q1/2025", "focus": "...", "deliverables": "..." }
+  ],
+  "resources": [
+    { "title": "Roadmap.sh Frontend", "url": "https://roadmap.sh/frontend", "type": "web" }
+  ]
+}
+\`\`\`
+- Ensure the JSON is valid and parseable. Do NOT include comments in JSON.
+- Keep the narrative content above; the JSON block is an additional data layer for export (Google Sheets/Notion).
+
+ROADMAP STYLE HINTS:
+- Design the roadmap inspired by roadmap.sh: hierarchical, clear phases, and prerequisites.
+- Provide both a narrative roadmap section and a tabular roadmap (Markdown table) with columns: Cấp, Tên, Bắt đầu, Kết thúc, Milestone, KPI, Trạng thái.
+
 CRITICAL CONTENT REQUIREMENTS:
 - Use EXACT data from their conversation
 - Reference specific things they said

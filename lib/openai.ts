@@ -259,6 +259,14 @@ export const generateFinancialPlan = async (
 
     // Tier-based micro-tasks and scenario depth gating (P1)
     const tier = String(collectedInfo.tier || 'free')
+
+    // Tier-aware creativity: higher tiers allow slightly higher temperature
+    const temperatureForTier = (() => {
+      if (tier === 'pro_max') return 0.7
+      if (tier === 'pro') return 0.65
+      if (tier === 'basic') return 0.6
+      return 0.55
+    })()
     let dailyTasks = 3
     let weeklyItems = 4
     let monthlyItems = 4
@@ -360,7 +368,7 @@ QUAN TRỌNG:
           model,
           messages,
           max_tokens: maxTokensForTier,
-          temperature: 0.3
+          temperature: temperatureForTier
         }),
         signal
       )
