@@ -120,6 +120,16 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
       <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
         <ReactMarkdown
           components={{
+            a: ({ href, children }) => (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 dark:text-primary-400 hover:underline"
+              >
+                {children}
+              </a>
+            ),
             table: ({ children }) => (
               <div className="my-6 overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                 <table className="w-full text-sm">

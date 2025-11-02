@@ -97,11 +97,14 @@ export default function PlansPage() {
   }
 
   const loadUsageStats = async (userId: string) => {
+    console.log('=== PLANS PAGE: Loading usage stats for user', userId)
     const { data: subData } = await getUserSubscription(userId)
     const resolvedSubscription = buildSubscription(subData)
     setSubscription(resolvedSubscription)
+    console.log('=== PLANS PAGE: Subscription loaded', { tier: resolvedSubscription.tier, limits: { plans: resolvedSubscription.plan_limit, chats: resolvedSubscription.chat_limit } })
 
     const usageStats = await getUserUsageStats(userId)
+    console.log('=== PLANS PAGE: Usage stats loaded', { plans: usageStats.plans, chats: usageStats.chats, words: usageStats.words, error: usageStats.error })
     setUsage({
       plans: usageStats.plans || 0,
       chats: usageStats.chats || 0,
@@ -133,6 +136,13 @@ export default function PlansPage() {
 
   const canCreatePlan = () => {
     if (!usage || !subscription) return false
+    const tier = subscription?.tier || 'free'
+    const baseLimits = getSubscriptionLimits(tier)
+    const limits = {
+      plans: subscription?.plan_limit ?? baseLimits.plans,
+      chats: subscription?.chat_limit ?? baseLimits.chats,
+      words: subscription?.word_limit ?? baseLimits.words
+    }
     return usage.plans < limits.plans
   }
 
