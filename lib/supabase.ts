@@ -351,47 +351,45 @@ export const getUserUsageStats = async (userId: string) => {
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
 
-  // Count plans created this month
-  const { data: plansData, error: plansError } = await supabase
+  // Count plans created this month (use PostgREST count)
+  const { count: planCount = 0, error: plansError } = await supabase
     .from('plans')
-    .select('id')
+    .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .gte('created_at', startOfMonth.toISOString())
 
   // Count chat messages this month (user messages only)
-  // Query: type='user' AND created_at >= startOfMonth
-  let chatsData: any[] | null = null
+  let chatCount = 0
   let chatsError: any = null
   try {
-    // Count only user messages (not AI responses)
     const res = await supabase
       .from('chat_messages')
-      .select('id', { count: 'exact', head: false })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('type', 'user')
       .gte('created_at', startOfMonth.toISOString())
-    
-    chatsData = res.data as any[] | null
+
     chatsError = res.error
-    
     if (chatsError) {
       console.warn('getUserUsageStats: chat query error', chatsError)
-      // Fallback: try without type filter
+      // Fallback: try without type filter and count manually
       const fallbackRes = await supabase
         .from('chat_messages')
         .select('id', { count: 'exact', head: false })
         .eq('user_id', userId)
         .gte('created_at', startOfMonth.toISOString())
-      
+
       if (!fallbackRes.error) {
-        // Count only every other message (user messages)
-        chatsData = fallbackRes.data?.filter((_, i) => i % 2 === 0) || []
+        chatCount = fallbackRes.data?.filter((_, i) => i % 2 === 0).length || 0
         chatsError = null
+      } else {
+        chatCount = fallbackRes.count || 0
       }
+    } else {
+      chatCount = res.count || 0
     }
   } catch (e) {
     console.error('getUserUsageStats: chat query exception', e)
-    chatsData = []
     chatsError = e
   }
 
@@ -407,8 +405,8 @@ export const getUserUsageStats = async (userId: string) => {
   console.log('=== USER USAGE STATS ===', {
     userId,
     month: startOfMonth.toISOString(),
-    plans: plansData?.length || 0,
-    chats: chatsData?.length || 0,
+    plans: planCount,
+    chats: chatCount,
     words: totalWords,
     plansError: plansError?.message,
     chatsError: chatsError?.message,
@@ -416,8 +414,8 @@ export const getUserUsageStats = async (userId: string) => {
   })
 
   return {
-    plans: plansData?.length || 0,
-    chats: chatsData?.length || 0,
+    plans: planCount,
+    chats: chatCount,
     words: totalWords,
     error: plansError || chatsError || wordsError
   }
