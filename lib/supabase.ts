@@ -363,10 +363,10 @@ export const getUserUsageStats = async (userId: string) => {
   let chatsData: any[] | null = null
   let chatsError: any = null
   try {
-    // First try with source column filter
+    // Count only user messages (not AI responses)
     const res = await supabase
       .from('chat_messages')
-      .select('id')
+      .select('id', { count: 'exact', head: false })
       .eq('user_id', userId)
       .eq('type', 'user')
       .gte('created_at', startOfMonth.toISOString())
@@ -376,6 +376,18 @@ export const getUserUsageStats = async (userId: string) => {
     
     if (chatsError) {
       console.warn('getUserUsageStats: chat query error', chatsError)
+      // Fallback: try without type filter
+      const fallbackRes = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: false })
+        .eq('user_id', userId)
+        .gte('created_at', startOfMonth.toISOString())
+      
+      if (!fallbackRes.error) {
+        // Count only every other message (user messages)
+        chatsData = fallbackRes.data?.filter((_, i) => i % 2 === 0) || []
+        chatsError = null
+      }
     }
   } catch (e) {
     console.error('getUserUsageStats: chat query exception', e)
@@ -397,7 +409,10 @@ export const getUserUsageStats = async (userId: string) => {
     month: startOfMonth.toISOString(),
     plans: plansData?.length || 0,
     chats: chatsData?.length || 0,
-    words: totalWords
+    words: totalWords,
+    plansError: plansError?.message,
+    chatsError: chatsError?.message,
+    wordsError: wordsError?.message
   })
 
   return {

@@ -272,7 +272,9 @@ export default function GeneratePlanPage() {
       try {
         localStorage.setItem(`pending_plan_${userId}`, JSON.stringify(data))
         localStorage.setItem('pending_plan_latest', JSON.stringify(data))
-      } catch {}
+      } catch (error) {
+        console.error('Error saving plan data to localStorage:', error)
+      }
 
       setStatus('Gửi yêu cầu tới hệ thống AI...')
       setProgress(5)
@@ -301,6 +303,12 @@ export default function GeneratePlanPage() {
           messages: Array.isArray(data?.messages) ? data.messages : undefined
         })
       })
+
+      if (!res.ok) {
+        console.error('Error starting plan generation:', res.status)
+        setError('Không thể bắt đầu tạo kế hoạch')
+        return
+      }
 
       const result = await res.json()
 
@@ -349,7 +357,7 @@ export default function GeneratePlanPage() {
 
   const pollJobStatus = async (id: string) => {
     const userId = user?.id || 'anonymous'
-    const maxAttempts = 1200 // 20 minutes (1200 * 1 second) - increased from 10 to handle slower AI calls
+    const maxAttempts = 3600 // 60 minutes (3600 * 1 second) - increased from 20 to 60 minutes
     let attempts = 0
 
     const checkJob = async () => {
@@ -438,7 +446,7 @@ export default function GeneratePlanPage() {
 
       attempts++
       if (attempts >= maxAttempts) {
-        setError('Quá thời gian chờ (20 phút). Hệ thống có thể đang bận. Vui lòng thử lại sau.')
+        setError('Quá thời gian chờ (60 phút). Hệ thống có thể đang bận. Vui lòng thử lại sau.')
         sessionStorage.removeItem(`plan_job_${userId}`)
         clearJobMeta(userId)
         if (pollIntervalRef.current) {
