@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Home } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
-import { getUserPlans, getUserUsageStats, getUserSubscription, getSubscriptionLimits, getTierName, supabase, checkTrialStatus } from '@/lib/supabase'
+import { getUserPlans, getUserSubscription, getSubscriptionLimits, getTierName, supabase, checkTrialStatus } from '@/lib/supabase'
 
 const buildSubscription = (subscriptionData: any | null = null) => {
   const tier = subscriptionData?.tier || 'free'
@@ -85,15 +85,20 @@ export default function PlansPage() {
     }
   }, [user, authLoading, router])
 
-  const loadPlans = async (userId: string) => {
-    const { data, error } = await getUserPlans(userId)
-    if (error) throw error
-
-    const sortedPlans = (data || []).sort((a, b) => {
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-
-    setPlans(sortedPlans)
+  const loadPlans = async (_userId: string) => {
+    try {
+      const res = await fetch('/api/analytics/summary', { credentials: 'include' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const list = Array.isArray(data?.plans) ? data.plans : []
+      setPlans(list)
+    } catch (e) {
+      console.error('PLANS PAGE: Failed to fetch plans via summary API', e)
+      // Fallback to direct client helper
+      const { data } = await getUserPlans(_userId)
+      const sorted = (data || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setPlans(sorted)
+    }
   }
 
   const loadUsageStats = async (userId: string) => {
@@ -103,14 +108,16 @@ export default function PlansPage() {
     setSubscription(resolvedSubscription)
     console.log('=== PLANS PAGE: Subscription loaded', { tier: resolvedSubscription.tier, limits: { plans: resolvedSubscription.plan_limit, chats: resolvedSubscription.chat_limit } })
 
-    const usageStats = await getUserUsageStats(userId)
-    console.log('=== PLANS PAGE: Usage stats loaded', { plans: usageStats.plans, chats: usageStats.chats, words: usageStats.words, error: usageStats.error })
-    setUsage({
-      plans: usageStats.plans || 0,
-      chats: usageStats.chats || 0,
-      words: usageStats.words || 0,
-      error: usageStats.error
-    })
+    try {
+      const res = await fetch('/api/usage/stats', { credentials: 'include' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const usageStats = data?.usage || { plans: 0, chats: 0, words: 0 }
+      setUsage({ ...usageStats, error: null })
+    } catch (error) {
+      console.error('=== PLANS PAGE: Usage API error ===', error)
+      setUsage({ plans: 0, chats: 0, words: 0, error })
+    }
   }
 
   const loadTrialStatus = async (userId: string) => {

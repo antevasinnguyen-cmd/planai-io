@@ -1,28 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { exportToNotion } from '@/lib/export/notion';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
     // Get plan ID and access token from request
     const { planId, accessToken } = await req.json();
     
-    // Authenticate user
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Authenticate user via route handler client (RLS cookies)
+    const cookieStore = cookies()
+    const rh = createRouteHandlerClient({ cookies: () => cookieStore })
+    const { data: auth } = await rh.auth.getUser()
+    if (!auth?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    const userId = session.user.id;
+    const userId = auth.user.id
     
     // Get plan details
-    const { data: plan, error: planError } = await supabase
+    const { data: plan, error: planError } = await rh
       .from('plans')
       .select('*')
       .eq('id', planId)
@@ -34,23 +32,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
     }
     
-    // Parse plan content
-    let content;
-    try {
-      content = typeof plan.content === 'string' ? JSON.parse(plan.content) : plan.content;
-    } catch (e) {
-      content = { summary: plan.content };
-    }
-    
-    // Export to Notion
     const notionUrl = await exportToNotion(
       plan.title,
-      content,
+      plan.content,
       accessToken
-    );
+    )
     
     // Update plan metadata with export info
-    await supabase
+    await rh
       .from('plans')
       .update({
         metadata: {
@@ -66,10 +55,7 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', planId);
     
-    return NextResponse.json({ 
-      success: true,
-      url: notionUrl
-    });
+    return NextResponse.json({ success: true, url: notionUrl })
   } catch (error) {
     console.error('Notion export error:', error);
     return NextResponse.json(

@@ -558,19 +558,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     
     console.log('Lưu pending_plan với', currentMessages.length, 'tin nhắn')
     
-    // CRITICAL: Cập nhật usage ngay lập tức khi tạo plan
-    if (subscription && user?.id) {
-      const newPlanCount = (subscription.plan_count || 0) + 1
-      setSubscription({
-        ...subscription,
-        plan_count: newPlanCount
-      })
-      console.log('=== PLAN CREATED: Updated plan_count ===', {
-        oldCount: subscription.plan_count,
-        newCount: newPlanCount
-      })
-      refreshUsageStats() // Add this line
-    }
+    // Không tăng plan_count lạc quan để tránh hiển thị 2/1.
+    // Usage sẽ được đồng bộ từ server sau khi tạo kế hoạch.
     
     // Navigate to plan generation page
     router.push('/dashboard/plans/generate')

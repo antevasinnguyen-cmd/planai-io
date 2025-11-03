@@ -132,15 +132,25 @@ export default function SubscriptionPage() {
     if (!user) return
 
     try {
-      const [subData, usageData, trialData] = await Promise.all([
+      const [subData, trialData] = await Promise.all([
         getUserSubscription(user.id),
-        getUserUsageStats(user.id),
         checkTrialStatus(user.id)
       ])
 
       setSubscription(subData.data)
-      setUsage(usageData)
       setTrialStatus(trialData)
+
+      try {
+        const res = await fetch('/api/usage/stats', { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          setUsage(data?.usage || { plans: 0, chats: 0, words: 0 })
+        } else {
+          setUsage({ plans: 0, chats: 0, words: 0, error: `HTTP ${res.status}` })
+        }
+      } catch (e) {
+        setUsage({ plans: 0, chats: 0, words: 0, error: e })
+      }
 
       // Mock active subscriptions (in real app, fetch from database)
       setActiveSubscriptions([subData.data].filter(Boolean))
