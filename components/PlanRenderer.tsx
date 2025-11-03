@@ -334,6 +334,9 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
 function MermaidDiagram({ code }: { code: string }) {
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string>('')
+  const [img, setImg] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [genErr, setGenErr] = useState<string>('')
 
   useMemo(() => {
     const renderMermaid = async () => {
@@ -372,6 +375,57 @@ function MermaidDiagram({ code }: { code: string }) {
   return (
     <div className="my-6 p-4 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
       <div dangerouslySetInnerHTML={{ __html: svg }} className="flex justify-center" />
+      <div className="mt-4">
+        <button
+          onClick={async () => {
+            try {
+              setLoading(true)
+              setGenErr('')
+              setImg('')
+              const res = await fetch('/api/images/mindmap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ mermaid: code })
+              })
+              const data = await res.json().catch(() => ({}))
+              if (!res.ok || data?.error) {
+                throw new Error(data?.error || `HTTP ${res.status}`)
+              }
+              setImg(data?.image || '')
+            } catch (e) {
+              setGenErr('Không thể tạo ảnh. Vui lòng thử lại.')
+            } finally {
+              setLoading(false)
+            }
+          }}
+          disabled={loading}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            loading
+              ? 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-not-allowed'
+              : 'bg-primary-600 hover:bg-primary-700 text-white'
+          }`}
+        >
+          {loading ? 'Đang tạo ảnh...' : 'Tạo ảnh minh họa (AI)'}
+        </button>
+        {genErr && (
+          <p className="text-sm text-red-600 dark:text-red-400 mt-2">{genErr}</p>
+        )}
+        {img && (
+          <div className="mt-4">
+            <img src={img} alt="Mindmap" className="max-w-full h-auto rounded border border-gray-200 dark:border-gray-700" />
+            <div className="mt-2">
+              <a
+                href={img}
+                download={`mindmap-${Date.now()}.png`}
+                className="inline-flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              >
+                Tải ảnh
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

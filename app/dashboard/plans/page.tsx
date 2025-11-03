@@ -256,39 +256,9 @@ export default function PlansPage() {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Kế Hoạch Tài Chính</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Quản lý các kế hoạch tài chính được tạo bởi AI</p>
             </div>
-            
-            {usage && (
-              <div className="text-right">
-                <div className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">
-                  {getTierName(tier)}{typeof daysLeft === 'number' ? ` • Còn ${daysLeft} ngày` : ''}
-                </div>
-                <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
-                  <div>Kế hoạch: {usage.plans}/{limits.plans}</div>
-                  <div>Chat: {usage.chats}/{limits.chats}</div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Usage Progress Bars */}
-          {usage && (
-            <div className="mt-4 space-y-2">
-              <div>
-                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                  <span>Kế hoạch trong tháng</span>
-                  <span>{usage.plans}/{limits.plans}</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-primary-600 dark:bg-primary-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((usage.plans / limits.plans) * 100, 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}

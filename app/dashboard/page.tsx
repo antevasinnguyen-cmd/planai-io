@@ -120,12 +120,16 @@ export default function DashboardFinal() {
     }
   }
 
-  const loadUsageStats = async (userId: string) => {
+  const loadUsageStats = async (_userId: string) => {
     try {
-      const usageStats = await getUserUsageStats(userId)
-      setUsage(usageStats)
+      const res = await fetch('/api/usage/stats', { credentials: 'include' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const usageStats = data?.usage || { plans: 0, chats: 0, words: 0 }
+      setUsage({ ...usageStats, error: null })
     } catch (error) {
       console.error('Error loading usage stats:', error)
+      setUsage({ plans: 0, chats: 0, words: 0, error })
     }
   }
 

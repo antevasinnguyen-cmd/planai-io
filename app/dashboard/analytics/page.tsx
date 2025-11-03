@@ -15,7 +15,7 @@ import {
   Zap,
   Sparkles
 } from 'lucide-react'
-import { getTierName, getUserSubscription, getUserUsageStats, getSubscriptionLimits } from '@/lib/supabase'
+import { getTierName, getUserSubscription, getUserUsageStats, getSubscriptionLimits, getPlanById } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import GoalSummary from '@/components/analytics/GoalSummary'
 
@@ -69,6 +69,7 @@ export default function AnalyticsPage() {
   const [newNote, setNewNote] = useState('')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingNoteContent, setEditingNoteContent] = useState('')
+  const [planMetrics, setPlanMetrics] = useState<{ roadmap: number; actions: number; budgetTotal: number; resources: number; checklist: number } | null>(null)
 
   const emptySummary = useMemo<AnalyticsSummary>(
     () => ({
@@ -171,29 +172,40 @@ export default function AnalyticsPage() {
   const limits = useMemo(() => getSubscriptionLimits(tier), [tier])
 
   const activitySummary: ActivitySummary[] = useMemo(() => {
-    if (!usage) return []
-    return [
-      {
-        label: 'Kế hoạch đã tạo',
-        value: usage.plans,
-        limit: limits.plans,
-        icon: Target,
-        color: 'bg-blue-500'
-      },
-      {
-        label: 'Cuộc trò chuyện với AI',
-        value: usage.chats,
-        limit: limits.chats,
-        icon: BarChart3,
-        color: 'bg-green-500'
-      }
-    ]
-  }, [usage, limits])
+    return []
+  }, [])
 
   const primaryPlan = useMemo(() => {
     if (!summary?.plans?.length) return null
     return summary.plans.find(plan => plan.status === 'active') || summary.plans[0]
   }, [summary])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!primaryPlan) { setPlanMetrics(null); return }
+      try {
+        const { data } = await getPlanById(primaryPlan.id)
+        let metrics = { roadmap: 0, actions: 0, budgetTotal: 0, resources: 0, checklist: 0 }
+        if (data?.content) {
+          const m = /```json\s*\{[\s\S]*?\}\s*```\s*$/m.exec(data.content)
+          if (m) {
+            const jsonText = m[0].replace(/```json|```/g, '').trim()
+            try {
+              const parsed = JSON.parse(jsonText)
+              metrics.roadmap = Array.isArray(parsed.roadmap) ? parsed.roadmap.length : 0
+              metrics.actions = Array.isArray(parsed.actions) ? parsed.actions.length : 0
+              metrics.budgetTotal = Array.isArray(parsed.budget) ? parsed.budget.reduce((s: number, it: any) => s + (Number(it.amount) || 0), 0) : 0
+              metrics.resources = Array.isArray(parsed.resources) ? parsed.resources.length : 0
+              metrics.checklist = Array.isArray(parsed.checklist_data) ? Math.max((parsed.checklist_data.length - 1), 0) : 0
+            } catch {}
+          }
+        }
+        if (!cancelled) setPlanMetrics(metrics)
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [primaryPlan])
 
   if (isLoading) {
     return (
@@ -260,30 +272,28 @@ export default function AnalyticsPage() {
 
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-6">
+            {/* Chỉ số từ kế hoạch (JSON Data Layer) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {activitySummary.map(item => (
-                <div key={item.label} className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center text-white` }>
-                      <item.icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-500">Giới hạn: {item.limit.toLocaleString()}</span>
-                  </div>
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">{item.label}</h3>
-                  <div className="mt-2 flex items-end justify-between">
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{item.value.toLocaleString()}</p>
-                    <span className={`text-xs font-medium ${item.value >= item.limit * 0.8 ? 'text-rose-500' : 'text-green-500'}`}>
-                      {Math.min(Math.round((item.value / item.limit) * 100), 999)}%
-                    </span>
-                  </div>
-                  <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${item.value >= item.limit * 0.8 ? 'bg-rose-500' : item.value >= item.limit * 0.5 ? 'bg-amber-400' : item.color}`}
-                      style={{ width: `${Math.min((item.value / item.limit) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Mốc lộ trình</h3>
+                <p className="text-2xl font-semibold">{planMetrics?.roadmap ?? 0}</p>
+              </div>
+              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Hành động ưu tiên</h3>
+                <p className="text-2xl font-semibold">{planMetrics?.actions ?? 0}</p>
+              </div>
+              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Tổng ngân sách (ước tính)</h3>
+                <p className="text-2xl font-semibold">{(planMetrics?.budgetTotal ?? 0).toLocaleString('vi-VN')} đ</p>
+              </div>
+              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Tài nguyên học tập</h3>
+                <p className="text-2xl font-semibold">{planMetrics?.resources ?? 0}</p>
+              </div>
+              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Checklist mục tiêu</h3>
+                <p className="text-2xl font-semibold">{planMetrics?.checklist ?? 0}</p>
+              </div>
             </div>
 
             {/* Hoạt động gần đây */}
@@ -324,34 +334,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            {/* Phân tích sử dụng */}
-            <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Phân tích sử dụng</h3>
-                <Sparkles className="w-5 h-5 text-primary-500" />
-              </div>
-              <div className="space-y-4">
-                {activitySummary.map(item => (
-                  <div key={item.label} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center text-white`}>
-                        <item.icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{item.value.toLocaleString()} / {item.limit.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${item.value >= item.limit ? 'text-rose-500' : 'text-primary-500'}`}>
-                        {Math.min(Math.round((item.value / item.limit) * 100), 999)}%
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{item.value >= item.limit ? 'Đã đạt giới hạn' : 'Còn ' + Math.max(item.limit - item.value, 0)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Đã bỏ Phân tích sử dụng theo yêu cầu */}
 
             {/* Checklist hành động */}
             <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
