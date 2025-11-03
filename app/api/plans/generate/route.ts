@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     logger.info('PLAN_GENERATE_AUTH_OK', { userId: user.id })
 
     // Check usage limits before processing
-    const usageCheck = await checkUsageLimits(user.id, 'plan')
+    const usageCheck = await checkUsageLimits(user.id, 'plan', request)
     if (!usageCheck.allowed) {
       // Get subscription with fallback
       const { data: subscription } = await getUserSubscription(user.id)

@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check usage limits before processing
-    const usageCheck = await checkUsageLimits(user.id, 'chat')
+    const usageCheck = await checkUsageLimits(user.id, 'chat', request)
     if (!usageCheck.allowed) {
       const { data: subscription } = await getUserSubscription(user.id)
       const limits = getSubscriptionLimits(usageCheck.tier)

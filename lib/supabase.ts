@@ -345,22 +345,59 @@ export const getServerCapsByTier = (tier: string) => {
   return (caps as any)[tier] || caps.free
 }
 
-export const getUserUsageStats = async (userId: string) => {
+export const getUserUsageStats = async (userId: string, request?: Request) => {
   // Get current month usage
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
 
-  // Count plans created this month (use PostgREST count)
-  const { count: planCount = 0, error: plansError } = await supabase
-    .from('plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('created_at', startOfMonth.toISOString())
+  let planCount = 0 as number
+  let chatsError: any = null
+  let plansError: any = null
+  let wordsError: any = null
+  let totalWords = 0
+
+  // Prefer route-handler client (RLS via cookies) when in API context
+  try {
+    if (request) {
+      const { cookies } = await import('next/headers')
+      const { createRouteHandlerClient } = await import('@supabase/auth-helpers-nextjs')
+      const cookieStore = cookies()
+      const rh = createRouteHandlerClient({ cookies: () => cookieStore })
+      const plansRes = await rh
+        .from('plans')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', startOfMonth.toISOString())
+      planCount = plansRes.count || 0
+      plansError = plansRes.error
+
+      const chatsRes = await rh
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('type', 'user')
+        .gte('created_at', startOfMonth.toISOString())
+      const wordsRes = await rh
+        .from('plans')
+        .select('word_count')
+        .eq('user_id', userId)
+        .gte('created_at', startOfMonth.toISOString())
+
+      totalWords = (wordsRes.data || []).reduce((sum: number, p: any) => sum + (p?.word_count || 0), 0)
+      return {
+        plans: planCount,
+        chats: chatsRes.count || 0,
+        words: totalWords,
+        error: plansError || chatsRes.error || wordsRes.error
+      }
+    }
+  } catch (e) {
+    // Fall through to anon client path
+  }
 
   // Count chat messages this month (user messages only)
   let chatCount = 0
-  let chatsError: any = null
   try {
     const res = await supabase
       .from('chat_messages')
@@ -394,13 +431,14 @@ export const getUserUsageStats = async (userId: string) => {
   }
 
   // Sum word count from plans this month
-  const { data: wordsData, error: wordsError } = await supabase
+  const { data: wordsData, error: wordsErrorLocal } = await supabase
     .from('plans')
     .select('word_count')
     .eq('user_id', userId)
     .gte('created_at', startOfMonth.toISOString())
 
-  const totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
+  totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
+  wordsError = wordsErrorLocal
 
   console.log('=== USER USAGE STATS ===', {
     userId,
@@ -421,7 +459,7 @@ export const getUserUsageStats = async (userId: string) => {
   }
 }
 
-export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') => {
+export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan', request?: Request) => {
   // Get user subscription
   const { data: subscription } = await getUserSubscription(userId)
 
@@ -459,7 +497,7 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan') 
   }
 
   // Get current usage
-  const usage = await getUserUsageStats(userId)
+  const usage = await getUserUsageStats(userId, request)
 
   // If subscription window expired, block further actions
   if (isExpired) {

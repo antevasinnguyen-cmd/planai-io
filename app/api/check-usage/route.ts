@@ -6,13 +6,13 @@ export async function POST(request: NextRequest) {
     const { action } = await request.json()
     
     // Get current user
-    const user = await getCurrentUser()
+    const user = await getCurrentUser(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check usage limits
-    const usageCheck = await checkUsageLimits(user.id, action)
+    const usageCheck = await checkUsageLimits(user.id, action, request)
     
     return NextResponse.json(usageCheck)
 

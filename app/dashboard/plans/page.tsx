@@ -87,17 +87,25 @@ export default function PlansPage() {
 
   const loadPlans = async (_userId: string) => {
     try {
-      const res = await fetch('/api/analytics/summary', { credentials: 'include' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const res = await fetch('/api/plans/list', { credentials: 'include' })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`HTTP ${res.status} ${text}`)
+      }
       const data = await res.json()
       const list = Array.isArray(data?.plans) ? data.plans : []
       setPlans(list)
     } catch (e) {
-      console.error('PLANS PAGE: Failed to fetch plans via summary API', e)
-      // Fallback to direct client helper
-      const { data } = await getUserPlans(_userId)
-      const sorted = (data || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      setPlans(sorted)
+      console.error('PLANS PAGE: Failed to fetch plans via list API', e)
+      try {
+        const { data, error } = await getUserPlans(_userId)
+        if (error) throw error
+        const sorted = (data || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        setPlans(sorted)
+      } catch (fallbackError) {
+        console.error('PLANS PAGE: Fallback getUserPlans failed', fallbackError)
+        setPlans([])
+      }
     }
   }
 
