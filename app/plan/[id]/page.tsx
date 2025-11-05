@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Edit3, Download, Share2, History, Save, X, FileText, File, Globe } from 'lucide-react'
 import { getCurrentUser, getUserProfile, getPlanById, updatePlan } from '@/lib/supabase'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import Mermaid from '@/components/Mermaid'
 
 export default function PlanViewPage() {
   const [user, setUser] = useState<any>(null)
@@ -380,9 +383,36 @@ export default function PlanViewPage() {
               </div>
             ) : (
               <div className="prose prose-lg max-w-none">
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-gray-800">
-                  {plan.content}
-                </pre>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                  code({node, inline, className, children, ...props}) {
+                    const match = /language-(\w+)/.exec(className || '')
+                    const lang = match?.[1]
+                    if (!inline && lang === 'mermaid') {
+                      return <Mermaid chart={String(children)} />
+                    }
+                    return <code className={className} {...props}>{children}</code>
+                  }
+                }}>
+                  {String(plan.content || '')}
+                </ReactMarkdown>
+
+                {Array.isArray(plan?.metadata?.tables_md) && plan.metadata.tables_md.length > 0 && (
+                  <div className="mt-6 space-y-4">
+                    {plan.metadata.tables_md.map((tbl: string, idx: number) => (
+                      <ReactMarkdown key={idx} remarkPlugins={[remarkGfm]}>
+                        {tbl}
+                      </ReactMarkdown>
+                    ))}
+                  </div>
+                )}
+
+                {Array.isArray(plan?.metadata?.mermaid_blocks) && plan.metadata.mermaid_blocks.length > 0 && (
+                  <div className="mt-6">
+                    {plan.metadata.mermaid_blocks.map((m: string, idx: number) => (
+                      <Mermaid key={idx} chart={m} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

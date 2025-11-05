@@ -303,10 +303,10 @@ export const getSubscriptionLimits = (tier: string) => {
   // Updated per user requirements:
   // Free: 1000-1500 words, Gói 1: 6000-9000, Gói 2: 10000-12000, Gói 3: 15000-20000
   const defaultLimits = {
-    'free': { plans: 1, chats: 5, words: 1500 },      // Free tier: 1000-1500 words
-    'basic': { plans: 1, chats: 40, words: 9000 },    // Gói 1: 6000-9000 words
-    'pro': { plans: 3, chats: 90, words: 12000 },     // Gói 2: 10000-12000 words
-    'pro_max': { plans: 6, chats: 160, words: 20000 } // Gói 3: 15000-20000 words
+    'free': { plans: 1, chats: 5, words: 1500, allowSheets: false, allowNotion: false },      // Free tier: 1000-1500 words
+    'basic': { plans: 1, chats: 40, words: 9000, allowSheets: true, allowNotion: true },      // Gói 1: 6000-9000 words
+    'pro': { plans: 3, chats: 90, words: 12000, allowSheets: true, allowNotion: true },       // Gói 2: 10000-12000 words
+    'pro_max': { plans: 6, chats: 160, words: 20000, allowSheets: true, allowNotion: true }   // Gói 3: 15000-20000 words
   }
   return defaultLimits[tier as keyof typeof defaultLimits] || defaultLimits.free
 }

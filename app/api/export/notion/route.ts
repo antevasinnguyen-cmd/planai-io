@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { exportToNotion } from '@/lib/export/notion';
+import { getSubscriptionLimits } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const userId = auth.user.id
+    
+    // Gate by tier: only paid tiers can export to Notion
+    const { data: subs } = await rh
+      .from('subscriptions')
+      .select('tier,status,created_at')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    const subscription: any = Array.isArray(subs) ? subs[0] : subs
+    const tier = subscription?.tier || 'free'
+    const limits = getSubscriptionLimits(tier)
+    if (!limits.allowNotion) {
+      return NextResponse.json({ error: 'Tính năng Notion chỉ khả dụng cho gói trả phí' }, { status: 403 })
+    }
     
     // Get plan details
     const { data: plan, error: planError } = await rh

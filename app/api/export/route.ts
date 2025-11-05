@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, getPlanById } from '@/lib/supabase'
+import { getCurrentUser, getPlanById, getUserSubscription, getSubscriptionLimits } from '@/lib/supabase'
 import { generateNotionBlocks } from '@/lib/export'
 
 export async function POST(request: NextRequest) {
@@ -23,8 +23,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
+    // Determine tier & limits
+    const { data: subscription } = await getUserSubscription(user.id)
+    const tier = subscription?.tier || 'free'
+    const limits = getSubscriptionLimits(tier)
+
     switch (format) {
       case 'notion':
+        // Gate by tier: only paid tiers can export to Notion
+        if (!limits.allowNotion) {
+          return NextResponse.json({ error: 'Tính năng Notion chỉ khả dụng cho gói trả phí' }, { status: 403 })
+        }
         if (!notionToken) {
           return NextResponse.json({ error: 'Notion token required' }, { status: 400 })
         }
@@ -72,11 +81,12 @@ export async function POST(request: NextRequest) {
         }
 
       case 'sheets':
-        // Google Sheets export logic would go here
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Google Sheets export coming soon' 
-        })
+        // Gate by tier: only paid tiers can export to Google Sheets
+        if (!limits.allowSheets) {
+          return NextResponse.json({ error: 'Tính năng Google Sheets chỉ khả dụng cho gói trả phí' }, { status: 403 })
+        }
+        // Google Sheets export logic placeholder
+        return NextResponse.json({ success: true, message: 'Google Sheets export coming soon' })
 
       default:
         return NextResponse.json({ error: 'Invalid export format' }, { status: 400 })
