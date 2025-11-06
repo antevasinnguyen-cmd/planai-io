@@ -451,6 +451,7 @@ export default function PlanViewEnhanced() {
                 content={plan.content} 
                 planId={plan.id}
                 onExport={handleExport}
+                userTier={subscription?.tier || 'free'}
               />
             )}
           </div>

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Copy, Download, Table2, FileSpreadsheet, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
 
 interface TableData {
@@ -14,9 +15,10 @@ interface PlanRendererProps {
   content: string
   planId?: string
   onExport?: (format: string) => void
+  userTier?: string
 }
 
-export default function PlanRenderer({ content, planId, onExport }: PlanRendererProps) {
+export default function PlanRenderer({ content, planId, onExport, userTier = 'free' }: PlanRendererProps) {
   const [copiedTableId, setCopiedTableId] = useState<string | null>(null)
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
 
@@ -94,10 +96,12 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
 
     const csvContent = [
       table.headers.join(','),
-      ...table.rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...table.rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
     ].join('\n')
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    // Add UTF-8 BOM for proper encoding
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
@@ -123,6 +127,7 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
       {/* Main Content */}
       <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
         <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
           components={{
             a: ({ href, children }) => (
               <a
@@ -291,13 +296,15 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
                   <span>Xuất CSV</span>
                 </button>
 
-                <button
-                  onClick={() => onExport?.('sheets')}
-                  className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Google Sheets</span>
-                </button>
+                {userTier !== 'free' && (
+                  <button
+                    onClick={() => onExport?.('sheets')}
+                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Google Sheets</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -316,13 +323,15 @@ export default function PlanRenderer({ content, planId, onExport }: PlanRenderer
                 Xuất tất cả {tables.size} bảng sang Google Sheets hoặc Excel
               </p>
             </div>
-            <button
-              onClick={() => onExport?.('sheets')}
-              className="flex items-center space-x-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
-            >
-              <FileSpreadsheet className="w-5 h-5" />
-              <span>Xuất Tất Cả</span>
-            </button>
+            {userTier !== 'free' && (
+              <button
+                onClick={() => onExport?.('sheets')}
+                className="flex items-center space-x-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+                <span>Xuất Tất Cả</span>
+              </button>
+            )}
           </div>
         </div>
       )}

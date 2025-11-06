@@ -283,7 +283,7 @@ export default function EditPlanPage() {
                 <h2 className="text-lg font-semibold text-gray-900">Bản xem trước</h2>
                 <div className="text-xs text-gray-500">{autoSaving ? 'Đang tự động lưu...' : (lastSavedAt ? `Đã lưu lúc ${lastSavedAt}` : ' ')}</div>
               </div>
-              <PlanRenderer content={content} planId={plan.id} />
+              <PlanRenderer content={content} planId={plan.id} userTier="free" />
             </div>
 
             {/* Version Info */}
