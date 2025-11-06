@@ -159,97 +159,86 @@ export const exportPlanToGoogleSheets = async (
       })
     }
     
-    // If structured data exists, ensure dedicated sheets and write tabular data
+    // Ensure required tabs for paid template exist and write basic headers
+    const requiredTabs = ['Dashboard', 'Roadmap', 'Checklist', 'TietKiem', 'TangThuNhap', 'BusinessMetrics', 'KyNang_TaiLieu']
+    await ensureSheets(spreadsheetId, requiredTabs)
+
+    const tableUpdates: Array<{ range: string; values: any[][] }> = []
+
+    // Roadmap tab
+    tableUpdates.push({ range: 'Roadmap!A1', values: [[ 'Level', 'Task', 'Start', 'End', 'Milestone', 'KPI', 'Dependencies', 'Status' ]] })
+
+    // Checklist tab with checkbox target in first column
+    tableUpdates.push({ range: 'Checklist!A1', values: [[ 'Done', 'Time', 'Action', 'Learning Link' ]] })
+
+    // Finance tabs
+    tableUpdates.push({ range: 'TietKiem!A1', values: [[ 'Date', 'Category', 'Amount', 'Note' ]] })
+    tableUpdates.push({ range: 'TangThuNhap!A1', values: [[ 'Date', 'Source', 'Amount', 'Note' ]] })
+
+    // Business metrics tab
+    tableUpdates.push({ range: 'BusinessMetrics!A1', values: [[ 'Month', 'MRR', 'Churn %', 'CAC', 'LTV' ]] })
+
+    // Skills & resources tab
+    tableUpdates.push({ range: 'KyNang_TaiLieu!A1', values: [[ 'Skill', 'Best Resource', 'URL', 'Hours/Week' ]] })
+
+    // Fill from structured data if available
     if (structured && typeof structured === 'object') {
       const roadmapRows = Array.isArray(structured.roadmap) ? structured.roadmap : []
-      const actionsRows = Array.isArray(structured.actions) ? structured.actions : []
-      const budgetRows = Array.isArray(structured.budget) ? structured.budget : []
-      const timelineRows = Array.isArray(structured.timeline) ? structured.timeline : []
-      const resourcesRows = Array.isArray(structured.resources) ? structured.resources : []
-
-      const sheetNames = ['Roadmap', 'Actions', 'BudgetTable', 'TimelineTable', 'Resources']
-      await ensureSheets(spreadsheetId, sheetNames)
-
-      const tableUpdates: Array<{ range: string; values: any[][] }> = []
-
-      // Roadmap
-      tableUpdates.push({
-        range: 'Roadmap!A1',
-        values: [[
-          'Cấp', 'Tên', 'Bắt đầu', 'Kết thúc', 'Milestone', 'KPI', 'Phụ thuộc', 'Trạng thái'
-        ]]
-      })
       if (roadmapRows.length) {
         tableUpdates.push({
           range: 'Roadmap!A2',
-          values: roadmapRows.map((r: any) => [
-            r.level || '', r.name || '', r.start || '', r.end || '', r.milestone || '', r.kpi || '', r.dependencies || '', r.status || ''
-          ])
+          values: roadmapRows.map((r: any) => [ r.level||'', r.name||'', r.start||'', r.end||'', r.milestone||'', r.kpi||'', r.dependencies||'', r.status||'' ])
         })
       }
-
-      // Actions
-      tableUpdates.push({
-        range: 'Actions!A1',
-        values: [[ 'Priority', 'Area', 'Task', 'Owner', 'Estimate', 'Deadline', 'KPI' ]]
-      })
-      if (actionsRows.length) {
+      const checklistRows = Array.isArray(structured.checklist) ? structured.checklist : []
+      if (checklistRows.length) {
         tableUpdates.push({
-          range: 'Actions!A2',
-          values: actionsRows.map((a: any) => [
-            a.priority || '', a.area || '', a.task || '', a.owner || 'Bạn', a.estimate || '', a.deadline || '', a.kpi || ''
-          ])
+          range: 'Checklist!A2',
+          values: checklistRows.map((c: any) => [ false, c.time||'', c.action||'', c.link||'' ])
         })
       }
-
-      // Budget
-      tableUpdates.push({
-        range: 'BudgetTable!A1',
-        values: [[ 'Category', 'Item', 'Amount', 'Frequency' ]]
-      })
-      if (budgetRows.length) {
-        tableUpdates.push({
-          range: 'BudgetTable!A2',
-          values: budgetRows.map((b: any) => [
-            b.category || '', b.item || '', b.amount ?? '', b.frequency || ''
-          ])
-        })
-      }
-
-      // Timeline
-      tableUpdates.push({
-        range: 'TimelineTable!A1',
-        values: [[ 'Period', 'Focus', 'Deliverables' ]]
-      })
-      if (timelineRows.length) {
-        tableUpdates.push({
-          range: 'TimelineTable!A2',
-          values: timelineRows.map((t: any) => [ t.period || '', t.focus || '', t.deliverables || '' ])
-        })
-      }
-
-      // Resources
-      tableUpdates.push({
-        range: 'Resources!A1',
-        values: [[ 'Title', 'URL', 'Type' ]]
-      })
-      if (resourcesRows.length) {
-        tableUpdates.push({
-          range: 'Resources!A2',
-          values: resourcesRows.map((r: any) => [ r.title || '', r.url || '', r.type || '' ])
-        })
-      }
-
-      // Apply table updates
-      for (const u of tableUpdates) {
-        await sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: u.range,
-          valueInputOption: 'RAW',
-          requestBody: { values: u.values }
-        })
+      const skillsRows = Array.isArray(structured.skills) ? structured.skills : []
+      if (skillsRows.length) {
+        tableUpdates.push({ range: 'KyNang_TaiLieu!A2', values: skillsRows.map((s: any) => [ s.skill||'', s.resource||'', s.url||'', s.hours||'' ]) })
       }
     }
+
+    // Apply batched value updates
+    for (const u of tableUpdates) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: u.range,
+        valueInputOption: 'RAW',
+        requestBody: { values: u.values }
+      })
+    }
+
+    // Add checkbox validation and simple formatting
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            setDataValidation: {
+              range: { sheetId: 0, startRowIndex: 1, startColumnIndex: 0, endColumnIndex: 1 },
+              rule: { condition: { type: 'BOOLEAN' }, strict: true, inputMessage: 'Mark done' }
+            }
+          },
+          {
+            addConditionalFormatRule: {
+              rule: {
+                ranges: [{ sheetId: 0, startRowIndex: 1, startColumnIndex: 0, endColumnIndex: 8 }],
+                booleanRule: {
+                  condition: { type: 'TEXT_EQ', values: [{ userEnteredValue: 'Done' }] },
+                  format: { backgroundColor: { red: 0.85, green: 0.95, blue: 0.85 } }
+                }
+              },
+              index: 0
+            }
+          }
+        ]
+      }
+    })
 
     // Update the spreadsheet
     await Promise.all(
