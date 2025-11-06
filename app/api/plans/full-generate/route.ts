@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
       'Schema keys: title, summary, tier, content_markdown, mermaid_blocks[], tables_md[], sheets_spec{enabled,title,sheets[{name,headers[],rows[][]}]}, notion_spec{enabled,title,cover_url,children[]}, resources[{type,title,url,locale,reason,min_views}], constraints{max_words,max_mermaid,max_tables,resources_policy}.',
       'Giọng văn: bạn thân 10 năm, thông thái, chuyên gia tài chính, thân thiện, dùng chính câu nói/cách xưng hô của user.',
       'Mọi hành động phải khả thi trong 24h tới (ưu tiên hành động nhỏ, rõ người thực hiện, có tiêu chí hoàn thành & link học).',
-      'content_markdown phải là toàn bộ bản kế hoạch (Markdown GFM); KHÔNG nhúng Mermaid trong phần này (để riêng ở mermaid_blocks). Bảng Markdown phải có format chuẩn: | Header1 | Header2 | ... | \\n |---|---|...| \\n | data1 | data2 | ... |',
-      'mermaid_blocks: chỉ code Mermaid hợp lệ (flowchart|sequence|gantt|mindmap|timeline); tối đa theo max_mermaid.',
-      'tables_md: bảng Markdown thuần với format chuẩn (header row + separator row + data rows); tối đa theo max_tables.',
+      'content_markdown phải là toàn bộ bản kế hoạch (Markdown GFM); KHÔNG nhúng Mermaid trong phần này (để riêng ở mermaid_blocks). Bảng Markdown phải có format chuẩn và KHÔNG BAO GIỜ dùng "---" hay "..." - phải điền dữ liệu thực 100%.',
+      'mermaid_blocks: chỉ code Mermaid hợp lệ (flowchart|sequence|gantt|mindmap|timeline|graph) - BẮT BUỘC có ít nhất 1 mindmap roadmap tổng quan và 1 timeline chi tiết; tối đa theo max_mermaid.',
+      'tables_md: bảng Markdown thuần với format chuẩn, MỖI Ô PHẢI CÓ DỮ LIỆU THỰC, không được để trống hay dùng "---"; tối đa theo max_tables.',
       'sheets_spec: nếu enabled, định nghĩa các sheet để tạo Google Sheets.',
       'resources: PHẢI CÓ TỐI THIỂU min_resources và TỐI ĐA max_resources link chất lượng cao, ưu tiên Việt Nam; YouTube > 50k views; link công khai mở được ngay. CHỈ DÙNG LINK TỪ DATABASE NÀY (hoặc link uy tín khác nếu không có): finance_personal, investing, business_startup, skills_soft, tech_digital, sales_marketing, accounting_tax, psychology_mindset, health_productivity. Mỗi link phải click vào được ngay, không 404. Mỗi resource phải có: type, title (cụ thể, cá nhân hóa), url (thực), locale (vi/en), reason (tại sao phù hợp với user này).',
       '',
@@ -76,25 +76,34 @@ export async function POST(req: NextRequest) {
       '  Kế hoạch tích luỹ tài sản (số tiền cụ thể mỗi tháng, % thu nhập, công cụ tiết kiệm, lãi suất dự kiến);',
       '  Kế hoạch đầu tư & quản trị rủi ro (phân bổ tài sản, % mỗi kênh, stop-loss, diversification, insurance);',
       '  Mô hình kinh doanh phù hợp + các bước cụ thể (nếu có - phân tích chi tiết: market size, target customer, revenue model, cost structure, go-to-market);',
-      '  Kế hoạch chi tiết theo thời gian mục tiêu (Năm/Quý/Tháng/Tuần/Ngày - mỗi giai đoạn có mục tiêu số, KPI, checkpoint);',
-      '  Checklist hành động theo ngày/tuần/tháng (bảng Markdown, có cột Thời gian | Hành động cụ thể | KPI | Link học | Ghi chú);',
+      '  Kế hoạch chi tiết theo thời gian mục tiêu (PHẢI KHỚP CHÍNH XÁC với timeline của user - nếu user mục tiêu 3 năm thì phải chia đủ 36 tháng, nếu 2 năm thì 24 tháng, mỗi giai đoạn có mục tiêu số cụ thể, KPI đo được, checkpoint rõ ràng);',
+      '  Checklist hành động theo tuần/tháng/năm (BẮT BUỘC phải có đủ 3 bảng riêng biệt: Checklist Tuần 1-4, Checklist Tháng 1-12, Checklist Năm 1-X theo timeline user, mỗi bảng có cột Thời gian | Hành động cụ thể | KPI | Link học | Ghi chú với DỮ LIỆU THỰC 100%);',
       '  Tài liệu học & kỹ năng (x giờ/tuần, liệt kê ĐẦY ĐỦ min_resources kỹ năng -> link tài liệu tốt nhất từ database, lý do chọn, cách áp dụng);',
       '  3 kịch bản (Tệ nhất/Trung bình/Tốt nhất - mỗi kịch bản có số liệu cụ thể, xác suất, impact) + chiến lược giảm rủi ro chi tiết;',
       '  Phân tích tử vi/chỉ số đường đời/thần số học theo ngày sinh (nhấn mạnh tài chính, sự nghiệp, năm 2025) + hướng đi phù hợp cụ thể;',
       '  Tóm tắt & kết luận hành động (3-5 việc quan trọng nhất phải làm ngay tuần này); Hướng dẫn sử dụng kế hoạch tốt nhất (cách tracking, review, adjust);',
       '  Kết luận & động lực hành động ngay (gọi tên user, nhắc lại mục tiêu, deadline, first action trong 24h).',
       '  Đồng thời, đề xuất sheets_spec với cấu trúc các tab sau: Dashboard, Roadmap, Checklist (checkbox), TietKiem, TangThuNhap, BusinessMetrics (MRR, Churn, CAC, LTV), KyNang_TaiLieu.',
-      '- Nếu tier là FREE: giới hạn ~1500 từ, nội dung tổng quát hơn, giữ các mục cốt lõi: Tiêu đề; Tóm tắt thông tin người dùng;',
-      '  SWOT; Phân tích mục tiêu tài chính; Các yếu tố khách quan/chủ quan; Tổng quan kỹ năng/kinh nghiệm;',
-      '  Mindmap lộ trình tổng quan (mermaid_blocks); Lộ trình Ngày-Tuần-Tháng-Năm (văn bản, link mẫu sheet nếu có);',
-      '  Đề xuất hành động; Checklist ngày/tuần/tháng (bảng Markdown); Kết luận.',
+      '- Nếu tier là FREE: giới hạn ~1500 từ, nhưng vẫn phải WOW để user muốn nâng cấp. Bao gồm: Tiêu đề cá nhân hóa; Tóm tắt thông tin chi tiết;',
+      '  SWOT phân tích sâu; Phân tích mục tiêu tài chính cụ thể; Yếu tố khách quan/chủ quan; Kỹ năng cần có;',
+      '  Mindmap lộ trình tổng quan (mermaid_blocks - BẮT BUỘC); Lộ trình theo timeline user (khớp chính xác);',
+      '  Chiến lược tăng thu nhập cụ thể (ít nhất 3 cách); Checklist 4 tuần đầu (bảng Markdown với dữ liệu thực);',
+      '  7-10 tài liệu học tập cá nhân hóa; Kết luận + CTA nâng cấp để có bản kế hoạch chi tiết gấp 10 lần.',
       '',
-      'Lưu ý:',
-      '- Tất cả link phải MỞ ĐƯỢC ngay (nếu không chắc, chọn nguồn uy tín khác hoặc skip).',
+      'Lưu ý QUAN TRỌNG:',
+      '- TUYỆT ĐỐI KHÔNG dùng "---", "...", "TBD", "N/A" hay bất kỳ placeholder nào. MỖI Ô BẢNG phải có dữ liệu thực, cụ thể, cá nhân hóa.',
+      '- Lộ trình PHẢI KHỚP timeline của user: nếu user mục tiêu 3 năm thì phải có đủ 36 milestone tháng, nếu 18 tháng thì có đủ 18 milestone.',
+      '- Checklist phải có đủ 3 bảng riêng: Tuần (4 tuần), Tháng (theo timeline), Năm (theo timeline).',
+      '- Chiến lược tăng thu nhập phải CỤ THỂ: tên chiến lược, cách thực hiện, timeline, ROI dự kiến, rủi ro.',
+      '- Tất cả link phải MỞ ĐƯỢC ngay (từ database resources hoặc nguồn uy tín).',
       '- Tránh lý thuyết suông; viết cụ thể, áp dụng vào hoàn cảnh của user Việt Nam.',
-      '- Bảng Markdown phải format chuẩn, không bỏ separator row.',
+      '- Bảng Markdown phải format chuẩn: | A | B | C | \\n |---|---|---| \\n | data1 | data2 | data3 |',
       '- Trả về JSON HỢP LỆ duy nhất.'
     ].join('\n')
+
+    // Extract timeline for personalized planning
+    const userTimeline = collectedInfo?.timeline || '12 tháng'
+    const timelineNote = `TIMELINE USER: ${userTimeline} - Lộ trình và checklist PHẢI KHỚP chính xác với thời gian này.`
 
     const userPrompt = {
       planName: String(planName || 'Kế hoạch tài chính cá nhân hóa'),
@@ -102,6 +111,7 @@ export async function POST(req: NextRequest) {
       profile: pick(collectedInfo || {}, [
         'full_name','age','occupation','income','savings','location','timeline','risk_tolerance','readiness'
       ]),
+      timeline_instruction: timelineNote,
       tier,
       constraints
     }

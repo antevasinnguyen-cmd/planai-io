@@ -94,9 +94,21 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     const table = tables.get(tableId)
     if (!table) return
 
+    // Ensure all rows have same number of columns as headers
+    const maxCols = table.headers.length
+    const normalizedRows = table.rows.map(row => {
+      const normalizedRow = [...row]
+      while (normalizedRow.length < maxCols) {
+        normalizedRow.push('')
+      }
+      return normalizedRow.slice(0, maxCols)
+    })
+
     const csvContent = [
-      table.headers.join(','),
-      ...table.rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(','))
+      table.headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
+      ...normalizedRows.map(row => 
+        row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')
+      )
     ].join('\n')
 
     // Add UTF-8 BOM for proper encoding
