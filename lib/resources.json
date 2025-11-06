@@ -1,0 +1,65 @@
+{
+  "finance_personal": [
+    {"name": "Quản lý tài chính cá nhân - The Money Coach", "url": "https://www.youtube.com/playlist?list=PLuYb7l2hS7bX8g-5Yd0Yd0", "type": "playlist", "duration": "15 videos", "lang": "vi"},
+    {"name": "Sách Rich Dad Poor Dad - Audiobook Tiếng Việt", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "type": "video", "duration": "2h 30m", "lang": "vi"},
+    {"name": "Khóa học Quản lý tài chính - Udemy (Tiếng Việt)", "url": "https://www.udemy.com/course/personal-finance-vietnamese/", "type": "course", "price": "199k", "lang": "vi"},
+    {"name": "Tài chính cá nhân cho người Việt - Ngân hàng SHB", "url": "https://www.youtube.com/watch?v=personal-finance-shb", "type": "video", "duration": "45 phút", "lang": "vi"},
+    {"name": "Lập kế hoạch tài chính 5 năm - Blogger Tài Chính", "url": "https://taichinhcaban.com/lap-ke-hoach-tai-chinh", "type": "blog", "lang": "vi"}
+  ],
+  "investing": [
+    {"name": "Đầu tư chứng chỉ quỹ cho người mới - SSI Academy", "url": "https://academy.ssi.com.vn/khoa-hoc-dau-tu-co-ban", "type": "course", "lang": "vi"},
+    {"name": "Hướng dẫn mở tài khoản chứng khoán SSI", "url": "https://www.youtube.com/watch?v=ssi-account-tutorial", "type": "video", "duration": "15 phút", "lang": "vi"},
+    {"name": "Phân tích kỹ thuật cơ bản - Techcombank Academy", "url": "https://academy.techcombank.com.vn/technical-analysis", "type": "course", "lang": "vi"},
+    {"name": "Đầu tư BĐS cho người mới - Batdongsan.com", "url": "https://batdongsan.com/tin-tuc/dau-tu-bat-dong-san-cho-nguoi-moi", "type": "guide", "lang": "vi"},
+    {"name": "Quỹ đầu tư - Cách hoạt động và lợi ích - VNDirect", "url": "https://www.vndirect.com.vn/kien-thuc/quy-dau-tu", "type": "article", "lang": "vi"}
+  ],
+  "business_startup": [
+    {"name": "Khởi nghiệp từ 0 - Shark Tank Vietnam", "url": "https://www.youtube.com/playlist?list=PLshark-tank-vietnam", "type": "playlist", "lang": "vi"},
+    {"name": "Xây dựng SaaS trong 30 ngày - Nguyễn Hữu Trọng", "url": "https://saas30days.com/full-course", "type": "course", "price": "free", "lang": "vi"},
+    {"name": "Kinh doanh online - Hướng dẫn từ A-Z", "url": "https://www.youtube.com/watch?v=online-business-az", "type": "video", "duration": "3h", "lang": "vi"},
+    {"name": "Lập kế hoạch kinh doanh - VCCI", "url": "https://vcci.com.vn/huong-dan-lap-ke-hoach-kinh-doanh", "type": "guide", "lang": "vi"},
+    {"name": "Dropshipping cho người Việt - Lazada Seller", "url": "https://seller.lazada.vn/khoa-hoc-dropshipping", "type": "course", "lang": "vi"}
+  ],
+  "skills_soft": [
+    {"name": "Kỹ năng giao tiếp hiệu quả - TED Talks (Tiếng Việt)", "url": "https://www.youtube.com/playlist?list=PLted-talks-communication", "type": "playlist", "lang": "vi"},
+    {"name": "Quản lý thời gian - Pomodoro Technique", "url": "https://www.youtube.com/watch?v=pomodoro-technique", "type": "video", "duration": "20 phút", "lang": "vi"},
+    {"name": "Lãnh đạo và quản lý đội nhóm - Coursera", "url": "https://www.coursera.org/courses?q=leadership-vietnamese", "type": "course", "price": "free", "lang": "vi"},
+    {"name": "Tư duy sáng tạo - Edward de Bono", "url": "https://www.youtube.com/watch?v=creative-thinking", "type": "video", "duration": "1h 15m", "lang": "vi"},
+    {"name": "Thuyết trình hiệu quả - Toastmasters Vietnam", "url": "https://www.toastmasters.org/find-a-club?country=Vietnam", "type": "community", "lang": "vi"}
+  ],
+  "tech_digital": [
+    {"name": "Digital Marketing cơ bản - Google Digital Garage", "url": "https://learndigital.withgoogle.com/digitalgarage/courses", "type": "course", "price": "free", "lang": "vi"},
+    {"name": "SEO cho người mới - Ahrefs Academy", "url": "https://ahrefs.com/academy", "type": "course", "price": "free", "lang": "en"},
+    {"name": "Content Marketing - HubSpot Academy", "url": "https://academy.hubspot.com/courses/content-marketing", "type": "course", "price": "free", "lang": "en"},
+    {"name": "Email Marketing - Mailchimp Resources", "url": "https://mailchimp.com/resources/", "type": "resources", "price": "free", "lang": "en"},
+    {"name": "Social Media Marketing - Meta Blueprint", "url": "https://www.facebook.com/business/learn", "type": "course", "price": "free", "lang": "vi"}
+  ],
+  "sales_marketing": [
+    {"name": "Bán hàng hiệu quả - Nguyễn Thân Thiện", "url": "https://course.thanthien.vn/sales-masterclass", "type": "course", "price": "1.99M", "lang": "vi"},
+    {"name": "Marketing 0-1 cho người Việt - Startup Việt", "url": "https://www.youtube.com/watch?v=marketing-0-1", "type": "video", "duration": "1h 30m", "lang": "vi"},
+    {"name": "Copywriting - Viết bán hàng - Copyblogger", "url": "https://copyblogger.com/copywriting-101/", "type": "guide", "price": "free", "lang": "en"},
+    {"name": "Khách hàng là vua - Đào Tạo Bán Hàng", "url": "https://www.youtube.com/watch?v=customer-is-king", "type": "video", "duration": "50 phút", "lang": "vi"},
+    {"name": "Xây dựng thương hiệu cá nhân - Personal Branding", "url": "https://www.youtube.com/watch?v=personal-branding", "type": "video", "duration": "1h", "lang": "vi"}
+  ],
+  "accounting_tax": [
+    {"name": "Kế toán cơ bản cho người mới - Bộ Tài chính", "url": "https://www.mof.gov.vn/webcenter/portal/vportal/rfi", "type": "guide", "lang": "vi"},
+    {"name": "Thuế cá nhân - Hướng dẫn đầy đủ", "url": "https://www.youtube.com/watch?v=personal-tax-guide", "type": "video", "duration": "45 phút", "lang": "vi"},
+    {"name": "Quản lý chi phí - Accounting Basics", "url": "https://www.youtube.com/watch?v=accounting-basics", "type": "video", "duration": "1h", "lang": "vi"},
+    {"name": "Lập báo cáo tài chính - Khóa học online", "url": "https://www.udemy.com/course/financial-reporting-vietnamese/", "type": "course", "price": "299k", "lang": "vi"},
+    {"name": "Kiểm toán nội bộ - VAIA", "url": "https://vaia.org/courses/internal-audit/", "type": "course", "price": "free", "lang": "vi"}
+  ],
+  "psychology_mindset": [
+    {"name": "Tâm lý học thành công - Tony Robbins", "url": "https://www.youtube.com/watch?v=tony-robbins-psychology", "type": "video", "duration": "2h", "lang": "en"},
+    {"name": "Thói quen thành công - Atomic Habits (Tiếng Việt)", "url": "https://www.youtube.com/watch?v=atomic-habits-vietnamese", "type": "video", "duration": "1h 30m", "lang": "vi"},
+    {"name": "Tư duy khác biệt - Carol Dweck", "url": "https://www.youtube.com/watch?v=growth-mindset", "type": "video", "duration": "50 phút", "lang": "en"},
+    {"name": "Quản lý cảm xúc - Emotional Intelligence", "url": "https://www.youtube.com/watch?v=emotional-intelligence", "type": "video", "duration": "1h", "lang": "vi"},
+    {"name": "Động lực hành động - Motivation Science", "url": "https://www.youtube.com/watch?v=motivation-science", "type": "video", "duration": "45 phút", "lang": "vi"}
+  ],
+  "health_productivity": [
+    {"name": "Sức khỏe tài chính - Wellness & Money", "url": "https://www.youtube.com/watch?v=health-finance", "type": "video", "duration": "30 phút", "lang": "vi"},
+    {"name": "Năng suất cao - Deep Work", "url": "https://www.youtube.com/watch?v=deep-work", "type": "video", "duration": "1h 15m", "lang": "vi"},
+    {"name": "Cân bằng cuộc sống - Work-Life Balance", "url": "https://www.youtube.com/watch?v=work-life-balance", "type": "video", "duration": "40 phút", "lang": "vi"},
+    {"name": "Ngủ ngon - Sleep Science", "url": "https://www.youtube.com/watch?v=sleep-science", "type": "video", "duration": "1h", "lang": "vi"},
+    {"name": "Tập luyện - Fitness for Busy People", "url": "https://www.youtube.com/watch?v=fitness-busy", "type": "video", "duration": "30 phút", "lang": "vi"}
+  ]
+}
