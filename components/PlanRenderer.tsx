@@ -46,21 +46,29 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     return fixed
   }, [cleanContent])
 
-  // Parse tables from markdown content
+  // Parse tables from markdown content - FULL DATA, NO TRUNCATION
   const extractTables = (text: string): { content: string; tables: Map<string, TableData> } => {
     const tables = new Map<string, TableData>()
     let processedContent = text
     let tableIndex = 0
 
-    // Regex to find markdown tables
+    // Regex to find markdown tables - capture ALL content
     const tableRegex = /\|(.+)\n\|[-\s|:]+\n((?:\|.+\n?)*)/g
     let match
 
     while ((match = tableRegex.exec(text)) !== null) {
-      const headerRow = match[1].split('|').map(cell => cell.trim()).filter(Boolean)
-      const bodyRows = match[2].trim().split('\n').map(row =>
-        row.split('|').map(cell => cell.trim()).filter(Boolean)
-      )
+      const headerRow = match[1].split('|').map(cell => cell.trim()).filter(c => c.length > 0)
+      const bodyText = match[2].trim()
+      const bodyRows = bodyText.split('\n')
+        .filter(row => row.trim().length > 0)
+        .map(row => {
+          const cells = row.split('|').map(cell => cell.trim()).filter(c => c.length > 0)
+          // Ensure all rows have same column count as header
+          while (cells.length < headerRow.length) {
+            cells.push('')
+          }
+          return cells.slice(0, headerRow.length)
+        })
 
       const tableId = `table-${tableIndex}`
       tables.set(tableId, {
