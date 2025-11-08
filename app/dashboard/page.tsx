@@ -302,8 +302,8 @@ export default function DashboardFinal() {
         />
       )}
 
-      {/* Sidebar - Fixed, không cuộn theo */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex flex-col fixed h-screen z-20`}>
+      {/* Sidebar - Fixed, responsive for mobile */}
+      <aside className={`${sidebarOpen ? 'w-64' : 'hidden'} md:flex ${sidebarOpen ? 'md:w-64' : 'md:w-20'} bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 transition-all duration-300 flex-col fixed md:relative h-screen z-20`}>
         {/* Logo & Toggle */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
           {sidebarOpen ? (
@@ -557,12 +557,30 @@ export default function DashboardFinal() {
         )}
       </aside>
 
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-10"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col ml-64">
+      <div className="flex-1 flex flex-col md:ml-64">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-5">
+        <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center justify-between">
-            <div></div>
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              {sidebarOpen ? (
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              ) : (
+                <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              )}
+            </button>
 
             {/* Right: User Menu */}
             <div className="relative">
@@ -615,7 +633,7 @@ export default function DashboardFinal() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-y-auto ml-0">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto ml-0">
           {/* Upgrade banner when near limits */}
           {usage && limits && (
             (() => {
@@ -639,17 +657,17 @@ export default function DashboardFinal() {
             })()
           )}
           {/* Welcome Message */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">
               {getGreeting()}, {getUserName()}! 🎯
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">Sẵn sàng bắt đầu lập kế hoạch tài chính?</p>
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">Sẵn sàng bắt đầu lập kế hoạch tài chính?</p>
           </div>
 
           {/* CTA Card - Đẩy lên trên */}
-          <div className="bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl p-8 mb-8 text-white">
+          <div className="bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl p-4 md:p-8 mb-6 md:mb-8 text-white">
             <div className="max-w-3xl">
-              <h2 className="text-2xl font-bold mb-3">Bắt đầu tạo kế hoạch tài chính ngay!</h2>
+              <h2 className="text-xl md:text-2xl font-bold mb-3">Bắt đầu tạo kế hoạch tài chính ngay!</h2>
               <p className="text-white/90 mb-6">
                 AI sẽ hướng dẫn bạn từng bước để thu thập thông tin và tạo ra kế hoạch tài chính cá nhân hóa hoàn hảo.
               </p>
@@ -664,8 +682,8 @@ export default function DashboardFinal() {
           </div>
           
           {/* Nét nổi bật của PlanAI */}
-          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-4 md:p-6 mb-6 md:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5">
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
