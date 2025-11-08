@@ -299,7 +299,9 @@ async function processJobInBackground(
     while (attempt < maxAttempts) {
       attempt++
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minutes timeout (increased from 2 minutes)
+      // Timeout: 5 minutes for Free tier (complex 13-section plans), 4 minutes for paid
+      const timeoutMs = collectedInfo?.tier === 'free' ? 300000 : 240000
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
       try {
         logger.info('BG_ATTEMPT_CALL_AI', { jobId, attempt })
         // Check cancellation before calling AI

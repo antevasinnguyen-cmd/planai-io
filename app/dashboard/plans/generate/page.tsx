@@ -136,8 +136,8 @@ export default function GeneratePlanPage() {
             if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} }
           } else if (data.status === 'processing') {
             const elapsed = Number(data.elapsed_seconds || 0)
-            // Progress: 10% at start, 95% at 2 minutes, stay at 95% until completed
-            const estimatedProgress = Math.min(95, Math.max(10, 10 + (elapsed / 120) * 85))
+            // Progress: 10% at start, 90% at 5 minutes, stay at 90% until completed
+            const estimatedProgress = Math.min(90, Math.max(10, 10 + (elapsed / 300) * 80))
             setProgress((p) => Math.max(p, estimatedProgress))
             setStatus('Đang xử lý...')
             setJobStatus('processing')
@@ -223,8 +223,8 @@ export default function GeneratePlanPage() {
         setElapsedSeconds(elapsed)
         
         // Update progress based on elapsed time
-        // Smooth progression: 10% at start, 95% at 2 minutes, stays at 95% until completion
-        const estimatedProgress = Math.min(95, 10 + (elapsed / 120) * 85)
+        // Smooth progression: 10% at start, 90% at 5 minutes, stays at 90% until completion
+        const estimatedProgress = Math.min(90, 10 + (elapsed / 300) * 80)
         setProgress((p) => Math.max(p, estimatedProgress))
       }, 1000)
       
@@ -429,7 +429,8 @@ export default function GeneratePlanPage() {
           // Still processing
           const elapsed = Number(jobData.elapsed_seconds || 0)
           setStatus('Đang xử lý...')
-          const runtimeProgress = Math.min(95, Math.max(progress, 10 + (elapsed / 120) * 80))
+          // Progress: 10% at start, 90% at 5 minutes, stay at 90% until completed
+          const runtimeProgress = Math.min(90, Math.max(progress, 10 + (elapsed / 300) * 80))
           setProgress((p) => Math.max(p, runtimeProgress))
           saveJobMeta(userId, {
             jobId: id,
