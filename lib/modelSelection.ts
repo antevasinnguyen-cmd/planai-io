@@ -1,10 +1,12 @@
 import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { getCachedResponse, saveCachedResponse } from './supabase'
 
 // Initialize OpenAI client (lazy initialization to handle missing API key during build)
 let openai: OpenAI | null = null
+let anthropic: Anthropic | null = null
 
-const getOpenAI = () => {
+export const getOpenAI = () => {
   if (!openai && process.env.OPENAI_API_KEY) {
     openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -13,10 +15,20 @@ const getOpenAI = () => {
   return openai
 }
 
+export const getAnthropic = () => {
+  if (!anthropic && process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    })
+  }
+  return anthropic
+}
+
 // Model configuration
 export const MODELS = {
-  CHAT_DEFAULT: 'gpt-4o-mini',  // Upgraded from gpt-3.5-turbo for better quality
-  COMPLEX_PLANNING: 'gpt-4o-mini',
+  CHAT_DEFAULT: 'gpt-4-turbo',  // Upgraded to GPT-4 Turbo for better Vietnamese support
+  COMPLEX_PLANNING: 'gpt-4-turbo',
+  CHAT_FALLBACK: 'claude-3-opus-20240229',  // Claude 3 Opus as fallback
   EMBEDDING: 'text-embedding-3-small'
 }
 
@@ -123,22 +135,49 @@ export const fallbackToClaudeIfNeeded = async (
   maxTokens: number = 500,
   temperature: number = 0.7
 ): Promise<string> => {
-  // Pure OpenAI only, no external fallback per product requirement
-  const client = getOpenAI()
-  if (!client) {
-    console.error('OpenAI client not initialized')
-    return 'Hệ thống AI đang bận. Vui lòng thử lại sau.'
+  const openaiClient = getOpenAI()
+  
+  // Try GPT-4 Turbo first
+  if (openaiClient) {
+    try {
+      console.log('🔵 Trying GPT-4 Turbo...')
+      const completion = await openaiClient.chat.completions.create({
+        model: MODELS.CHAT_DEFAULT,
+        messages,
+        max_tokens: maxTokens,
+        temperature,
+      })
+      console.log('✅ GPT-4 Turbo succeeded')
+      return completion.choices[0]?.message?.content || ''
+    } catch (error) {
+      console.error('❌ GPT-4 Turbo failed:', error)
+    }
   }
-  try {
-    const completion = await client.chat.completions.create({
-      model: MODELS.CHAT_DEFAULT,
-      messages,
-      max_tokens: maxTokens,
-      temperature,
-    })
-    return completion.choices[0]?.message?.content || ''
-  } catch (error) {
-    console.error('OpenAI API Error:', error)
-    return 'Hệ thống AI đang bận. Vui lòng thử lại sau.'
+  
+  // Fallback to Claude 3 Opus
+  const claudeClient = getAnthropic()
+  if (claudeClient) {
+    try {
+      console.log('🟣 Fallback to Claude 3 Opus...')
+      const systemMessage = messages.find(m => m.role === 'system')?.content || ''
+      const userMessages = messages.filter(m => m.role !== 'system')
+      
+      const completion = await claudeClient.messages.create({
+        model: MODELS.CHAT_FALLBACK,
+        max_tokens: maxTokens,
+        system: systemMessage,
+        messages: userMessages.map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content
+        }))
+      })
+      console.log('✅ Claude 3 Opus succeeded')
+      return completion.content[0]?.type === 'text' ? completion.content[0].text : ''
+    } catch (error) {
+      console.error('❌ Claude 3 Opus failed:', error)
+    }
   }
+  
+  console.error('⚠️ Both GPT-4 Turbo and Claude 3 Opus failed')
+  return 'Hệ thống AI đang bận. Vui lòng thử lại sau.'
 }

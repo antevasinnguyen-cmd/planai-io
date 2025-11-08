@@ -590,7 +590,7 @@ export default function DashboardFinal() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto ml-0">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
           {/* Upgrade banner when near limits */}
           {usage && limits && (
             (() => {
