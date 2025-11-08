@@ -386,24 +386,6 @@ export default function PlanViewEnhanced() {
                       <FileText className="w-4 h-4 text-blue-500" />
                       <span className="text-sm text-gray-700 dark:text-gray-300">Google Docs</span>
                     </button>
-                    
-                    <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-800 mt-2">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Xuất bảng</p>
-                    </div>
-                    <button
-                      onClick={() => handleExport('sheets')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-green-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Google Sheets</span>
-                    </button>
-                    <button
-                      onClick={() => handleExport('notion')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <Globe className="w-4 h-4 text-gray-700" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Notion</span>
-                    </button>
                   </div>
                 )}
               </div>
@@ -447,12 +429,92 @@ export default function PlanViewEnhanced() {
                 />
               </div>
             ) : (
-              <PlanRenderer 
-                content={plan.content} 
-                planId={plan.id}
-                onExport={handleExport}
-                userTier={subscription?.tier || 'free'}
-              />
+              <>
+                <PlanRenderer 
+                  content={plan.content} 
+                  planId={plan.id}
+                  onExport={handleExport}
+                  userTier={subscription?.tier || 'free'}
+                />
+                
+                {/* Bottom CTA for Free tier users */}
+                {subscription?.tier === 'free' && (
+                  <div className="mt-8 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-purple-800 rounded-xl p-8 text-center">
+                    <div className="max-w-2xl mx-auto">
+                      <div className="flex justify-center mb-4">
+                        <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-full">
+                          <Crown className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                        🎉 Đây mới chỉ là bản kế hoạch cơ bản!
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                        Bạn đã thấy sức mạnh của PlanAI với gói Free. Hãy tưởng tượng bạn sẽ có được gì với <strong>bản kế hoạch chuyên sâu gấp 10 lần</strong> trong các gói trả phí:
+                      </p>
+                      
+                      <div className="grid md:grid-cols-2 gap-4 mb-6 text-left">
+                        <div className="space-y-2">
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <strong>Phân tích sâu hơn:</strong> Đi vào từng chi tiết về tài chính, tâm lý, và chiến lược
+                            </span>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <strong>Nhiều từ hơn:</strong> Từ 3.000 từ lên 8.000-23.000 từ
+                            </span>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <strong>Checklist chi tiết:</strong> Theo dõi hàng tuần, tháng, năm
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <strong>Phân tích tử vi:</strong> Kết hợp số học và tử vi vào kế hoạch
+                            </span>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <strong>40+ tài liệu:</strong> Thay vì 11, bạn có 40+ tài liệu chuyên sâu
+                            </span>
+                          </div>
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <strong>Xuất file:</strong> PDF, Word, Google Docs để chia sẻ
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link
+                          href="/pricing"
+                          className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all transform hover:scale-105"
+                        >
+                          <Crown className="w-5 h-5" />
+                          <span>Xem Gói Nâng Cấp</span>
+                        </Link>
+                        <Link
+                          href="/dashboard/create-plan"
+                          className="inline-flex items-center justify-center space-x-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-medium transition-colors"
+                        >
+                          <span>Tạo Kế Hoạch Mới</span>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -502,18 +564,13 @@ export default function PlanViewEnhanced() {
             <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl p-6">
               <h3 className="font-bold text-gray-900 dark:text-white mb-4">Hành động</h3>
               <div className="space-y-2">
-                <button className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                  <History className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Lịch sử phiên bản</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                  <Share2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Chia sẻ</span>
-                </button>
-                <button className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors text-red-600 dark:text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                  <span className="text-sm">Xóa kế hoạch</span>
-                </button>
+                <Link
+                  href="/dashboard/plans"
+                  className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Quay lại danh sách kế hoạch</span>
+                </Link>
               </div>
             </div>
 
@@ -526,13 +583,45 @@ export default function PlanViewEnhanced() {
                     Mẹo
                   </p>
                   <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                    <li>• Xuất sang Google Sheets để theo dõi tiến độ</li>
-                    <li>• Bật tính năng Tử vi để có thêm động lực</li>
                     <li>• Chỉnh sửa trực tiếp trong plan</li>
+                    <li>• Nâng cấp gói để có thêm tính năng</li>
+                    <li>• Chia sẻ kế hoạch với gia đình</li>
                   </ul>
                 </div>
               </div>
             </div>
+
+            {/* Upgrade CTA - Show for Free tier users */}
+            {subscription?.tier === 'free' && (
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
+                <div className="flex items-start space-x-3">
+                  <Crown className="w-6 h-6 text-yellow-300 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">
+                      Nâng cấp để có kế hoạch hoàn chỉnh hơn
+                    </h3>
+                    <p className="text-purple-100 text-sm mb-4 leading-relaxed">
+                      Gói trả phí có bản kế hoạch chi tiết gấp <strong>nhiều lần</strong> với:
+                    </p>
+                    <ul className="text-sm text-purple-100 space-y-1 mb-4">
+                      <li>• Phân tích sâu hơn và chi tiết hơn</li>
+                      <li>• Nhiều checklist (tuần/tháng/năm)</li>
+                      <li>• Phân tích tử vi kết hợp</li>
+                      <li>• 40+ tài liệu chuyên sâu</li>
+                      <li>• Xuất file PDF, Word, Google Docs</li>
+                      <li>• Và nhiều tính năng khác...</li>
+                    </ul>
+                    <Link
+                      href="/pricing"
+                      className="inline-flex items-center space-x-2 bg-white text-purple-600 hover:bg-purple-50 px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span>Nâng cấp ngay</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
