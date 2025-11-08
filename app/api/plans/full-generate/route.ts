@@ -99,10 +99,13 @@ export async function POST(req: NextRequest) {
       '',
       'Lưu ý QUAN TRỌNG:',
       '- TUYỆT ĐỐI KHÔNG dùng "---", "...", "TBD", "N/A" hay bất kỳ placeholder nào. MỖI Ô BẢNG phải có dữ liệu thực, cụ thể, cá nhân hóa.',
+      '- TÍNH TOÁN TÀI CHÍNH PHẢI CHÍNH XÁC 100%: Ví dụ mục tiêu 2.5 tỷ nhà + 700 triệu xe + 10 tỷ tiết kiệm = 13.2 tỷ trong 36 tháng → cần tiết kiệm 366 triệu/tháng (không phải 3 triệu). KIỂM TRA LẠI MỌI PHÉP TÍNH.',
       '- Lộ trình PHẢI KHỚP timeline của user: nếu user mục tiêu 3 năm thì phải có đủ 36 milestone tháng, nếu 18 tháng thì có đủ 18 milestone.',
+      '- Bảng tiết kiệm: Tính chính xác số tiền cần thiết mỗi tháng = (Tổng mục tiêu VNĐ) ÷ (Số tháng timeline). VD: 13.2 tỷ ÷ 36 tháng = 366.7 triệu/tháng.',
+      '- Thu nhập hiện tại vs mục tiêu: Nếu cần 366M/tháng mà chỉ có 50M thu nhập → cần tăng thu nhập 7.3 lần, đề xuất chiến lược CỤ THỂ.',
       '- Checklist phải có đủ 3 bảng riêng: Tuần (4 tuần), Tháng (theo timeline), Năm (theo timeline).',
       '- Chiến lược tăng thu nhập phải CỤ THỂ: tên chiến lược, cách thực hiện, timeline, ROI dự kiến, rủi ro.',
-      '- Tất cả link phải MỞ ĐƯỢC ngay (từ database resources hoặc nguồn uy tín).',
+      '- Resources: CHỈ dùng link từ database hoặc các trang uy tín VN (cafef.vn, vnexpress.net/kinhdoanh, tienphong.vn/kinh-te, cafebiz.vn, fpts.com.vn, techcombank.com.vn, vietcombank.com.vn). TUYỆT ĐỐI không link lỗi.',
       '- Tránh lý thuyết suông; viết cụ thể, áp dụng vào hoàn cảnh của user Việt Nam.',
       '- Bảng Markdown phải format chuẩn: | A | B | C | \\n |---|---|---| \\n | data1 | data2 | data3 |',
       '- Trả về JSON HỢP LỆ duy nhất.'
@@ -130,9 +133,9 @@ export async function POST(req: NextRequest) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       response_format: { type: 'json_object' },
-      temperature: 0.5,
+      temperature: 0.3,
       // Allocate ~2 tokens per word to avoid truncation (VN text often tokenizes more densely)
       max_tokens: Math.min(8000, Math.ceil((constraints.max_words || 1500) * 2.0)),
       messages: [
@@ -247,7 +250,7 @@ export async function POST(req: NextRequest) {
       title,
       content: content_md,
       user_id: userId,
-      model_used: 'gpt-4o-mini',
+      model_used: 'gpt-4o',
       word_count: content_md.split(/\s+/).length,
       collected_info: collectedInfo || {},
       metadata: {

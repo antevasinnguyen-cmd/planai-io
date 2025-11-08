@@ -1,17 +1,17 @@
 {
   "finance_personal": [
-    {"name": "Quản lý tài chính cá nhân - The Money Coach", "url": "https://www.youtube.com/playlist?list=PLuYb7l2hS7bX8g-5Yd0Yd0", "type": "playlist", "duration": "15 videos", "lang": "vi"},
-    {"name": "Sách Rich Dad Poor Dad - Audiobook Tiếng Việt", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "type": "video", "duration": "2h 30m", "lang": "vi"},
-    {"name": "Khóa học Quản lý tài chính - Udemy (Tiếng Việt)", "url": "https://www.udemy.com/course/personal-finance-vietnamese/", "type": "course", "price": "199k", "lang": "vi"},
-    {"name": "Tài chính cá nhân cho người Việt - Ngân hàng SHB", "url": "https://www.youtube.com/watch?v=personal-finance-shb", "type": "video", "duration": "45 phút", "lang": "vi"},
-    {"name": "Lập kế hoạch tài chính 5 năm - Blogger Tài Chính", "url": "https://taichinhcaban.com/lap-ke-hoach-tai-chinh", "type": "blog", "lang": "vi"}
+    {"name": "Quản lý Tài chính Cá nhân - CafeF", "url": "https://cafef.vn/tai-chinh-ca-nhan.chn", "type": "news", "lang": "vi"},
+    {"name": "Đầu tư Thông minh - VnExpress Kinh doanh", "url": "https://vnexpress.net/kinh-doanh/dau-tu", "type": "news", "lang": "vi"}, 
+    {"name": "Tiết kiệm Hiệu quả - Techcombank", "url": "https://www.techcombank.com.vn/ca-nhan/tiet-kiem", "type": "bank", "lang": "vi"},
+    {"name": "Sản phẩm Tiết kiệm - Vietcombank", "url": "https://www.vietcombank.com.vn/ca-nhan/tiet-kiem-dau-tu", "type": "bank", "lang": "vi"},
+    {"name": "Tài chính Cá nhân - Báo Tiền Phong", "url": "https://tienphong.vn/kinh-te/tai-chinh-ca-nhan", "type": "news", "lang": "vi"}
   ],
   "investing": [
-    {"name": "Đầu tư chứng chỉ quỹ cho người mới - SSI Academy", "url": "https://academy.ssi.com.vn/khoa-hoc-dau-tu-co-ban", "type": "course", "lang": "vi"},
-    {"name": "Hướng dẫn mở tài khoản chứng khoán SSI", "url": "https://www.youtube.com/watch?v=ssi-account-tutorial", "type": "video", "duration": "15 phút", "lang": "vi"},
-    {"name": "Phân tích kỹ thuật cơ bản - Techcombank Academy", "url": "https://academy.techcombank.com.vn/technical-analysis", "type": "course", "lang": "vi"},
-    {"name": "Đầu tư BĐS cho người mới - Batdongsan.com", "url": "https://batdongsan.com/tin-tuc/dau-tu-bat-dong-san-cho-nguoi-moi", "type": "guide", "lang": "vi"},
-    {"name": "Quỹ đầu tư - Cách hoạt động và lợi ích - VNDirect", "url": "https://www.vndirect.com.vn/kien-thuc/quy-dau-tu", "type": "article", "lang": "vi"}
+    {"name": "Đầu tư Chứng khoán - SSI", "url": "https://www.ssi.com.vn/khach-hang-ca-nhan/dau-tu-chung-khoan", "type": "broker", "lang": "vi"},
+    {"name": "Thị trường Chứng khoán - VNDirect", "url": "https://www.vndirect.com.vn/thi-truong-chung-khoan", "type": "broker", "lang": "vi"},
+    {"name": "Đầu tư Quỹ mở - Techcombank", "url": "https://www.techcombank.com.vn/ca-nhan/dau-tu/quy-mo", "type": "bank", "lang": "vi"},
+    {"name": "Tin tức Chứng khoán - CafeF", "url": "https://cafef.vn/chung-khoan.chn", "type": "news", "lang": "vi"},
+    {"name": "Phân tích Thị trường - VietStock", "url": "https://vietstock.vn/", "type": "research", "lang": "vi"}
   ],
   "business_startup": [
     {"name": "Khởi nghiệp từ 0 - Shark Tank Vietnam", "url": "https://www.youtube.com/playlist?list=PLshark-tank-vietnam", "type": "playlist", "lang": "vi"},
