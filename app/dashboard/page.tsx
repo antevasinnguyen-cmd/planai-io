@@ -523,7 +523,7 @@ export default function DashboardFinal() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:ml-64">
+      <div className="flex-1 flex flex-col md:ml-64 w-[calc(100%-16rem)]">
         {/* Top Bar */}
         <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center justify-between">
@@ -590,7 +590,7 @@ export default function DashboardFinal() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-full">
           {/* Upgrade banner when near limits */}
           {usage && limits && (
             (() => {
