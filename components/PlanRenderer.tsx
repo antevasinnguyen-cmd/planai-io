@@ -29,20 +29,20 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     return content.replace(jsonBlockRegex, '').trim()
   }, [content])
 
-  // Auto-fix markdown tables: add separator row if missing
+  // Auto-fix markdown tables: add separator row if missing + remove visible truncation markers
   const fixedContent = useMemo(() => {
     let fixed = cleanContent
-    // Robust pattern: a header row starting with '|' and containing multiple cells,
-    // next line also starts with '|' (data) but there is NO separator line between them.
-    // We work in multiline mode and ensure we don't match if a separator already exists.
+    // Add separator row if missing
     const missingSeparatorRegex = /(^\|(?:[^|\n]+\|)+\s*$)\n(?!^\|[-\s|:]+\|$)(^\|(?:[^|\n]+\|)+\s*$)/gm
     fixed = fixed.replace(missingSeparatorRegex, (_m, headerLine, firstDataLine) => {
-      // Count columns by counting non-empty cells between pipes in header
       const headerCells = headerLine.split('|').filter(c => c.trim().length > 0)
       const colCount = headerCells.length
       const separator = '|' + Array(colCount).fill('---').join('|') + '|'
       return `${headerLine}\n${separator}\n${firstDataLine}`
     })
+    // Remove placeholder ellipsis in content to avoid rendering '...'
+    fixed = fixed.replace(/\n?\s*\.\.\.(?=\s|\n)/g, '')
+    fixed = fixed.replace(/\n?\s*…(?=\s|\n)/g, '')
     return fixed
   }, [cleanContent])
 
@@ -88,9 +88,10 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     const table = tables.get(tableId)
     if (!table) return
 
+    const sanitize = (v: any) => String(v ?? '').trim().replace(/^(-{3,}|\.{3}|…)$/g, '')
     const csvContent = [
-      table.headers.join('\t'),
-      ...table.rows.map(row => row.join('\t'))
+      table.headers.map(sanitize).join('\t'),
+      ...table.rows.map(row => row.map(sanitize).join('\t'))
     ].join('\n')
 
     navigator.clipboard.writeText(csvContent)
@@ -112,10 +113,11 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       return normalizedRow.slice(0, maxCols)
     })
 
+    const sanitize = (v: any) => String(v ?? '').trim().replace(/^(-{3,}|\.{3}|…)$/g, '')
     const csvContent = [
-      table.headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
+      table.headers.map(h => `"${sanitize(h).replace(/"/g, '""')}"`).join(','),
       ...normalizedRows.map(row => 
-        row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')
+        row.map(cell => `"${sanitize(cell).replace(/"/g, '""')}"`).join(',')
       )
     ].join('\n')
 
@@ -176,16 +178,24 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
                 {children}
               </tbody>
             ),
-            th: ({ children }) => (
-              <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                {children}
-              </td>
-            ),
+            th: ({ children }) => {
+              const text = String(Array.isArray(children) ? children.join('') : children).trim()
+              const isPlaceholder = /^(-{3,}|\.{3}|…)$/.test(text)
+              return (
+                <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
+                  {isPlaceholder ? '' : children}
+                </th>
+              )
+            },
+            td: ({ children }) => {
+              const text = String(Array.isArray(children) ? children.join('') : children).trim()
+              const isPlaceholder = /^(-{3,}|\.{3}|…)$/.test(text)
+              return (
+                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  {isPlaceholder ? '' : children}
+                </td>
+              )
+            },
             code: ({ node, inline, className, children, ...props }: any) => {
               const match = /language-(\w+)/.exec(className || '')
               const lang = match ? match[1] : ''

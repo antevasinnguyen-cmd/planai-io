@@ -43,9 +43,9 @@ export async function POST(req: NextRequest) {
 
     // One-call JSON schema (prompt fragment)
     const constraints = {
-      max_words: limits.words || 1500,
+      max_words: tier === 'free' ? 2200 : (limits.words || 1500),
       max_mermaid: tier === 'free' ? 2 : tier === 'basic' ? 3 : tier === 'pro' ? 4 : 6,
-      max_tables: tier === 'free' ? 2 : tier === 'basic' ? 4 : tier === 'pro' ? 5 : 6,
+      max_tables: tier === 'free' ? 3 : tier === 'basic' ? 4 : tier === 'pro' ? 5 : 6,
       min_resources: tier === 'free' ? 7 : tier === 'basic' ? 20 : tier === 'pro' ? 40 : 50,
       max_resources: tier === 'free' ? 10 : tier === 'basic' ? 25 : tier === 'pro' ? 50 : 60,
       resources_policy: 'gpt_only'
@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       temperature: 0.5,
-      max_tokens: Math.min(8000, Math.ceil((constraints.max_words || 1500) * 1.2)),
+      // Allocate ~2 tokens per word to avoid truncation (VN text often tokenizes more densely)
+      max_tokens: Math.min(8000, Math.ceil((constraints.max_words || 1500) * 2.0)),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: JSON.stringify(userPrompt).slice(0, 12000) }
@@ -188,10 +189,21 @@ export async function POST(req: NextRequest) {
     }
     const parsed = safe.success ? safe.data : (parsedRaw || {})
 
-    const content_md = String((parsed as any)?.content_markdown || '')
+    let content_md = String((parsed as any)?.content_markdown || '')
     const title = isNonEmptyString((parsed as any)?.title) ? (parsed as any).title : String(planName || 'Kế hoạch tài chính')
     const mermaid_blocks: string[] = Array.isArray((parsed as any)?.mermaid_blocks) ? (parsed as any).mermaid_blocks : []
     const tables_md: string[] = Array.isArray((parsed as any)?.tables_md) ? (parsed as any).tables_md : []
+
+    // Ensure mindmap/timeline and tables are visible in the UI by embedding them into content_md
+    if (mermaid_blocks?.length) {
+      const mermaidSection = mermaid_blocks
+        .map(code => `\n\n\`\`\`mermaid\n${String(code || '').trim()}\n\`\`\``)
+        .join('')
+      content_md += mermaidSection + '\n'
+    }
+    if (tables_md?.length) {
+      content_md += '\n\n' + tables_md.join('\n\n') + '\n'
+    }
     let resources: Array<{ title: string; url: string; [k: string]: any }> = Array.isArray((parsed as any)?.resources) ? (parsed as any).resources : []
 
     // Optional resource link validation
