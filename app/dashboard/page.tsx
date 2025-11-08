@@ -526,7 +526,7 @@ export default function DashboardFinal() {
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
         <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 py-4 md:py-5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between md:justify-end">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
