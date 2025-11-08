@@ -105,7 +105,8 @@ export async function POST(req: NextRequest) {
       '- Thu nhập hiện tại vs mục tiêu: Nếu cần 366M/tháng mà chỉ có 50M thu nhập → cần tăng thu nhập 7.3 lần, đề xuất chiến lược CỤ THỂ.',
       '- Checklist phải có đủ 3 bảng riêng: Tuần (4 tuần), Tháng (theo timeline), Năm (theo timeline).',
       '- Chiến lược tăng thu nhập phải CỤ THỂ: tên chiến lược, cách thực hiện, timeline, ROI dự kiến, rủi ro.',
-      '- Resources: CHỈ dùng link từ database hoặc các trang uy tín VN (cafef.vn, vnexpress.net/kinhdoanh, tienphong.vn/kinh-te, cafebiz.vn, fpts.com.vn, techcombank.com.vn, vietcombank.com.vn). TUYỆT ĐỐI không link lỗi.',
+      '- Resources: Ưu tiên tiếng Anh từ Coursera, Khan Academy, edX, Roadmap.sh, YouTube, LinkedIn Learning, Skillshare, Google Books, TED, HubSpot, Ahrefs. Cũng có thể dùng nguồn VN uy tín. TUYỆT ĐỐI không link lỗi.',
+      '- Roadmap/Mindmap: Sử dụng mermaid mindmap hoặc timeline để hiển thị lộ trình chi tiết (tham khảo roadmap.sh). Ví dụ: root = mục tiêu cuối, branches = milestone quý/năm, sub-branches = hành động cụ thể.',
       '- Tránh lý thuyết suông; viết cụ thể, áp dụng vào hoàn cảnh của user Việt Nam.',
       '- Bảng Markdown phải format chuẩn: | A | B | C | \\n |---|---|---| \\n | data1 | data2 | data3 |',
       '- Trả về JSON HỢP LỆ duy nhất.'
@@ -132,10 +133,14 @@ export async function POST(req: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+    // Select model based on tier: free=mini (cost), paid=gpt-4o (quality)
+    const model = tier === 'free' ? 'gpt-4o-mini' : 'gpt-4o'
+    const temperature = tier === 'free' ? 0.5 : 0.3
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model,
       response_format: { type: 'json_object' },
-      temperature: 0.3,
+      temperature,
       // Allocate ~2 tokens per word to avoid truncation (VN text often tokenizes more densely)
       max_tokens: Math.min(8000, Math.ceil((constraints.max_words || 1500) * 2.0)),
       messages: [
@@ -250,7 +255,7 @@ export async function POST(req: NextRequest) {
       title,
       content: content_md,
       user_id: userId,
-      model_used: 'gpt-4o',
+      model_used: model,
       word_count: content_md.split(/\s+/).length,
       collected_info: collectedInfo || {},
       metadata: {

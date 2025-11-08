@@ -1,65 +1,65 @@
 {
   "finance_personal": [
+    {"name": "Personal Finance Masterclass - Coursera", "url": "https://www.coursera.org/courses?query=personal%20finance", "type": "course", "lang": "en"},
+    {"name": "Financial Planning Fundamentals - Khan Academy", "url": "https://www.khanacademy.org/college-careers-more/financial-literacy", "type": "course", "lang": "en"},
+    {"name": "Money Management - YouTube (Free)", "url": "https://www.youtube.com/results?search_query=personal+finance+management", "type": "video", "lang": "en"},
     {"name": "Quản lý Tài chính Cá nhân - CafeF", "url": "https://cafef.vn/tai-chinh-ca-nhan.chn", "type": "news", "lang": "vi"},
-    {"name": "Đầu tư Thông minh - VnExpress Kinh doanh", "url": "https://vnexpress.net/kinh-doanh/dau-tu", "type": "news", "lang": "vi"}, 
-    {"name": "Tiết kiệm Hiệu quả - Techcombank", "url": "https://www.techcombank.com.vn/ca-nhan/tiet-kiem", "type": "bank", "lang": "vi"},
-    {"name": "Sản phẩm Tiết kiệm - Vietcombank", "url": "https://www.vietcombank.com.vn/ca-nhan/tiet-kiem-dau-tu", "type": "bank", "lang": "vi"},
-    {"name": "Tài chính Cá nhân - Báo Tiền Phong", "url": "https://tienphong.vn/kinh-te/tai-chinh-ca-nhan", "type": "news", "lang": "vi"}
+    {"name": "The Psychology of Money - Audiobook", "url": "https://www.audible.com/pd/The-Psychology-of-Money-Audiobook", "type": "book", "lang": "en"}
   ],
   "investing": [
+    {"name": "Investment Fundamentals - Coursera", "url": "https://www.coursera.org/courses?query=investment", "type": "course", "lang": "en"},
+    {"name": "Stock Market Basics - Khan Academy", "url": "https://www.khanacademy.org/economics-finance-domain/core-finance/stock-and-bonds", "type": "course", "lang": "en"},
+    {"name": "Investing 101 - YouTube Channel", "url": "https://www.youtube.com/results?search_query=investing+for+beginners", "type": "video", "lang": "en"},
     {"name": "Đầu tư Chứng khoán - SSI", "url": "https://www.ssi.com.vn/khach-hang-ca-nhan/dau-tu-chung-khoan", "type": "broker", "lang": "vi"},
-    {"name": "Thị trường Chứng khoán - VNDirect", "url": "https://www.vndirect.com.vn/thi-truong-chung-khoan", "type": "broker", "lang": "vi"},
-    {"name": "Đầu tư Quỹ mở - Techcombank", "url": "https://www.techcombank.com.vn/ca-nhan/dau-tu/quy-mo", "type": "bank", "lang": "vi"},
-    {"name": "Tin tức Chứng khoán - CafeF", "url": "https://cafef.vn/chung-khoan.chn", "type": "news", "lang": "vi"},
-    {"name": "Phân tích Thị trường - VietStock", "url": "https://vietstock.vn/", "type": "research", "lang": "vi"}
+    {"name": "The Intelligent Investor - Google Books", "url": "https://books.google.com/books?id=j-UcEAAAQBAJ", "type": "book", "lang": "en"}
   ],
   "business_startup": [
-    {"name": "Khởi nghiệp từ 0 - Shark Tank Vietnam", "url": "https://www.youtube.com/playlist?list=PLshark-tank-vietnam", "type": "playlist", "lang": "vi"},
-    {"name": "Xây dựng SaaS trong 30 ngày - Nguyễn Hữu Trọng", "url": "https://saas30days.com/full-course", "type": "course", "price": "free", "lang": "vi"},
-    {"name": "Kinh doanh online - Hướng dẫn từ A-Z", "url": "https://www.youtube.com/watch?v=online-business-az", "type": "video", "duration": "3h", "lang": "vi"},
-    {"name": "Lập kế hoạch kinh doanh - VCCI", "url": "https://vcci.com.vn/huong-dan-lap-ke-hoach-kinh-doanh", "type": "guide", "lang": "vi"},
-    {"name": "Dropshipping cho người Việt - Lazada Seller", "url": "https://seller.lazada.vn/khoa-hoc-dropshipping", "type": "course", "lang": "vi"}
+    {"name": "Startup Essentials - Coursera", "url": "https://www.coursera.org/courses?query=startup", "type": "course", "lang": "en"},
+    {"name": "Entrepreneurship - edX", "url": "https://www.edx.org/search?q=entrepreneurship", "type": "course", "lang": "en"},
+    {"name": "Business Model Canvas - Roadmap.sh", "url": "https://roadmap.sh/business-model-canvas", "type": "guide", "lang": "en"},
+    {"name": "Startup Roadmap - YouTube", "url": "https://www.youtube.com/results?search_query=startup+roadmap", "type": "video", "lang": "en"},
+    {"name": "Lean Startup Methodology - Google Books", "url": "https://books.google.com/books?id=tvfyz-1QV2YC", "type": "book", "lang": "en"}
   ],
   "skills_soft": [
-    {"name": "Kỹ năng giao tiếp hiệu quả - TED Talks (Tiếng Việt)", "url": "https://www.youtube.com/playlist?list=PLted-talks-communication", "type": "playlist", "lang": "vi"},
-    {"name": "Quản lý thời gian - Pomodoro Technique", "url": "https://www.youtube.com/watch?v=pomodoro-technique", "type": "video", "duration": "20 phút", "lang": "vi"},
-    {"name": "Lãnh đạo và quản lý đội nhóm - Coursera", "url": "https://www.coursera.org/courses?q=leadership-vietnamese", "type": "course", "price": "free", "lang": "vi"},
-    {"name": "Tư duy sáng tạo - Edward de Bono", "url": "https://www.youtube.com/watch?v=creative-thinking", "type": "video", "duration": "1h 15m", "lang": "vi"},
-    {"name": "Thuyết trình hiệu quả - Toastmasters Vietnam", "url": "https://www.toastmasters.org/find-a-club?country=Vietnam", "type": "community", "lang": "vi"}
+    {"name": "Leadership & Communication - Coursera", "url": "https://www.coursera.org/courses?query=leadership", "type": "course", "lang": "en"},
+    {"name": "TED Talks - Public Speaking", "url": "https://www.ted.com/talks", "type": "video", "lang": "en"},
+    {"name": "Emotional Intelligence - LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/emotional-intelligence", "type": "course", "lang": "en"},
+    {"name": "Time Management - Skillshare", "url": "https://www.skillshare.com/browse/time-management", "type": "course", "lang": "en"},
+    {"name": "Critical Thinking - YouTube", "url": "https://www.youtube.com/results?search_query=critical+thinking+skills", "type": "video", "lang": "en"}
   ],
   "tech_digital": [
-    {"name": "Digital Marketing cơ bản - Google Digital Garage", "url": "https://learndigital.withgoogle.com/digitalgarage/courses", "type": "course", "price": "free", "lang": "vi"},
-    {"name": "SEO cho người mới - Ahrefs Academy", "url": "https://ahrefs.com/academy", "type": "course", "price": "free", "lang": "en"},
+    {"name": "Digital Marketing - Google Digital Garage", "url": "https://learndigital.withgoogle.com/digitalgarage/courses", "type": "course", "price": "free", "lang": "en"},
+    {"name": "SEO Fundamentals - Ahrefs Academy", "url": "https://ahrefs.com/academy", "type": "course", "price": "free", "lang": "en"},
     {"name": "Content Marketing - HubSpot Academy", "url": "https://academy.hubspot.com/courses/content-marketing", "type": "course", "price": "free", "lang": "en"},
-    {"name": "Email Marketing - Mailchimp Resources", "url": "https://mailchimp.com/resources/", "type": "resources", "price": "free", "lang": "en"},
-    {"name": "Social Media Marketing - Meta Blueprint", "url": "https://www.facebook.com/business/learn", "type": "course", "price": "free", "lang": "vi"}
+    {"name": "Web Development Roadmap - Roadmap.sh", "url": "https://roadmap.sh/frontend", "type": "guide", "lang": "en"},
+    {"name": "Data Analytics - Coursera", "url": "https://www.coursera.org/courses?query=data+analytics", "type": "course", "lang": "en"}
   ],
   "sales_marketing": [
-    {"name": "Bán hàng hiệu quả - Nguyễn Thân Thiện", "url": "https://course.thanthien.vn/sales-masterclass", "type": "course", "price": "1.99M", "lang": "vi"},
-    {"name": "Marketing 0-1 cho người Việt - Startup Việt", "url": "https://www.youtube.com/watch?v=marketing-0-1", "type": "video", "duration": "1h 30m", "lang": "vi"},
-    {"name": "Copywriting - Viết bán hàng - Copyblogger", "url": "https://copyblogger.com/copywriting-101/", "type": "guide", "price": "free", "lang": "en"},
-    {"name": "Khách hàng là vua - Đào Tạo Bán Hàng", "url": "https://www.youtube.com/watch?v=customer-is-king", "type": "video", "duration": "50 phút", "lang": "vi"},
-    {"name": "Xây dựng thương hiệu cá nhân - Personal Branding", "url": "https://www.youtube.com/watch?v=personal-branding", "type": "video", "duration": "1h", "lang": "vi"}
+    {"name": "Sales & Marketing - Coursera", "url": "https://www.coursera.org/courses?query=sales+marketing", "type": "course", "lang": "en"},
+    {"name": "Copywriting Mastery - Copyblogger", "url": "https://copyblogger.com/copywriting-101/", "type": "guide", "price": "free", "lang": "en"},
+    {"name": "Personal Branding - LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/personal-branding", "type": "course", "lang": "en"},
+    {"name": "Growth Hacking - YouTube", "url": "https://www.youtube.com/results?search_query=growth+hacking+strategies", "type": "video", "lang": "en"},
+    {"name": "Sales Fundamentals - Skillshare", "url": "https://www.skillshare.com/browse/sales", "type": "course", "lang": "en"}
   ],
   "accounting_tax": [
-    {"name": "Kế toán cơ bản cho người mới - Bộ Tài chính", "url": "https://www.mof.gov.vn/webcenter/portal/vportal/rfi", "type": "guide", "lang": "vi"},
-    {"name": "Thuế cá nhân - Hướng dẫn đầy đủ", "url": "https://www.youtube.com/watch?v=personal-tax-guide", "type": "video", "duration": "45 phút", "lang": "vi"},
-    {"name": "Quản lý chi phí - Accounting Basics", "url": "https://www.youtube.com/watch?v=accounting-basics", "type": "video", "duration": "1h", "lang": "vi"},
-    {"name": "Lập báo cáo tài chính - Khóa học online", "url": "https://www.udemy.com/course/financial-reporting-vietnamese/", "type": "course", "price": "299k", "lang": "vi"},
-    {"name": "Kiểm toán nội bộ - VAIA", "url": "https://vaia.org/courses/internal-audit/", "type": "course", "price": "free", "lang": "vi"}
+    {"name": "Accounting Fundamentals - Coursera", "url": "https://www.coursera.org/courses?query=accounting", "type": "course", "lang": "en"},
+    {"name": "Financial Accounting - Khan Academy", "url": "https://www.khanacademy.org/economics-finance-domain/core-finance/accounting-and-financial-reporting", "type": "course", "lang": "en"},
+    {"name": "Tax Planning - YouTube", "url": "https://www.youtube.com/results?search_query=tax+planning+strategies", "type": "video", "lang": "en"},
+    {"name": "Bookkeeping Basics - Udemy", "url": "https://www.udemy.com/courses/search/?q=bookkeeping", "type": "course", "lang": "en"},
+    {"name": "Financial Reporting - edX", "url": "https://www.edx.org/search?q=financial+reporting", "type": "course", "lang": "en"}
   ],
   "psychology_mindset": [
-    {"name": "Tâm lý học thành công - Tony Robbins", "url": "https://www.youtube.com/watch?v=tony-robbins-psychology", "type": "video", "duration": "2h", "lang": "en"},
-    {"name": "Thói quen thành công - Atomic Habits (Tiếng Việt)", "url": "https://www.youtube.com/watch?v=atomic-habits-vietnamese", "type": "video", "duration": "1h 30m", "lang": "vi"},
-    {"name": "Tư duy khác biệt - Carol Dweck", "url": "https://www.youtube.com/watch?v=growth-mindset", "type": "video", "duration": "50 phút", "lang": "en"},
-    {"name": "Quản lý cảm xúc - Emotional Intelligence", "url": "https://www.youtube.com/watch?v=emotional-intelligence", "type": "video", "duration": "1h", "lang": "vi"},
-    {"name": "Động lực hành động - Motivation Science", "url": "https://www.youtube.com/watch?v=motivation-science", "type": "video", "duration": "45 phút", "lang": "vi"}
+    {"name": "Psychology & Success - Coursera", "url": "https://www.coursera.org/courses?query=psychology+success", "type": "course", "lang": "en"},
+    {"name": "Mindfulness & Meditation - Skillshare", "url": "https://www.skillshare.com/browse/mindfulness", "type": "course", "lang": "en"},
+    {"name": "Growth Mindset - YouTube", "url": "https://www.youtube.com/results?search_query=growth+mindset+carol+dweck", "type": "video", "lang": "en"},
+    {"name": "Atomic Habits Summary - YouTube", "url": "https://www.youtube.com/results?search_query=atomic+habits+james+clear", "type": "video", "lang": "en"},
+    {"name": "Motivation & Goal Setting - LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/motivation", "type": "course", "lang": "en"}
   ],
   "health_productivity": [
-    {"name": "Sức khỏe tài chính - Wellness & Money", "url": "https://www.youtube.com/watch?v=health-finance", "type": "video", "duration": "30 phút", "lang": "vi"},
-    {"name": "Năng suất cao - Deep Work", "url": "https://www.youtube.com/watch?v=deep-work", "type": "video", "duration": "1h 15m", "lang": "vi"},
-    {"name": "Cân bằng cuộc sống - Work-Life Balance", "url": "https://www.youtube.com/watch?v=work-life-balance", "type": "video", "duration": "40 phút", "lang": "vi"},
-    {"name": "Ngủ ngon - Sleep Science", "url": "https://www.youtube.com/watch?v=sleep-science", "type": "video", "duration": "1h", "lang": "vi"},
-    {"name": "Tập luyện - Fitness for Busy People", "url": "https://www.youtube.com/watch?v=fitness-busy", "type": "video", "duration": "30 phút", "lang": "vi"}
+    {"name": "Productivity & Time Management - Coursera", "url": "https://www.coursera.org/courses?query=productivity", "type": "course", "lang": "en"},
+    {"name": "Deep Work - YouTube", "url": "https://www.youtube.com/results?search_query=deep+work+cal+newport", "type": "video", "lang": "en"},
+    {"name": "Sleep Science & Health - Khan Academy", "url": "https://www.khanacademy.org/science/health-and-medicine", "type": "course", "lang": "en"},
+    {"name": "Fitness & Wellness - YouTube", "url": "https://www.youtube.com/results?search_query=fitness+productivity", "type": "video", "lang": "en"},
+    {"name": "Work-Life Balance - LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/work-life-balance", "type": "course", "lang": "en"}
   ]
 }
