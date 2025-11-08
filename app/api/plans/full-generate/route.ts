@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // One-call JSON schema (prompt fragment)
     const constraints = {
-      max_words: tier === 'free' ? 2200 : (limits.words || 1500),
+      max_words: limits.words || 1500,
       max_mermaid: tier === 'free' ? 2 : tier === 'basic' ? 3 : tier === 'pro' ? 4 : 6,
       max_tables: tier === 'free' ? 8 : tier === 'basic' ? 10 : tier === 'pro' ? 12 : 15,
       min_resources: tier === 'free' ? 11 : tier === 'basic' ? 25 : tier === 'pro' ? 45 : 60,
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       '  Tóm tắt & kết luận hành động (3-5 việc quan trọng nhất phải làm ngay tuần này); Hướng dẫn sử dụng kế hoạch tốt nhất (cách tracking, review, adjust);',
       '  Kết luận & động lực hành động ngay (gọi tên user, nhắc lại mục tiêu, deadline, first action trong 24h).',
       '  Đồng thời, đề xuất sheets_spec với cấu trúc các tab sau: Dashboard, Roadmap, Checklist (checkbox), TietKiem, TangThuNhap, BusinessMetrics (MRR, Churn, CAC, LTV), KyNang_TaiLieu.',
-      '- Nếu tier là FREE: 2.200 từ, WOW content để user nâng cấp. BỐ CỤC 14 MỤC BẮT BUỘC (KHÔNG THIẾU, KHÔNG THỪA, KHÔNG "..."). PHẢI CÓ ĐỦ: Tiêu đề + Tóm tắt + SWOT + Phân tích mục tiêu + Phân tích yếu tố + Phân tích kỹ năng + Mindmap + Lộ trình + Đề xuất hành động + 3 Checklist (Tuần, Tháng, Tiết kiệm) + Đầu tư + Tài liệu (11+) + Mindmap lộ trình + Kết luận:',
+      '- Nếu tier là FREE: tối đa 3.000 từ (tuỳ vào độ phức tạp thông tin), WOW content để user nâng cấp. BỐ CỤC 14 MỤC BẮT BUỘC (KHÔNG THIẾU, KHÔNG THỪA, KHÔNG "..."). PHẢI CÓ ĐỦ: Tiêu đề + Tóm tắt + SWOT + Phân tích mục tiêu + Phân tích yếu tố + Phân tích kỹ năng + Mindmap + Lộ trình + Đề xuất hành động + 3 Checklist (Tuần, Tháng, Tiết kiệm) + Đầu tư + Tài liệu (11+) + Mindmap lộ trình + Kết luận:',
       '  1. Tiêu đề: "KẾ HOẠCH TÀI CHÍNH CÁ NHÂN HOÁ MIỄN PHÍ - {mục tiêu cụ thể} trong {timeline} - Dành cho {tên user}".',
       '  2. Tóm tắt thông tin (bullet list): • Họ tên: {name} • Ngày sinh: {dob} • Tuổi: {age} • Nơi ở: {location} • Thu nhập hiện tại: {income}/tháng • Tiết kiệm hiện có: {savings} • Nghề hiện tại: {job} • Nghề trước đây: {prev_job} • Kỹ năng: {skills} • Mục tiêu: {goal} • Timeline: {timeline} • Sẵn sàng: {readiness}/10.',
       '  3. Phân tích SWOT (bảng 4 cột ĐẦY ĐỦ dữ liệu VN 11/2025): | Điểm mạnh | Điểm yếu | Cơ hội | Thách thức | - KHÔNG "---", KHÔNG "...".',
@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
       '  8. Lộ trình theo timeline user (Ngày-Tuần-Tháng-Năm): văn bản chi tiết + link Google Sheet template.',
       '  9. Đề xuất hành động (150 từ): 3-5 hành động cụ thể, khả thi trong 24h.',
       '  10. Checklist hành động tuần/tháng (3 bảng riêng biệt - KHÔNG "..."):',
-      '      a) Checklist Tuần (Tuần 1-12): | Tuần | Hành động cụ thể | Mục tiêu | Link học | - PHẢI CÓ ĐỦ 12 HÀNG (Tuần 1 đến Tuần 12), mỗi hàng có dữ liệu thực, cụ thể, không để trống.',
-      '      b) Checklist Tháng (Tháng 1-12): | Tháng | Hành động cụ thể | Mục tiêu | Link học | - PHẢI CÓ ĐỦ 12 HÀNG (Tháng 1 đến Tháng 12), mỗi hàng có dữ liệu thực, cụ thể, không để trống. Hành động tháng phải chi tiết hơn hành động tuần.',
+      '      a) Checklist Tuần (Tuần 1-12): | Tuần | Hành động | Mục tiêu | Link học | - PHẢI CÓ ĐỦ 12 HÀNG (Tuần 1 đến Tuần 12), mỗi hàng có dữ liệu thực, cụ thể, không để trống.',
+      '      b) Checklist Tháng (Tháng 1-12): | Tháng | Hành động | Mục tiêu | - PHẢI CÓ ĐỦ 12 HÀNG (Tháng 1 đến Tháng 12), mỗi hàng có dữ liệu thực, cụ thể, không để trống. Hành động tháng phải chi tiết hơn hành động tuần.',
       '      c) Kế hoạch tiết kiệm: | Tháng | Số tiền tiết kiệm | Đơn vị | Nguồn tiền | Công cụ | - PHẢI CÓ ĐỦ 12 HÀNG (Tháng 1 đến Tháng 12). Số tiền = (Tổng mục tiêu VNĐ) ÷ 12 tháng. Đơn vị luôn là "tháng". Nguồn tiền cụ thể (ví dụ: "Tiết kiệm từ lương", "Tiết kiệm từ freelance", "Tiết kiệm từ bonus"). Công cụ cụ thể (ví dụ: "Tài khoản tiết kiệm Vietcombank", "Quỹ trái phiếu", "Chứng chỉ tiền gửi").',
       '  11. Kế hoạch đầu tư (bảng): | Hạng mục đầu tư | Số tiền/tháng | Mục đích | Rủi ro | Kỳ vọng lợi nhuận | - PHẢI CÓ TỐI THIỂU 3-5 HÀNG. Ví dụ cụ thể: "Đầu tư kiến thức (500k VNĐ/tháng)", "Quỹ trái phiếu (1 triệu VNĐ/tháng)", "Kinh doanh side (2 triệu VNĐ/tháng)". Mỗi hàng phải có số tiền cụ thể, mục đích rõ ràng, rủi ro và kỳ vọng lợi nhuận cụ thể (ví dụ: "Rủi ro thấp, lợi nhuận 5-7%/năm").',
       '  12. Tài liệu học tập (PHẢI CÓ ĐỦ TỐI THIỂU 11 TÀI LIỆU): | Tên tài liệu | Loại | Link | Ngôn ngữ | Mô tả chi tiết kiến thức & lợi ích | - Ưu tiên Coursera, Khan Academy, edX, Roadmap.sh, YouTube (>50k views), LinkedIn Learning, Skillshare, Google Books, TED, HubSpot, Ahrefs. Link PHẢI dẫn trực tiếp tới khoá học/video (ví dụ: https://www.coursera.org/learn/financial-planning), không dùng link tìm kiếm chung. Mô tả phải chi tiết: "Khoá học này dạy về [chủ đề cụ thể] giúp user [lợi ích cụ thể cho mục tiêu tài chính của user]".',
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       response_format: { type: 'json_object' },
       temperature,
       // Allocate ~2 tokens per word to avoid truncation (VN text often tokenizes more densely)
-      max_tokens: Math.min(8000, Math.ceil((constraints.max_words || 1500) * 2.0)),
+      max_tokens: Math.min(28000, Math.ceil((constraints.max_words || 1500) * 2.0)),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: JSON.stringify(userPrompt).slice(0, 12000) }

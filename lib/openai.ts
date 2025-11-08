@@ -249,13 +249,14 @@ export const generateFinancialPlan = async (
     } else if (maxWords <= 17500) {
       wordRange = '15,000-20,000 từ (Gói Pro Max)'
     }
-    const maxTokensForTier = maxWords <= 1000
-      ? 800
-      : maxWords <= 6500
-      ? 2500
-      : maxWords <= 10500
-      ? 3500
-      : 4000
+    // Token budget aligned with new word limits (roughly ~1.6-2 tokens/word VN)
+    const maxTokensForTier = maxWords <= 3000
+      ? 6000    // Free: up to ~3000 words
+      : maxWords <= 11000
+      ? 14000   // Basic: up to ~11000 words
+      : maxWords <= 17000
+      ? 20000   // Pro: up to ~17000 words
+      : 28000   // Pro Max: up to ~23000 words
 
     // Tier-based micro-tasks and scenario depth gating (P1)
     const tier = String(collectedInfo.tier || 'free')
@@ -323,7 +324,17 @@ Yêu cầu tạo kế hoạch:
 QUAN TRỌNG: 
 - Giới hạn tối đa ${maxWords} từ
 - KHÔNG bao gồm số từ hoặc thống kê từ trong nội dung
-- Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được`
+- Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được
+
+YÊU CẦU BỔ SUNG DÀNH RIÊNG CHO GÓI FREE (nếu tier = "free"):
+- BẮT BUỘC đủ 14 mục: Tiêu đề, Tóm tắt, SWOT, Phân tích mục tiêu, Phân tích yếu tố, Kỹ năng, Mindmap, Lộ trình, Đề xuất hành động, Checklist Tuần, Checklist Tháng, Kế hoạch tiết kiệm, Kế hoạch đầu tư, Tài liệu học tập (11+).
+- Mindmap lộ trình: dùng Mermaid (mindmap) rõ ràng, root = mục tiêu cuối, branch = milestone quý/năm.
+- Checklist Tuần: Bảng Markdown hợp lệ với cột | Tuần | Hành động cụ thể | Mục tiêu | Link học | và PHẢI có 12 hàng (Tuần 1 → Tuần 12). Hành động tuần phải bám sát hành động chia nhỏ từ checklist tháng.
+- Checklist Tháng: Bảng Markdown hợp lệ với cột | Tháng | Hành động cụ thể | Mục tiêu | Link học | và PHẢI có 12 hàng (Tháng 1 → Tháng 12).
+- Kế hoạch tiết kiệm: Bảng Markdown hợp lệ với cột | Tháng | Số tiền tiết kiệm | Đơn vị | Nguồn tiền | Công cụ |, đủ 12 hàng. "Đơn vị" = "tháng"; Số tiền = (Tổng mục tiêu VNĐ) ÷ 12.
+- Kế hoạch đầu tư: Tối thiểu 3-5 hàng với cột | Hạng mục đầu tư | Số tiền/tháng | Mục đích | Rủi ro | Kỳ vọng lợi nhuận | (ví dụ: Đầu tư kiến thức, Quỹ trái phiếu, Kinh doanh).
+- Tài liệu học tập: Ít nhất 11 tài liệu, bảng có cột | Tên tài liệu | Loại | Link | Ngôn ngữ | Mô tả chi tiết kiến thức & lợi ích |. Link phải dẫn thẳng tới khoá/video quốc tế uy tín (ưu tiên Coursera, Khan Academy, edX, Roadmap.sh, YouTube >50k views, LinkedIn Learning, Skillshare, Google Books, TED, HubSpot, Ahrefs).
+- TUYỆT ĐỐI KHÔNG dùng "---", "...", "TBD", "N/A" trong bất kỳ ô nào. Mỗi ô phải có dữ liệu thực.`
 
     // Generate a cache key based on inputs
     const cacheKey = generateCacheKey([

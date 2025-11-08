@@ -90,9 +90,9 @@ export async function POST(request: NextRequest) {
 
     const caps = getServerCapsByTier(tier)
 
-    // --- Auto-clean stale jobs (>10m) to prevent blocking ---
+    // --- Auto-clean stale jobs (>30m) to prevent blocking (increased for longer Free plans) ---
     try {
-      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
       const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
           .update({ status: 'failed', error_message: 'auto-timeout', completed_at: new Date().toISOString() })
           .eq('user_id', user.id)
           .in('status', ['pending', 'processing'])
-          .lte('created_at', tenMinAgo)
+          .lte('created_at', thirtyMinAgo)
       }
     } catch (cleanErr) {
       logger.warn('BG_CLEAN_STALE_FAIL', { error: String(cleanErr) })

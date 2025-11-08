@@ -19,7 +19,7 @@ const pricingTiers = [
       '1 Kế hoạch ngắn'
     ],
     limitations: [
-      'Giới hạn 1,000 từ',
+      'Giới hạn 3,000 từ',
       'Không có tính năng nâng cao'
     ],
     buttonText: 'Bắt đầu miễn phí',
@@ -34,7 +34,7 @@ const pricingTiers = [
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     features: [
       '40 Chat với AI lập kế hoạch',
-      '1 Ebook plan cá nhân hóa độc quyền (5.000 - 8.000 từ)',
+      '1 Ebook plan cá nhân hóa độc quyền (8.000 - 11.000 từ)',
       'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
@@ -53,7 +53,7 @@ const pricingTiers = [
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
       '90 Chat với AI lập kế hoạch',
-      '3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ / mỗi ebook)',
+      '3 Ebook plan cá nhân hóa độc quyền (13.000 - 17.000 từ / mỗi ebook)',
       'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
@@ -74,7 +74,7 @@ const pricingTiers = [
     description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
     features: [
       '160 Chat với AI lập kế hoạch',
-      '6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ / mỗi ebook)',
+      '6 Ebook plan cá nhân hóa độc quyền (18.000 - 23.000 từ / mỗi ebook)',
       'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
