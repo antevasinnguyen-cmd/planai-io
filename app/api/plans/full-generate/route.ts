@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       '  9. Đề xuất hành động (150 từ): 3-5 hành động cụ thể, khả thi trong 24h.',
       '  10. Checklist hành động tháng (bảng Markdown chuẩn - KHÔNG "..."):',
       '      Checklist Tháng: | Tháng | Hành động cụ thể | Mục tiêu | Link tài liệu tham khảo | - PHẢI CÓ ĐỦ 12 HÀNG (Tháng 1 đến Tháng 12), mỗi hàng có dữ liệu thực, cụ thể, không để trống. Hành động phải chi tiết và bám sát mục tiêu tài chính của user.',
-      '  11. Kế hoạch tiết kiệm: | Năm | Số tiền tiết kiệm | Nguồn tiền (chi tiết) | Thời gian cần | - PHẢI tính toán chặt chẽ theo năm và các công việc. VD: Năm 1 - 2.5 tỷ - Nguồn tiền: Kinh doanh webapp (1.5 tỷ), Đầu tư chứng khoán (700 triệu), Freelance (300 triệu) - Cần 12 tháng. Nguồn tiền phải bám sát thông tin user chia sẻ.',
+      '  11. Kế hoạch tiết kiệm: | Năm | Số tiền tiết kiệm/tháng | Tổng năm | Nguồn tiền (chi tiết) | - PHẢI tính toán CHÍNH XÁC 100%. CÔNG THỨC: Số tiền/tháng = (Tổng mục tiêu VNĐ) ÷ (Số tháng timeline). VD: Mục tiêu 12.7 tỷ trong 70 tháng → 12.7 tỷ ÷ 70 = 181.4 triệu/tháng. KIỂM TRA: 181.4 triệu × 70 tháng = 12.7 tỷ ✓. Chia theo năm: Năm 1 (12 tháng) = 181.4M × 12 = 2.177 tỷ. Nguồn tiền phải bám sát thông tin user chia sẻ (lương, freelance, kinh doanh, đầu tư, etc.).',
       '  12. Kế hoạch đầu tư: | Hạng mục đầu tư | Số tiền/tháng | Mục đích | Rủi ro | Kỳ vọng lợi nhuận | - PHẢI CÓ TỐI THIỂU 3-5 HÀNG. Bao gồm: Đầu tư kiến thức/kỹ năng (x VNĐ/tháng), Đầu tư quỹ trái phiếu an toàn (x VNĐ/tháng), Đầu tư vào kinh doanh/side business (x VNĐ/tháng). Mỗi hàng phải có số tiền cụ thể, mục đích rõ ràng, rủi ro và kỳ vọng lợi nhuận cụ thể.',
       '  13. Tài liệu học tập (PHẢI CÓ ĐỦ TỐI THIỂU 11 TÀI LIỆU): | Tên tài liệu | Loại | Link | Ngôn ngữ | Mô tả chi tiết kiến thức user sẽ học được và giúp gì cho mục tiêu tài chính | - Ưu tiên Coursera, Khan Academy, edX, Roadmap.sh, YouTube (>50k views), LinkedIn Learning, Skillshare, Google Books, TED, HubSpot, Ahrefs. Link PHẢI dẫn trực tiếp tới khoá học/video cụ thể, KHÔNG dùng link tìm kiếm chung hoặc homepage. Mô tả chi tiết: "Khoá học này dạy về [chủ đề cụ thể] giúp user [lợi ích cụ thể cho mục tiêu tài chính của user]".',
       '  14. Kết luận + CTA nâng cấp: "Đây là bản kế hoạch cơ bản cho gói Free. Gói trả phí có bản kế hoạch chi tiết gấp nhiều lần với phân tích sâu hơn, nhiều checklist (tuần/tháng/năm), phân tích tử vi kết hợp, 40+ tài liệu chuyên sâu, và nhiều tính năng khác. Hãy nâng cấp để có kế hoạch hoàn chỉnh nhất!".',
@@ -113,6 +113,15 @@ export async function POST(req: NextRequest) {
       '- Roadmap/Mindmap: Sử dụng mermaid mindmap hoặc timeline để hiển thị lộ trình chi tiết (tham khảo roadmap.sh). Ví dụ: root = mục tiêu cuối, branches = milestone quý/năm, sub-branches = hành động cụ thể.',
       '- Tránh lý thuyết suông; viết cụ thể, áp dụng vào hoàn cảnh của user Việt Nam.',
       '- Bảng Markdown phải format chuẩn: | A | B | C | \\n |---|---|---| \\n | data1 | data2 | data3 |',
+      '',
+      '⚠️ VALIDATION TOÁN HỌC (BẮT BUỘC KIỂM TRA):',
+      '1. TÍNH TỔNG MỤC TIÊU: Cộng tất cả mục tiêu con (nhà, xe, tiết kiệm, etc.) = Tổng VNĐ',
+      '2. TÍNH TIỀN/THÁNG: Tổng VNĐ ÷ Số tháng timeline = Tiền/tháng',
+      '3. KIỂM TRA NGƯỢC: Tiền/tháng × Số tháng = Tổng VNĐ (PHẢI BẰNG NHAU)',
+      '4. NẾU SAI: Recalculate lại cho đến khi đúng',
+      '5. VÍ DỤ ĐÚNG: Mục tiêu 12.7 tỷ, 70 tháng → 12.7T ÷ 70 = 181.4M/tháng → Check: 181.4M × 70 = 12.7T ✓',
+      '6. VÍ DỤ SAI: Mục tiêu 12.7 tỷ, 70 tháng nhưng tính 15M/tháng → 15M × 70 = 1.05T ≠ 12.7T ✗ (SAI LẦM NGHIÊM TRỌNG)',
+      '',
       '- Trả về JSON HỢP LỆ duy nhất.'
     ].join('\n')
 
