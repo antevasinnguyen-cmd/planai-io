@@ -238,28 +238,22 @@ export const generateFinancialPlan = async (
     }
 
     // Determine word/token limits based on subscription (P0)
-    const maxWords = collectedInfo.maxWords || 5000
-    let wordRange = '5,000-8,000 từ'
-    if (maxWords <= 1000) {
-      wordRange = '800-1,000 từ (Gói Free)'
-    } else if (maxWords <= 6500) {
-      wordRange = '5,000-8,000 từ (Gói Basic)'
-    } else if (maxWords <= 10500) {
-      wordRange = '9,000-12,000 từ (Gói Pro)'
-    } else if (maxWords <= 17500) {
-      wordRange = '15,000-20,000 từ (Gói Pro Max)'
-    }
-    // Token budget aligned with new word limits (roughly ~1.6-2 tokens/word VN)
-    const maxTokensForTier = maxWords <= 3000
-      ? 6000    // Free: up to ~3000 words
-      : maxWords <= 11000
-      ? 14000   // Basic: up to ~11000 words
-      : maxWords <= 17000
-      ? 20000   // Pro: up to ~17000 words
-      : 28000   // Pro Max: up to ~23000 words
+    const MAX_COMPLETION_TOKENS = 12000
+    const maxWordsInput = typeof collectedInfo.maxWords === 'number' ? collectedInfo.maxWords : 5000
+    const maxWords = Math.max(1000, Math.min(maxWordsInput, 50000))
 
     // Tier-based micro-tasks and scenario depth gating (P1)
     const tier = String(collectedInfo.tier || 'free')
+
+    const wordRange = tier === 'free'
+      ? 'Tối đa 5.000 từ (Gói Free)'
+      : 'Tối đa 50.000 từ (Gói trả phí)'
+
+    // Token budget aligned with model capacity (GPT-4o mini supports ~12k tokens completion safely)
+    const maxTokensForTier = (() => {
+      if (tier === 'free') return 6000
+      return 10000  // All paid tiers: 50k words = ~10k tokens
+    })()
 
     // Tier-aware creativity: higher tiers allow slightly higher temperature
     const temperatureForTier = (() => {
@@ -397,7 +391,7 @@ YÊU CẦU BỔ SUNG DÀNH RIÊNG CHO GÓI FREE (nếu tier = "free"):
     }
   } catch (error) {
     logger.error('OPENAI_PLAN_UNHANDLED', { error: String(error) })
-    return 'Có lỗi xảy ra khi tạo kế hoạch. Vui lòng thử lại sau.'
+    throw (error instanceof Error ? error : new Error(String(error)))
   }
 }
 

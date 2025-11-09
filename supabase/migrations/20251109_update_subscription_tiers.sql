@@ -20,7 +20,7 @@ UPDATE subscription_tiers
 SET 
   chat_limit = 40,
   plan_limit = 1,
-  word_limit = 100000,
+  word_limit = 50000,
   features = '[
     "40 Chat với AI lập kế hoạch",
     "1 Ebook plan cá nhân hóa độc quyền",
@@ -38,7 +38,7 @@ UPDATE subscription_tiers
 SET 
   chat_limit = 100,
   plan_limit = 2,
-  word_limit = 100000,
+  word_limit = 50000,
   features = '[
     "100 Chat với AI lập kế hoạch",
     "2 Ebook plan cá nhân hóa độc quyền",
@@ -57,7 +57,7 @@ UPDATE subscription_tiers
 SET 
   chat_limit = 270,
   plan_limit = 5,
-  word_limit = 100000,
+  word_limit = 50000,
   features = '[
     "270 Chat với AI lập kế hoạch",
     "5 Ebook plan cá nhân hóa độc quyền dài",
