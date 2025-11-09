@@ -454,4 +454,5 @@ export default function SubscriptionPage() {
         </div>
       </div>
     </div>
+  )
 }
