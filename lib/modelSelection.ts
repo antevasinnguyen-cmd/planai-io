@@ -129,32 +129,16 @@ export const generateEmbeddings = async (text: string): Promise<number[]> => {
   }
 }
 
-// Function to handle fallback to Claude if OpenAI fails
+// Function to fallback to Claude 3 Opus (GPT-4 Turbo already failed)
 export const fallbackToClaudeIfNeeded = async (
   messages: any[],
   maxTokens: number = 500,
   temperature: number = 0.7
 ): Promise<string> => {
-  const openaiClient = getOpenAI()
+  // Clamp maxTokens to Claude's limit (200k tokens, but be conservative)
+  const clampedMaxTokens = Math.min(maxTokens, 4096)
   
-  // Try GPT-4 Turbo first
-  if (openaiClient) {
-    try {
-      console.log('🔵 Trying GPT-4 Turbo...')
-      const completion = await openaiClient.chat.completions.create({
-        model: MODELS.CHAT_DEFAULT,
-        messages,
-        max_tokens: maxTokens,
-        temperature,
-      })
-      console.log('✅ GPT-4 Turbo succeeded')
-      return completion.choices[0]?.message?.content || ''
-    } catch (error) {
-      console.error('❌ GPT-4 Turbo failed:', error)
-    }
-  }
-  
-  // Fallback to Claude 3 Opus
+  // Fallback to Claude 3 Opus (GPT-4 Turbo already failed)
   const claudeClient = getAnthropic()
   if (claudeClient) {
     try {
@@ -164,7 +148,7 @@ export const fallbackToClaudeIfNeeded = async (
       
       const completion = await claudeClient.messages.create({
         model: MODELS.CHAT_FALLBACK,
-        max_tokens: maxTokens,
+        max_tokens: clampedMaxTokens,
         system: systemMessage,
         messages: userMessages.map(m => ({
           role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -175,9 +159,9 @@ export const fallbackToClaudeIfNeeded = async (
       return completion.content[0]?.type === 'text' ? completion.content[0].text : ''
     } catch (error) {
       console.error('❌ Claude 3 Opus failed:', error)
+      throw error
     }
   }
   
-  console.error('⚠️ Both GPT-4 Turbo and Claude 3 Opus failed')
-  return 'Hệ thống AI đang bận. Vui lòng thử lại sau.'
+  throw new Error('Claude 3 Opus client not initialized')
 }

@@ -357,6 +357,7 @@ YÊU CẦU BỔ SUNG DÀNH RIÊNG CHO GÓI FREE (nếu tier = "free"):
     }
 
     // This is a complex planning task, use GPT-4 Turbo for best quality
+    // With fallback to Claude 3 Opus if GPT-4 Turbo fails
     try {
       logger.info('OPENAI_PLAN_CALL_OPENAI', {})
       const model = selectModel(TaskType.COMPLEX_PLANNING)
@@ -375,32 +376,57 @@ YÊU CẦU BỔ SUNG DÀNH RIÊNG CHO GÓI FREE (nếu tier = "free"):
         }
       ]
 
-      // For large responses, we'll use chunking to handle the response better
-      const client = getOpenAI()
-      if (!client) {
-        throw new Error('OpenAI client not initialized')
+      // Try GPT-4 Turbo first
+      try {
+        const client = getOpenAI()
+        if (!client) {
+          throw new Error('OpenAI client not initialized')
+        }
+
+        const completion = await raceWithAbort(
+          client.chat.completions.create({
+            model,
+            messages,
+            max_tokens: maxTokensForTier,
+            temperature: temperatureForTier
+          }),
+          signal
+        )
+
+        const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
+
+        // Save response to cache
+        await saveToCache(cacheKey, response)
+        logger.info('OPENAI_PLAN_OPENAI_DONE', {})
+        return response
+
+      } catch (gptError) {
+        logger.error('OPENAI_PLAN_OPENAI_ERROR', { error: String(gptError) })
+        
+        // Fallback to Claude 3 Opus
+        logger.info('OPENAI_PLAN_FALLBACK_TO_CLAUDE', {})
+        try {
+          const { fallbackToClaudeIfNeeded } = await import('./modelSelection')
+          const response = await fallbackToClaudeIfNeeded(messages, maxTokensForTier, temperatureForTier)
+          
+          if (!response || response.includes('đang bận')) {
+            throw new Error('Claude 3 Opus also failed')
+          }
+          
+          // Save response to cache
+          await saveToCache(cacheKey, response)
+          logger.info('OPENAI_PLAN_CLAUDE_DONE', {})
+          return response
+          
+        } catch (claudeError) {
+          logger.error('OPENAI_PLAN_CLAUDE_ERROR', { error: String(claudeError) })
+          throw claudeError
+        }
       }
 
-      const completion = await raceWithAbort(
-        client.chat.completions.create({
-          model,
-          messages,
-          max_tokens: maxTokensForTier,
-          temperature: temperatureForTier
-        }),
-        signal
-      )
-
-      const response = completion.choices[0]?.message?.content || 'Không thể tạo kế hoạch lúc này. Vui lòng thử lại.'
-
-      // Save response to cache
-      await saveToCache(cacheKey, response)
-      logger.info('OPENAI_PLAN_OPENAI_DONE', {})
-      return response
-
-    } catch (gptError) {
-      logger.error('OPENAI_PLAN_OPENAI_ERROR', { error: String(gptError) })
-      throw gptError
+    } catch (error) {
+      logger.error('OPENAI_PLAN_FINAL_ERROR', { error: String(error) })
+      throw error
     }
   } catch (error) {
     logger.error('OPENAI_PLAN_UNHANDLED', { error: String(error) })
