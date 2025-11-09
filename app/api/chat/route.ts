@@ -7,11 +7,12 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { logger } from '@/lib/logger'
 
+// Support both streaming and non-streaming responses
 export async function POST(request: NextRequest) {
   try {
     logger.info('API_CHAT_REQUEST', {})
-    const { message, chatHistory } = await request.json()
-    logger.info('API_CHAT_PAYLOAD', { messageLength: message?.length, historyLength: chatHistory?.length })
+    const { message, chatHistory, stream } = await request.json()
+    logger.info('API_CHAT_PAYLOAD', { messageLength: message?.length, historyLength: chatHistory?.length, stream })
     
     // Lấy token từ header Authorization
     const authHeader = request.headers.get('Authorization')

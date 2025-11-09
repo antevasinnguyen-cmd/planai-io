@@ -150,21 +150,58 @@ export async function POST(req: NextRequest) {
     const model = 'gpt-4-turbo'
     const temperature = tier === 'free' ? 0.5 : 0.3
 
-    const completion = await openai.chat.completions.create({
-      model,
-      response_format: { type: 'json_object' },
-      temperature,
-      // GPT-4 Turbo max completion tokens: 4096 (HARD LIMIT)
-      // Clamp to model capacity: ~2 tokens per word, but never exceed 4096
-      max_tokens: Math.min(4096, Math.ceil((constraints.max_words || 1500) * 2.0)),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: JSON.stringify(userPrompt).slice(0, 12000) }
-      ]
-    })
-
-    const raw = completion.choices?.[0]?.message?.content || '{}'
-    logger.info('ONECALL_OPENAI_DONE', { size: raw.length })
+    // Ensure systemPrompt is a string (it's an array of strings, join them)
+    const systemPromptStr = Array.isArray(systemPrompt) ? systemPrompt.join('\n') : String(systemPrompt)
+    
+    let raw: string = '{}'
+    
+    // Try GPT-4 Turbo first
+    try {
+      logger.info('ONECALL_TRY_GPT4_TURBO', {})
+      const completion = await openai.chat.completions.create({
+        model,
+        response_format: { type: 'json_object' },
+        temperature,
+        // GPT-4 Turbo max completion tokens: 4096 (HARD LIMIT)
+        // Clamp to model capacity: ~2 tokens per word, but never exceed 4096
+        max_tokens: Math.min(4096, Math.ceil((constraints.max_words || 1500) * 2.0)),
+        messages: [
+          { role: 'system', content: systemPromptStr },
+          { role: 'user', content: JSON.stringify(userPrompt).slice(0, 12000) }
+        ]
+      })
+      raw = completion.choices?.[0]?.message?.content || '{}'
+      logger.info('ONECALL_OPENAI_DONE', { size: raw.length })
+    } catch (gptError) {
+      logger.error('ONECALL_GPT4_FAILED', { error: String(gptError) })
+      
+      // Fallback to Claude 3 Opus
+      try {
+        logger.info('ONECALL_FALLBACK_TO_CLAUDE', {})
+        const Anthropic = require('@anthropic-ai/sdk').default
+        const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+        
+        const claudeCompletion = await claude.messages.create({
+          model: 'claude-3-opus-20240229',
+          max_tokens: Math.min(4096, Math.ceil((constraints.max_words || 1500) * 2.0)),
+          messages: [
+            {
+              role: 'user',
+              content: `${systemPromptStr}\n\n${JSON.stringify(userPrompt).slice(0, 12000)}`
+            }
+          ]
+        })
+        
+        raw = claudeCompletion.content?.[0]?.type === 'text' ? claudeCompletion.content[0].text : '{}'
+        logger.info('ONECALL_CLAUDE_DONE', { size: raw.length })
+      } catch (claudeError) {
+        logger.error('ONECALL_CLAUDE_FAILED', { error: String(claudeError) })
+        return NextResponse.json({ 
+          error: 'Plan generation failed',
+          message: 'Cả GPT-4 Turbo và Claude 3 Opus đều không thể tạo kế hoạch. Vui lòng thử lại sau.'
+        }, { status: 500 })
+      }
+    }
 
     // Zod schema for strict validation
     const LLMResponseSchema = z.object({
