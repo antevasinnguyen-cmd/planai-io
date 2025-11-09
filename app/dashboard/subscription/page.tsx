@@ -22,7 +22,7 @@ const pricingTiers = [
     features: {
       plans: 1,
       chats: 5,
-      words: 1000
+      words: 5000
     },
     description: 'Trải nghiệm PlanAI với các tính năng cơ bản',
     color: 'gray',
@@ -30,7 +30,7 @@ const pricingTiers = [
       '5 Chat với AI',
       'Phân tích cơ bản',
       '1 Kế hoạch ngắn',
-      'Giới hạn 1,000 từ'
+      'Giới hạn 5,000 từ (tùy độ phức tạp)'
     ]
   },
   {
@@ -41,19 +41,21 @@ const pricingTiers = [
     features: {
       plans: 1,
       chats: 40,
-      words: 6500
+      words: 100000
     },
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     color: 'blue',
     popular: false,
     detailedFeatures: [
       '40 Chat với AI lập kế hoạch',
-      '1 Ebook plan cá nhân hóa độc quyền (5.000 - 8.000 từ)',
-      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      '1 Ebook plan cá nhân hóa độc quyền',
+      'Phân tích đầy đủ + Lộ trình',
+      'Đề xuất hành động để đạt được mục tiêu',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang tính, Google Tài liệu',
-      'Phân tích kết hợp tử vi, số mệnh, thần số học'
+      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Mở khoá tính năng đọc các bài blog trả phí'
     ]
   },
   {
@@ -62,23 +64,24 @@ const pricingTiers = [
     price: 289000,
     duration: '30 ngày',
     features: {
-      plans: 3,
-      chats: 90,
-      words: 10500
+      plans: 2,
+      chats: 100,
+      words: 100000
     },
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     color: 'purple',
     popular: true,
     detailedFeatures: [
-      '90 Chat với AI lập kế hoạch',
-      '3 Ebook plan cá nhân hóa độc quyền (9.000 - 12.000 từ / mỗi ebook)',
-      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      '100 Chat với AI lập kế hoạch',
+      '2 Ebook plan cá nhân hóa độc quyền',
+      'Phân tích đầy đủ + Lộ trình',
+      'Đề xuất hành động để đạt được mục tiêu',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang tính, Google Tài liệu',
-      'Phân tích kết hợp tử vi, số mệnh, thần số học',
-      'Truy cập sớm các tính năng mới nhất',
-      'Mở khóa tính năng đọc các bài Blog trả phí'
+      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Mở khóa tính năng đọc các bài Blog trả phí',
+      'Truy cập sớm các tính năng mới nhất'
     ]
   },
   {
@@ -87,23 +90,24 @@ const pricingTiers = [
     price: 499000,
     duration: '30 ngày',
     features: {
-      plans: 6,
-      chats: 160,
-      words: 17500
+      plans: 5,
+      chats: 270,
+      words: 100000
     },
     description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
     color: 'purple',
     popular: false,
     detailedFeatures: [
-      '160 Chat với AI lập kế hoạch',
-      '6 Ebook plan cá nhân hóa độc quyền (15.000 - 20.000 từ / mỗi ebook)',
-      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      '270 Chat với AI lập kế hoạch',
+      '5 Ebook plan cá nhân hóa độc quyền dài',
+      'Phân tích đầy đủ + Lộ trình',
+      'Đề xuất hành động để đạt được mục tiêu',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang Tính, Google Tài liệu',
-      'Phân tích kết hợp tử vi, số mệnh, thần số học',
-      'Truy cập sớm các tính năng mới nhất',
-      'Mở khóa tính năng đọc các bài Blog trả phí'
+      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Mở khóa tính năng đọc các bài Blog trả phí',
+      'Truy cập sớm các tính năng mới nhất'
     ]
   }
 ]
@@ -423,23 +427,23 @@ export default function SubscriptionPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <span className="font-semibold text-gray-900 dark:text-white">4 kế hoạch</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">3 kế hoạch</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">1 + 3 = 4 plans</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">1 + 2 = 3 plans</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <MessageSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
-                    <span className="font-semibold text-gray-900 dark:text-white">130 tin nhắn</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">140 tin nhắn</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">40 + 90 = 130 chats</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">40 + 100 = 140 chats</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <span className="font-semibold text-gray-900 dark:text-white">17,000 từ</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">100,000+ từ</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">6,500 + 10,500 = 17,000 words</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Mỗi bản kế hoạch đều siêu chuyên sâu (không giới hạn số từ)</p>
                 </div>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
@@ -450,5 +454,4 @@ export default function SubscriptionPage() {
         </div>
       </div>
     </div>
-  )
 }
