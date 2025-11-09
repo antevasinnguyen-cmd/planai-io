@@ -22,6 +22,49 @@ function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pick<T, K
   return out
 }
 
+// Sanitize common Mermaid and Markdown issues the model may produce
+function sanitizeMermaid(code: string): string {
+  const lines = String(code || '')
+    .replace(/\r/g, '')
+    .replace(/\t/g, '  ')
+    .split(/\n/)
+  if (!lines.length) return 'mindmap\n  root\n    Năm 1\n      Quý 1'
+  const first = lines[0].trim().toLowerCase()
+  if (first.startsWith('mindmap')) {
+    const out: string[] = ['mindmap']
+    for (let i = 1; i < lines.length; i++) {
+      let t = lines[i]
+      // remove bullets and list markers
+      t = t.replace(/^\s*[\-\*•]+\s*/, '  ')
+      // remove flowchart shapes which are invalid in mindmap
+      t = t.replace(/[()\[\]{}]/g, '')
+      // collapse multiple spaces
+      t = t.replace(/\s+$/g, '')
+      out.push(t)
+    }
+    if (out.length === 1) {
+      out.push('  root')
+      out.push('    Năm 1')
+      out.push('      Quý 1')
+    }
+    return out.join('\n')
+  }
+  return lines.join('\n')
+}
+
+function sanitizeMarkdownTable(tableMd: string): string {
+  const lines = String(tableMd || '').trim().split(/\n/)
+  if (lines.length < 2) return tableMd
+  const header = lines[0]
+  const hasSep = /^\s*\|?\s*:?\-/.test(lines[1]) && lines[1].includes('|')
+  if (!hasSep && header.includes('|')) {
+    const colCount = header.split('|').filter(Boolean).length
+    const sep = Array.from({ length: colCount }, () => '---').join(' | ')
+    lines.splice(1, 0, `| ${sep} |`)
+  }
+  return lines.join('\n')
+}
+
 export async function POST(req: NextRequest) {
   try {
     logger.info('ONECALL_START')
@@ -56,8 +99,10 @@ export async function POST(req: NextRequest) {
       'Schema keys: title, summary, tier, content_markdown, mermaid_blocks[], tables_md[], sheets_spec{enabled,title,sheets[{name,headers[],rows[][]}]}, notion_spec{enabled,title,cover_url,children[]}, resources[{type,title,url,locale,reason,min_views}], constraints{max_words,max_mermaid,max_tables,resources_policy}.',
       'Giọng văn: bạn thân 10 năm, thông thái, chuyên gia tài chính, thân thiện, dùng chính câu nói/cách xưng hô của user.',
       'Mọi hành động phải khả thi trong 24h tới (ưu tiên hành động nhỏ, rõ người thực hiện, có tiêu chí hoàn thành & link học).',
-      'content_markdown phải là toàn bộ bản kế hoạch (Markdown GFM); KHÔNG nhúng Mermaid trong phần này (để riêng ở mermaid_blocks). Bảng Markdown phải có format chuẩn và KHÔNG BAO GIỜ dùng "---" hay "..." - phải điền dữ liệu thực 100%.',
-      'mermaid_blocks: chỉ code Mermaid hợp lệ (flowchart|sequence|gantt|mindmap|timeline|graph) - BẮT BUỘC có ít nhất 1 mindmap roadmap tổng quan và 1 timeline chi tiết; tối đa theo max_mermaid.',
+      'content_markdown phải là toàn bộ bản kế hoạch (Markdown GFM); KHÔNG nhúng Mermaid trong phần này (để riêng ở mermaid_blocks). Bảng Markdown phải có format chuẩn và KHÔNG BAO GIỜ dùng "---" hay "..." như placeholder trong ô dữ liệu.',
+      'mermaid_blocks: chỉ code Mermaid HỢP LỆ (flowchart|sequence|gantt|mindmap|timeline|graph). Với mindmap: TUYỆT ĐỐI KHÔNG dùng ký hiệu hình dạng () [] {}. Mẫu đúng:',
+      '"""MERMAID\nmindmap\n  root\n    Năm 1\n      Quý 1\n        Tháng 1\n          Tuần 1\n  Năm 2\n"""',
+      'BẮT BUỘC có ít nhất 1 mindmap roadmap tổng quan và 1 timeline chi tiết; tối đa theo max_mermaid.',
       'tables_md: bảng Markdown thuần với format chuẩn, MỖI Ô PHẢI CÓ DỮ LIỆU THỰC, không được để trống hay dùng "---"; tối đa theo max_tables.',
       'sheets_spec: nếu enabled, định nghĩa các sheet để tạo Google Sheets.',
       'resources: PHẢI CÓ TỐI THIỂU min_resources và TỐI ĐA max_resources link chất lượng cao, ưu tiên Việt Nam; YouTube > 50k views; link công khai mở được ngay. CHỈ DÙNG LINK TỪ DATABASE NÀY (hoặc link uy tín khác nếu không có): finance_personal, investing, business_startup, skills_soft, tech_digital, sales_marketing, accounting_tax, psychology_mindset, health_productivity. Mỗi link phải click vào được ngay, không 404. Mỗi resource phải có: type, title (cụ thể, cá nhân hóa), url (thực), locale (vi/en), reason (tại sao phù hợp với user này).',
@@ -84,7 +129,7 @@ export async function POST(req: NextRequest) {
       '  Tóm tắt & kết luận hành động (3-5 việc quan trọng nhất phải làm ngay tuần này); Hướng dẫn sử dụng kế hoạch tốt nhất (cách tracking, review, adjust);',
       '  Kết luận & động lực hành động ngay (gọi tên user, nhắc lại mục tiêu, deadline, first action trong 24h).',
       '  Đồng thời, đề xuất sheets_spec với cấu trúc các tab sau: Dashboard, Roadmap, Checklist (checkbox), TietKiem, TangThuNhap, BusinessMetrics (MRR, Churn, CAC, LTV), KyNang_TaiLieu.',
-      '- Nếu tier là FREE: tối đa 3.000 từ (tuỳ vào độ phức tạp thông tin), WOW content để user nâng cấp. BỐ CỤC 14 MỤC BẮT BUỘC (KHÔNG THIẾU, KHÔNG THỪA, KHÔNG "..."). PHẢI CÓ ĐỦ: Tiêu đề + Tóm tắt + SWOT + Phân tích mục tiêu + Phân tích yếu tố + Phân tích kỹ năng + Mindmap lộ trình + Lộ trình + Đề xuất hành động + Checklist tháng + Kế hoạch tiết kiệm + Kế hoạch đầu tư + Tài liệu (11+) + Kết luận:',
+      '- Nếu tier là FREE: tối đa 3.000 từ (tuỳ vào độ phức tạp thông tin), WOW content để user nâng cấp. BỐ CỤC 15 MỤC BẮT BUỘC (KHÔNG THIẾU, KHÔNG THỪA, KHÔNG "..."). PHẢI CÓ THÊM MỤC 0: "Kiểm Tra Dữ Liệu" ở đầu bản kế hoạch (xác nhận CURRENT STATE vs GOALS, GAP, timeline). Sau đó là: Tiêu đề + Tóm tắt + SWOT + Phân tích mục tiêu + Phân tích yếu tố + Phân tích kỹ năng + Mindmap lộ trình + Lộ trình + Đề xuất hành động + Checklist tháng + Kế hoạch tiết kiệm + Kế hoạch đầu tư + Tài liệu (11+) + Kết luận:',
       '  1. Tiêu đề: "KẾ HOẠCH TÀI CHÍNH CÁ NHÂN HOÁ MIỄN PHÍ - {mục tiêu cụ thể} trong {timeline} - Dành cho {tên user}".',
       '  2. Tóm tắt thông tin (bullet list): • Họ tên: {name} • Ngày sinh: {dob} • Tuổi: {age} • Nơi ở: {location} • Thu nhập hiện tại: {income}/tháng • Tiết kiệm hiện có: {savings} • Nghề hiện tại: {job} • Nghề trước đây: {prev_job} • Kỹ năng: {skills} • Mục tiêu: {goal} • Timeline: {timeline} • Sẵn sàng: {readiness}/10.',
       '  3. Phân tích SWOT (bảng 4 cột ĐẦY ĐỦ dữ liệu VN 11/2025): | Điểm mạnh | Điểm yếu | Cơ hội | Thách thức | - KHÔNG "---", KHÔNG "...".',
@@ -110,9 +155,9 @@ export async function POST(req: NextRequest) {
       '- Checklist phải có đủ 3 bảng riêng: Tuần (4 tuần), Tháng (theo timeline), Năm (theo timeline).',
       '- Chiến lược tăng thu nhập phải CỤ THỂ: tên chiến lược, cách thực hiện, timeline, ROI dự kiến, rủi ro.',
       '- Resources: Ưu tiên tiếng Anh từ Coursera, Khan Academy, edX, Roadmap.sh, YouTube, LinkedIn Learning, Skillshare, Google Books, TED, HubSpot, Ahrefs. Cũng có thể dùng nguồn VN uy tín. TUYỆT ĐỐI không link lỗi.',
-      '- Roadmap/Mindmap: Sử dụng mermaid mindmap hoặc timeline để hiển thị lộ trình chi tiết (tham khảo roadmap.sh). Ví dụ: root = mục tiêu cuối, branches = milestone quý/năm, sub-branches = hành động cụ thể.',
+      '- Roadmap/Mindmap: Sử dụng mermaid mindmap hoặc timeline để hiển thị lộ trình chi tiết (tham khảo roadmap.sh). Với mindmap: KHÔNG dùng kí hiệu hình dạng, chỉ dùng các dòng thụt lề hai khoảng. Ví dụ hợp lệ ở trên.',
       '- Tránh lý thuyết suông; viết cụ thể, áp dụng vào hoàn cảnh của user Việt Nam.',
-      '- Bảng Markdown phải format chuẩn: | A | B | C | \\n |---|---|---| \\n | data1 | data2 | data3 |',
+      '- Bảng Markdown phải format chuẩn: | A | B | C | \n |---|---|---| \n | data1 | data2 | data3 |',
       '',
       '⚠️ VALIDATION TOÁN HỌC (BẮT BUỘC KIỂM TRA):',
       '1. TÍNH TỔNG MỤC TIÊU: Cộng tất cả mục tiêu con (nhà, xe, tiết kiệm, etc.) = Tổng VNĐ',
@@ -250,8 +295,12 @@ export async function POST(req: NextRequest) {
 
     let content_md = String((parsed as any)?.content_markdown || '')
     const title = isNonEmptyString((parsed as any)?.title) ? (parsed as any).title : String(planName || 'Kế hoạch tài chính')
-    const mermaid_blocks: string[] = Array.isArray((parsed as any)?.mermaid_blocks) ? (parsed as any).mermaid_blocks : []
-    const tables_md: string[] = Array.isArray((parsed as any)?.tables_md) ? (parsed as any).tables_md : []
+    let mermaid_blocks: string[] = Array.isArray((parsed as any)?.mermaid_blocks) ? (parsed as any).mermaid_blocks : []
+    let tables_md: string[] = Array.isArray((parsed as any)?.tables_md) ? (parsed as any).tables_md : []
+
+    // Sanitize Mermaid and tables for better rendering robustness
+    mermaid_blocks = mermaid_blocks.map(sanitizeMermaid)
+    tables_md = tables_md.map(sanitizeMarkdownTable)
 
     // Ensure mindmap/timeline and tables are visible in the UI by embedding them into content_md
     if (mermaid_blocks?.length) {
