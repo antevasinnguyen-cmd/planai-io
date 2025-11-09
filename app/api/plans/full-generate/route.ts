@@ -154,8 +154,9 @@ export async function POST(req: NextRequest) {
       model,
       response_format: { type: 'json_object' },
       temperature,
-      // Allocate ~2 tokens per word to avoid truncation (VN text often tokenizes more densely)
-      max_tokens: Math.min(28000, Math.ceil((constraints.max_words || 1500) * 2.0)),
+      // GPT-4 Turbo max completion tokens: 4096 (HARD LIMIT)
+      // Clamp to model capacity: ~2 tokens per word, but never exceed 4096
+      max_tokens: Math.min(4096, Math.ceil((constraints.max_words || 1500) * 2.0)),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: JSON.stringify(userPrompt).slice(0, 12000) }

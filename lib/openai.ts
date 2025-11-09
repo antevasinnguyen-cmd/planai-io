@@ -238,7 +238,8 @@ export const generateFinancialPlan = async (
     }
 
     // Determine word/token limits based on subscription (P0)
-    const MAX_COMPLETION_TOKENS = 12000
+    // GPT-4 Turbo max completion tokens: 4096 (HARD LIMIT)
+    const MAX_COMPLETION_TOKENS = 4096
     const maxWordsInput = typeof collectedInfo.maxWords === 'number' ? collectedInfo.maxWords : 5000
     const maxWords = Math.max(1000, Math.min(maxWordsInput, 50000))
 
@@ -249,10 +250,11 @@ export const generateFinancialPlan = async (
       ? 'Tối đa 5.000 từ (Gói Free)'
       : 'Tối đa 50.000 từ (Gói trả phí)'
 
-    // Token budget aligned with model capacity (GPT-4o mini supports ~12k tokens completion safely)
+    // Token budget aligned with model capacity (GPT-4 Turbo max: 4096 completion tokens)
     const maxTokensForTier = (() => {
-      if (tier === 'free') return 6000
-      return 10000  // All paid tiers: 50k words = ~10k tokens
+      if (tier === 'free') return 3500  // Free: ~2500-3000 words
+      if (tier === 'basic') return 3800  // Basic: ~3000-3500 words
+      return 4096  // Pro/Pro Max: ~3500-4000 words (clamped to model limit)
     })()
 
     // Tier-aware creativity: higher tiers allow slightly higher temperature
