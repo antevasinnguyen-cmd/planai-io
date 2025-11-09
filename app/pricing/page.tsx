@@ -19,7 +19,7 @@ const pricingTiers = [
       '1 Kế hoạch ngắn'
     ],
     limitations: [
-      'Giới hạn 3,000 từ',
+      'Giới hạn 5,000 từ (tùy độ phức tạp)',
       'Không có tính năng nâng cao'
     ],
     buttonText: 'Bắt đầu miễn phí',
@@ -34,12 +34,14 @@ const pricingTiers = [
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     features: [
       '40 Chat với AI lập kế hoạch',
-      '1 Ebook plan cá nhân hóa độc quyền (8.000 - 11.000 từ)',
-      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      '1 Ebook plan cá nhân hóa độc quyền',
+      'Phân tích đầy đủ + Lộ trình',
+      'Đề xuất hành động để đạt được mục tiêu',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang tính, Google Tài liệu',
-      'Phân tích kết hợp tử vi, số mệnh, thần số học'
+      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Mở khoá tính năng đọc các bài blog trả phí'
     ],
     buttonText: 'Chọn gói này',
     buttonStyle: 'btn-primary',
@@ -52,15 +54,16 @@ const pricingTiers = [
     period: 'VNĐ',
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
-      '90 Chat với AI lập kế hoạch',
-      '3 Ebook plan cá nhân hóa độc quyền (13.000 - 17.000 từ / mỗi ebook)',
-      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      '100 Chat với AI lập kế hoạch',
+      '2 Ebook plan cá nhân hóa độc quyền',
+      'Phân tích đầy đủ + Lộ trình',
+      'Đề xuất hành động để đạt được mục tiêu',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang tính, Google Tài liệu',
-      'Phân tích kết hợp tử vi, số mệnh, thần số học',
-      'Truy cập sớm các tính năng mới nhất',
-      'Mở khóa tính năng đọc các bài Blog trả phí'
+      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Mở khóa tính năng đọc các bài Blog trả phí',
+      'Truy cập sớm các tính năng mới nhất'
     ],
     buttonText: 'Chọn gói Pro',
     buttonStyle: 'btn-primary',
@@ -73,15 +76,16 @@ const pricingTiers = [
     period: 'VNĐ',
     description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
     features: [
-      '160 Chat với AI lập kế hoạch',
-      '6 Ebook plan cá nhân hóa độc quyền (18.000 - 23.000 từ / mỗi ebook)',
-      'Phân tích đầy đủ + Lộ trình + Sơ đồ nhánh',
+      '270 Chat với AI lập kế hoạch',
+      '5 Ebook plan cá nhân hóa độc quyền dài',
+      'Phân tích đầy đủ + Lộ trình',
+      'Đề xuất hành động để đạt được mục tiêu',
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang Tính, Google Tài liệu',
-      'Phân tích kết hợp tử vi, số mệnh, thần số học',
-      'Truy cập sớm các tính năng mới nhất',
-      'Mở khóa tính năng đọc các bài Blog trả phí'
+      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
+      'Mở khóa tính năng đọc các bài Blog trả phí',
+      'Truy cập sớm các tính năng mới nhất'
     ],
     buttonText: 'Chọn Pro Max',
     buttonStyle: 'btn-primary',
