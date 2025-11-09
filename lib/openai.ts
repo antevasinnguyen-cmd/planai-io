@@ -240,21 +240,32 @@ export const generateFinancialPlan = async (
     // Determine word/token limits based on subscription (P0)
     // GPT-4 Turbo max completion tokens: 4096 (HARD LIMIT)
     const MAX_COMPLETION_TOKENS = 4096
-    const maxWordsInput = typeof collectedInfo.maxWords === 'number' ? collectedInfo.maxWords : 5000
-    const maxWords = Math.max(1000, Math.min(maxWordsInput, 50000))
-
+    
     // Tier-based micro-tasks and scenario depth gating (P1)
     const tier = String(collectedInfo.tier || 'free')
+
+    // TIER-SPECIFIC WORD LIMITS
+    const tierWordLimits = {
+      'free': 5000,      // Free: max 5000 words
+      'basic': 50000,    // Gói 1: max 50000 words
+      'pro': 50000,      // Gói 2: max 50000 words
+      'pro_max': 50000   // Gói 3: max 50000 words
+    }
+    
+    const maxWordLimit = tierWordLimits[tier as keyof typeof tierWordLimits] || 5000
+    const maxWordsInput = typeof collectedInfo.maxWords === 'number' ? collectedInfo.maxWords : maxWordLimit
+    const maxWords = Math.max(1000, Math.min(maxWordsInput, maxWordLimit))
 
     const wordRange = tier === 'free'
       ? 'Tối đa 5.000 từ (Gói Free)'
       : 'Tối đa 50.000 từ (Gói trả phí)'
 
     // Token budget aligned with model capacity (GPT-4 Turbo max: 4096 completion tokens)
+    // But respect tier word limits
     const maxTokensForTier = (() => {
-      if (tier === 'free') return 3500  // Free: ~2500-3000 words
-      if (tier === 'basic') return 3800  // Basic: ~3000-3500 words
-      return 4096  // Pro/Pro Max: ~3500-4000 words (clamped to model limit)
+      if (tier === 'free') return Math.min(3500, Math.ceil(maxWords * 1.5))  // Free: clamped to 5k words
+      if (tier === 'basic') return Math.min(4096, Math.ceil(maxWords * 1.5)) // Basic: up to 50k words
+      return Math.min(4096, Math.ceil(maxWords * 1.5))  // Pro/Pro Max: up to 50k words (but clamped to 4096 tokens)
     })()
 
     // Tier-aware creativity: higher tiers allow slightly higher temperature
