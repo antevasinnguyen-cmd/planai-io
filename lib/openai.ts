@@ -343,7 +343,7 @@ YÊU CẦU BỔ SUNG DÀNH RIÊNG CHO GÓI FREE (nếu tier = "free"):
       return cachedResponse
     }
 
-    // This is a complex planning task, prioritize GPT-4o-mini for better cost-efficiency
+    // This is a complex planning task, use GPT-4 Turbo for best quality
     try {
       logger.info('OPENAI_PLAN_CALL_OPENAI', {})
       const model = selectModel(TaskType.COMPLEX_PLANNING)

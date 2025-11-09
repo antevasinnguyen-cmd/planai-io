@@ -146,8 +146,8 @@ export async function POST(req: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // Select model based on tier: free=mini (cost), paid=gpt-4o (quality)
-    const model = tier === 'free' ? 'gpt-4o-mini' : 'gpt-4o'
+    // All tiers use GPT-4 Turbo (unified model strategy)
+    const model = 'gpt-4-turbo'
     const temperature = tier === 'free' ? 0.5 : 0.3
 
     const completion = await openai.chat.completions.create({
