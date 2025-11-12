@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { getOpenAI, getAnthropic } from './modelSelection'
+import { processChatMessage } from './mathFormatter'
 
 /**
  * Generate streaming chat response using GPT-4o mini
@@ -30,7 +31,9 @@ export async function generateStreamingChatResponse(
       const chunk = event.choices[0]?.delta?.content || ''
       if (chunk) {
         fullResponse += chunk
-        onChunk(chunk) // Send chunk to client immediately
+        // Process math expressions before sending to client
+        const processedChunk = processChatMessage(chunk)
+        onChunk(processedChunk) // Send processed chunk to client immediately
       }
     }
 
@@ -73,7 +76,9 @@ async function fallbackToClaudeStreaming(
       if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
         const text = chunk.delta.text
         fullResponse += text
-        onChunk(text) // Send chunk to client immediately
+        // Process math expressions before sending to client
+        const processedText = processChatMessage(text)
+        onChunk(processedText) // Send processed chunk to client immediately
       }
     }
 

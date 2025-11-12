@@ -25,8 +25,27 @@ Viết đoạn văn tóm tắt đầy đủ:
 - Timeline: ${userInfo.timeline || '12 tháng'}
 
 ## PHẦN 2: PHÂN TÍCH SWOT CÁ NHÂN
-Tạo bảng SWOT 4 ô với dữ liệu Việt Nam 2025:
-| Điểm mạnh | Điểm yếu | Cơ hội | Thách thức |
+Phân tích SWOT dưới dạng văn bản:
+
+**Điểm mạnh:**
+- [Điểm mạnh 1]
+- [Điểm mạnh 2]
+- [Điểm mạnh 3]
+
+**Điểm yếu:**
+- [Điểm yếu 1]
+- [Điểm yếu 2]
+- [Điểm yếu 3]
+
+**Cơ hội:**
+- [Cơ hội 1]
+- [Cơ hội 2]
+- [Cơ hội 3]
+
+**Thách thức:**
+- [Thách thức 1]
+- [Thách thức 2]
+- [Thách thức 3]
 
 ## PHẦN 3: PHÂN TÍCH MỤC TIÊU TÀI CHÍNH
 Phân tích chi tiết 300 từ về:
@@ -42,31 +61,36 @@ Phân tích 250 từ về:
 
 ## PHẦN 5: KỸ NĂNG CẦN CÓ
 Liệt kê top 5 kỹ năng cần học:
-- Kỹ năng 1: [mô tả + timeline học]
-- Kỹ năng 2: [mô tả + timeline học]
+- Kỹ năng 1: [mô tả + thời gian học]
+- Kỹ năng 2: [mô tả + thời gian học]
 ...
 
 ## PHẦN 6: LỘ TRÌNH CHI TIẾT
-Tạo mindmap Mermaid đơn giản:
-\`\`\`mermaid
-mindmap
-  root((Mục tiêu chính))
-    Năm 2025
-      Q1
-        Tháng 1
-        Tháng 2
-        Tháng 3
-      Q2
-        Tháng 4
-        Tháng 5
-        Tháng 6
-\`\`\`
+Tạo lộ trình chi tiết dước dạng văn bản:
+
+**Năm thứ nhất:**
+- **Quý 1:**
+  - *Tháng thứ nhất:* [Mục tiêu và hành động]
+  - *Tháng thứ hai:* [Mục tiêu và hành động]
+  - *Tháng thứ ba:* [Mục tiêu và hành động]
+- **Quý 2:**
+  - *Tháng thứ tư:* [Mục tiêu và hành động]
+  - *Tháng thứ năm:* [Mục tiêu và hành động]
+  - *Tháng thứ sáu:* [Mục tiêu và hành động]
 
 ## PHẦN 7: HÀNH ĐỘNG THEO THỜI GIAN
-**Tháng 1**: [3 việc cụ thể]
-**Tháng 2**: [3 việc cụ thể]
-**Tháng 3**: [3 việc cụ thể]
-(tiếp tục cho 12 tháng)
+**Tháng thứ nhất**: [3 việc cụ thể]
+**Tháng thứ hai**: [3 việc cụ thể]
+**Tháng thứ ba**: [3 việc cụ thể]
+**Tháng thứ tư**: [3 việc cụ thể]
+**Tháng thứ năm**: [3 việc cụ thể]
+**Tháng thứ sáu**: [3 việc cụ thể]
+**Tháng thứ bảy**: [3 việc cụ thể]
+**Tháng thứ tám**: [3 việc cụ thể]
+**Tháng thứ chín**: [3 việc cụ thể]
+**Tháng thứ mười**: [3 việc cụ thể]
+**Tháng thứ mười một**: [3 việc cụ thể]
+**Tháng thứ mười hai**: [3 việc cụ thể]
 
 ## PHẦN 8: TÀI LIỆU HỌC TẬP
 Tối thiểu 5 tài liệu:
@@ -94,8 +118,8 @@ OUTPUT JSON:
 {
   "title": "Kế hoạch tài chính ${userInfo.full_name || 'cá nhân'}",
   "content_markdown": "[Nội dung 9 phần ở trên, KHÔNG có phần Xuất dữ liệu bảng]",
-  "mermaid_blocks": ["mindmap code"],
-  "tables_md": ["SWOT table"],
+  "mermaid_blocks": [],
+  "tables_md": [],
   "resources": [5-10 links]
 }
 `
@@ -123,7 +147,27 @@ Executive summary + Hồ sơ chi tiết:
 - Mục tiêu: ${userInfo.goal}
 
 ## 3. PHÂN TÍCH SWOT NÂNG CAO
-SWOT matrix 4x4 + TOWS strategies
+Phân tích SWOT dưới dạng văn bản, không dùng bảng:
+
+**Điểm mạnh:**
+- [Điểm mạnh 1]
+- [Điểm mạnh 2]
+- [Điểm mạnh 3]
+
+**Điểm yếu:**
+- [Điểm yếu 1]
+- [Điểm yếu 2]
+- [Điểm yếu 3]
+
+**Cơ hội:**
+- [Cơ hội 1]
+- [Cơ hội 2]
+- [Cơ hội 3]
+
+**Thách thức:**
+- [Thách thức 1]
+- [Thách thức 2]
+- [Thách thức 3]
 
 ## 4. MỤC TIÊU SMART
 Specific, Measurable, Achievable, Relevant, Time-bound
@@ -132,17 +176,49 @@ Với sensitivity analysis ±20%
 ## 5. CHIẾN LƯỢC TÀI CHÍNH
 Portfolio approach, risk-return optimization
 
-## 6. MINDMAP LỘ TRÌNH
-Mermaid mindmap phức tạp với 4 levels
+## 6. LỘ TRÌNH CHI TIẾT
+Lộ trình chi tiết dưới dạng văn bản:
 
-## 7. TIMELINE GANTT CHART
-Mermaid gantt với dependencies
+**Năm thứ nhất:**
+- **Quý 1:**
+  - *Tháng thứ nhất:* [Mục tiêu và hành động]
+  - *Tháng thứ hai:* [Mục tiêu và hành động]
+  - *Tháng thứ ba:* [Mục tiêu và hành động]
+
+**Năm thứ hai:**
+- **Quý 1:**
+  - *Tháng thứ nhất:* [Mục tiêu và hành động]
+
+## 7. KẾ HOẠCH THỜI GIAN
+Kế hoạch thời gian chi tiết dưới dạng văn bản:
+
+**Năm thứ nhất:**
+- **Quý 1:** [Mục tiêu chính]
+  - *Tháng thứ nhất:* [Hành động cụ thể]
+  - *Tháng thứ hai:* [Hành động cụ thể]
+  - *Tháng thứ ba:* [Hành động cụ thể]
 
 ## 8. CHIẾN LƯỢC HÀNH ĐỘNG
 Deep dive vào từng mục tiêu
 
-## 9. EISENHOWER MATRIX
-Urgent/Important task matrix
+## 9. PHÂN LOẠI ƯU TIÊN
+Phân loại ưu tiên dưới dạng văn bản:
+
+**Ưu tiên cao và khẩn cấp:**
+- [Hành động 1]
+- [Hành động 2]
+
+**Ưu tiên cao nhưng không khẩn cấp:**
+- [Hành động 1]
+- [Hành động 2]
+
+**Khẩn cấp nhưng ưu tiên thấp:**
+- [Hành động 1]
+- [Hành động 2]
+
+**Không khẩn cấp và ưu tiên thấp:**
+- [Hành động 1]
+- [Hành động 2]
 
 ## 10. YẾU TỐ THÀNH CÔNG
 Hard factors + Soft factors
@@ -159,11 +235,18 @@ Investment portfolio + Risk management
 ## 14. MÔ HÌNH KINH DOANH
 3-5 personalized business models
 
-## 15. KẾ HOẠCH TIMELINE
-Yearly/Quarterly/Monthly/Weekly/Daily
+## 15. KẾ HOẠCH THEO KHUNG THỜI GIAN
+**Năm thứ nhất:** [Mục tiêu chính]
+**Quý thứ nhất:** [Mục tiêu quý]
+**Tháng thứ nhất:** [Mục tiêu tháng]
+**Tuần thứ nhất:** [Mục tiêu tuần]
+**Hàng ngày:** [Thói quen hàng ngày]
 
-## 16. CHECKLIST HÀNH ĐỘNG
-30+ action items với deadlines
+## 16. DANH SÁCH HÀNH ĐỘNG
+**Hành động 1:** [Mô tả] - Hoàn thành trong tháng thứ nhất
+**Hành động 2:** [Mô tả] - Hoàn thành trong tháng thứ hai
+**Hành động 3:** [Mô tả] - Hoàn thành trong tháng thứ ba
+(và các hành động khác...)
 
 ## 17. GOOGLE SHEETS (${tier === 'pro' || tier === 'premium' ? 'CÓ' : 'Nâng cấp để có'})
 7 sheets: Dashboard, Roadmap, Checklist, Savings, Income, Business, Skills
@@ -202,8 +285,8 @@ OUTPUT JSON:
 {
   "title": "[Creative title]",
   "content_markdown": "[24 phần content, KHÔNG có Xuất dữ liệu bảng]",
-  "mermaid_blocks": ["mindmap", "gantt"],
-  "tables_md": ["SWOT", "Skills", "Checklist"],
+  "mermaid_blocks": [],
+  "tables_md": [],
   "sheets_spec": ${tier === 'pro' || tier === 'premium' ? 'enhanced_spec' : 'null'},
   "resources": [${constraints.min_resources} to ${constraints.max_resources} links]
 }
@@ -233,13 +316,20 @@ BƯỚC ĐẦU TIÊN - VALIDATION (BẮT BUỘC):
 
   // Step 3: Quality rules
   const qualityRules = `
-QUY TẮC CHẤT LƯỢNG:
+QUY TẮC CHẤT LƯỢNG VÀ ĐỘ TIN CẬY:
 ✅ MỌI con số phải CHÍNH XÁC
 ✅ MỌI lời khuyên phải KHẢ THI
 ✅ MỌI link phải HOẠT ĐỘNG
 ✅ KHÔNG dùng placeholder ("...", "---", "TBD")
 ✅ KHÔNG thêm phần "Xuất dữ liệu bảng"
 ✅ LUÔN có CTA nâng cấp/support ở cuối
+
+⚠️ QUY TẮC HIỂN THỊ BẮT BUỘC:
+✅ KHÔNG sử dụng bảng Markdown - nếu cần hiển thị dữ liệu dạng bảng, chuyển sang dạng danh sách văn bản
+✅ KHÔNG sử dụng Mermaid hoặc bất kỳ biểu đồ nào - mô tả bằng văn bản thay thế
+✅ KHÔNG sử dụng ngày/tháng cụ thể - luôn dùng "tháng thứ nhất", "tháng thứ hai", "quý thứ nhất", "năm thứ nhất", v.v.
+✅ KHÔNG sử dụng bất kỳ cú pháp đặc biệt nào có thể gây lỗi hiển thị
+✅ MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản (tiêu đề, đậm, nghiêng, danh sách)
 
 IMPORTANT: Return ONLY valid JSON, no extra text.
 `

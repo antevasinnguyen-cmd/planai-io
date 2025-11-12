@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { logger } from '@/lib/logger'
+import { processChatMessage } from '@/lib/mathFormatter'
 
 // Support both streaming and non-streaming responses
 export async function POST(request: NextRequest) {
@@ -178,6 +179,8 @@ export async function POST(request: NextRequest) {
     try {
       logger.info('API_CHAT_CALLING_AI', { userId: user.id })
       aiResponse = await generateChatResponseWithSystemPrompt(messages, customSystemPrompt)
+      // Process math expressions in response
+      aiResponse = processChatMessage(aiResponse)
       logger.info('API_CHAT_AI_SUCCESS', { responseLength: aiResponse?.length })
     } catch (aiError) {
       logger.error('API_CHAT_AI_ERROR', { error: aiError instanceof Error ? aiError.message : String(aiError) })
