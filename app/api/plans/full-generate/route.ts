@@ -8,6 +8,7 @@ import { exportPlanToGoogleSheets } from '@/lib/googleSheets'
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
+import { getPlanPromptV2, getUserContextPrompt } from '@/lib/planPromptV2'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,21 @@ function sanitizeMarkdownTable(tableMd: string): string {
   return lines.join('\n')
 }
 
+function sanitizeInlineTablesInContent(md: string): string {
+  const lines = String(md || '').split(/\n/)
+  for (let i = 0; i < lines.length - 1; i++) {
+    const header = lines[i]
+    const next = lines[i + 1]
+    if (/^\s*\|.*\|\s*$/.test(header) && !/^\s*\|?\s*:?-{3,}/.test(next)) {
+      const colCount = header.split('|').filter(Boolean).length
+      const sep = Array.from({ length: colCount }, () => '---').join(' | ')
+      lines.splice(i + 1, 0, `| ${sep} |`)
+      i++
+    }
+  }
+  return lines.join('\n')
+}
+
 export async function POST(req: NextRequest) {
   try {
     logger.info('ONECALL_START')
@@ -94,8 +110,12 @@ export async function POST(req: NextRequest) {
       resources_policy: 'gpt_only'
     }
 
-    const systemPrompt = [
-      'Bạn là PlanAI 5.0 - chuyên gia lập kế hoạch tài chính Việt Nam 2025. HÃY TRẢ VỀ MỘT JSON DUY NHẤT, TUÂN THỦ NGHIÊM NGẶT SCHEMA. KHÔNG THÊM VĂN BẢN THỪA.',
+    // Use optimized V2 prompt for better quality and performance
+    const systemPrompt = getPlanPromptV2(tier, constraints)
+    const userContext = getUserContextPrompt(collectedInfo)
+    
+    // Old long prompt array removed - was causing timeout issues
+    /* const systemPrompt = [
       'Schema keys: title, summary, tier, content_markdown, mermaid_blocks[], tables_md[], sheets_spec{enabled,title,sheets[{name,headers[],rows[][]}]}, notion_spec{enabled,title,cover_url,children[]}, resources[{type,title,url,locale,reason,min_views}], constraints{max_words,max_mermaid,max_tables,resources_policy}.',
       'Giọng văn: bạn thân 10 năm, thông thái, chuyên gia tài chính, thân thiện, dùng chính câu nói/cách xưng hô của user.',
       'Mọi hành động phải khả thi trong 24h tới (ưu tiên hành động nhỏ, rõ người thực hiện, có tiêu chí hoàn thành & link học).',
@@ -168,22 +188,22 @@ export async function POST(req: NextRequest) {
       '6. VÍ DỤ SAI: Mục tiêu 12.7 tỷ, 70 tháng nhưng tính 15M/tháng → 15M × 70 = 1.05T ≠ 12.7T ✗ (SAI LẦM NGHIÊM TRỌNG)',
       '',
       '- Trả về JSON HỢP LỆ duy nhất.'
-    ].join('\n')
+    ].join('\n') */
 
     // Extract timeline for personalized planning
     const userTimeline = collectedInfo?.timeline || '12 tháng'
     const timelineNote = `TIMELINE USER: ${userTimeline} - Lộ trình và checklist PHẢI KHỚP chính xác với thời gian này.`
 
-    const userPrompt = {
-      planName: String(planName || 'Kế hoạch tài chính cá nhân hóa'),
-      goals: String(goals || collectedInfo?.goal || 'Chưa cung cấp'),
-      profile: pick(collectedInfo || {}, [
-        'full_name','age','occupation','income','savings','location','timeline','risk_tolerance','readiness'
-      ]),
-      timeline_instruction: timelineNote,
-      tier,
-      constraints
-    }
+    const userPrompt = `
+${userContext}
+
+🎯 YÊU CẦU CỤ THỂ:
+${goals || collectedInfo?.goal || 'Lập kế hoạch tài chính tổng thể'}
+
+⏰ TIMELINE: ${userTimeline}
+
+📊 TIER: ${tier.toUpperCase()}
+`
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 })
@@ -195,26 +215,40 @@ export async function POST(req: NextRequest) {
     const model = 'gpt-4-turbo'
     const temperature = tier === 'free' ? 0.5 : 0.3
 
-    // Ensure systemPrompt is a string (it's an array of strings, join them)
-    const systemPromptStr = Array.isArray(systemPrompt) ? systemPrompt.join('\n') : String(systemPrompt)
+    // systemPrompt is now a string from V2
+    const systemPromptStr = String(systemPrompt)
     
     let raw: string = '{}'
     
-    // Try GPT-4 Turbo first
+    // Try GPT-4 Turbo first with timeout
     try {
       logger.info('ONECALL_TRY_GPT4_TURBO', {})
-      const completion = await openai.chat.completions.create({
-        model,
-        response_format: { type: 'json_object' },
-        temperature,
-        // GPT-4 Turbo max completion tokens: 4096 (HARD LIMIT)
-        // Clamp to model capacity: ~2 tokens per word, but never exceed 4096
-        max_tokens: Math.min(4096, Math.ceil((constraints.max_words || 1500) * 2.0)),
-        messages: [
-          { role: 'system', content: systemPromptStr },
-          { role: 'user', content: JSON.stringify(userPrompt).slice(0, 12000) }
-        ]
-      })
+      
+      // Add 30-second timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => {
+        controller.abort()
+        logger.warn('ONECALL_GPT4_TIMEOUT', { timeout: '30s' })
+      }, 30000) // 30 seconds timeout
+      
+      const completion = await openai.chat.completions.create(
+        {
+          model,
+          response_format: { type: 'json_object' },
+          temperature,
+          // Reduce max_tokens to prevent timeout (was 4096, causing 60+ min hangs)
+          max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
+          messages: [
+            { role: 'system', content: systemPromptStr },
+            { role: 'user', content: userPrompt.slice(0, 8000) } // Reduced from 12000
+          ]
+        },
+        {
+          signal: controller.signal
+        }
+      )
+      
+      clearTimeout(timeoutId)
       raw = completion.choices?.[0]?.message?.content || '{}'
       logger.info('ONECALL_OPENAI_DONE', { size: raw.length })
     } catch (gptError) {
@@ -298,6 +332,22 @@ export async function POST(req: NextRequest) {
     let mermaid_blocks: string[] = Array.isArray((parsed as any)?.mermaid_blocks) ? (parsed as any).mermaid_blocks : []
     let tables_md: string[] = Array.isArray((parsed as any)?.tables_md) ? (parsed as any).tables_md : []
 
+    // Extract any fenced mermaid code blocks accidentally placed inside content_markdown
+    try {
+      const mermaidFence = /```mermaid\n([\s\S]*?)\n```/g
+      const extracted: string[] = []
+      content_md = content_md.replace(mermaidFence, (_m, code) => {
+        extracted.push(String(code || ''))
+        return ''
+      })
+      if (extracted.length) {
+        mermaid_blocks = mermaid_blocks.concat(extracted)
+      }
+    } catch {}
+
+    // Fix inline tables without separator lines in content
+    content_md = sanitizeInlineTablesInContent(content_md)
+
     // Sanitize Mermaid and tables for better rendering robustness
     mermaid_blocks = mermaid_blocks.map(sanitizeMermaid)
     tables_md = tables_md.map(sanitizeMarkdownTable)
@@ -347,7 +397,7 @@ export async function POST(req: NextRequest) {
 
     // Compute idempotency hash
     const hash = crypto.createHash('sha256').update(
-      JSON.stringify({ planName, goals, tier, constraints, profile: userPrompt.profile })
+      JSON.stringify({ planName, goals, tier, constraints, profile: collectedInfo })
     ).digest('hex').slice(0, 32)
 
     // Insert plan
