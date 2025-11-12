@@ -271,21 +271,36 @@ ${goals || collectedInfo?.goal || 'Lập kế hoạch tài chính tổng thể'}
 
     // Fix inline tables without separator lines in content
     content_md = sanitizeInlineTablesInContent(content_md)
+    
+    // FORCE ADD CTA FOR FREE TIER - V4 REQUIREMENT
+    if (tier === 'free' && !content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
+      content_md += `
 
-    // Sanitize Mermaid and tables for better rendering robustness
-    mermaid_blocks = mermaid_blocks.map(sanitizeMermaid)
-    tables_md = tables_md.map(sanitizeMarkdownTable)
+**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**
+Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:
+✅ 24 phần phân tích chuyên sâu (gấp 3 lần)
+✅ Google Sheets tự động với 7 tabs tracking
+✅ Phân tích tử vi tài chính & thần số học
+✅ 3-5 mô hình kinh doanh cá nhân hóa
+✅ 50+ tài liệu học tập premium
+✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết
+✅ Dự báo 3 kịch bản & chiến lược rủi ro
+👉 Nâng cấp tại: https://planai.io.vn/pricing
+`
+    }
 
-    // Ensure mindmap/timeline and tables are visible in the UI by embedding them into content_md
-    if (mermaid_blocks?.length) {
-      const mermaidSection = mermaid_blocks
-        .map(code => `\n\n\`\`\`mermaid\n${String(code || '').trim()}\n\`\`\``)
-        .join('')
-      content_md += mermaidSection + '\n'
-    }
-    if (tables_md?.length) {
-      content_md += '\n\n' + tables_md.join('\n\n') + '\n'
-    }
+    // FORCE REMOVE ALL MERMAID AND TABLES - V4 REQUIREMENT
+    mermaid_blocks = []
+    tables_md = []
+
+    // FORCE REMOVE SECTION "Xuất Dữ Liệu Bảng" - V4 REQUIREMENT
+    content_md = content_md.replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
+    
+    // FORCE REMOVE ALL MARKDOWN TABLES - V4 REQUIREMENT
+    content_md = content_md.replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
+    
+    // FORCE REMOVE ALL MERMAID BLOCKS - V4 REQUIREMENT
+    content_md = content_md.replace(/```mermaid[\s\S]*?```/g, '')
     let resources: Array<{ title: string; url: string; [k: string]: any }> = Array.isArray((parsed as any)?.resources) ? (parsed as any).resources : []
 
     // Optional resource link validation
