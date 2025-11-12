@@ -396,15 +396,7 @@ export default function PlanViewPage() {
                   {String(plan.content || '')}
                 </ReactMarkdown>
 
-                {Array.isArray(plan?.metadata?.tables_md) && plan.metadata.tables_md.length > 0 && (
-                  <div className="mt-6 space-y-4">
-                    {plan.metadata.tables_md.map((tbl: string, idx: number) => (
-                      <ReactMarkdown key={idx} remarkPlugins={[remarkGfm]}>
-                        {tbl}
-                      </ReactMarkdown>
-                    ))}
-                  </div>
-                )}
+                {/* Removed tables_md display - tables are now embedded in main content */}
 
                 {Array.isArray(plan?.metadata?.mermaid_blocks) && plan.metadata.mermaid_blocks.length > 0 && (
                   <div className="mt-6">
