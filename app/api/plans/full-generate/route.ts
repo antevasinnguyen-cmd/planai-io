@@ -8,7 +8,8 @@ import { exportPlanToGoogleSheets } from '@/lib/googleSheets'
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
-import { getPlanPromptV2, getUserContextPrompt } from '@/lib/planPromptV2'
+import { getPlanPromptV3, getUserContextEnhanced } from '@/lib/planPromptV3'
+import { enhanceSheetsSpec } from '@/lib/enhanceSheetsSpec'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,9 +111,9 @@ export async function POST(req: NextRequest) {
       resources_policy: 'gpt_only'
     }
 
-    // Use optimized V2 prompt for better quality and performance
-    const systemPrompt = getPlanPromptV2(tier, constraints)
-    const userContext = getUserContextPrompt(collectedInfo)
+    // Use V3 prompt for maximum intelligence and personalization
+    const systemPrompt = getPlanPromptV3(tier, constraints, collectedInfo)
+    const userContext = getUserContextEnhanced(collectedInfo)
     
     // Old long prompt array removed - was causing timeout issues
     /* const systemPrompt = [
@@ -400,6 +401,14 @@ ${goals || collectedInfo?.goal || 'Lập kế hoạch tài chính tổng thể'}
       JSON.stringify({ planName, goals, tier, constraints, profile: collectedInfo })
     ).digest('hex').slice(0, 32)
 
+    // Enhance sheets_spec for premium tiers
+    const enhancedSheetsSpec = enhanceSheetsSpec(tier, collectedInfo, {
+      totalGoals: parsed?.metadata?.totalGoals || 0,
+      monthlySavings: parsed?.metadata?.monthlySavings || 0,
+      targetIncome: parsed?.metadata?.targetIncome || collectedInfo?.income || 0,
+      targetNetWorth: parsed?.metadata?.targetNetWorth || 0
+    })
+
     // Insert plan
     const insertPayload: any = {
       title,
@@ -410,6 +419,7 @@ ${goals || collectedInfo?.goal || 'Lập kế hoạch tài chính tổng thể'}
       collected_info: collectedInfo || {},
       metadata: {
         ...(parsed || {}),
+        sheets_spec: enhancedSheetsSpec, // Use enhanced spec
         onecall: {
           hash,
           constraints,
