@@ -178,8 +178,40 @@ export async function POST(request: NextRequest) {
 
     // Save plan directly with proper error handling
     try {
+      const userId = auth.user.id
+      
+      // ĐẢM BẢO PROFILE TỒN TẠI TRƯỚC KHI INSERT PLAN
+      logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
+      const admin = getAdminClient()
+      
+      if (admin) {
+        // Kiểm tra profile có tồn tại không
+        const { data: existingProfile } = await admin
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .single()
+        
+        if (!existingProfile) {
+          logger.info('FAST_GENERATE_PROFILE_NOT_FOUND', { userId })
+          // Tạo profile mới
+          const { error: createError } = await admin.from('profiles').insert({
+            id: userId,
+            created_at: new Date().toISOString()
+          })
+          
+          if (createError) {
+            logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { error: String(createError) })
+          } else {
+            logger.info('FAST_GENERATE_PROFILE_CREATED_PREEMPTIVE', { userId })
+          }
+        } else {
+          logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
+        }
+      }
+      
       const planPayload = {
-        user_id: auth.user.id,
+        user_id: userId,
         title,
         goal: goals || 'Kế hoạch tài chính',
         content: content_md,
@@ -192,9 +224,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length })
+      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId })
       
-      const { data: inserted, error: insertError } = await rh
+      // Dùng admin client để insert plan (bypass RLS)
+      const insertClient = admin || rh
+      const { data: inserted, error: insertError } = await insertClient
         .from('plans')
         .insert([planPayload])
         .select()
@@ -204,72 +238,9 @@ export async function POST(request: NextRequest) {
         logger.error('FAST_GENERATE_SAVE_ERROR', { 
           error: String(insertError?.message || insertError),
           code: insertError?.code,
-          details: insertError?.details
+          details: insertError?.details,
+          userId
         })
-        
-        // Nếu lỗi foreign key (user chưa có profile), tạo profile và retry
-        const isForeignKeyError = insertError?.code === '23503' || 
-          String(insertError?.message || '').toLowerCase().includes('foreign key')
-        
-        if (isForeignKeyError) {
-          logger.info('FAST_GENERATE_CREATE_PROFILE', { userId: auth.user.id })
-          
-          // Tạo profile cho user bằng ADMIN CLIENT để bypass RLS
-          const admin = getAdminClient()
-          if (!admin) {
-            logger.error('FAST_GENERATE_NO_ADMIN', { error: 'Admin client not available' })
-            return NextResponse.json(
-              { error: 'Failed to save plan', details: 'Cannot create user profile' },
-              { status: 500 }
-            )
-          }
-          
-          const { error: profileError } = await admin.from('profiles').upsert({
-            id: auth.user.id,
-            created_at: new Date().toISOString()
-          }, { onConflict: 'id' })
-          
-          if (profileError) {
-            logger.error('FAST_GENERATE_PROFILE_ERROR', { error: String(profileError?.message || profileError) })
-          } else {
-            logger.info('FAST_GENERATE_PROFILE_CREATED', { userId: auth.user.id })
-          }
-          
-          // Retry insert plan với ADMIN CLIENT
-          const { data: retryInserted, error: retryError } = await admin
-            .from('plans')
-            .insert([planPayload])
-            .select()
-            .single()
-          
-          if (retryError) {
-            logger.error('FAST_GENERATE_RETRY_FAILED', { error: String(retryError?.message || retryError) })
-            return NextResponse.json(
-              { error: 'Failed to save plan', details: retryError?.message || 'Database error' },
-              { status: 500 }
-            )
-          }
-          
-          if (!retryInserted) {
-            logger.error('FAST_GENERATE_RETRY_NO_DATA', { error: 'No data returned from retry' })
-            return NextResponse.json(
-              { error: 'Failed to save plan', details: 'No data returned' },
-              { status: 500 }
-            )
-          }
-          
-          logger.info('FAST_GENERATE_COMPLETE', { planId: retryInserted.id, model: usedModel })
-          return NextResponse.json({
-            success: true,
-            plan: {
-              id: retryInserted.id,
-              title: retryInserted.title,
-              content: retryInserted.content,
-              created_at: retryInserted.created_at
-            }
-          })
-        }
-        
         return NextResponse.json(
           { error: 'Failed to save plan', details: insertError?.message || 'Database error' },
           { status: 500 }
