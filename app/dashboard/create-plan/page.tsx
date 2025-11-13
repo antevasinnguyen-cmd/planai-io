@@ -569,9 +569,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   const planLimit = getPlanLimit(tier)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex relative">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex flex-col md:flex-row relative">
       {/* Sidebar - Info Checklist */}
-      <aside className="fixed left-0 top-0 h-screen w-80 bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800 p-6 overflow-y-auto z-10">
+      <aside className="md:fixed md:left-0 md:top-0 md:h-screen md:w-80 w-full bg-white dark:bg-[#1a1a1a] border-b md:border-r border-gray-200 dark:border-gray-800 p-4 md:p-6 overflow-y-auto z-10">
         <div className="mb-6">
           <Link href="/dashboard" className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4">
             <span>←</span>
@@ -763,7 +763,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col ml-80">
+      <main className="flex-1 flex flex-col md:ml-80">
         {/* Header */}
         <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 py-5">
           <div className="flex items-center justify-between">
@@ -833,7 +833,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         <div className="bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 p-6">
           <div className="max-w-4xl mx-auto space-y-4">
             {/* Chat Input */}
-            <div className="flex items-start space-x-4">
+            <div className="flex flex-col md:flex-row items-start md:space-x-4 space-y-2 md:space-y-0">
               <div className="flex-1">
                 <div className="relative">
                   <textarea
@@ -847,8 +847,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                       }
                     }}
                     placeholder="Chia sẻ với AI về mục tiêu, ước mơ, tình hình tài chính của bạn..."
-                    className="w-full px-4 py-3 pr-14 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                    rows={5}
+                    className="w-full px-4 py-3 pr-14 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#0f0f0f] rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-base"
+                    rows={4}
                     disabled={isLoading}
                   />
                   <button
@@ -862,7 +862,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-xs text-gray-500 dark:text-gray-500">
-                    Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
+                    Nhấn Enter để xuống dòng, {window.navigator.userAgent.indexOf('Mac') !== -1 ? 'Cmd+Enter' : 'Ctrl+Enter'} để gửi tin nhắn
                   </p>
                   {!canChat() && (
                     <p className="text-xs text-red-600 dark:text-red-400 font-medium">
@@ -879,7 +879,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
               <button
                 onClick={handleCreatePlan}
                 disabled={!canCreatePlan()}
-                className={`relative w-full px-8 py-5 rounded-xl font-bold text-lg transition-all transform shadow-2xl flex items-center justify-center space-x-3 ${
+                className={`relative w-full px-4 md:px-8 py-4 md:py-5 rounded-xl font-bold text-base md:text-lg transition-all transform shadow-2xl flex items-center justify-center space-x-2 md:space-x-3 ${
                   canCreatePlan()
                     ? 'bg-gradient-to-r from-primary-600 via-purple-600 to-blue-600 hover:from-primary-700 hover:via-purple-700 hover:to-blue-700 text-white hover:scale-[1.02] cursor-pointer'
                     : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-60'

@@ -111,9 +111,23 @@ export async function POST(req: NextRequest) {
       resources_policy: 'gpt_only'
     }
 
-    // Use V4 prompt - simplified and focused on working correctly
+    // FORCE V4 PROMPT - simplified and focused on working correctly
     const systemPrompt = getPlanPromptV4(tier, constraints, collectedInfo)
     const userContext = getUserContextV4(collectedInfo)
+    
+    // FORCE ADDITIONAL INSTRUCTIONS TO PREVENT TABLES AND MERMAID
+    const forceTextOnly = `
+
+⚠️⚠️⚠️ CHÚ Ý QUAN TRỌNG NHẤT ⚠️⚠️⚠️
+1. TUYỆT ĐỐI KHÔNG sử dụng bảng Markdown - chuyển sang dạng danh sách văn bản
+2. TUYỆT ĐỐI KHÔNG sử dụng Mermaid hoặc biểu đồ - mô tả bằng văn bản thay thế
+3. TUYỆT ĐỐI KHÔNG sử dụng ngày/tháng cụ thể - dùng "tháng thứ nhất", "quý thứ nhất", v.v.
+4. TUYỆT ĐỐI KHÔNG sử dụng cú pháp đặc biệt gây lỗi hiển thị
+5. TUYỆT ĐỐI KHÔNG có phần "Xuất Dữ Liệu Bảng"
+6. MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản
+7. Nếu là gói FREE, phải có đúng 9 phần và CTA nâng cấp ở cuối
+8. Nếu là gói PREMIUM, phải có đúng 24 phần
+`
 
     // Extract timeline for personalized planning
     const userTimeline = collectedInfo?.timeline || '12 tháng'
@@ -127,6 +141,7 @@ ${goals || collectedInfo?.goal || 'Lập kế hoạch tài chính tổng thể'}
 ⏰ TIMELINE: ${userTimeline}
 
 📊 TIER: ${tier.toUpperCase()}
+${forceTextOnly}
 `
 
     if (!process.env.OPENAI_API_KEY) {
@@ -269,8 +284,18 @@ ${goals || collectedInfo?.goal || 'Lập kế hoạch tài chính tổng thể'}
       }
     } catch {}
 
-    // Fix inline tables without separator lines in content
-    content_md = sanitizeInlineTablesInContent(content_md)
+    // FORCE CLEAN ALL CONTENT - EXTREME MEASURES
+    content_md = content_md
+      // Remove all tables completely
+      .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
+      // Remove all mermaid blocks
+      .replace(/```mermaid[\s\S]*?```/g, '')
+      // Remove "Xuất Dữ Liệu Bảng" section
+      .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
+      // Fix any broken headers
+      .replace(/#+\s*$/gm, '')
+      // Fix multiple consecutive newlines
+      .replace(/\n{3,}/g, '\n\n')
     
     // FORCE ADD CTA FOR FREE TIER - V4 REQUIREMENT
     if (tier === 'free' && !content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
@@ -292,15 +317,6 @@ Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn 
     // FORCE REMOVE ALL MERMAID AND TABLES - V4 REQUIREMENT
     mermaid_blocks = []
     tables_md = []
-
-    // FORCE REMOVE SECTION "Xuất Dữ Liệu Bảng" - V4 REQUIREMENT
-    content_md = content_md.replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
-    
-    // FORCE REMOVE ALL MARKDOWN TABLES - V4 REQUIREMENT
-    content_md = content_md.replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
-    
-    // FORCE REMOVE ALL MERMAID BLOCKS - V4 REQUIREMENT
-    content_md = content_md.replace(/```mermaid[\s\S]*?```/g, '')
     let resources: Array<{ title: string; url: string; [k: string]: any }> = Array.isArray((parsed as any)?.resources) ? (parsed as any).resources : []
 
     // Optional resource link validation
