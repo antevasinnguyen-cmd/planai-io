@@ -319,16 +319,29 @@ export default function GeneratePlanPage() {
         console.error('Error starting plan generation:', res.status)
         const result = await res.json().catch(() => ({}))
         
+        // Log chi tiết lỗi
+        console.error('=== GENERATE: API Error Details ===', { 
+          status: res.status, 
+          statusText: res.statusText,
+          error: result,
+          route: apiRoute,
+          tier
+        })
+        
         // Handle specific error codes
-        if (res.status === 504) {
+        if (res.status === 503) {
+          // Lỗi AI generation failed
+          const errorMsg = result.message || result.error || 'Hệ thống AI tạm thời không khả dụng. Vui lòng thử lại sau 1-2 phút.'
+          setError(errorMsg)
+          console.error('503 AI Error:', errorMsg)
+        } else if (res.status === 504) {
           setError(result.message || 'Hệ thống AI mất quá lâu để xử lý. Vui lòng thử lại sau.')
         } else if (res.status === 429 && result?.upgradeRequired) {
           setUpgradeRequired(true)
           setError(result.message || 'Bạn đã đạt giới hạn của gói hiện tại. Vui lòng nâng cấp để tiếp tục.')
         } else {
-          setError(result.error || result.message || 'Không thể bắt đầu tạo kế hoạch')
+          setError(result.error || result.message || `Lỗi ${res.status}: Không thể tạo kế hoạch`)
         }
-        console.error('=== GENERATE: API Error ===', { status: res.status, error: result })
         return
       }
 
