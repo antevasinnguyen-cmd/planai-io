@@ -12,6 +12,8 @@ import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 import { enhanceSheetsSpec } from '@/lib/enhanceSheetsSpec'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const maxDuration = 300
 
 // Lightweight validator to avoid adding new deps
 function isNonEmptyString(v: any): v is string {
@@ -153,6 +155,7 @@ ${forceTextOnly}
     // All tiers use GPT-4 Turbo (unified model strategy)
     const model = 'gpt-4-turbo'
     const temperature = tier === 'free' ? 0.5 : 0.3
+    const generationTimeoutMs = tier === 'free' ? 60000 : 300000
 
     // systemPrompt is now a string from V2
     const systemPromptStr = String(systemPrompt)
@@ -163,12 +166,12 @@ ${forceTextOnly}
     try {
       logger.info('ONECALL_TRY_GPT4_TURBO', {})
       
-      // Add 30-second timeout to prevent hanging
+      // Dynamic timeout by tier (free: 60s, paid: 300s)
       const controller = new AbortController()
       const timeoutId = setTimeout(() => {
         controller.abort()
-        logger.warn('ONECALL_GPT4_TIMEOUT', { timeout: '30s' })
-      }, 30000) // 30 seconds timeout
+        logger.warn('ONECALL_GPT4_TIMEOUT', { timeout: `${generationTimeoutMs/1000}s` })
+      }, generationTimeoutMs)
       
       const completion = await openai.chat.completions.create(
         {
@@ -314,6 +317,50 @@ Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn 
 `
     }
 
+    // Optional QA validator pass (improve coherence and fill gaps). Enabled for paid tiers by default.
+    try {
+      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false' && tier !== 'free'
+      if (enableQa) {
+        const qaController = new AbortController()
+        const qaTimeoutMs = Math.min(180000, Math.max(60000, generationTimeoutMs - 10000))
+        const qaTimeout = setTimeout(() => qaController.abort(), qaTimeoutMs)
+        const qaPrompt = [
+          'Bạn là Trưởng biên tập biên soạn ebook tài chính. Hãy rà soát và CHỈ TRẢ VỀ duy nhất nội dung Markdown đã được cải thiện.',
+          'YÊU CẦU CHẤT LƯỢNG:',
+          '- Giữ nguyên cấu trúc bắt buộc (FREE=9 phần, PREMIUM=24 phần).',
+          '- Loại mọi bảng/Mermaid. Chỉ dùng tiêu đề, danh sách, đoạn văn.',
+          '- Check chéo số liệu và logic, loại placeholder, bổ sung thiếu sót.',
+          '- Dùng mốc thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", ...',
+          '',
+          'THÔNG TIN NGƯỜI DÙNG (rút gọn):',
+          userContext.slice(0, 1500),
+          '',
+          'NỘI DUNG GỐC CẦN SỬA:',
+          content_md.slice(0, 24000)
+        ].join('\n')
+        const qa = await openai.chat.completions.create({
+          model: 'gpt-4-turbo',
+          temperature: 0.2,
+          max_tokens: Math.min(3200, Math.ceil((constraints.max_words || 1500) * 1.6)),
+          messages: [
+            { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, trả về duy nhất nội dung Markdown hợp lệ, không thêm text ngoài lề.' },
+            { role: 'user', content: qaPrompt }
+          ]
+        }, { signal: qaController.signal })
+        clearTimeout(qaTimeout)
+        const improved = qa.choices?.[0]?.message?.content || ''
+        if (improved && improved.length > 100) {
+          content_md = String(improved)
+            .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
+            .replace(/```mermaid[\s\S]*?```/g, '')
+            .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
+            .replace(/#+\s*$/gm, '')
+            .replace(/\n{3,}/g, '\n\n')
+        }
+      }
+    } catch (qaErr) {
+      logger.warn('ONECALL_QA_PASS_SKIPPED', { error: String(qaErr) })
+    }
     // FORCE REMOVE ALL MERMAID AND TABLES - V4 REQUIREMENT
     mermaid_blocks = []
     tables_md = []

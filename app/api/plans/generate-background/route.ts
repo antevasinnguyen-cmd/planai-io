@@ -1,5 +1,5 @@
 export const runtime = 'nodejs'
-export const maxDuration = 120
+export const maxDuration = 300
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
@@ -319,9 +319,10 @@ async function processJobInBackground(
     }
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 30s timeout hard cap
+    // Dynamic timeout by tier (free: 60s, paid: 300s)
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000)
+    const tierTimeoutMs = tier === 'free' ? 60000 : 300000
+    const timeoutId = setTimeout(() => controller.abort(), tierTimeoutMs)
     let raw = '{}'
     try {
       const completion = await openai.chat.completions.create(
@@ -359,6 +360,51 @@ async function processJobInBackground(
 
     if (tier === 'free' && !content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
       content_md += `\n\n**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**\nBản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:\n✅ 24 phần phân tích chuyên sâu (gấp 3 lần)\n✅ Google Sheets tự động với 7 tabs tracking\n✅ Phân tích tử vi tài chính & thần số học\n✅ 3-5 mô hình kinh doanh cá nhân hóa\n✅ 50+ tài liệu học tập premium\n✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết\n✅ Dự báo 3 kịch bản & chiến lược rủi ro\n👉 Nâng cấp tại: https://planai.io.vn/pricing\n`
+    }
+
+    // Optional QA validator pass (improve coherence and fill gaps). Enabled for paid tiers by default.
+    try {
+      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false' && tier !== 'free'
+      if (enableQa) {
+        const qaController = new AbortController()
+        const qaTimeoutMs = Math.min(180000, Math.max(60000, tierTimeoutMs - 10000)) // leave headroom
+        const qaTimeout = setTimeout(() => qaController.abort(), qaTimeoutMs)
+        const qaPrompt = [
+          'Bạn là Trưởng biên tập biên soạn ebook tài chính. Hãy rà soát và CHỈ TRẢ VỀ duy nhất nội dung Markdown đã được cải thiện.',
+          'YÊU CẦU CHẤT LƯỢNG:',
+          '- Giữ nguyên cấu trúc bắt buộc (FREE=9 phần, PREMIUM=24 phần).',
+          '- Loại mọi bảng/Mermaid. Chỉ dùng tiêu đề, danh sách, đoạn văn.',
+          '- Check chéo số liệu và logic, loại placeholder, bổ sung thiếu sót.',
+          '- Dùng mốc thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", ...',
+          '',
+          'THÔNG TIN NGƯỜI DÙNG (rút gọn):',
+          userContext.slice(0, 1500),
+          '',
+          'NỘI DUNG GỐC CẦN SỬA:',
+          content_md.slice(0, 24000)
+        ].join('\n')
+        const qa = await openai.chat.completions.create({
+          model: 'gpt-4-turbo',
+          temperature: 0.2,
+          max_tokens: Math.min(3200, Math.ceil((constraints.max_words || 1500) * 1.6)),
+          messages: [
+            { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, trả về duy nhất nội dung Markdown hợp lệ, không thêm text ngoài lề.' },
+            { role: 'user', content: qaPrompt }
+          ]
+        }, { signal: qaController.signal })
+        clearTimeout(qaTimeout)
+        const improved = qa.choices?.[0]?.message?.content || ''
+        if (improved && improved.length > 100) {
+          content_md = String(improved)
+            .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
+            .replace(/```mermaid[\s\S]*?```/g, '')
+            .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
+            .replace(/#+\s*$/gm, '')
+            .replace(/\n{3,}/g, '\n\n')
+        }
+      }
+    } catch (qaErr) {
+      logger.warn('BG_QA_PASS_SKIPPED', { jobId, error: String(qaErr) })
     }
 
     // Save plan (RLS first, fallback admin)
