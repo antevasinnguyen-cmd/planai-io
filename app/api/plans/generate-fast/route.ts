@@ -64,39 +64,68 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 50 second timeout for Free tier
+    // 65 second timeout for Free tier (Vercel maxDuration is 70s)
+    const timeoutMs = 65000
     const controller = new AbortController()
     const timeoutId = setTimeout(() => {
       controller.abort()
-      logger.warn('FAST_GENERATE_TIMEOUT', { timeout: '50s' })
-    }, 50000)
+      logger.warn('FAST_GENERATE_TIMEOUT', { timeout: '65s' })
+    }, timeoutMs)
 
     let raw = '{}'
-    try {
-      logger.info('FAST_GENERATE_CALL_OPENAI', {})
-      const completion = await openai.chat.completions.create(
-        {
-          model: 'gpt-4-turbo',
-          response_format: { type: 'json_object' },
-          temperature: 0.5,
-          max_tokens: 2500,
-          messages: [
-            { role: 'system', content: String(systemPrompt) },
-            { role: 'user', content: userPrompt.slice(0, 8000) }
-          ]
-        },
-        { signal: controller.signal }
-      )
-      clearTimeout(timeoutId)
-      raw = completion.choices?.[0]?.message?.content || '{}'
-      logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length })
-    } catch (e: any) {
-      clearTimeout(timeoutId)
-      logger.error('FAST_GENERATE_OPENAI_ERROR', { error: String(e?.message || e) })
-      return NextResponse.json(
-        { error: 'AI call failed', message: String(e?.message || e) },
-        { status: 500 }
-      )
+    let retries = 0
+    const maxRetries = 1
+    
+    while (retries <= maxRetries) {
+      try {
+        logger.info('FAST_GENERATE_CALL_OPENAI', { attempt: retries + 1 })
+        const completion = await openai.chat.completions.create(
+          {
+            model: 'gpt-4-turbo',
+            response_format: { type: 'json_object' },
+            temperature: 0.5,
+            // Reduced from 2500 to 2000 to speed up generation
+            max_tokens: 2000,
+            messages: [
+              { role: 'system', content: String(systemPrompt) },
+              { role: 'user', content: userPrompt.slice(0, 8000) }
+            ]
+          },
+          { signal: controller.signal }
+        )
+        clearTimeout(timeoutId)
+        raw = completion.choices?.[0]?.message?.content || '{}'
+        logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, attempt: retries + 1 })
+        break // Success, exit retry loop
+      } catch (e: any) {
+        const errorMsg = String(e?.message || e)
+        logger.warn('FAST_GENERATE_OPENAI_ATTEMPT_FAILED', { error: errorMsg, attempt: retries + 1 })
+        
+        // If timeout or abort, don't retry (already waited long enough)
+        if (errorMsg.includes('aborted') || errorMsg.includes('timeout')) {
+          clearTimeout(timeoutId)
+          logger.error('FAST_GENERATE_OPENAI_ERROR', { error: errorMsg })
+          return NextResponse.json(
+            { error: 'AI generation timeout', message: 'Hệ thống AI mất quá lâu để xử lý. Vui lòng thử lại sau.' },
+            { status: 504 }
+          )
+        }
+        
+        // For other errors, retry once
+        if (retries < maxRetries) {
+          retries++
+          logger.info('FAST_GENERATE_RETRY', { attempt: retries + 1 })
+          // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        } else {
+          clearTimeout(timeoutId)
+          logger.error('FAST_GENERATE_OPENAI_ERROR', { error: errorMsg })
+          return NextResponse.json(
+            { error: 'AI call failed', message: String(e?.message || e) },
+            { status: 500 }
+          )
+        }
+      }
     }
 
     // Parse and sanitize

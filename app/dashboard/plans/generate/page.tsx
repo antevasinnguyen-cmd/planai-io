@@ -317,7 +317,18 @@ export default function GeneratePlanPage() {
 
       if (!res.ok) {
         console.error('Error starting plan generation:', res.status)
-        setError('Không thể bắt đầu tạo kế hoạch')
+        const result = await res.json().catch(() => ({}))
+        
+        // Handle specific error codes
+        if (res.status === 504) {
+          setError(result.message || 'Hệ thống AI mất quá lâu để xử lý. Vui lòng thử lại sau.')
+        } else if (res.status === 429 && result?.upgradeRequired) {
+          setUpgradeRequired(true)
+          setError(result.message || 'Bạn đã đạt giới hạn của gói hiện tại. Vui lòng nâng cấp để tiếp tục.')
+        } else {
+          setError(result.error || result.message || 'Không thể bắt đầu tạo kế hoạch')
+        }
+        console.error('=== GENERATE: API Error ===', { status: res.status, error: result })
         return
       }
 
