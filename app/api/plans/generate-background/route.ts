@@ -350,7 +350,7 @@ async function processJobInBackground(
         const Anthropic = require('@anthropic-ai/sdk').default
         const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
         const claudeResp = await claude.messages.create({
-          model: 'claude-3-opus-20240229',
+          model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
           max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
           messages: [
             { role: 'user', content: `${String(systemPrompt)}\n\n${userPrompt.slice(0, 8000)}` }

@@ -26,7 +26,7 @@ async function callClaude(systemPrompt: string, userPrompt: string, maxTokens: n
     
     logger.info('FAST_FALLBACK_CLAUDE_START', {})
     const response = await claude.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
       max_tokens: maxTokens,
       messages: [
         {
@@ -94,9 +94,9 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 35s timeout for GPT (leave ~30s headroom for Claude fallback within Vercel 70s)
-    const timeoutMs = 35000
-    const maxTokens = 1500 // Further reduced for faster generation
+    // 50s timeout for GPT (leave ~15s headroom for Claude fallback within Vercel 70s)
+    const timeoutMs = 50000 // Tăng từ 35s lên 50s để tránh timeout
+    const maxTokens = 2000 // Tăng từ 1500 lên 2000 để đủ nội dung
 
     let raw = '{}'
     let usedModel = 'gpt-4o-mini'

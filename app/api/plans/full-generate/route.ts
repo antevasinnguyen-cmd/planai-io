@@ -248,7 +248,7 @@ ${forceTextOnly}
         const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
         
         const claudeCompletion = await claude.messages.create({
-          model: 'claude-3-opus-20240229',
+          model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
           max_tokens: Math.min(4096, Math.ceil((constraints.max_words || 1500) * 2.0)),
           messages: [
             {

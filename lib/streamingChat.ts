@@ -63,7 +63,7 @@ async function fallbackToClaudeStreaming(
 
   try {
     const stream = await client.messages.stream({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
       max_tokens: 2000,
       system: systemMessage,
       messages: userMessages.map(m => ({

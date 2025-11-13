@@ -110,7 +110,7 @@ export const generateChatResponseWithSystemPrompt = async (
         const systemContent = systemMessage.content
         const userMessages = messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: m.content }))
         const claudeResp = await claude.messages.create({
-          model: 'claude-3-opus-20240229',
+          model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
           max_tokens: 1200, // Giảm từ 1800 xuống 1200 để nhất quán với OpenAI
           system: systemContent,
           messages: userMessages
