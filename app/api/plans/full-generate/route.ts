@@ -152,8 +152,8 @@ ${forceTextOnly}
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // All tiers use GPT-4 Turbo (unified model strategy)
-    const model = 'gpt-4-turbo'
+    // All tiers use GPT-4o mini (primary model)
+    const model = 'gpt-4o-mini'
     const temperature = tier === 'free' ? 0.5 : 0.3
     const generationTimeoutMs = tier === 'free' ? 60000 : 300000
 
@@ -164,7 +164,7 @@ ${forceTextOnly}
     
     // Try GPT-4 Turbo first with timeout
     try {
-      logger.info('ONECALL_TRY_GPT4_TURBO', {})
+      logger.info('ONECALL_TRY_GPT4O_MINI', {})
       
       // Dynamic timeout by tier (free: 60s, paid: 300s)
       const controller = new AbortController()
@@ -179,7 +179,7 @@ ${forceTextOnly}
           response_format: { type: 'json_object' },
           temperature,
           // Reduce max_tokens to prevent timeout (was 4096, causing 60+ min hangs)
-          max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
+          max_tokens: Math.min(2000, Math.ceil((constraints.max_words || 1500) * 1.3)),
           messages: [
             { role: 'system', content: systemPromptStr },
             { role: 'user', content: userPrompt.slice(0, 8000) } // Reduced from 12000
@@ -192,7 +192,7 @@ ${forceTextOnly}
       
       clearTimeout(timeoutId)
       raw = completion.choices?.[0]?.message?.content || '{}'
-      logger.info('ONECALL_OPENAI_DONE', { size: raw.length })
+      logger.info('ONECALL_OPENAI_DONE', { size: raw.length, model })
     } catch (gptError) {
       logger.error('ONECALL_GPT4_FAILED', { error: String(gptError) })
       
@@ -339,9 +339,9 @@ Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn 
           content_md.slice(0, 24000)
         ].join('\n')
         const qa = await openai.chat.completions.create({
-          model: 'gpt-4-turbo',
+          model: 'gpt-4o-mini',
           temperature: 0.2,
-          max_tokens: Math.min(3200, Math.ceil((constraints.max_words || 1500) * 1.6)),
+          max_tokens: Math.min(1800, Math.ceil((constraints.max_words || 1500) * 1.4)),
           messages: [
             { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, trả về duy nhất nội dung Markdown hợp lệ, không thêm text ngoài lề.' },
             { role: 'user', content: qaPrompt }

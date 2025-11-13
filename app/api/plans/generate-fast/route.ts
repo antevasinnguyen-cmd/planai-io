@@ -1,6 +1,6 @@
 /**
  * FAST GENERATION ROUTE - Direct synchronous generation for Free tier
- * Tries GPT-4 Turbo first, falls back to Claude 3 Opus on failure
+ * Tries GPT-4o mini first, falls back to Claude 3 Opus on failure
  * Returns immediately with plan or error
  */
 
@@ -94,14 +94,14 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 60 second timeout for Free tier (Vercel maxDuration is 70s)
-    const timeoutMs = 60000
-    const maxTokens = 1800 // Reduced for faster generation
+    // 35s timeout for GPT (leave ~30s headroom for Claude fallback within Vercel 70s)
+    const timeoutMs = 35000
+    const maxTokens = 1500 // Further reduced for faster generation
 
     let raw = '{}'
-    let usedModel = 'gpt-4-turbo'
+    let usedModel = 'gpt-4o-mini'
 
-    // Try GPT-4 Turbo first
+    // Try GPT-4o mini first
     try {
       logger.info('FAST_GENERATE_CALL_OPENAI', {})
       const controller = new AbortController()
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       
       const completion = await openai.chat.completions.create(
         {
-          model: 'gpt-4-turbo',
+          model: 'gpt-4o-mini',
           response_format: { type: 'json_object' },
           temperature: 0.5,
           max_tokens: maxTokens,
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       )
       clearTimeout(timeoutId)
       raw = completion.choices?.[0]?.message?.content || '{}'
-      logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, model: 'gpt-4-turbo' })
+      logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, model: 'gpt-4o-mini' })
     } catch (gptError: any) {
       const gptErrorMsg = String(gptError?.message || gptError)
       logger.warn('FAST_GENERATE_OPENAI_FAILED', { error: gptErrorMsg })
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         const claudeErrorMsg = String(claudeError?.message || claudeError)
         logger.error('FAST_GENERATE_BOTH_FAILED', { gpt: gptErrorMsg, claude: claudeErrorMsg })
         return NextResponse.json(
-          { error: 'AI generation failed', message: 'Cả GPT-4 Turbo và Claude đều không thể xử lý. Vui lòng thử lại sau.' },
+          { error: 'AI generation failed', message: 'Cả GPT-4o mini và Claude đều không thể xử lý. Vui lòng thử lại sau.' },
           { status: 503 }
         )
       }

@@ -325,12 +325,13 @@ async function processJobInBackground(
     const timeoutId = setTimeout(() => controller.abort(), tierTimeoutMs)
     let raw = '{}'
     try {
+      logger.info('BG_OPENAI_CALL', { jobId, model: 'gpt-4o-mini' })
       const completion = await openai.chat.completions.create(
         {
-          model: 'gpt-4-turbo',
+          model: 'gpt-4o-mini',
           response_format: { type: 'json_object' },
           temperature: tier === 'free' ? 0.5 : 0.3,
-          max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
+          max_tokens: Math.min(2000, Math.ceil((constraints.max_words || 1500) * 1.3)),
           messages: [
             { role: 'system', content: String(systemPrompt) },
             { role: 'user', content: userPrompt.slice(0, 8000) }
@@ -340,9 +341,27 @@ async function processJobInBackground(
       )
       clearTimeout(timeoutId)
       raw = completion.choices?.[0]?.message?.content || '{}'
+      logger.info('BG_OPENAI_DONE', { jobId, size: raw.length })
     } catch (e: any) {
       clearTimeout(timeoutId)
-      throw new Error(`AI call failed: ${e?.message || String(e)}`)
+      logger.warn('BG_OPENAI_FAILED', { jobId, error: String(e?.message || e) })
+      // Fallback to Claude 3 Opus
+      try {
+        const Anthropic = require('@anthropic-ai/sdk').default
+        const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+        const claudeResp = await claude.messages.create({
+          model: 'claude-3-opus-20240229',
+          max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
+          messages: [
+            { role: 'user', content: `${String(systemPrompt)}\n\n${userPrompt.slice(0, 8000)}` }
+          ]
+        })
+        raw = claudeResp.content?.[0]?.type === 'text' ? claudeResp.content[0].text : '{}'
+        logger.info('BG_CLAUDE_DONE', { jobId, size: raw.length })
+      } catch (fallbackErr: any) {
+        logger.error('BG_CLAUDE_FAILED', { jobId, error: String(fallbackErr?.message || fallbackErr) })
+        throw new Error(`AI call failed (GPT then Claude): ${fallbackErr?.message || String(fallbackErr)}`)
+      }
     }
 
     // Parse and sanitize
@@ -384,9 +403,9 @@ async function processJobInBackground(
           content_md.slice(0, 24000)
         ].join('\n')
         const qa = await openai.chat.completions.create({
-          model: 'gpt-4-turbo',
+          model: 'gpt-4o-mini',
           temperature: 0.2,
-          max_tokens: Math.min(3200, Math.ceil((constraints.max_words || 1500) * 1.6)),
+          max_tokens: Math.min(1800, Math.ceil((constraints.max_words || 1500) * 1.4)),
           messages: [
             { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, trả về duy nhất nội dung Markdown hợp lệ, không thêm text ngoài lề.' },
             { role: 'user', content: qaPrompt }

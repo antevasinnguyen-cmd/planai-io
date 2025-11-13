@@ -101,7 +101,29 @@ export const generateChatResponseWithSystemPrompt = async (
       return enhancedResponse
     } catch (openaiError) {
       logger.error('OPENAI_CHAT_ERROR_CUSTOM', { error: String(openaiError) })
-      throw new Error('Không thể kết nối OpenAI')
+      // Fallback to Claude 3 Opus
+      try {
+        const Anthropic = require('@anthropic-ai/sdk').default
+        if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key không được cấu hình')
+        const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+        
+        const systemContent = systemMessage.content
+        const userMessages = messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: m.content }))
+        const claudeResp = await claude.messages.create({
+          model: 'claude-3-opus-20240229',
+          max_tokens: 1800,
+          system: systemContent,
+          messages: userMessages
+        })
+        const text = claudeResp.content?.[0]?.type === 'text' ? claudeResp.content[0].text : 'Xin lỗi, tôi không thể trả lời lúc này.'
+        const cleaned = cleanAIResponse(text)
+        const enhanced = enhanceResponseFormatting(cleaned.content)
+        await saveToCache(cacheKey, enhanced)
+        return enhanced
+      } catch (claudeError) {
+        logger.error('OPENAI_CHAT_FALLBACK_CLAUDE_ERROR', { error: String(claudeError) })
+        throw new Error('Không thể kết nối AI (GPT và Claude đều lỗi)')
+      }
     }
   } catch (error) {
     logger.error('OPENAI_CHAT_UNHANDLED_CUSTOM', { error: String(error) })
