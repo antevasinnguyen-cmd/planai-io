@@ -1,11 +1,14 @@
+export const runtime = 'nodejs'
+export const maxDuration = 120
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
-import { generateFinancialPlan } from '@/lib/openai'
+import OpenAI from 'openai'
 import { logger } from '@/lib/logger'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
+import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 
 /**
  * Background Job API - Starts plan generation in background
@@ -292,171 +295,149 @@ async function processJobInBackground(
       logger.error('BG_ENSURE_PROFILE_FAIL', { userId, error: String(ensureErr) })
     }
 
-    // Generate plan with timeout + retry/backoff
-    const maxAttempts = 3
-    let attempt = 0
-    let lastError: any = null
-    while (attempt < maxAttempts) {
-      attempt++
-      const controller = new AbortController()
-      // Timeout: 5 minutes for Free tier (complex 13-section plans), 4 minutes for paid
-      const timeoutMs = collectedInfo?.tier === 'free' ? 300000 : 240000
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-      try {
-        logger.info('BG_ATTEMPT_CALL_AI', { jobId, attempt })
-        // Check cancellation before calling AI
-        const statusBefore = await getJobStatus()
-        if (statusBefore === 'cancelled') {
-          clearTimeout(timeoutId)
-          logger.info('BG_CANCEL_BEFORE_AI', { jobId, attempt })
-          return
-        }
-        
-        const planContent = await generateFinancialPlan(
-          planName,
-          goals,
-          collectedInfo,
-          controller.signal
-        )
-        clearTimeout(timeoutId)
-        logger.info('BG_ATTEMPT_AI_DONE', { jobId, attempt })
+    // Generate plan using V4 one-call JSON with short timeout to avoid long hangs
+    logger.info('BG_ONECALL_START', { jobId })
+    const tier = String(collectedInfo?.tier || 'free')
+    const limits = getSubscriptionLimits(tier)
+    const constraints = {
+      max_words: limits.words || 1500,
+      max_mermaid: tier === 'free' ? 0 : tier === 'basic' ? 0 : 0,
+      max_tables: 0,
+      min_resources: tier === 'free' ? 5 : tier === 'basic' ? 25 : tier === 'pro' ? 45 : 60,
+      max_resources: tier === 'free' ? 15 : tier === 'basic' ? 35 : tier === 'pro' ? 60 : 80,
+      resources_policy: 'gpt_only'
+    }
 
-        // If cancelled during AI call, do not save plan
-        const statusAfter = await getJobStatus()
-        if (statusAfter === 'cancelled') {
-          logger.info('BG_CANCEL_AFTER_AI', { jobId, attempt })
-          return
-        }
+    const systemPrompt = getPlanPromptV4(tier, constraints, collectedInfo)
+    const userContext = getUserContextV4(collectedInfo)
+    const userTimeline = collectedInfo?.timeline || '12 tháng'
+    const forceTextOnly = `\n\n⚠️⚠️⚠️ CHÚ Ý QUAN TRỌNG NHẤT ⚠️⚠️⚠️\n1. TUYỆT ĐỐI KHÔNG dùng bảng Markdown\n2. TUYỆT ĐỐI KHÔNG dùng Mermaid/sơ đồ\n3. Dùng thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", v.v.\n4. Nội dung là văn bản thuần với Markdown cơ bản\n5. KHÔNG có phần "Xuất Dữ Liệu Bảng"\n6. FREE = đúng 9 phần + CTA nâng cấp ở cuối; PREMIUM = đúng 24 phần\n`
+    const userPrompt = `${userContext}\n\n🎯 YÊU CẦU CỤ THỂ:\n${goals}\n\n⏰ TIMELINE: ${userTimeline}\n\n📊 TIER: ${tier.toUpperCase()}\n${forceTextOnly}`
 
-        // Save plan
-        // First, try to save plan with user-scoped client (RLS)
-        let planData: any = null
-        let planError: any = null
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured')
+    }
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+    // 30s timeout hard cap
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+    let raw = '{}'
+    try {
+      const completion = await openai.chat.completions.create(
         {
-          const resp = await supabase
-            .from('plans')
-            .insert({
-              user_id: userId,
-              title: planName,
-              goal: goals,
-              content: planContent,
-              status: 'completed',
-              word_count: planContent.split(' ').length,
-              created_at: new Date().toISOString()
-            })
-            .select()
-            .single()
-          planData = resp.data
-          planError = resp.error
-        }
-        // Fallback to admin client if RLS/token fails
-        if (planError && admin) {
-          const resp = await admin
-            .from('plans')
-            .insert({
-              user_id: userId,
-              title: planName,
-              goal: goals,
-              content: planContent,
-              status: 'completed',
-              word_count: planContent.split(' ').length,
-              created_at: new Date().toISOString()
-            })
-            .select()
-            .single()
-          planData = resp.data
-          planError = resp.error
-        }
+          model: 'gpt-4-turbo',
+          response_format: { type: 'json_object' },
+          temperature: tier === 'free' ? 0.5 : 0.3,
+          max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
+          messages: [
+            { role: 'system', content: String(systemPrompt) },
+            { role: 'user', content: userPrompt.slice(0, 8000) }
+          ]
+        },
+        { signal: controller.signal }
+      )
+      clearTimeout(timeoutId)
+      raw = completion.choices?.[0]?.message?.content || '{}'
+    } catch (e: any) {
+      clearTimeout(timeoutId)
+      throw new Error(`AI call failed: ${e?.message || String(e)}`)
+    }
 
-        if (planError) {
-          // If FK violation, try once more after ensuring profile again
-          const isFK = String(planError.message || '').toLowerCase().includes('foreign key')
-          if (isFK) {
-            try {
-              // Re-ensure profile, then retry once
-              const client = admin || supabase
-              await client.from('profiles').upsert({ id: userId, created_at: new Date().toISOString() })
-              const retry = await (admin || supabase)
-                .from('plans')
-                .insert({
-                  user_id: userId,
-                  title: planName,
-                  goal: goals,
-                  content: planContent,
-                  status: 'completed',
-                  word_count: planContent.split(' ').length,
-                  created_at: new Date().toISOString()
-                })
-                .select()
-                .single()
-              if (retry.error) throw new Error(`Failed to save plan (retry): ${retry.error.message}`)
-              planData = retry.data
-            } catch (retryErr: any) {
-              throw new Error(`Failed to save plan: ${retryErr.message || String(retryErr)}`)
-            }
-          } else {
-            throw new Error(`Failed to save plan: ${planError.message}`)
-          }
-        }
+    // Parse and sanitize
+    let parsed: any
+    try { parsed = JSON.parse(raw) } catch { parsed = {} }
+    let content_md = String(parsed?.content_markdown || '')
+    const title = typeof parsed?.title === 'string' && parsed.title.trim().length ? parsed.title : (planName || 'Kế hoạch tài chính')
 
-        // Update job status (prefer admin) - CRITICAL: Ensure update succeeds
-        const updatePayload = { 
-          status: 'completed', 
-          plan_id: planData.id, 
-          completed_at: new Date().toISOString() 
-        }
-        
-        let statusUpdateError: any = null
-        if (admin) {
-          const { error: updateErr } = await admin
-            .from('plan_jobs')
-            .update(updatePayload)
-            .eq('id', jobId)
-          statusUpdateError = updateErr
-        } else {
-          const { error: updateErr } = await supabase
-            .from('plan_jobs')
-            .update(updatePayload)
-            .eq('id', jobId)
-          statusUpdateError = updateErr
-        }
-        
-        if (statusUpdateError) {
-          logger.error('BG_JOB_STATUS_UPDATE_FAILED', { jobId, error: String(statusUpdateError) })
-          throw new Error(`Failed to update job status: ${statusUpdateError.message}`)
-        }
+    content_md = content_md
+      .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
+      .replace(/```mermaid[\s\S]*?```/g, '')
+      .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
+      .replace(/#+\s*$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
 
-        logger.info('BG_JOB_COMPLETED', { jobId, planId: planData.id })
-        return
-      } catch (err: any) {
-        clearTimeout(timeoutId)
-        lastError = err
-        const message = err?.message || String(err)
-        logger.warn('BG_ATTEMPT_FAILED', { jobId, attempt, error: message })
-        // Update job interim status
-        if (admin) {
-          await admin
-            .from('plan_jobs')
-            .update({ status: 'processing', error_message: `attempt ${attempt} failed: ${message}` })
-            .eq('id', jobId)
-        } else {
-          await supabase
-            .from('plan_jobs')
-            .update({ status: 'processing', error_message: `attempt ${attempt} failed: ${message}` })
-            .eq('id', jobId)
-        }
-        if (err?.name === 'AbortError') {
-          // Abort/timeouts: continue retry
-        }
-        if (attempt < maxAttempts) {
-          const backoff = 1000 * Math.pow(2, attempt - 1) // 1s, 2s, 4s
-          await new Promise((r) => setTimeout(r, backoff))
-          continue
-        }
+    if (tier === 'free' && !content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
+      content_md += `\n\n**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**\nBản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:\n✅ 24 phần phân tích chuyên sâu (gấp 3 lần)\n✅ Google Sheets tự động với 7 tabs tracking\n✅ Phân tích tử vi tài chính & thần số học\n✅ 3-5 mô hình kinh doanh cá nhân hóa\n✅ 50+ tài liệu học tập premium\n✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết\n✅ Dự báo 3 kịch bản & chiến lược rủi ro\n👉 Nâng cấp tại: https://planai.io.vn/pricing\n`
+    }
+
+    // Save plan (RLS first, fallback admin)
+    let planData: any = null
+    let planError: any = null
+    {
+      const resp = await supabase
+        .from('plans')
+        .insert({
+          user_id: userId,
+          title,
+          goal: goals,
+          content: content_md,
+          status: 'completed',
+          word_count: content_md.split(/\s+/).length,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      planData = resp.data
+      planError = resp.error
+    }
+    if (planError && admin) {
+      const resp = await admin
+        .from('plans')
+        .insert({
+          user_id: userId,
+          title,
+          goal: goals,
+          content: content_md,
+          status: 'completed',
+          word_count: content_md.split(/\s+/).length,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      planData = resp.data
+      planError = resp.error
+    }
+    if (planError) {
+      const isFK = String(planError.message || '').toLowerCase().includes('foreign key')
+      if (isFK) {
+        const client = admin || supabase
+        await client.from('profiles').upsert({ id: userId, created_at: new Date().toISOString() })
+        const retry = await (admin || supabase)
+          .from('plans')
+          .insert({
+            user_id: userId,
+            title,
+            goal: goals,
+            content: content_md,
+            status: 'completed',
+            word_count: content_md.split(/\s+/).length,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+        if (retry.error) throw new Error(`Failed to save plan (retry): ${retry.error.message}`)
+        planData = retry.data
+      } else {
+        throw new Error(`Failed to save plan: ${planError.message}`)
       }
     }
-    // If reached here, all attempts failed
-    throw lastError || new Error('Unknown error after retries')
+
+    const updatePayload = { status: 'completed', plan_id: planData.id, completed_at: new Date().toISOString() }
+    let statusUpdateError: any = null
+    if (admin) {
+      const { error: updateErr } = await admin.from('plan_jobs').update(updatePayload).eq('id', jobId)
+      statusUpdateError = updateErr
+    } else {
+      const { error: updateErr } = await supabase.from('plan_jobs').update(updatePayload).eq('id', jobId)
+      statusUpdateError = updateErr
+    }
+    if (statusUpdateError) {
+      logger.error('BG_JOB_STATUS_UPDATE_FAILED', { jobId, error: String(statusUpdateError) })
+      throw new Error(`Failed to update job status: ${statusUpdateError.message}`)
+    }
+    logger.info('BG_JOB_COMPLETED', { jobId, planId: planData.id })
+    return
 
   } catch (error: any) {
     logger.error('BG_JOB_FAILED', { jobId, error: error?.message || String(error) })
