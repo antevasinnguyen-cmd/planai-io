@@ -206,6 +206,55 @@ export async function POST(request: NextRequest) {
           code: insertError?.code,
           details: insertError?.details
         })
+        
+        // Nếu lỗi foreign key (user chưa có profile), tạo profile và retry
+        const isForeignKeyError = insertError?.code === '23503' || 
+          String(insertError?.message || '').toLowerCase().includes('foreign key')
+        
+        if (isForeignKeyError) {
+          logger.info('FAST_GENERATE_CREATE_PROFILE', { userId: auth.user.id })
+          
+          // Tạo profile cho user
+          await rh.from('profiles').upsert({
+            id: auth.user.id,
+            created_at: new Date().toISOString()
+          })
+          
+          // Retry insert plan
+          const { data: retryInserted, error: retryError } = await rh
+            .from('plans')
+            .insert([planPayload])
+            .select()
+            .single()
+          
+          if (retryError) {
+            logger.error('FAST_GENERATE_RETRY_FAILED', { error: String(retryError?.message || retryError) })
+            return NextResponse.json(
+              { error: 'Failed to save plan', details: retryError?.message || 'Database error' },
+              { status: 500 }
+            )
+          }
+          
+          if (!retryInserted) {
+            logger.error('FAST_GENERATE_RETRY_NO_DATA', { error: 'No data returned from retry' })
+            return NextResponse.json(
+              { error: 'Failed to save plan', details: 'No data returned' },
+              { status: 500 }
+            )
+          }
+          
+          logger.info('FAST_GENERATE_COMPLETE', { planId: retryInserted.id, model: usedModel })
+          return NextResponse.json({
+            success: true,
+            plan: {
+              id: retryInserted.id,
+              title: retryInserted.title,
+              content: retryInserted.content,
+              created_at: retryInserted.created_at
+            }
+          })
+        }
+        
         return NextResponse.json(
           { error: 'Failed to save plan', details: insertError?.message || 'Database error' },
           { status: 500 }
