@@ -291,8 +291,19 @@ export default function GeneratePlanPage() {
         headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
       }
 
-      // Start background job (returns immediately)
-      const res = await fetch('/api/plans/generate-background', {
+      // Determine which route to use based on tier
+      // For Free tier: use fast synchronous route (50s timeout)
+      // For paid tiers: use background job route (300s timeout)
+      const userSub = await supabase.from('profiles').select('subscription_tier').eq('id', user?.id).single()
+      const tier = userSub?.data?.subscription_tier || 'free'
+      const useBackgroundJob = tier !== 'free'
+      const apiRoute = useBackgroundJob ? '/api/plans/generate-background' : '/api/plans/generate-fast'
+
+      setStatus(useBackgroundJob ? 'Hệ thống AI đang xử lý (có thể mất tới 5 phút)...' : 'Hệ thống AI đang xử lý...')
+      setProgress(useBackgroundJob ? 10 : 5)
+
+      // Call appropriate route
+      const res = await fetch(apiRoute, {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -312,7 +323,23 @@ export default function GeneratePlanPage() {
 
       const result = await res.json()
 
-      // Accept both 200 OK and 202 Accepted
+      // For fast route: result contains plan directly
+      if (!useBackgroundJob && result.success && result.plan?.id) {
+        console.log('=== GENERATE: Fast route completed ===', { planId: result.plan.id })
+        setProgress(100)
+        setStatus('Hoàn thành!')
+        setJobStatus('completed')
+        sessionStorage.removeItem(`plan_job_${userId}`)
+        clearJobMeta(userId)
+        localStorage.removeItem(`pending_plan_${userId}`)
+        try { localStorage.removeItem('pending_plan_latest') } catch {}
+        setTimeout(() => {
+          router.push(`/dashboard/plans/${result.plan.id}`)
+        }, 1200)
+        return
+      }
+
+      // For background job route: result contains job_id
       if (res.status !== 200 && res.status !== 202) {
         if (res.status === 429 && result?.upgradeRequired) {
           setUpgradeRequired(true)
@@ -324,7 +351,7 @@ export default function GeneratePlanPage() {
         return
       }
 
-      // Job started successfully
+      // Job started successfully (background route)
       const newJobId = result.job_id
       const startedAt = Date.now()
       setJobId(newJobId)
