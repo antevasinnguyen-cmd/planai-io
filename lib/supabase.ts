@@ -3,6 +3,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -12,6 +13,27 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce'
   }
 })
+
+// Admin client with service role key (bypasses RLS)
+let adminClient: ReturnType<typeof createClient> | null = null
+
+export const getAdminClient = () => {
+  if (!supabaseServiceRoleKey) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY not configured')
+    return null
+  }
+  
+  if (!adminClient) {
+    adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  }
+  
+  return adminClient
+}
 
 // Auth helpers
 export const signUp = async (email: string, password: string, userData?: any) => {

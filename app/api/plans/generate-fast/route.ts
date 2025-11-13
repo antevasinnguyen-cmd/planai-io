@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { getUserSubscription, getSubscriptionLimits } from '@/lib/supabase'
+import { getUserSubscription, getSubscriptionLimits, getAdminClient } from '@/lib/supabase'
 import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 import { logger } from '@/lib/logger'
 
@@ -214,14 +214,29 @@ export async function POST(request: NextRequest) {
         if (isForeignKeyError) {
           logger.info('FAST_GENERATE_CREATE_PROFILE', { userId: auth.user.id })
           
-          // Tạo profile cho user
-          await rh.from('profiles').upsert({
+          // Tạo profile cho user bằng ADMIN CLIENT để bypass RLS
+          const admin = getAdminClient()
+          if (!admin) {
+            logger.error('FAST_GENERATE_NO_ADMIN', { error: 'Admin client not available' })
+            return NextResponse.json(
+              { error: 'Failed to save plan', details: 'Cannot create user profile' },
+              { status: 500 }
+            )
+          }
+          
+          const { error: profileError } = await admin.from('profiles').upsert({
             id: auth.user.id,
             created_at: new Date().toISOString()
-          })
+          }, { onConflict: 'id' })
           
-          // Retry insert plan
-          const { data: retryInserted, error: retryError } = await rh
+          if (profileError) {
+            logger.error('FAST_GENERATE_PROFILE_ERROR', { error: String(profileError?.message || profileError) })
+          } else {
+            logger.info('FAST_GENERATE_PROFILE_CREATED', { userId: auth.user.id })
+          }
+          
+          // Retry insert plan với ADMIN CLIENT
+          const { data: retryInserted, error: retryError } = await admin
             .from('plans')
             .insert([planPayload])
             .select()
