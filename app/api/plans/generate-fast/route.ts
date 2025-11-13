@@ -1,7 +1,7 @@
 /**
- * EMERGENCY FAST ROUTE - Direct synchronous generation (no background job)
- * For testing and quick generation when background job is slow
- * Used for Free tier only - returns immediately with plan or error
+ * FAST GENERATION ROUTE - Direct synchronous generation for Free tier
+ * Tries GPT-4 Turbo first, falls back to Claude 3 Opus on failure
+ * Returns immediately with plan or error
  */
 
 export const runtime = 'nodejs'
@@ -14,6 +14,36 @@ import { cookies } from 'next/headers'
 import { getUserSubscription, getSubscriptionLimits } from '@/lib/supabase'
 import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 import { logger } from '@/lib/logger'
+
+// Helper: Call Claude 3 Opus as fallback
+async function callClaude(systemPrompt: string, userPrompt: string, maxTokens: number) {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('Claude API key not configured')
+    }
+    const Anthropic = require('@anthropic-ai/sdk').default
+    const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    
+    logger.info('FAST_FALLBACK_CLAUDE_START', {})
+    const response = await claude.messages.create({
+      model: 'claude-3-opus-20240229',
+      max_tokens: maxTokens,
+      messages: [
+        {
+          role: 'user',
+          content: `${systemPrompt}\n\n${userPrompt}`
+        }
+      ]
+    })
+    
+    const content = response.content?.[0]?.type === 'text' ? response.content[0].text : '{}'
+    logger.info('FAST_FALLBACK_CLAUDE_DONE', { size: content.length })
+    return content
+  } catch (e: any) {
+    logger.error('FAST_FALLBACK_CLAUDE_ERROR', { error: String(e?.message || e) })
+    throw e
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,67 +94,52 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 65 second timeout for Free tier (Vercel maxDuration is 70s)
-    const timeoutMs = 65000
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => {
-      controller.abort()
-      logger.warn('FAST_GENERATE_TIMEOUT', { timeout: '65s' })
-    }, timeoutMs)
+    // 60 second timeout for Free tier (Vercel maxDuration is 70s)
+    const timeoutMs = 60000
+    const maxTokens = 1800 // Reduced for faster generation
 
     let raw = '{}'
-    let retries = 0
-    const maxRetries = 1
-    
-    while (retries <= maxRetries) {
+    let usedModel = 'gpt-4-turbo'
+
+    // Try GPT-4 Turbo first
+    try {
+      logger.info('FAST_GENERATE_CALL_OPENAI', {})
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+      
+      const completion = await openai.chat.completions.create(
+        {
+          model: 'gpt-4-turbo',
+          response_format: { type: 'json_object' },
+          temperature: 0.5,
+          max_tokens: maxTokens,
+          messages: [
+            { role: 'system', content: String(systemPrompt) },
+            { role: 'user', content: userPrompt.slice(0, 7000) }
+          ]
+        },
+        { signal: controller.signal }
+      )
+      clearTimeout(timeoutId)
+      raw = completion.choices?.[0]?.message?.content || '{}'
+      logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, model: 'gpt-4-turbo' })
+    } catch (gptError: any) {
+      const gptErrorMsg = String(gptError?.message || gptError)
+      logger.warn('FAST_GENERATE_OPENAI_FAILED', { error: gptErrorMsg })
+      
+      // Fallback to Claude 3 Opus immediately
       try {
-        logger.info('FAST_GENERATE_CALL_OPENAI', { attempt: retries + 1 })
-        const completion = await openai.chat.completions.create(
-          {
-            model: 'gpt-4-turbo',
-            response_format: { type: 'json_object' },
-            temperature: 0.5,
-            // Reduced from 2500 to 2000 to speed up generation
-            max_tokens: 2000,
-            messages: [
-              { role: 'system', content: String(systemPrompt) },
-              { role: 'user', content: userPrompt.slice(0, 8000) }
-            ]
-          },
-          { signal: controller.signal }
+        logger.info('FAST_GENERATE_FALLBACK_CLAUDE', {})
+        raw = await callClaude(String(systemPrompt), userPrompt.slice(0, 7000), maxTokens)
+        usedModel = 'claude-3-opus'
+        logger.info('FAST_GENERATE_CLAUDE_DONE', { size: raw.length, model: 'claude-3-opus' })
+      } catch (claudeError: any) {
+        const claudeErrorMsg = String(claudeError?.message || claudeError)
+        logger.error('FAST_GENERATE_BOTH_FAILED', { gpt: gptErrorMsg, claude: claudeErrorMsg })
+        return NextResponse.json(
+          { error: 'AI generation failed', message: 'Cả GPT-4 Turbo và Claude đều không thể xử lý. Vui lòng thử lại sau.' },
+          { status: 503 }
         )
-        clearTimeout(timeoutId)
-        raw = completion.choices?.[0]?.message?.content || '{}'
-        logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, attempt: retries + 1 })
-        break // Success, exit retry loop
-      } catch (e: any) {
-        const errorMsg = String(e?.message || e)
-        logger.warn('FAST_GENERATE_OPENAI_ATTEMPT_FAILED', { error: errorMsg, attempt: retries + 1 })
-        
-        // If timeout or abort, don't retry (already waited long enough)
-        if (errorMsg.includes('aborted') || errorMsg.includes('timeout')) {
-          clearTimeout(timeoutId)
-          logger.error('FAST_GENERATE_OPENAI_ERROR', { error: errorMsg })
-          return NextResponse.json(
-            { error: 'AI generation timeout', message: 'Hệ thống AI mất quá lâu để xử lý. Vui lòng thử lại sau.' },
-            { status: 504 }
-          )
-        }
-        
-        // For other errors, retry once
-        if (retries < maxRetries) {
-          retries++
-          logger.info('FAST_GENERATE_RETRY', { attempt: retries + 1 })
-          // Small delay before retry
-          await new Promise(resolve => setTimeout(resolve, 1000))
-        } else {
-          clearTimeout(timeoutId)
-          logger.error('FAST_GENERATE_OPENAI_ERROR', { error: errorMsg })
-          return NextResponse.json(
-            { error: 'AI call failed', message: String(e?.message || e) },
-            { status: 500 }
-          )
-        }
       }
     }
 
@@ -152,39 +167,70 @@ export async function POST(request: NextRequest) {
       content_md += `\n\n**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**\nBản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:\n✅ 24 phần phân tích chuyên sâu (gấp 3 lần)\n✅ Google Sheets tự động với 7 tabs tracking\n✅ Phân tích tử vi tài chính & thần số học\n✅ 3-5 mô hình kinh doanh cá nhân hóa\n✅ 50+ tài liệu học tập premium\n✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết\n✅ Dự báo 3 kịch bản & chiến lược rủi ro\n👉 Nâng cấp tại: https://planai.io.vn/pricing\n`
     }
 
-    // Save plan directly
-    const { data: inserted, error: insertError } = await rh
-      .from('plans')
-      .insert({
+    // Save plan directly with proper error handling
+    try {
+      const planPayload = {
         user_id: auth.user.id,
         title,
-        goal: goals,
+        goal: goals || 'Kế hoạch tài chính',
         content: content_md,
         status: 'completed',
         word_count: content_md.split(/\s+/).length,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
+        collected_info: collectedInfo || {},
+        metadata: {
+          model_used: usedModel,
+          generated_at: new Date().toISOString()
+        }
+      }
 
-    if (insertError || !inserted) {
-      logger.error('FAST_GENERATE_SAVE_ERROR', { error: String(insertError) })
+      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length })
+      
+      const { data: inserted, error: insertError } = await rh
+        .from('plans')
+        .insert([planPayload])
+        .select()
+        .single()
+
+      if (insertError) {
+        logger.error('FAST_GENERATE_SAVE_ERROR', { 
+          error: String(insertError?.message || insertError),
+          code: insertError?.code,
+          details: insertError?.details
+        })
+        return NextResponse.json(
+          { error: 'Failed to save plan', details: insertError?.message || 'Database error' },
+          { status: 500 }
+        )
+      }
+
+      if (!inserted) {
+        logger.error('FAST_GENERATE_SAVE_NO_DATA', { error: 'No data returned from insert' })
+        return NextResponse.json(
+          { error: 'Failed to save plan', details: 'No data returned' },
+          { status: 500 }
+        )
+      }
+
+      logger.info('FAST_GENERATE_COMPLETE', { planId: inserted.id, model: usedModel })
+      return NextResponse.json({
+        success: true,
+        plan: {
+          id: inserted.id,
+          title: inserted.title,
+          content: inserted.content,
+          created_at: inserted.created_at
+        }
+      })
+    } catch (saveError: any) {
+      logger.error('FAST_GENERATE_SAVE_EXCEPTION', { 
+        error: String(saveError?.message || saveError),
+        stack: saveError?.stack?.slice(0, 500)
+      })
       return NextResponse.json(
-        { error: 'Failed to save plan', details: insertError?.message },
+        { error: 'Failed to save plan', details: String(saveError?.message || saveError) },
         { status: 500 }
       )
     }
-
-    logger.info('FAST_GENERATE_COMPLETE', { planId: inserted.id })
-    return NextResponse.json({
-      success: true,
-      plan: {
-        id: inserted.id,
-        title: inserted.title,
-        content: inserted.content,
-        created_at: inserted.created_at
-      }
-    })
   } catch (error: any) {
     logger.error('FAST_GENERATE_ERROR', { error: String(error?.message || error) })
     return NextResponse.json(
