@@ -87,7 +87,7 @@ export const generateChatResponseWithSystemPrompt = async (
       const completion = await client.chat.completions.create({
         model,
         messages: fullMessages,
-        max_tokens: 2200,
+        max_tokens: 1200, // Giảm từ 2200 xuống 1200 để tối ưu cost
         temperature: 0.75,
         top_p: 0.9,
         frequency_penalty: 0.1,
@@ -111,7 +111,7 @@ export const generateChatResponseWithSystemPrompt = async (
         const userMessages = messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' as const : 'user' as const, content: m.content }))
         const claudeResp = await claude.messages.create({
           model: 'claude-3-opus-20240229',
-          max_tokens: 1800,
+          max_tokens: 1200, // Giảm từ 1800 xuống 1200 để nhất quán với OpenAI
           system: systemContent,
           messages: userMessages
         })
@@ -216,7 +216,7 @@ export const generateChatResponse = async (messages: ChatMessage[]): Promise<str
       const completion = await client.chat.completions.create({
         model,
         messages: fullMessages,
-        max_tokens: 2000, // Increased for ChatGPT Plus quality responses
+        max_tokens: 1000, // Giảm từ 2000 xuống 1000 để tối ưu cost (Nov 13, 2025)
         temperature: 0.8, // Slightly higher for more creativity and personality
         top_p: 0.9, // Focus on high probability tokens
         frequency_penalty: 0.1, // Reduce repetition
@@ -266,26 +266,26 @@ export const generateFinancialPlan = async (
     // Tier-based micro-tasks and scenario depth gating (P1)
     const tier = String(collectedInfo.tier || 'free')
 
-    // TIER-SPECIFIC WORD LIMITS
+    // TIER-SPECIFIC WORD LIMITS (Updated Nov 13, 2025)
     const tierWordLimits = {
-      'free': 5000,      // Free: max 5000 words
+      'free': 4000,      // Free: max 4000 words (giảm từ 5000 để tối ưu cost)
       'basic': 50000,    // Gói 1: max 50000 words
       'pro': 50000,      // Gói 2: max 50000 words
       'pro_max': 50000   // Gói 3: max 50000 words
     }
     
-    const maxWordLimit = tierWordLimits[tier as keyof typeof tierWordLimits] || 5000
+    const maxWordLimit = tierWordLimits[tier as keyof typeof tierWordLimits] || 4000
     const maxWordsInput = typeof collectedInfo.maxWords === 'number' ? collectedInfo.maxWords : maxWordLimit
     const maxWords = Math.max(1000, Math.min(maxWordsInput, maxWordLimit))
 
     const wordRange = tier === 'free'
-      ? 'Tối đa 5.000 từ (Gói Free)'
+      ? 'Tối đa 4.000 từ (Gói Free)'
       : 'Tối đa 50.000 từ (Gói trả phí)'
 
     // Token budget aligned with model capacity (GPT-4 Turbo max: 4096 completion tokens)
     // But respect tier word limits
     const maxTokensForTier = (() => {
-      if (tier === 'free') return Math.min(3500, Math.ceil(maxWords * 1.5))  // Free: clamped to 5k words
+      if (tier === 'free') return Math.min(3500, Math.ceil(maxWords * 1.5))  // Free: clamped to 4k words
       if (tier === 'basic') return Math.min(4096, Math.ceil(maxWords * 1.5)) // Basic: up to 50k words
       return Math.min(4096, Math.ceil(maxWords * 1.5))  // Pro/Pro Max: up to 50k words (but clamped to 4096 tokens)
     })()

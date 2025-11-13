@@ -19,7 +19,6 @@ const pricingTiers = [
       '1 Kế hoạch ngắn'
     ],
     limitations: [
-      'Giới hạn 5,000 từ (tùy độ phức tạp)',
       'Không có tính năng nâng cao'
     ],
     buttonText: 'Bắt đầu miễn phí',

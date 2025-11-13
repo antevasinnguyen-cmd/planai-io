@@ -300,11 +300,11 @@ export const getUserSubscription = async (userId: string) => {
 
 export const getSubscriptionLimits = (tier: string) => {
   // Default limits (fallback if database doesn't have subscription)
-  // Updated per user requirements (Nov 9, 2025):
-  // Free: 5000 từ (tuỳ độ phức tạp)
+  // Updated per user requirements (Nov 13, 2025):
+  // Free: 4000 từ (giảm từ 5000 để tối ưu cost)
   // Gói 1, 2, 3: Tối đa 50.000 từ mỗi bản kế hoạch
   const defaultLimits = {
-    'free': { plans: 1, chats: 5, words: 5000, allowSheets: false, allowNotion: false },        // Free tier: up to 5000 words
+    'free': { plans: 1, chats: 5, words: 4000, allowSheets: false, allowNotion: false },        // Free tier: up to 4000 words (cost optimization)
     'basic': { plans: 1, chats: 40, words: 50000, allowSheets: true, allowNotion: true },       // Gói 1: Up to 50k words per plan
     'pro': { plans: 2, chats: 100, words: 50000, allowSheets: true, allowNotion: true },        // Gói 2: Up to 50k words per plan
     'pro_max': { plans: 5, chats: 270, words: 50000, allowSheets: true, allowNotion: true }     // Gói 3: Up to 50k words per plan

@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { logger } from '@/lib/logger'
 import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 import { enhanceSheetsSpec } from '@/lib/enhanceSheetsSpec'
+import { generateCacheKey, checkCache, saveToCache } from '@/lib/modelSelection'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -103,14 +104,51 @@ export async function POST(req: NextRequest) {
     const tier = sub?.tier || 'free'
     const limits = getSubscriptionLimits(tier)
 
-    // One-call JSON schema (prompt fragment)
+    // 🔥 CACHE CHECK - Kiểm tra xem đã tạo kế hoạch tương tự chưa
+    const cacheKey = generateCacheKey([
+      { role: 'system', content: 'plan_generation_v4' },
+      { role: 'user', content: JSON.stringify({ planName, goals, tier, collectedInfo }) }
+    ])
+    
+    logger.info('ONECALL_CHECK_CACHE', { cacheKey: cacheKey.substring(0, 20) })
+    const cachedPlan = await checkCache(cacheKey)
+    if (cachedPlan) {
+      logger.info('ONECALL_CACHE_HIT', { saved_cost: 'yes' })
+      try {
+        const parsed = JSON.parse(cachedPlan)
+        // Trả về kế hoạch từ cache (tiết kiệm chi phí AI)
+        return NextResponse.json({
+          success: true,
+          cached: true,
+          plan: parsed.plan || {},
+          artifacts: parsed.artifacts || {},
+          tier,
+          constraints: parsed.constraints || {}
+        })
+      } catch (e) {
+        logger.warn('ONECALL_CACHE_PARSE_FAIL', { error: String(e) })
+        // Tiếp tục generate nếu cache bị lỗi
+      }
+    }
+
+    // One-call JSON schema (prompt fragment) - CẬP NHẬT GIỚI HẠN TỪ
     const constraints = {
-      max_words: limits.words || 1500,
+      max_words: limits.words || 4000, // Free: 4000, Paid: 50000
       max_mermaid: tier === 'free' ? 2 : tier === 'basic' ? 3 : tier === 'pro' ? 4 : 6,
       max_tables: tier === 'free' ? 8 : tier === 'basic' ? 10 : tier === 'pro' ? 12 : 15,
       min_resources: tier === 'free' ? 5 : tier === 'basic' ? 25 : tier === 'pro' ? 45 : 60,
       max_resources: tier === 'free' ? 15 : tier === 'basic' ? 35 : tier === 'pro' ? 60 : 80,
       resources_policy: 'gpt_only'
+    }
+
+    // ✅ VALIDATION - Kiểm tra giới hạn từ trước khi generate
+    if (constraints.max_words > limits.words) {
+      logger.warn('ONECALL_WORD_LIMIT_EXCEEDED', { 
+        requested: constraints.max_words, 
+        limit: limits.words, 
+        tier 
+      })
+      constraints.max_words = limits.words
     }
 
     // FORCE V4 PROMPT - simplified and focused on working correctly
@@ -129,6 +167,13 @@ export async function POST(req: NextRequest) {
 6. MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản
 7. Nếu là gói FREE, phải có đúng 9 phần và CTA nâng cấp ở cuối
 8. Nếu là gói PREMIUM, phải có đúng 24 phần
+
+🎯 YÊU CẦU CHẤT LƯỢNG (QUAN TRỌNG):
+- Tập trung nội dung chất lượng cao, thực tế, có thể thực hiện ngay
+- Mọi số liệu phải chính xác, logic, phù hợp với thu nhập và mục tiêu người dùng
+- Không sử dụng placeholder ("...", "TBD", "N/A") - mọi thông tin phải cụ thể
+- Kiểm tra chéo: Đảm bảo timeline, số tiền, mục tiêu nhất quán trong toàn bộ kế hoạch
+- Cung cấp hành động cụ thể cho từng giai đoạn (ngày/tuần/tháng)
 `
 
     // Extract timeline for personalized planning
@@ -317,39 +362,52 @@ Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn 
 `
     }
 
-    // Optional QA validator pass (improve coherence and fill gaps). Enabled for paid tiers by default.
+    // ✅ QA VALIDATOR - Kiểm chứng chéo chất lượng (ALL TIERS - quan trọng!)
     try {
-      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false' && tier !== 'free'
+      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false' // Bật cho tất cả các gói
       if (enableQa) {
         const qaController = new AbortController()
         const qaTimeoutMs = Math.min(180000, Math.max(60000, generationTimeoutMs - 10000))
         const qaTimeout = setTimeout(() => qaController.abort(), qaTimeoutMs)
         const qaPrompt = [
-          'Bạn là Trưởng biên tập biên soạn ebook tài chính. Hãy rà soát và CHỈ TRẢ VỀ duy nhất nội dung Markdown đã được cải thiện.',
-          'YÊU CẦU CHẤT LƯỢNG:',
-          '- Giữ nguyên cấu trúc bắt buộc (FREE=9 phần, PREMIUM=24 phần).',
-          '- Loại mọi bảng/Mermaid. Chỉ dùng tiêu đề, danh sách, đoạn văn.',
-          '- Check chéo số liệu và logic, loại placeholder, bổ sung thiếu sót.',
-          '- Dùng mốc thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", ...',
+          'Bạn là Chuyên gia kiểm định chất lượng kế hoạch tài chính. Nhiệm vụ: RÀ SOÁT VÀ SỬA LỖI nội dung.',
           '',
-          'THÔNG TIN NGƯỜI DÙNG (rút gọn):',
-          userContext.slice(0, 1500),
+          '🎯 KIỂM TRA CHẤT LƯỢNG BẮT BUỘC:',
+          '1. **Tính chính xác số liệu**: Kiểm tra tất cả số tiền, phần trăm, timeline có logic không',
+          '2. **Tính nhất quán**: Mục tiêu, thu nhập, timeline phải khớp nhau trong toàn bộ kế hoạch',
+          '3. **Tính khả thi**: Mọi hành động đề xuất phải thực tế, có thể thực hiện ngay',
+          '4. **Loại bỏ placeholder**: KHÔNG "...", "TBD", "N/A" - thay bằng nội dung cụ thể',
+          '5. **Kiểm tra cấu trúc**: FREE=9 phần, PREMIUM=24 phần (đủ và đúng thứ tự)',
+          '6. **Format**: Chỉ dùng Markdown cơ bản, KHÔNG bảng/Mermaid',
           '',
-          'NỘI DUNG GỐC CẦN SỬA:',
-          content_md.slice(0, 24000)
+          '📊 THÔNG TIN NGƯỜI DÙNG (để kiểm tra tính chính xác):',
+          `- Thu nhập: ${collectedInfo?.income || 'N/A'} VNĐ/tháng`,
+          `- Mục tiêu: ${goals}`,
+          `- Timeline: ${collectedInfo?.timeline || userTimeline}`,
+          `- Tier: ${tier.toUpperCase()}`,
+          userContext.slice(0, 1000),
+          '',
+          '📝 NỘI DUNG CẦN KIỂM TRA:',
+          content_md.slice(0, 24000),
+          '',
+          '⚠️ CHỈ TRẢ VỀ: Nội dung Markdown đã được sửa lỗi và cải thiện. KHÔNG thêm giải thích.'
         ].join('\n')
         const qa = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
           temperature: 0.2,
-          max_tokens: Math.min(1800, Math.ceil((constraints.max_words || 1500) * 1.4)),
+          max_tokens: Math.min(2000, Math.ceil((constraints.max_words || 4000) * 1.3)),
           messages: [
-            { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, trả về duy nhất nội dung Markdown hợp lệ, không thêm text ngoài lề.' },
+            { role: 'system', content: 'Bạn là chuyên gia QA nghiêm khắc. Chỉ trả về nội dung Markdown đã được kiểm định và sửa lỗi.' },
             { role: 'user', content: qaPrompt }
           ]
         }, { signal: qaController.signal })
         clearTimeout(qaTimeout)
         const improved = qa.choices?.[0]?.message?.content || ''
         if (improved && improved.length > 100) {
+          logger.info('ONECALL_QA_IMPROVED', { 
+            original_length: content_md.length, 
+            improved_length: improved.length 
+          })
           content_md = String(improved)
             .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
             .replace(/```mermaid[\s\S]*?```/g, '')
@@ -485,8 +543,8 @@ Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn 
       await rh.from('plans').update({ metadata: updates.metadata }).eq('id', inserted.id)
     }
 
-    // Response payload
-    return NextResponse.json({
+    // 💾 SAVE TO CACHE - Lưu kết quả để tiết kiệm chi phí cho lần sau
+    const responsePayload = {
       success: true,
       plan: {
         id: inserted.id,
@@ -502,7 +560,17 @@ Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn 
       },
       tier,
       constraints
-    })
+    }
+    
+    try {
+      await saveToCache(cacheKey, JSON.stringify(responsePayload))
+      logger.info('ONECALL_CACHE_SAVED', { cacheKey: cacheKey.substring(0, 20) })
+    } catch (cacheErr) {
+      logger.warn('ONECALL_CACHE_SAVE_FAIL', { error: String(cacheErr) })
+    }
+
+    // Response payload
+    return NextResponse.json(responsePayload)
   } catch (error: any) {
     logger.error('ONECALL_UNHANDLED', { error: String(error?.message || error) })
     return NextResponse.json({ error: 'One-call generation failed', details: String(error?.message || error) }, { status: 500 })

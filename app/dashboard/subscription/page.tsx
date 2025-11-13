@@ -29,8 +29,7 @@ const pricingTiers = [
     detailedFeatures: [
       '5 Chat với AI',
       'Phân tích cơ bản',
-      '1 Kế hoạch ngắn',
-      'Giới hạn 5,000 từ (tùy độ phức tạp)'
+      '1 Kế hoạch ngắn'
     ]
   },
   {
