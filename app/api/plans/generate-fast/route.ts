@@ -125,19 +125,28 @@ export async function POST(request: NextRequest) {
       logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, model: 'gpt-4o-mini' })
     } catch (gptError: any) {
       const gptErrorMsg = String(gptError?.message || gptError)
-      logger.warn('FAST_GENERATE_OPENAI_FAILED', { error: gptErrorMsg })
+      logger.error('FAST_GENERATE_OPENAI_FAILED', { error: gptErrorMsg })
       
-      // Fallback to Claude 3 Opus immediately
-      try {
-        logger.info('FAST_GENERATE_FALLBACK_CLAUDE', {})
-        raw = await callClaude(String(systemPrompt), userPrompt.slice(0, 7000), maxTokens)
-        usedModel = 'claude-3-opus'
-        logger.info('FAST_GENERATE_CLAUDE_DONE', { size: raw.length, model: 'claude-3-opus' })
-      } catch (claudeError: any) {
-        const claudeErrorMsg = String(claudeError?.message || claudeError)
-        logger.error('FAST_GENERATE_BOTH_FAILED', { gpt: gptErrorMsg, claude: claudeErrorMsg })
+      // Fallback to Claude only if API key is configured
+      if (process.env.ANTHROPIC_API_KEY) {
+        try {
+          logger.info('FAST_GENERATE_FALLBACK_CLAUDE', {})
+          raw = await callClaude(String(systemPrompt), userPrompt.slice(0, 7000), maxTokens)
+          usedModel = 'claude-3.5-sonnet'
+          logger.info('FAST_GENERATE_CLAUDE_DONE', { size: raw.length, model: usedModel })
+        } catch (claudeError: any) {
+          const claudeErrorMsg = String(claudeError?.message || claudeError)
+          logger.error('FAST_GENERATE_CLAUDE_FAILED', { error: claudeErrorMsg })
+          return NextResponse.json(
+            { error: 'AI generation failed', message: 'Cả GPT-4o mini và Claude đều không thể xử lý. Vui lòng thử lại sau.' },
+            { status: 503 }
+          )
+        }
+      } else {
+        // No Claude API key, return GPT error
+        logger.error('FAST_GENERATE_NO_FALLBACK', { error: 'Claude API key not configured' })
         return NextResponse.json(
-          { error: 'AI generation failed', message: 'Cả GPT-4o mini và Claude đều không thể xử lý. Vui lòng thử lại sau.' },
+          { error: 'AI generation failed', message: `GPT-4o mini không thể xử lý: ${gptErrorMsg}. Vui lòng thử lại sau.` },
           { status: 503 }
         )
       }
