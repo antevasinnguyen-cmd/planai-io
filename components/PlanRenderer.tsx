@@ -21,6 +21,7 @@ interface PlanRendererProps {
 export default function PlanRenderer({ content, planId, onExport, userTier = 'free' }: PlanRendererProps) {
   const [copiedTableId, setCopiedTableId] = useState<string | null>(null)
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
+  const [showFloatingCTA, setShowFloatingCTA] = useState(true)
 
   // Strip JSON Data Layer from content (hide from user)
   const cleanContent = useMemo(() => {
@@ -144,10 +145,102 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     setExpandedTables(newExpanded)
   }
 
+  // Extract CTA section for special rendering
+  const ctaRegex = /🎯\s*NÂNG CẤP GÓI TRẢ PHÍ NGAY[\s\S]*?(?=##|$)/
+  const ctaMatch = fixedContent.match(ctaRegex)
+  const ctaContent = ctaMatch ? ctaMatch[0] : null
+  const mainContent = ctaContent ? fixedContent.replace(ctaRegex, '') : fixedContent
+
   return (
-    <div className="w-full">
-      {/* Main Content */}
-      <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
+    <div className="w-full relative">
+      {/* Floating CTA Button - Only for FREE tier */}
+      {userTier === 'free' && showFloatingCTA && (
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
+          <a
+            href="/pricing"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+          >
+            <span className="text-2xl">🚀</span>
+            <span className="font-bold">Nâng cấp Premium</span>
+          </a>
+          <button
+            onClick={() => setShowFloatingCTA(false)}
+            className="absolute -top-2 -right-2 w-6 h-6 bg-gray-800 text-white rounded-full text-xs hover:bg-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Beautiful CTA Section - Only for FREE tier */}
+      {userTier === 'free' && ctaContent && (
+        <div className="mb-12 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 p-[2px]">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8">
+            <div className="text-center space-y-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-4xl animate-pulse">
+                🎯
+              </div>
+              
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Mở khóa toàn bộ sức mạnh của PlanAI!
+              </h2>
+              
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Bản kế hoạch FREE này chỉ là khởi đầu. Nâng cấp ngay để nhận được kế hoạch chi tiết gấp 10 lần!
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
+                {[
+                  '✅ 24 phần phân tích chuyên sâu (gấp 3 lần)',
+                  '✅ Google Sheets tự động với 7 tabs tracking',
+                  '✅ Phân tích tử vi tài chính & thần số học',
+                  '✅ 3-5 mô hình kinh doanh cá nhân hóa',
+                  '✅ 50+ tài liệu học tập premium',
+                  '✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết',
+                  '✅ Dự báo 3 kịch bản & chiến lược rủi ro',
+                  '✅ Hỗ trợ 1-1 qua chat với AI advisor'
+                ].map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105"
+                >
+                  <span>🚀</span>
+                  <span>Nâng cấp ngay - Giảm 50%</span>
+                </a>
+                <a
+                  href="/dashboard/subscription"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                >
+                  <span>ℹ️</span>
+                  <span>Xem chi tiết gói</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content with Ebook Style */}
+      <div className="prose prose-lg dark:prose-invert max-w-none mb-8 
+        prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
+        prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-6 prose-h1:pb-4 prose-h1:border-b-2 prose-h1:border-purple-500
+        prose-h2:text-3xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-purple-600 dark:prose-h2:text-purple-400
+        prose-h3:text-2xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-gray-800 dark:prose-h3:text-gray-200
+        prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-base
+        prose-li:text-gray-700 dark:prose-li:text-gray-300
+        prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-bold
+        prose-ul:list-disc prose-ul:pl-6
+        prose-ol:list-decimal prose-ol:pl-6
+        prose-blockquote:border-l-4 prose-blockquote:border-purple-500 prose-blockquote:pl-4 prose-blockquote:italic
+        prose-code:bg-purple-50 dark:prose-code:bg-purple-900/30 prose-code:text-purple-700 dark:prose-code:text-purple-300 prose-code:px-2 prose-code:py-1 prose-code:rounded
+      ">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{

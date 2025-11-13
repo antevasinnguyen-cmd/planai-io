@@ -574,6 +574,77 @@ export default function PlanViewEnhanced() {
               </div>
             </div>
 
+            {/* Premium CTA for FREE tier */}
+            {(!subscription || subscription?.tier === 'free') && (
+              <div className="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 p-[2px] rounded-xl">
+                <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6">
+                  <div className="text-center space-y-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-3xl animate-pulse">
+                      🚀
+                    </div>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      Nâng cấp Premium
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Mở khóa 100% sức mạnh của PlanAI với:
+                    </p>
+                    <ul className="text-left text-xs space-y-2">
+                      <li className="flex items-start gap-1">
+                        <span className="text-green-500">✓</span>
+                        <span className="text-gray-700 dark:text-gray-300">Kế hoạch chi tiết gấp 10 lần</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-green-500">✓</span>
+                        <span className="text-gray-700 dark:text-gray-300">Google Sheets tự động</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-green-500">✓</span>
+                        <span className="text-gray-700 dark:text-gray-300">Phân tích tử vi & thần số học</span>
+                      </li>
+                      <li className="flex items-start gap-1">
+                        <span className="text-green-500">✓</span>
+                        <span className="text-gray-700 dark:text-gray-300">50+ tài liệu premium</span>
+                      </li>
+                    </ul>
+                    <Link
+                      href="/pricing"
+                      className="block w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-105"
+                    >
+                      Nâng cấp ngay →
+                    </Link>
+                    <Link
+                      href="/dashboard/subscription"
+                      className="block w-full py-2 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                    >
+                      Xem chi tiết các gói
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Share Options */}
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <Share2 className="w-5 h-5 mr-2 text-primary-600 dark:text-primary-400" />
+                Chia sẻ
+              </h3>
+              <div className="space-y-2">
+                <button
+                  onClick={handleShareEmail}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+                >
+                  Gửi qua Email
+                </button>
+                <button
+                  onClick={handleShareLink}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+                >
+                  Sao chép liên kết
+                </button>
+              </div>
+            </div>
+
             {/* Tips */}
             <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl p-6">
               <div className="flex items-start space-x-2">

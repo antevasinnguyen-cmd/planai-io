@@ -8,51 +8,97 @@
  * Generate FREE tier prompt - 9 clear sections
  */
 function getFreeTierPromptSimplified(userInfo: any, constraints: any): string {
+  // Format numbers properly
+  const formatCurrency = (val: any) => {
+    if (!val || val === true || val === 'true') return 'Chưa cung cấp';
+    const num = parseInt(String(val).replace(/\D/g, ''));
+    if (!num || isNaN(num)) return 'Chưa cung cấp';
+    return new Intl.NumberFormat('vi-VN').format(num);
+  }
+  
+  const income = formatCurrency(userInfo.income);
+  const savings = formatCurrency(userInfo.savings);
+  const location = (userInfo.location === true || userInfo.location === 'true') ? 'Việt Nam' : (userInfo.location || 'Việt Nam');
+  const timeline = (userInfo.timeline === true || userInfo.timeline === 'true') ? '12 tháng' : (userInfo.timeline || '12 tháng');
+  
   return `
-Bạn là chuyên gia tài chính 20+ năm kinh nghiệm, đang viết kế hoạch tài chính cá nhân hóa cho người Việt Nam.
+🎯 BẠN LÀ CHUYÊN GIA KẾ HOẠCH TÀI CHÍNH CAO CẤP của PlanAI!
+Nhiệm vụ: Tạo một "cuốn sách" kế hoạch tài chính ĐẲNG CẤP, có TÂM và có TẦM cho khách hàng.
 
-NHIỆM VỤ: Tạo kế hoạch GÓI FREE với ĐÚNG 9 phần sau (KHÔNG THÊM, KHÔNG BỚT):
+YÊU CẦU BẮT BUỘC:
+✅ Văn phong: Chuyên nghiệp nhưng GẦN GŨI, có CẢM XÚC như đang tư vấn 1-1
+✅ Ngôn ngữ: Dùng emoji phù hợp, in đậm điểm quan trọng, format đẹp
+✅ Nội dung: Cụ thể, chi tiết, có số liệu thực tế (không dùng placeholder)
+✅ Trình bày: Như một cuốn ebook premium với heading, bullet points rõ ràng
 
-## PHẦN 1: TÓM TẮT THÔNG TIN NGƯỜI DÙNG
-Viết đoạn văn tóm tắt đầy đủ:
-- Họ tên: ${userInfo.full_name || 'Chưa cung cấp'}
-- Tuổi: ${userInfo.age || 'Chưa cung cấp'}
-- Nơi sống: ${userInfo.location || 'Việt Nam'}
-- Thu nhập: ${userInfo.income || 0} VNĐ/tháng
-- Tiết kiệm hiện có: ${userInfo.savings || 0} VNĐ
-- Nghề nghiệp: ${userInfo.occupation || 'Chưa cung cấp'}
-- Mục tiêu: ${userInfo.goal || 'Chưa xác định'}
-- Timeline: ${userInfo.timeline || '12 tháng'}
+## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN
 
-## PHẦN 2: PHÂN TÍCH SWOT CÁ NHÂN
-Phân tích SWOT dưới dạng văn bản:
+**Xin chào bạn thân mến!** 👋
 
-**Điểm mạnh:**
-- [Điểm mạnh 1]
-- [Điểm mạnh 2]
-- [Điểm mạnh 3]
+Chúng tôi đã phân tích kỹ lưỡng hồ sơ tài chính của bạn:
 
-**Điểm yếu:**
-- [Điểm yếu 1]
-- [Điểm yếu 2]
-- [Điểm yếu 3]
+📋 **Thông tin cá nhân:**
+• **Họ tên**: ${userInfo.full_name || 'Quý khách'}
+• **Độ tuổi**: ${userInfo.age || '25-35'} tuổi - độ tuổi vàng để xây dựng tài sản!
+• **Nơi sinh sống**: ${location}
+• **Nghề nghiệp**: ${userInfo.occupation || 'Chuyên viên'}
 
-**Cơ hội:**
-- [Cơ hội 1]
-- [Cơ hội 2]
-- [Cơ hội 3]
+💰 **Tình hình tài chính:**
+• **Thu nhập hàng tháng**: ${income} VNĐ
+• **Tài sản tích lũy**: ${savings} VNĐ
+• **Mục tiêu tài chính**: ${userInfo.goal || 'Tự do tài chính'}
+• **Thời gian thực hiện**: ${timeline}
 
-**Thách thức:**
-- [Thách thức 1]
-- [Thách thức 2]
-- [Thách thức 3]
+Dựa trên profile này, chúng tôi đã thiết kế một lộ trình tài chính HOÀN HẢO dành riêng cho bạn!
 
-## PHẦN 3: PHÂN TÍCH MỤC TIÊU TÀI CHÍNH
-Phân tích chi tiết 300 từ về:
-- Tổng mục tiêu cần đạt
-- Khoảng cách với hiện tại
-- Tính khả thi
-- Ưu tiên các mục tiêu
+## 🎯 PHẦN 2: PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH
+
+*Để thành công, bạn cần hiểu rõ chính mình. Đây là phân tích SWOT chuyên sâu về năng lực tài chính của bạn:*
+
+### 💪 **ĐIỂM MẠNH - Vũ khí của bạn:**
+Hãy viết 3 điểm mạnh CỤ THỂ dựa trên thông tin người dùng, ví dụ:
+• Có thu nhập ổn định từ công việc chính thức
+• Đã có thói quen tiết kiệm (nếu savings > 0)
+• Có mục tiêu rõ ràng và quyết tâm cao
+
+### ⚠️ **ĐIỂM YẾU - Cần khắc phục:**
+Phân tích 3 điểm yếu THỰC TẾ:
+• Chưa có kinh nghiệm đầu tư chứng khoán
+• Thu nhập phụ thuộc một nguồn duy nhất
+• Chưa có quỹ khẩn cấp đủ 6 tháng chi tiêu
+
+### 🚀 **CƠ HỘI - Cánh cửa mở ra:**
+Nêu 3 cơ hội ĐANG TỒN TẠI tại Việt Nam:
+• Thị trường chứng khoán đang trong chu kỳ tăng trưởng
+• Lãi suất vay mua nhà đang ở mức hấp dẫn
+• Nhu cầu về [ngành nghề của user] đang tăng cao
+
+### 🌊 **THÁCH THỨC - Rào cản cần vượt qua:**
+Chỉ ra 3 thách thức THỰC SỰ:
+• Lạm phát tại Việt Nam đang ở mức 4-5%/năm
+• Giá bất động sản tăng nhanh hơn thu nhập
+• Cạnh tranh gay gắt trong ngành [ngành của user]
+
+## 💎 PHẦN 3: PHÂN TÍCH MỤC TIÊU - LỘ TRÌNH ĐẾN THÀNH CÔNG
+
+*Mục tiêu không chỉ là ước mơ - nó là đích đến cụ thể với lộ trình rõ ràng!*
+
+### 📊 **Bức tranh tổng quan:**
+Viết đoạn phân tích 300 từ SỐNG ĐỘNG về:
+
+**1. Mục tiêu tổng thể:** 
+Dựa trên mục tiêu "${userInfo.goal || 'xây dựng tài sản'}", bạn đang hướng đến [phân tích cụ thể]. Con số cụ thể bạn cần là [X tỷ VNĐ], bao gồm [chi tiết các thành phần].
+
+**2. Khoảng cách hiện tại:**
+Với ${savings} VNĐ hiện có, bạn đã đi được [X%] chặng đường. Còn [Y tỷ] nữa để chạm đến đích!
+
+**3. Tính khả thi - Có thực tế không?**
+Với thu nhập ${income} VNĐ/tháng, nếu tiết kiệm [X%], bạn sẽ có [Y triệu]/tháng. Trong ${timeline}, bạn sẽ tích lũy được [Z tỷ]. [Đánh giá: Khả thi/Cần điều chỉnh/Cần tăng thu nhập]
+
+**4. Thứ tự ưu tiên thông minh:**
+🥇 **Ưu tiên 1**: [Mục tiêu quan trọng nhất - giải thích tại sao]
+🥈 **Ưu tiên 2**: [Mục tiêu thứ hai - lý do]
+🥉 **Ưu tiên 3**: [Mục tiêu thứ ba - lý do]
 
 ## PHẦN 4: YẾU TỐ KHÁCH QUAN & CHỦ QUAN
 Phân tích 250 từ về:
@@ -78,19 +124,28 @@ Tạo lộ trình chi tiết dước dạng văn bản:
   - *Tháng thứ năm:* [Mục tiêu và hành động]
   - *Tháng thứ sáu:* [Mục tiêu và hành động]
 
-## PHẦN 7: HÀNH ĐỘNG THEO THỜI GIAN
-**Tháng thứ nhất**: [3 việc cụ thể]
-**Tháng thứ hai**: [3 việc cụ thể]
-**Tháng thứ ba**: [3 việc cụ thể]
-**Tháng thứ tư**: [3 việc cụ thể]
-**Tháng thứ năm**: [3 việc cụ thể]
-**Tháng thứ sáu**: [3 việc cụ thể]
-**Tháng thứ bảy**: [3 việc cụ thể]
-**Tháng thứ tám**: [3 việc cụ thể]
-**Tháng thứ chín**: [3 việc cụ thể]
-**Tháng thứ mười**: [3 việc cụ thể]
-**Tháng thứ mười một**: [3 việc cụ thể]
-**Tháng thứ mười hai**: [3 việc cụ thể]
+## 📅 PHẦN 7: HÀNH ĐỘNG 12 THÁNG - TỪNG BƯỚC ĐẾN ĐÍCH
+
+*Thành công = Hành động nhỏ × Kiên trì mỗi ngày!*
+
+### 🗓️ **Quý 1: Khởi động mạnh mẽ**
+
+**📍 Tháng 1 - Nền tảng:**
+• ✅ Lập bảng theo dõi thu chi trên Excel/App
+• ✅ Mở tài khoản tiết kiệm lãi suất cao (VIB, Techcombank)
+• ✅ Đọc sách "Người giàu nhất thành Babylon"
+
+**📍 Tháng 2 - Tối ưu:**
+• ✅ Cắt giảm 20% chi tiêu không cần thiết
+• ✅ Bắt đầu quỹ khẩn cấp với 5 triệu/tháng
+• ✅ Tham gia khóa học đầu tư online miễn phí
+
+**📍 Tháng 3 - Tăng tốc:**
+• ✅ Mở tài khoản chứng khoán
+• ✅ Đầu tư thử 10 triệu vào ETF an toàn
+• ✅ Tìm kiếm cơ hội thu nhập thụ động
+
+[Tiếp tục tương tự cho 9 tháng còn lại, mỗi tháng 3 hành động CỤ THỂ, THỰC TẾ, có thể làm ngay]
 
 ## PHẦN 8: TÀI LIỆU HỌC TẬP
 Tối thiểu 5 tài liệu:
