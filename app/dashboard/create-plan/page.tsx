@@ -862,7 +862,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-xs text-gray-500 dark:text-gray-500">
-                    Nhấn Enter để xuống dòng, {window.navigator.userAgent.indexOf('Mac') !== -1 ? 'Cmd+Enter' : 'Ctrl+Enter'} để gửi tin nhắn
+                    Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
                   </p>
                   {!canChat() && (
                     <p className="text-xs text-red-600 dark:text-red-400 font-medium">
