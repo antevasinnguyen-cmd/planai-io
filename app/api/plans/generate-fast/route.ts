@@ -192,10 +192,43 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Ensure profile exists first (to avoid FK constraint violation 23503)
+    const userId = auth.user.id
+    try {
+      logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
+      const { data: existingProfile } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+      
+      if (!existingProfile) {
+        logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
+        const { error: profileError } = await admin.from('profiles').insert({
+          id: userId,
+          subscription_tier: 'free',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        
+        if (profileError) {
+          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { error: String(profileError) })
+          // Continue anyway - might be created by auth trigger
+        } else {
+          logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
+        }
+      } else {
+        logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
+      }
+    } catch (profileError) {
+      logger.error('FAST_GENERATE_PROFILE_CHECK_ERROR', { error: String(profileError) })
+      // Continue anyway
+    }
+    
     // Create partial plan first
     let planId: string
     try {
-      planId = await createPartialPlan(admin, auth.user.id, planName, goals, collectedInfo)
+      planId = await createPartialPlan(admin, userId, planName, goals, collectedInfo)
     } catch (createError) {
       return NextResponse.json(
         { error: 'Failed to initialize plan', message: 'Không thể khởi tạo kế hoạch. Vui lòng thử lại sau.' },
