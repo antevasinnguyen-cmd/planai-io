@@ -35,14 +35,36 @@ export function formatMathExpression(text: string): string {
 }
 
 /**
- * Process chat message to format any math expressions
+ * Process chat message to format any math expressions and clean markdown
  */
 export function processChatMessage(message: string): string {
   if (!message) return message;
   
-  // Find LaTeX math blocks and format them
+  let processed = message;
+  
+  // 1. Find and format LaTeX math blocks \[...\]
   const mathBlockRegex = /(\\\[[\s\S]*?\\\])/g;
-  return message.replace(mathBlockRegex, (match) => {
+  processed = processed.replace(mathBlockRegex, (match) => {
     return formatMathExpression(match);
   });
+  
+  // 2. Find and format inline LaTeX math \(...\)
+  const inlineMathRegex = /\\\(([^)]+)\\\)/g;
+  processed = processed.replace(inlineMathRegex, (match, content) => {
+    return formatMathExpression(content);
+  });
+  
+  // 3. Clean remaining LaTeX commands
+  processed = processed.replace(/\\text\{([^}]+)\}/g, '$1');
+  processed = processed.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)');
+  
+  // 4. Remove excessive markdown bold markers **
+  // Replace **text:** ** with just "text:" (remove redundant **)
+  processed = processed.replace(/\*\*([^*]+):\*\*\s*\*\*/g, '$1:');
+  
+  // 5. Convert markdown bold **text** to plain text (no bold in plain text UI)
+  // Keep the text but remove the ** markers
+  processed = processed.replace(/\*\*([^*]+)\*\*/g, '$1');
+  
+  return processed;
 }
