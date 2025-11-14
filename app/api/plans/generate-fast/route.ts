@@ -15,32 +15,38 @@ import { getUserSubscription, getSubscriptionLimits, getAdminClient } from '@/li
 import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 import { logger } from '@/lib/logger'
 
-// Helper: Call Claude 3 Opus as fallback
-async function callClaude(systemPrompt: string, userPrompt: string, maxTokens: number) {
+// Helper: Call GPT-4o mini retry with longer timeout
+async function callGptRetry(systemPrompt: string, userPrompt: string, maxTokens: number) {
   try {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('Claude API key not configured')
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured')
     }
-    const Anthropic = require('@anthropic-ai/sdk').default
-    const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+    logger.info('FAST_FALLBACK_GPT_RETRY_START', {})
+    const timeoutMs = 60000 // 60s timeout for GPT retry
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     
-    logger.info('FAST_FALLBACK_CLAUDE_START', {})
-    const response = await claude.messages.create({
-      model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
-      max_tokens: maxTokens,
-      messages: [
-        {
-          role: 'user',
-          content: `${systemPrompt}\n\n${userPrompt}`
-        }
-      ]
-    })
-    
-    const content = response.content?.[0]?.type === 'text' ? response.content[0].text : '{}'
-    logger.info('FAST_FALLBACK_CLAUDE_DONE', { size: content.length })
-    return content
+    const completion = await openai.chat.completions.create(
+      {
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        temperature: 0.5,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: String(systemPrompt) },
+          { role: 'user', content: userPrompt.slice(0, 7000) }
+        ]
+      },
+      { signal: controller.signal }
+    )
+    clearTimeout(timeoutId)
+    const raw = completion.choices?.[0]?.message?.content || '{}'
+    logger.info('FAST_FALLBACK_GPT_RETRY_DONE', { size: raw.length })
+    return raw
   } catch (e: any) {
-    logger.error('FAST_FALLBACK_CLAUDE_ERROR', { error: String(e?.message || e) })
+    logger.error('FAST_FALLBACK_GPT_RETRY_ERROR', { error: String(e?.message || e) })
     throw e
   }
 }
@@ -127,24 +133,15 @@ export async function POST(request: NextRequest) {
       const gptErrorMsg = String(gptError?.message || gptError)
       logger.error('FAST_GENERATE_OPENAI_FAILED', { error: gptErrorMsg })
       
-      // Fallback to Claude only if API key is configured
-      if (process.env.ANTHROPIC_API_KEY) {
-        try {
-          logger.info('FAST_GENERATE_FALLBACK_CLAUDE', {})
-          raw = await callClaude(String(systemPrompt), userPrompt.slice(0, 7000), maxTokens)
-          usedModel = 'claude-3.5-sonnet'
-          logger.info('FAST_GENERATE_CLAUDE_DONE', { size: raw.length, model: usedModel })
-        } catch (claudeError: any) {
-          const claudeErrorMsg = String(claudeError?.message || claudeError)
-          logger.error('FAST_GENERATE_CLAUDE_FAILED', { error: claudeErrorMsg })
-          return NextResponse.json(
-            { error: 'AI generation failed', message: 'Hệ thống AI đang xử lý quá tải. Vui lòng thử lại sau.' },
-            { status: 503 }
-          )
-        }
-      } else {
-        // No Claude API key, return generic error
-        logger.error('FAST_GENERATE_NO_FALLBACK', { error: 'Claude API key not configured' })
+      // Fallback to GPT-4o mini retry
+      try {
+        logger.info('FAST_GENERATE_FALLBACK_GPT_RETRY', {})
+        raw = await callGptRetry(String(systemPrompt), userPrompt.slice(0, 7000), maxTokens)
+        usedModel = 'gpt-4o-mini'
+        logger.info('FAST_GENERATE_FALLBACK_GPT_RETRY_DONE', { size: raw.length, model: usedModel })
+      } catch (fallbackError: any) {
+        const fallbackErrorMsg = String(fallbackError?.message || fallbackError)
+        logger.error('FAST_GENERATE_FALLBACK_GPT_RETRY_FAILED', { error: fallbackErrorMsg })
         return NextResponse.json(
           { error: 'AI generation failed', message: 'Hệ thống AI đang xử lý quá tải. Vui lòng thử lại sau.' },
           { status: 503 }
