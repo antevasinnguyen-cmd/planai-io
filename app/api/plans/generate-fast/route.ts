@@ -196,93 +196,9 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Ensure profile exists first (to avoid FK constraint violation 23503)
+    // Use userId directly for plan creation (simpler approach)
     const userId = auth.user.id
-    let upsertedProfile = null
-    try {
-      logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
-      const { data: existingProfile } = await admin
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle()
-      
-      if (!existingProfile) {
-        logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
-        // Get user email from auth.users first
-        const { data: authUser } = await admin.auth.admin.getUserById(userId)
-        const userEmail = authUser?.user?.email || `user-${userId.slice(0, 8)}@placeholder.com`
-        
-        // Check if profile exists by email (might be from another user)
-        const { data: existingByEmail } = await admin
-          .from('profiles')
-          .select('id')
-          .eq('email', userEmail)
-          .maybeSingle()
-        
-        let profileError = null
-        
-        if (existingByEmail) {
-          // Profile exists with this email - use existing profile for plan
-          // Don't try to update profile.id as it violates FK constraints
-          logger.info('FAST_GENERATE_PROFILE_EXISTS_BY_EMAIL', { userId, email: userEmail, existingId: existingByEmail.id })
-          upsertedProfile = existingByEmail
-          profileError = null
-        } else {
-          // Profile doesn't exist, create new one
-          logger.info('FAST_GENERATE_PROFILE_CREATING_NEW', { userId, email: userEmail })
-          const { data: created, error: createErr } = await admin
-            .from('profiles')
-            .insert({
-              id: userId,
-              email: userEmail,
-              subscription_tier: 'free',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single()
-          
-          profileError = createErr
-          upsertedProfile = created
-        }
-        
-        if (profileError) {
-          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { 
-            error: String(profileError), 
-            code: profileError?.code,
-            message: profileError?.message,
-            details: profileError?.details,
-            userEmail
-          })
-          
-          // If NOT NULL constraint violation or FK violation, stop here
-          if (profileError?.code === '23502' || profileError?.code === '23503') {
-            logger.error('FAST_GENERATE_PROFILE_CONSTRAINT_VIOLATION', { 
-              userId, 
-              code: profileError?.code,
-              message: profileError?.code === '23502' ? 'Missing required fields' : 'User does not exist in auth.users'
-            })
-            return NextResponse.json(
-              { error: 'Profile creation failed', message: 'Không thể tạo hồ sơ người dùng. Vui lòng đăng xuất và đăng nhập lại.' },
-              { status: 401 }
-            )
-          }
-          // Continue anyway for other errors
-        } else {
-          logger.info('FAST_GENERATE_PROFILE_CREATED', { userId, email: userEmail, profileId: upsertedProfile?.id })
-        }
-      } else {
-        logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
-      }
-    } catch (profileError) {
-      logger.error('FAST_GENERATE_PROFILE_CHECK_ERROR', { error: String(profileError) })
-      // Continue anyway
-    }
-    
-    // Create partial plan first
-    // Use upsertedProfile.id if available, otherwise use userId
-    const profileIdForPlan = upsertedProfile?.id || userId
+    const profileIdForPlan = userId
     let planId: string
     try {
       planId = await createPartialPlan(admin, profileIdForPlan, planName, goals, collectedInfo)
