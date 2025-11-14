@@ -27,12 +27,17 @@ CHECK (status IN ('draft', 'generating', 'completed', 'failed'));
 ALTER TABLE plans ADD CONSTRAINT plans_word_count_check 
 CHECK (word_count >= 0);
 
--- 6. Add proper foreign key constraints pointing to auth.users
-ALTER TABLE profiles ADD CONSTRAINT profiles_user_id_fkey 
+-- 6. Add proper foreign key constraints
+-- profiles.id should reference auth.users(id)
+ALTER TABLE profiles ADD CONSTRAINT profiles_id_fkey 
 FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
+-- plans.user_id should reference profiles(id) (based on error message)
 ALTER TABLE plans ADD CONSTRAINT plans_user_id_fkey 
-FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+
+-- 7. Make email nullable in profiles (in case we can't get it from auth)
+ALTER TABLE profiles ALTER COLUMN email DROP NOT NULL;
 
 -- 6. Verify the changes
 SELECT conname, pg_get_constraintdef(oid) 

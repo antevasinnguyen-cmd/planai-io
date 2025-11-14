@@ -208,8 +208,13 @@ export async function POST(request: NextRequest) {
       
       if (!existingProfile) {
         logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
+        // Get user email from auth.users first
+        const { data: authUser } = await admin.auth.admin.getUserById(userId)
+        const userEmail = authUser?.user?.email || `user-${userId.slice(0, 8)}@placeholder.com`
+        
         const { error: profileError } = await admin.from('profiles').insert({
           id: userId,
+          email: userEmail,
           subscription_tier: 'free',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -220,22 +225,25 @@ export async function POST(request: NextRequest) {
             error: String(profileError), 
             code: profileError?.code,
             message: profileError?.message,
-            details: profileError?.details
+            details: profileError?.details,
+            userEmail
           })
-          // If FK violation, the user might not exist in auth.users
-          if (profileError?.code === '23503') {
-            logger.error('FAST_GENERATE_FK_VIOLATION', { 
+          
+          // If NOT NULL constraint violation or FK violation, stop here
+          if (profileError?.code === '23502' || profileError?.code === '23503') {
+            logger.error('FAST_GENERATE_PROFILE_CONSTRAINT_VIOLATION', { 
               userId, 
-              message: 'User does not exist in auth.users table'
+              code: profileError?.code,
+              message: profileError?.code === '23502' ? 'Missing required fields' : 'User does not exist in auth.users'
             })
             return NextResponse.json(
-              { error: 'User authentication error', message: 'Vui lòng đăng xuất và đăng nhập lại.' },
+              { error: 'Profile creation failed', message: 'Không thể tạo hồ sơ người dùng. Vui lòng đăng xuất và đăng nhập lại.' },
               { status: 401 }
             )
           }
-          // Continue anyway - might be created by auth trigger
+          // Continue anyway for other errors - might be created by auth trigger
         } else {
-          logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
+          logger.info('FAST_GENERATE_PROFILE_CREATED', { userId, email: userEmail })
         }
       } else {
         logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
