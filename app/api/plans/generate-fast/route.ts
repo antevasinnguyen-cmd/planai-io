@@ -141,23 +141,54 @@ export async function POST(request: NextRequest) {
   try {
     logger.info('FAST_GENERATE_START', {})
     
-    const body = await request.json()
-    const { planName, goals, collectedInfo = {} } = body || {}
+    // Parse request body
+    let body, planName, goals, collectedInfo
+    try {
+      body = await request.json()
+      planName = body?.planName
+      goals = body?.goals
+      collectedInfo = body?.collectedInfo || {}
+      logger.info('FAST_GENERATE_BODY_PARSED', { planName, goals, hasCollectedInfo: !!collectedInfo })
+    } catch (parseError) {
+      logger.error('FAST_GENERATE_BODY_PARSE_ERROR', { error: String(parseError) })
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
 
     // Auth
-    const rh = createRouteHandlerClient({ cookies: () => cookies() })
-    const { data: auth } = await rh.auth.getUser()
+    let auth
+    try {
+      const rh = createRouteHandlerClient({ cookies: () => cookies() })
+      const authResult = await rh.auth.getUser()
+      auth = authResult.data
+      logger.info('FAST_GENERATE_AUTH_SUCCESS', { userId: auth?.user?.id })
+    } catch (authError) {
+      logger.error('FAST_GENERATE_AUTH_ERROR', { error: String(authError) })
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 })
+    }
+    
     if (!auth?.user) {
+      logger.error('FAST_GENERATE_NO_USER', {})
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Tier & limits
-    const { data: sub } = await getUserSubscription(auth.user.id)
-    const tier = sub?.tier || 'free'
-    const limits = getSubscriptionLimits(tier)
+    let sub, tier, limits
+    try {
+      const subResult = await getUserSubscription(auth.user.id)
+      sub = subResult.data
+      tier = sub?.tier || 'free'
+      limits = getSubscriptionLimits(tier)
+      logger.info('FAST_GENERATE_SUBSCRIPTION_CHECK', { tier, limits })
+    } catch (subError) {
+      logger.error('FAST_GENERATE_SUBSCRIPTION_ERROR', { error: String(subError) })
+      // Continue with free tier as fallback
+      tier = 'free'
+      limits = getSubscriptionLimits('free')
+    }
 
     // Only for Free tier
     if (tier !== 'free') {
+      logger.error('FAST_GENERATE_WRONG_TIER', { tier })
       return NextResponse.json(
         { error: 'Fast route only for Free tier' },
         { status: 400 }
@@ -187,11 +218,21 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
     // Create partial plan first to avoid timeout issues
-    const admin = getAdminClient()
-    if (!admin) {
-      logger.error('FAST_GENERATE_NO_ADMIN_CLIENT', { userId: auth.user.id })
+    let admin
+    try {
+      admin = getAdminClient()
+      if (!admin) {
+        logger.error('FAST_GENERATE_NO_ADMIN_CLIENT', { userId: auth.user.id })
+        return NextResponse.json(
+          { error: 'Failed to save plan', message: 'Lỗi cấu hình máy chủ. Vui lòng thử lại sau.' },
+          { status: 500 }
+        )
+      }
+      logger.info('FAST_GENERATE_ADMIN_CLIENT_OK', { userId: auth.user.id })
+    } catch (adminError) {
+      logger.error('FAST_GENERATE_ADMIN_CLIENT_ERROR', { error: String(adminError) })
       return NextResponse.json(
-        { error: 'Failed to save plan', message: 'Lỗi cấu hình máy chủ. Vui lòng thử lại sau.' },
+        { error: 'Failed to initialize admin client', message: 'Lỗi cấu hình máy chủ. Vui lòng thử lại sau.' },
         { status: 500 }
       )
     }
@@ -201,8 +242,11 @@ export async function POST(request: NextRequest) {
     const profileIdForPlan = userId
     let planId: string
     try {
+      logger.info('FAST_GENERATE_CREATE_PARTIAL_START', { userId, planName, goals })
       planId = await createPartialPlan(admin, profileIdForPlan, planName, goals, collectedInfo)
+      logger.info('FAST_GENERATE_CREATE_PARTIAL_SUCCESS', { planId })
     } catch (createError) {
+      logger.error('FAST_GENERATE_CREATE_PARTIAL_FAILED', { error: String(createError), userId })
       return NextResponse.json(
         { error: 'Failed to initialize plan', message: 'Không thể khởi tạo kế hoạch. Vui lòng thử lại sau.' },
         { status: 500 }
@@ -415,9 +459,19 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error: any) {
-    logger.error('FAST_GENERATE_ERROR', { error: String(error?.message || error) })
+    logger.error('FAST_GENERATE_ERROR', { 
+      error: String(error?.message || error),
+      stack: error?.stack?.slice(0, 500),
+      name: error?.name,
+      code: error?.code
+    })
     return NextResponse.json(
-      { error: 'Generation failed', message: 'Không thể tạo kế hoạch. Vui lòng thử lại sau.' },
+      { 
+        error: 'Generation failed', 
+        message: 'Không thể tạo kế hoạch. Vui lòng thử lại sau.',
+        details: error?.message || 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     )
   }
