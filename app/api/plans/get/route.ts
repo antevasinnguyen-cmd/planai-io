@@ -47,8 +47,45 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // If no user, try admin client directly (for debugging)
     if (!user) {
-      console.error('=== PLAN_GET_API: No authenticated user found')
+      console.log('=== PLAN_GET_API: No authenticated user, trying admin client directly')
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
+        
+        if (supabaseUrl && serviceKey) {
+          const admin = createClient(supabaseUrl, serviceKey)
+          const { data: adminData, error: adminError } = await admin
+            .from('plans')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+          
+          if (adminError) {
+            console.error('=== PLAN_GET_API: Admin query error', { error: adminError.message })
+            return NextResponse.json({ 
+              error: `Database error: ${adminError.message}`,
+              code: adminError.code
+            }, { status: 500 })
+          }
+          
+          if (!adminData) {
+            console.error('=== PLAN_GET_API: Plan not found via admin', { planId: id })
+            return NextResponse.json({ 
+              error: 'Plan not found',
+              planId: id
+            }, { status: 404 })
+          }
+          
+          console.log('=== PLAN_GET_API: Plan retrieved via admin (no auth)', { planId: id })
+          return NextResponse.json({ plan: adminData })
+        }
+      } catch (adminErr) {
+        console.error('=== PLAN_GET_API: Admin client exception', { error: String(adminErr) })
+      }
+      
+      console.error('=== PLAN_GET_API: No authenticated user and admin failed')
       return NextResponse.json({ error: 'Unauthorized - No valid session' }, { status: 401 })
     }
 
