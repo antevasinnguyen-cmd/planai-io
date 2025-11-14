@@ -65,12 +65,13 @@ async function createPartialPlan(admin: any, userId: string, title: string, goal
       title: safeTitle,
       goal: safeGoal,
       content: '**Đang tạo kế hoạch...**\n\nHệ thống đang xử lý yêu cầu của bạn. Vui lòng đợi trong giây lát.',
-      status: 'generating',
+      status: 'draft', // Use 'draft' instead of 'generating' to avoid CHECK constraint
       word_count: 0,
       collected_info: safeCollectedInfo,
       metadata: JSON.stringify({
         generation_started: new Date().toISOString(),
-        progress: 0
+        progress: 0,
+        status: 'generating' // Track actual status in metadata
       }),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -390,7 +391,8 @@ export async function POST(request: NextRequest) {
         metadata: JSON.stringify({
           model_used: usedModel,
           generated_at: new Date().toISOString(),
-          progress: 100
+          progress: 100,
+          status: 'completed'
         }),
         updated_at: new Date().toISOString()
       }

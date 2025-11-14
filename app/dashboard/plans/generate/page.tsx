@@ -362,7 +362,7 @@ export default function GeneratePlanPage() {
           }
         }
         
-        if (result.plan.status === 'generating' || (metadata && metadata.progress < 100)) {
+        if (metadata?.status === 'generating' || (metadata && metadata.progress < 100)) {
           console.log('=== GENERATE: Plan is still generating, polling for progress ===')
           const progress = metadata?.progress || 10
           setProgress(progress)
@@ -473,7 +473,7 @@ export default function GeneratePlanPage() {
           setStatus(`Hệ thống AI đang xử lý... ${progress}%`)
           
           // If completed, redirect to plan
-          if (plan.status === 'completed' || progress >= 100) {
+          if (plan.status === 'completed' || metadata?.status === 'completed' || progress >= 100) {
             setProgress(100)
             setStatus('Hoàn thành!')
             setJobStatus('completed')
