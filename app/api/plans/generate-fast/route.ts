@@ -212,19 +212,46 @@ export async function POST(request: NextRequest) {
         const { data: authUser } = await admin.auth.admin.getUserById(userId)
         const userEmail = authUser?.user?.email || `user-${userId.slice(0, 8)}@placeholder.com`
         
-        const { data: upsertedProfile, error: profileError } = await admin
+        // Check if profile exists by email (might be from another user)
+        const { data: existingByEmail } = await admin
           .from('profiles')
-          .upsert({
-            id: userId,
-            email: userEmail,
-            subscription_tier: 'free',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'id'
-          })
-          .select()
-          .single()
+          .select('id')
+          .eq('email', userEmail)
+          .maybeSingle()
+        
+        let profileError = null
+        let upsertedProfile = null
+        
+        if (existingByEmail) {
+          // Profile exists with this email, update it with correct user_id
+          logger.info('FAST_GENERATE_PROFILE_EXISTS_BY_EMAIL', { userId, email: userEmail, existingId: existingByEmail.id })
+          const { data: updated, error: updateErr } = await admin
+            .from('profiles')
+            .update({ id: userId })
+            .eq('email', userEmail)
+            .select()
+            .single()
+          
+          profileError = updateErr
+          upsertedProfile = updated
+        } else {
+          // Profile doesn't exist, create new one
+          logger.info('FAST_GENERATE_PROFILE_CREATING_NEW', { userId, email: userEmail })
+          const { data: created, error: createErr } = await admin
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: userEmail,
+              subscription_tier: 'free',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single()
+          
+          profileError = createErr
+          upsertedProfile = created
+        }
         
         if (profileError) {
           logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { 
@@ -247,7 +274,7 @@ export async function POST(request: NextRequest) {
               { status: 401 }
             )
           }
-          // Continue anyway for other errors (including 23505 duplicates) - upsert should handle them
+          // Continue anyway for other errors
         } else {
           logger.info('FAST_GENERATE_PROFILE_CREATED', { userId, email: userEmail, profileId: upsertedProfile?.id })
         }
