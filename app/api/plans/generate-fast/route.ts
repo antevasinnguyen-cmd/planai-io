@@ -198,6 +198,7 @@ export async function POST(request: NextRequest) {
     
     // Ensure profile exists first (to avoid FK constraint violation 23503)
     const userId = auth.user.id
+    let upsertedProfile = null
     try {
       logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
       const { data: existingProfile } = await admin
@@ -220,7 +221,6 @@ export async function POST(request: NextRequest) {
           .maybeSingle()
         
         let profileError = null
-        let upsertedProfile = null
         
         if (existingByEmail) {
           // Profile exists with this email - use existing profile for plan
