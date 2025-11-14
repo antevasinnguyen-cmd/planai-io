@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   ArrowLeft, Download, Edit, Share2, Trash2, FileText, 
   Clock, Sparkles, FileDown, FileSpreadsheet, Globe,
-  Star, Moon, Zap, History, Save, Eye, Code, Lock
+  Star, Moon, Zap, History, Save, Eye, Code, Lock, Crown
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase, getUserSubscription } from '@/lib/supabase'
@@ -69,7 +69,7 @@ export default function PlanViewEnhanced() {
         .from('plans')
         .select('*')
         .eq('id', planId)
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('=== PLAN_LOAD: Supabase error', { error: error.message, code: error.code })
@@ -244,6 +244,27 @@ export default function PlanViewEnhanced() {
     const mailtoLink = `mailto:?subject=${subject}&body=${body}`
     
     window.open(mailtoLink, '_blank')
+  }
+
+  const handleShareLink = () => {
+    if (!plan) return
+    
+    const planUrl = `${window.location.origin}/dashboard/plans/${plan.id}`
+    
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      navigator.share({
+        title: `Kế hoạch tài chính: ${plan.title}`,
+        text: `Xem kế hoạch tài chính của tôi tại PlanAI`,
+        url: planUrl,
+      }).catch((err) => console.log('Share failed:', err))
+    } else {
+      // Fallback: copy link
+      navigator.clipboard.writeText(planUrl).then(() => {
+        alert('Link đã copy vào clipboard!')
+      }).catch(() => {
+        alert(`Link: ${planUrl}`)
+      })
+    }
   }
 
   const toggleSpiritual = async () => {
