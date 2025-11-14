@@ -38,6 +38,22 @@ function getFreeTierPromptSimplified(userInfo: any, constraints: any): string {
   const savings = formatCurrency(userInfo.savings);
   const location = (userInfo.location && userInfo.location !== true && userInfo.location !== 'true') ? String(userInfo.location) : 'Chưa cung cấp';
   const timeline = (userInfo.timeline && userInfo.timeline !== true && userInfo.timeline !== 'true') ? String(userInfo.timeline) : 'Chưa cung cấp';
+  const goalVal = (userInfo.goal && userInfo.goal !== true && userInfo.goal !== 'true') ? String(userInfo.goal) : 'Chưa cung cấp'
+
+  // Helpers to only include provided fields
+  const onlyIf = (label: string, value: string) => (value && value !== 'Chưa cung cấp') ? `• **${label}**: ${value}` : ''
+  const personalSummary = [
+    onlyIf('Họ tên', userInfo.full_name),
+    onlyIf('Độ tuổi', String(userInfo.age || '')),
+    onlyIf('Nơi sinh sống', location),
+    onlyIf('Nghề nghiệp', userInfo.occupation)
+  ].filter(Boolean).join('\n')
+  const financeSummary = [
+    onlyIf('Thu nhập hàng tháng', income !== 'Chưa cung cấp' ? `${income} VNĐ` : ''),
+    onlyIf('Tài sản tích lũy', savings !== 'Chưa cung cấp' ? `${savings} VNĐ` : ''),
+    onlyIf('Mục tiêu tài chính', goalVal),
+    onlyIf('Thời gian thực hiện', timeline)
+  ].filter(Boolean).join('\n')
   
   return `
 🎯 BẠN LÀ CHUYÊN GIA KẾ HOẠCH TÀI CHÍNH CAO CẤP của PlanAI!
@@ -52,23 +68,13 @@ YÊU CẦU BẮT BUỘC:
 
 ## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN
 
-**Xin chào bạn!** 👋
+**Tóm tắt nhanh những gì bạn đã chia sẻ:**
 
-Dưới đây là CÁC THÔNG TIN BẠN ĐÃ CUNG CẤP. Nếu mục nào hiển thị "Chưa cung cấp" thì các phần sau SẼ KHÔNG GIẢ ĐỊNH hay bịa thêm dữ liệu cho mục đó.
+${personalSummary ? `📋 **Thông tin cá nhân:**\n${personalSummary}` : ''}
 
-📋 **Thông tin cá nhân:**
-• **Họ tên**: ${userInfo.full_name || 'Chưa cung cấp'}
-• **Độ tuổi**: ${userInfo.age || 'Chưa cung cấp'}
-• **Nơi sinh sống**: ${location}
-• **Nghề nghiệp**: ${userInfo.occupation || 'Chưa cung cấp'}
+${financeSummary ? `\n💰 **Tình hình tài chính:**\n${financeSummary}` : ''}
 
-💰 **Tình hình tài chính:**
-• **Thu nhập hàng tháng**: ${income} VNĐ
-• **Tài sản tích lũy**: ${savings} VNĐ
-• **Mục tiêu tài chính**: ${userInfo.goal || 'Chưa cung cấp'}
-• **Thời gian thực hiện**: ${timeline}
-
-Từ dữ liệu trên, PlanAI sẽ xây dựng kế hoạch mà KHÔNG bịa thêm bất kỳ thông tin cá nhân nào.
+> Lưu ý: Các phần sau chỉ phân tích dựa trên dữ liệu có thật ở trên (không giả định thêm).
 
 ## 🎯 PHẦN 2: PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH
 

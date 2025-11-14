@@ -145,11 +145,24 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     setExpandedTables(newExpanded)
   }
 
-  // Extract CTA section for special rendering
-  const ctaRegex = /🎯\s*NÂNG CẤP GÓI TRẢ PHÍ NGAY[\s\S]*?(?=##|$)/
+  // Extract CTA section for special rendering (match regardless of leading emoji)
+  const ctaRegex = /NÂNG CẤP GÓI TRẢ PHÍ NGAY[\s\S]*?(?=##|$)/
   const ctaMatch = fixedContent.match(ctaRegex)
   const ctaContent = ctaMatch ? ctaMatch[0] : null
   const mainContent = ctaContent ? fixedContent.replace(ctaRegex, '') : fixedContent
+
+  // Sanitize legacy content: remove placeholder tokens like [X%], [Y tỷ], and defaulted fabricated fields
+  const sanitizedMain = useMemo(() => {
+    let t = mainContent
+    // Replace bracket placeholders [X], [Y], [Z] with a neutral note
+    t = t.replace(/\[(?:X|Y|Z)[^\]]*\]/g, '(Không đủ dữ liệu)')
+    // Replace ': true' values
+    t = t.replace(/:\s*true\b/gi, ': Chưa cung cấp')
+    // Common defaulted phrases -> neutralize
+    t = t.replace(/Độ tuổi[^:]*:\s*25-35[^\n]*/gi, 'Độ tuổi: Chưa cung cấp')
+    t = t.replace(/Nghề nghiệp[^:]*:\s*Nhân viên văn phòng/gi, 'Nghề nghiệp: Chưa cung cấp')
+    return t
+  }, [mainContent])
 
   return (
     <div className="w-full relative">
@@ -172,47 +185,39 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         </div>
       )}
 
-      {/* Beautiful CTA Section - Only for FREE tier */}
-      {userTier === 'free' && ctaContent && (
-        <div className="mb-12 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 p-[2px]">
+      {/* Beautiful CTA Section - Only for FREE tier - moved to bottom */}
+      {userTier === 'free' && (
+        <div className="mt-12 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 p-[2px]">
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-8">
             <div className="text-center space-y-6">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-4xl animate-pulse">
                 🎯
               </div>
-              
               <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Mở khóa toàn bộ sức mạnh của PlanAI!
+                Nâng cấp để mở khóa đầy đủ tính năng
               </h2>
-              
               <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Bản kế hoạch FREE này chỉ là khởi đầu. Nâng cấp ngay để nhận được kế hoạch chi tiết gấp 10 lần!
+                Khi bạn sẵn sàng, hãy nâng cấp để có phân tích sâu hơn và công cụ quản trị thực tế.
               </p>
-
               <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
                 {[
-                  '✅ 24 phần phân tích chuyên sâu (gấp 3 lần)',
-                  '✅ Google Sheets tự động với 7 tabs tracking',
-                  '✅ Phân tích tử vi tài chính & thần số học',
-                  '✅ 3-5 mô hình kinh doanh cá nhân hóa',
-                  '✅ 50+ tài liệu học tập premium',
-                  '✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết',
-                  '✅ Dự báo 3 kịch bản & chiến lược rủi ro',
-                  '✅ Hỗ trợ 1-1 qua chat với AI advisor'
+                  '✅ 24 phần phân tích chi tiết',
+                  '✅ Google Sheets theo dõi tự động',
+                  '✅ 3–5 mô hình kinh doanh cá nhân hóa',
+                  '✅ Dự báo và chiến lược rủi ro'
                 ].map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <span className="text-gray-700 dark:text-gray-300">{feature}</span>
                   </div>
                 ))}
               </div>
-
               <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
                 <a
                   href="/pricing"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105"
                 >
                   <span>🚀</span>
-                  <span>Nâng cấp ngay - Giảm 50%</span>
+                  <span>Nâng cấp ngay</span>
                 </a>
                 <a
                   href="/dashboard/subscription"
@@ -226,6 +231,8 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
           </div>
         </div>
       )}
+
+      {/* CTA will be rendered at the bottom now */}
 
       {/* Main Content with Ebook Style */}
       <div className="prose prose-lg dark:prose-invert max-w-none mb-8 
@@ -309,7 +316,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
             },
           }}
         >
-          {fixedContent}
+          {sanitizedMain}
         </ReactMarkdown>
       </div>
 

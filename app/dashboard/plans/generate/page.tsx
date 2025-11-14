@@ -217,7 +217,7 @@ export default function GeneratePlanPage() {
 
   // Timer to update elapsed seconds
   useEffect(() => {
-    if (jobStatus === 'processing' && startTimeRef.current) {
+    if ((jobStatus === 'processing' || jobStatus === 'pending') && startTimeRef.current && !error) {
       const timer = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000)
         setElapsedSeconds(elapsed)
@@ -225,12 +225,15 @@ export default function GeneratePlanPage() {
         // Update progress based on elapsed time
         // Smooth progression: 10% at start, 90% at 5 minutes, stays at 90% until completion
         const estimatedProgress = Math.min(90, 10 + (elapsed / 300) * 80)
-        setProgress((p) => Math.max(p, estimatedProgress))
+        setProgress((p) => {
+          const next = Math.max(p, estimatedProgress)
+          return isNaN(next) ? 10 : next
+        })
       }, 1000)
       
       return () => clearInterval(timer)
     }
-  }, [jobStatus])
+  }, [jobStatus, error])
 
   const startPlanGeneration = async () => {
     console.log('=== GENERATE: Function called ===', { user: user?.id })
@@ -278,7 +281,9 @@ export default function GeneratePlanPage() {
       }
 
       setStatus('Gửi yêu cầu tới hệ thống AI...')
-      setProgress(5)
+      // kick off timer early to avoid UI stuck at 5%
+      startTimeRef.current = Date.now()
+      setProgress(10)
 
       // Get auth token
       const { supabase } = await import('@/lib/supabase')
@@ -492,7 +497,7 @@ export default function GeneratePlanPage() {
           .from('plans')
           .select('status, metadata')
           .eq('id', planId)
-          .single()
+          .maybeSingle()
         
         if (plan) {
           // Parse metadata from JSON string if needed
@@ -671,14 +676,7 @@ export default function GeneratePlanPage() {
         </Link>
         
         <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-          {/* No data state */}
-          {!error && jobStatus === 'pending' && !jobId && (
-            <>
-              <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Loader2 className="w-10 h-10 text-yellow-500 animate-spin" />
-              </div>
-            </>
-          )}
+          {/* Removed duplicate pending spinner block */}
           
           {/* Error state */}
           {error && jobStatus !== 'processing' && (
@@ -733,7 +731,7 @@ export default function GeneratePlanPage() {
           {/* Loading state */}
           {(jobStatus === 'pending' || jobStatus === 'processing') && (
             <>
-              {/* Icon */}
+              {/* Single Loading Icon (remove yellow duplicate) */}
               <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
                 <Loader2 className="w-10 h-10 text-white animate-spin" />
               </div>
