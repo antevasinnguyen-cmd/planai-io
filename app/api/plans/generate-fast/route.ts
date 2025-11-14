@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'id,email'
+          onConflict: 'id'
         })
         
         if (profileError) {
