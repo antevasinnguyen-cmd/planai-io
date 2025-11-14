@@ -303,17 +303,43 @@ export default function GeneratePlanPage() {
       setProgress(useBackgroundJob ? 10 : 5)
 
       // Call appropriate route
-      const res = await fetch(apiRoute, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({
-          planName: finalPlanName || 'Kế hoạch tài chính',
-          goals: finalGoals || '',
-          collectedInfo: data.collectedInfo || {},
-          messages: Array.isArray(data?.messages) ? data.messages : undefined
-        })
+      console.log('=== GENERATE: Making API call ===', { 
+        apiRoute, 
+        tier, 
+        useBackgroundJob,
+        planName: finalPlanName,
+        goals: finalGoals,
+        hasCollectedInfo: !!data.collectedInfo
       })
+      
+      let res
+      try {
+        res = await fetch(apiRoute, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({
+            planName: finalPlanName || 'Kế hoạch tài chính',
+            goals: finalGoals || '',
+            collectedInfo: data.collectedInfo || {},
+            messages: Array.isArray(data?.messages) ? data.messages : undefined
+          })
+        })
+        
+        console.log('=== GENERATE: API response received ===', { 
+          status: res.status, 
+          statusText: res.statusText,
+          ok: res.ok
+        })
+      } catch (fetchError) {
+        console.error('=== GENERATE: Network/Fetch Error ===', { 
+          error: fetchError,
+          message: fetchError instanceof Error ? fetchError.message : String(fetchError),
+          apiRoute
+        })
+        setError('Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.')
+        return
+      }
 
       if (!res.ok) {
         console.error('Error starting plan generation:', res.status)
