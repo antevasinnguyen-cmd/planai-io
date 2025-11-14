@@ -344,49 +344,9 @@ export async function POST(request: NextRequest) {
     // Update progress to 95%
     await updatePartialPlan(admin, planId, 95)
     
-    // Save plan directly with proper error handling
+    // Save plan directly - update existing plan instead of creating new one
     try {
       const userId = auth.user.id
-      
-      // Ensure profile exists BEFORE inserting plan
-      logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
-      const { data: existingProfile, error: profileCheckError } = await admin
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle()
-      
-      if (profileCheckError) {
-        logger.error('FAST_GENERATE_PROFILE_CHECK_ERROR', { error: String(profileCheckError) })
-      }
-      
-      if (!existingProfile) {
-        logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
-        // Upsert with only fields that definitely exist in profiles table
-        const { error: createError } = await admin.from('profiles').upsert({
-          id: userId,
-          subscription_tier: 'free',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id',
-          ignoreDuplicates: false
-        })
-        
-        if (createError) {
-          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { 
-            error: String(createError), 
-            code: createError?.code
-          })
-          // Continue anyway - profile might exist or will be created by auth trigger
-        } else {
-          logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
-        }
-      } else {
-        logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
-      }
-      
-      // Update existing plan instead of creating new one
       const planPayload = {
         title,
         goal: goals || 'Kế hoạch tài chính',
