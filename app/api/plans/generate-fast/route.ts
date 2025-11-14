@@ -204,15 +204,43 @@ export async function POST(request: NextRequest) {
       
       if (!existingProfile) {
         logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
-        const { error: createError } = await admin.from('profiles').insert({
+        // Use upsert with all required fields and defaultToNull for optional ones
+        const { error: createError } = await admin.from('profiles').upsert({
           id: userId,
+          email: null,
+          full_name: null,
+          age: null,
+          occupation: null,
+          location: null,
+          current_income: null,
+          savings: null,
+          financial_goal: null,
+          timeline: null,
+          risk_tolerance: null,
+          subscription_tier: 'free',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id',
+          ignoreDuplicates: false
         })
         
         if (createError) {
-          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { error: String(createError), code: createError?.code })
-          // Continue anyway - maybe profile was created by another request
+          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { 
+            error: String(createError), 
+            code: createError?.code,
+            message: createError?.message,
+            details: createError?.details
+          })
+          // Try one more time with minimal data
+          const { error: retryError } = await admin.from('profiles').upsert({
+            id: userId,
+            subscription_tier: 'free'
+          }, { onConflict: 'id' })
+          
+          if (retryError) {
+            logger.error('FAST_GENERATE_PROFILE_CREATE_RETRY_ERROR', { error: String(retryError) })
+          }
         } else {
           logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
         }
