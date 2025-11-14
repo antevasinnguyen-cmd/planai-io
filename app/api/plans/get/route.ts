@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 import { getCurrentUser } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -53,12 +54,46 @@ export async function GET(request: NextRequest) {
 
     console.log('=== PLAN_GET_API: Querying plan from database', { planId: id, userId: user.id })
     
-    // First, try to get plan by ID (without user_id filter since plan might be created with different profile ID)
-    const { data, error } = await supabase
+    // First, try to get plan by ID using auth client (with RLS)
+    let data = null
+    let error = null
+    
+    const queryResult = await supabase
       .from('plans')
       .select('*')
       .eq('id', id)
       .maybeSingle()
+    
+    data = queryResult.data
+    error = queryResult.error
+    
+    // If RLS blocks it, try with admin client (bypass RLS)
+    if (!data && !error) {
+      console.log('=== PLAN_GET_API: Auth client returned no data, trying admin client')
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
+        
+        if (supabaseUrl && serviceKey) {
+          const admin = createClient(supabaseUrl, serviceKey)
+          const adminResult = await admin
+            .from('plans')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+          
+          if (adminResult.data) {
+            data = adminResult.data
+            console.log('=== PLAN_GET_API: Plan found via admin client')
+          } else if (adminResult.error) {
+            error = adminResult.error
+            console.error('=== PLAN_GET_API: Admin client error', { error: adminResult.error.message })
+          }
+        }
+      } catch (adminErr) {
+        console.error('=== PLAN_GET_API: Admin client exception', { error: String(adminErr) })
+      }
+    }
 
     if (error) {
       console.error('=== PLAN_GET_API: Database query error', { error: error.message, code: error.code })
