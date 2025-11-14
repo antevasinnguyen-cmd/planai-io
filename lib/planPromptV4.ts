@@ -8,18 +8,36 @@
  * Generate FREE tier prompt - 9 clear sections
  */
 function getFreeTierPromptSimplified(userInfo: any, constraints: any): string {
-  // Format numbers properly
+  // Parse Vietnamese currency-like inputs robustly (e.g., "3 tỷ", "800 triệu", "10tr", "7-10 triệu")
+  const toNumberVND = (val: any): number | null => {
+    if (val === null || val === undefined || val === true || val === 'true' || val === false) return null;
+    let s = String(val).toLowerCase().trim();
+    // Handle ranges like "7-10 triệu" -> take lower bound
+    if (s.includes('-')) s = s.split('-')[0];
+    let multiplier = 1;
+    if (s.includes('tỷ') || s.includes('ty') || s.includes('bn')) multiplier = 1_000_000_000;
+    else if (s.includes('triệu') || s.includes('trieu') || s.includes('tr') || /\bmi?l?\b/.test(s)) multiplier = 1_000_000;
+    else if (s.includes('nghìn') || s.includes('nghin') || s.includes('k')) multiplier = 1_000;
+    // Keep only digits, dot, comma
+    const cleaned = s.replace(/[^0-9.,]/g, '');
+    if (!cleaned) return null;
+    // Normalize: remove thousand separators, unify decimal
+    const normalized = cleaned.replace(/\./g, '').replace(/,/g, '.');
+    const num = parseFloat(normalized);
+    if (isNaN(num) || num <= 0) return null;
+    return Math.round(num * multiplier);
+  };
+
   const formatCurrency = (val: any) => {
-    if (!val || val === true || val === 'true') return 'Chưa cung cấp';
-    const num = parseInt(String(val).replace(/\D/g, ''));
-    if (!num || isNaN(num)) return 'Chưa cung cấp';
-    return new Intl.NumberFormat('vi-VN').format(num);
+    const n = toNumberVND(val);
+    if (n === null) return 'Chưa cung cấp';
+    return new Intl.NumberFormat('vi-VN').format(n);
   }
   
   const income = formatCurrency(userInfo.income);
   const savings = formatCurrency(userInfo.savings);
-  const location = (userInfo.location === true || userInfo.location === 'true') ? 'Việt Nam' : (userInfo.location || 'Việt Nam');
-  const timeline = (userInfo.timeline === true || userInfo.timeline === 'true') ? '12 tháng' : (userInfo.timeline || '12 tháng');
+  const location = (userInfo.location && userInfo.location !== true && userInfo.location !== 'true') ? String(userInfo.location) : 'Chưa cung cấp';
+  const timeline = (userInfo.timeline && userInfo.timeline !== true && userInfo.timeline !== 'true') ? String(userInfo.timeline) : 'Chưa cung cấp';
   
   return `
 🎯 BẠN LÀ CHUYÊN GIA KẾ HOẠCH TÀI CHÍNH CAO CẤP của PlanAI!
@@ -34,45 +52,36 @@ YÊU CẦU BẮT BUỘC:
 
 ## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN
 
-**Xin chào bạn thân mến!** 👋
+**Xin chào bạn!** 👋
 
-Chúng tôi đã phân tích kỹ lưỡng hồ sơ tài chính của bạn:
+Dưới đây là CÁC THÔNG TIN BẠN ĐÃ CUNG CẤP. Nếu mục nào hiển thị "Chưa cung cấp" thì các phần sau SẼ KHÔNG GIẢ ĐỊNH hay bịa thêm dữ liệu cho mục đó.
 
 📋 **Thông tin cá nhân:**
-• **Họ tên**: ${userInfo.full_name || 'Quý khách'}
-• **Độ tuổi**: ${userInfo.age || '25-35'} tuổi - độ tuổi vàng để xây dựng tài sản!
+• **Họ tên**: ${userInfo.full_name || 'Chưa cung cấp'}
+• **Độ tuổi**: ${userInfo.age || 'Chưa cung cấp'}
 • **Nơi sinh sống**: ${location}
-• **Nghề nghiệp**: ${userInfo.occupation || 'Chuyên viên'}
+• **Nghề nghiệp**: ${userInfo.occupation || 'Chưa cung cấp'}
 
 💰 **Tình hình tài chính:**
 • **Thu nhập hàng tháng**: ${income} VNĐ
 • **Tài sản tích lũy**: ${savings} VNĐ
-• **Mục tiêu tài chính**: ${userInfo.goal || 'Tự do tài chính'}
+• **Mục tiêu tài chính**: ${userInfo.goal || 'Chưa cung cấp'}
 • **Thời gian thực hiện**: ${timeline}
 
-Dựa trên profile này, chúng tôi đã thiết kế một lộ trình tài chính HOÀN HẢO dành riêng cho bạn!
+Từ dữ liệu trên, PlanAI sẽ xây dựng kế hoạch mà KHÔNG bịa thêm bất kỳ thông tin cá nhân nào.
 
 ## 🎯 PHẦN 2: PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH
 
 *Để thành công, bạn cần hiểu rõ chính mình. Đây là phân tích SWOT chuyên sâu về năng lực tài chính của bạn:*
 
 ### 💪 **ĐIỂM MẠNH - Vũ khí của bạn:**
-Hãy viết 3 điểm mạnh CỤ THỂ dựa trên thông tin người dùng, ví dụ:
-• Có thu nhập ổn định từ công việc chính thức
-• Đã có thói quen tiết kiệm (nếu savings > 0)
-• Có mục tiêu rõ ràng và quyết tâm cao
+Viết 3 điểm mạnh CỤ THỂ, CHỈ dựa trên dữ liệu đã cung cấp. Nếu thiếu dữ liệu, ghi "Chưa đủ dữ liệu để xác định".
 
 ### ⚠️ **ĐIỂM YẾU - Cần khắc phục:**
-Phân tích 3 điểm yếu THỰC TẾ:
-• Chưa có kinh nghiệm đầu tư chứng khoán
-• Thu nhập phụ thuộc một nguồn duy nhất
-• Chưa có quỹ khẩn cấp đủ 6 tháng chi tiêu
+Phân tích 3 điểm yếu THỰC TẾ dựa trên dữ liệu có thật. Không suy đoán.
 
 ### 🚀 **CƠ HỘI - Cánh cửa mở ra:**
-Nêu 3 cơ hội ĐANG TỒN TẠI tại Việt Nam:
-• Thị trường chứng khoán đang trong chu kỳ tăng trưởng
-• Lãi suất vay mua nhà đang ở mức hấp dẫn
-• Nhu cầu về [ngành nghề của user] đang tăng cao
+Nêu 3 cơ hội LIÊN QUAN TRỰC TIẾP tới mục tiêu của bạn. Tránh nhận định chung chung.
 
 ### 🌊 **THÁCH THỨC - Rào cản cần vượt qua:**
 Chỉ ra 3 thách thức THỰC SỰ:
@@ -82,71 +91,51 @@ Chỉ ra 3 thách thức THỰC SỰ:
 
 ## 💎 PHẦN 3: PHÂN TÍCH MỤC TIÊU - LỘ TRÌNH ĐẾN THÀNH CÔNG
 
-*Mục tiêu không chỉ là ước mơ - nó là đích đến cụ thể với lộ trình rõ ràng!*
+*Chỉ dựa trên dữ liệu bạn đã cung cấp. Không dùng placeholder như [X], [Y]. Luôn viết số ra cụ thể hoặc ghi "Không đủ dữ liệu".*
 
 ### 📊 **Bức tranh tổng quan:**
-Viết đoạn phân tích 500-600 từ SỐNG ĐỘNG về:
+Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
 
 **1. Mục tiêu tổng thể:** 
-Dựa trên mục tiêu "${userInfo.goal || 'xây dựng tài sản'}", bạn đang hướng đến [phân tích cụ thể]. Con số cụ thể bạn cần là [X tỷ VNĐ], bao gồm [chi tiết các thành phần].
+- Liệt kê ĐÚNG các mục tiêu bạn đã nêu, không thêm mục tiêu mới.
 
-**2. Khoảng cách hiện tại:**
-Với ${savings} VNĐ hiện có, bạn đã đi được [X%] chặng đường. Còn [Y tỷ] nữa để chạm đến đích!
+**2. Khoảng cách hiện tại (Gap):**
+- Nếu đã biết tổng mục tiêu và ${savings} VNĐ hiện có: Gap = Tổng mục tiêu - ${savings} VNĐ.
+- Nếu chưa biết savings hoặc mục tiêu chi tiết: ghi "Không đủ dữ liệu để tính Gap" và nêu rõ cần thêm thông tin nào.
 
-**3. Tính khả thi - Có thực tế không?**
-Với thu nhập ${income} VNĐ/tháng, nếu tiết kiệm [X%], bạn sẽ có [Y triệu]/tháng. Trong ${timeline}, bạn sẽ tích lũy được [Z tỷ]. [Đánh giá: Khả thi/Cần điều chỉnh/Cần tăng thu nhập]
+**3. Tính khả thi:**
+- Nếu thu nhập (${income} VNĐ/tháng) và thời gian (${timeline}) đều có: 
+  - Chuyển ${timeline} về số tháng (ví dụ: 24-36 tháng nếu là 2-3 năm thì trình bày thành phạm vi).
+  - Tính Tiền cần/tháng = Gap / số_tháng (nếu Gap có).
+  - Tính Tỷ lệ tiết kiệm = (Tiền cần/tháng) / Thu nhập.
+  - Kết luận: Khả thi / Cần điều chỉnh / Cần tăng thu nhập (nêu lý do).
+- Nếu thiếu dữ liệu: ghi rõ "Không đủ dữ liệu để đánh giá khả thi".
 
 **4. Thứ tự ưu tiên thông minh:**
-🥇 **Ưu tiên 1**: [Mục tiêu quan trọng nhất - giải thích tại sao]
-🥈 **Ưu tiên 2**: [Mục tiêu thứ hai - lý do]
-🥉 **Ưu tiên 3**: [Mục tiêu thứ ba - lý do]
+- Sắp xếp theo tiêu chí: Impact (tác động) / Cost (chi phí) / Time (thời gian). Không suy đoán nếu thiếu dữ liệu.
 
 ## PHẦN 4: YẾU TỐ KHÁCH QUAN & CHỦ QUAN
-Phân tích 400-500 từ về:
-- Yếu tố thị trường, kinh tế VN
-- Yếu tố cá nhân, tâm lý
+Viết 300-400 từ, CHỈ nêu các yếu tố ảnh hưởng TRỰC TIẾP tới mục tiêu đã cung cấp (ví dụ: lãi suất vay khi mục tiêu là mua nhà). Tránh nhận định chung chung. Nếu thiếu dữ liệu về mục tiêu, ghi rõ hạn chế.
 
 ## PHẦN 5: KỸ NĂNG CẦN CÓ
-Liệt kê top 5 kỹ năng cần học:
-- Kỹ năng 1: [mô tả + thời gian học]
-- Kỹ năng 2: [mô tả + thời gian học]
-...
+Liệt kê tối đa 5 kỹ năng, mỗi kỹ năng kèm: mục đích, thời lượng khuyến nghị, cách bắt đầu NGAY hôm nay. Liên kết chặt với mục tiêu (ví dụ: dòng tiền, đàm phán lãi suất, nghiên cứu thị trường bất động sản). Không liệt kê kỹ năng không liên quan.
 
 ## PHẦN 6: LỘ TRÌNH CHI TIẾT
-Tạo lộ trình chi tiết dước dạng văn bản:
+Trình bày theo văn bản. Mỗi tháng 2-3 hành động CỤ THỂ, đo được. Nếu đã tính được Tiền cần/tháng ở Phần 3, hãy nhắc lại và phân bổ vào kế hoạch.
 
 **Năm thứ nhất:**
 - **Quý 1:**
-  - *Tháng thứ nhất:* [Mục tiêu và hành động]
-  - *Tháng thứ hai:* [Mục tiêu và hành động]
-  - *Tháng thứ ba:* [Mục tiêu và hành động]
+  - *Tháng thứ nhất:* [Hành động cụ thể + tiêu chí hoàn thành]
+  - *Tháng thứ hai:* [Hành động cụ thể + tiêu chí hoàn thành]
+  - *Tháng thứ ba:* [Hành động cụ thể + tiêu chí hoàn thành]
 - **Quý 2:**
-  - *Tháng thứ tư:* [Mục tiêu và hành động]
-  - *Tháng thứ năm:* [Mục tiêu và hành động]
-  - *Tháng thứ sáu:* [Mục tiêu và hành động]
+  - *Tháng thứ tư:* [Hành động cụ thể]
+  - *Tháng thứ năm:* [Hành động cụ thể]
+  - *Tháng thứ sáu:* [Hành động cụ thể]
 
 ## 📅 PHẦN 7: HÀNH ĐỘNG 12 THÁNG - TỪNG BƯỚC ĐẾN ĐÍCH
 
-*Thành công = Hành động nhỏ × Kiên trì mỗi ngày!*
-
-### 🗓️ **Quý 1: Khởi động mạnh mẽ**
-
-**📍 Tháng 1 - Nền tảng:**
-• ✅ Lập bảng theo dõi thu chi trên Excel/App
-• ✅ Mở tài khoản tiết kiệm lãi suất cao (VIB, Techcombank)
-• ✅ Đọc sách "Người giàu nhất thành Babylon"
-
-**📍 Tháng 2 - Tối ưu:**
-• ✅ Cắt giảm 20% chi tiêu không cần thiết
-• ✅ Bắt đầu quỹ khẩn cấp với 5 triệu/tháng
-• ✅ Tham gia khóa học đầu tư online miễn phí
-
-**📍 Tháng 3 - Tăng tốc:**
-• ✅ Mở tài khoản chứng khoán
-• ✅ Đầu tư thử 10 triệu vào ETF an toàn
-• ✅ Tìm kiếm cơ hội thu nhập thụ động
-
-[Tiếp tục tương tự cho 9 tháng còn lại, mỗi tháng 3 hành động CỤ THỂ, THỰC TẾ, có thể làm ngay]
+Mỗi tháng liệt kê 3 hành động có thể thực hiện ngay, gắn với mục tiêu và ngân sách thực tế. Không đưa ví dụ chung chung. Nếu thiếu dữ liệu ngân sách, ghi rõ giả định tối thiểu (và đánh dấu là "Giả định") hoặc yêu cầu bổ sung thông tin.
 
 ## PHẦN 8: TÀI LIỆU HỌC TẬP
 Tối thiểu 5 tài liệu:
@@ -390,6 +379,11 @@ QUY TẮC CHẤT LƯỢNG VÀ ĐỘ TIN CẬY:
 ✅ KHÔNG thêm phần "Xuất dữ liệu bảng"
 ✅ LUÔN có CTA nâng cấp/support ở cuối
 
+⚠️ QUY TẮC CHỐNG BỊA ĐẶT (BẮT BUỘC):
+✅ Tuyệt đối KHÔNG suy đoán thông tin cá nhân khi thiếu dữ liệu.
+✅ Nếu thiếu dữ liệu: ghi rõ "Chưa cung cấp" hoặc "Không đủ dữ liệu để tính toán" và nêu danh sách dữ liệu cần bổ sung.
+✅ Không tự tạo giả định trừ khi ghi rõ "Giả định" và giải thích vì sao.
+
 ⚠️ QUY TẮC HIỂN THỊ BẮT BUỘC:
 ✅ KHÔNG sử dụng bảng Markdown - nếu cần hiển thị dữ liệu dạng bảng, chuyển sang dạng danh sách văn bản
 ✅ KHÔNG sử dụng Mermaid hoặc bất kỳ biểu đồ nào - mô tả bằng văn bản thay thế
@@ -410,14 +404,14 @@ export function getUserContextV4(collectedInfo: any) {
   return `
 📋 THÔNG TIN NGƯỜI DÙNG:
 - Họ tên: ${collectedInfo.full_name || 'Chưa cung cấp'}
-- Tuổi: ${collectedInfo.age || '25-35'}
-- Thu nhập: ${collectedInfo.income || 0} VNĐ/tháng
-- Tiết kiệm: ${collectedInfo.savings || 0} VNĐ
-- Nơi sống: ${collectedInfo.location || 'TP.HCM'}
-- Nghề nghiệp: ${collectedInfo.occupation || 'Nhân viên văn phòng'}
-- Mục tiêu: ${collectedInfo.goal || 'Tự do tài chính'}
-- Timeline: ${collectedInfo.timeline || '12-36 tháng'}
-- Risk tolerance: ${collectedInfo.risk_tolerance || 'Trung bình'}
+- Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
+- Thu nhập: ${collectedInfo.income || 'Chưa cung cấp'} VNĐ/tháng
+- Tiết kiệm: ${collectedInfo.savings || 'Chưa cung cấp'} VNĐ
+- Nơi sống: ${collectedInfo.location || 'Chưa cung cấp'}
+- Nghề nghiệp: ${collectedInfo.occupation || 'Chưa cung cấp'}
+- Mục tiêu: ${collectedInfo.goal || 'Chưa cung cấp'}
+- Timeline: ${collectedInfo.timeline || 'Chưa cung cấp'}
+- Risk tolerance: ${collectedInfo.risk_tolerance || 'Chưa cung cấp'}
 
 ⚠️ LƯU Ý: Phân biệt rõ HIỆN CÓ vs MỤC TIÊU khi phân tích.
 `
