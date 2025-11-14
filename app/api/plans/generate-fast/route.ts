@@ -180,34 +180,44 @@ export async function POST(request: NextRequest) {
     try {
       const userId = auth.user.id
       
-      // ĐẢM BẢO PROFILE TỒN TẠI TRƯỚC KHI INSERT PLAN
-      logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
+      // Get admin client - MUST exist for save to work
       const admin = getAdminClient()
+      if (!admin) {
+        logger.error('FAST_GENERATE_NO_ADMIN_CLIENT', { userId })
+        return NextResponse.json(
+          { error: 'Failed to save plan', details: 'Server configuration error: admin client not available' },
+          { status: 500 }
+        )
+      }
       
-      if (admin) {
-        // Kiểm tra profile có tồn tại không
-        const { data: existingProfile } = await admin
-          .from('profiles')
-          .select('id')
-          .eq('id', userId)
-          .single()
+      // Ensure profile exists BEFORE inserting plan
+      logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
+      const { data: existingProfile, error: profileCheckError } = await admin
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+      
+      if (profileCheckError) {
+        logger.error('FAST_GENERATE_PROFILE_CHECK_ERROR', { error: String(profileCheckError) })
+      }
+      
+      if (!existingProfile) {
+        logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
+        const { error: createError } = await admin.from('profiles').insert({
+          id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         
-        if (!existingProfile) {
-          logger.info('FAST_GENERATE_PROFILE_NOT_FOUND', { userId })
-          // Tạo profile mới
-          const { error: createError } = await admin.from('profiles').insert({
-            id: userId,
-            created_at: new Date().toISOString()
-          })
-          
-          if (createError) {
-            logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { error: String(createError) })
-          } else {
-            logger.info('FAST_GENERATE_PROFILE_CREATED_PREEMPTIVE', { userId })
-          }
+        if (createError) {
+          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { error: String(createError), code: createError?.code })
+          // Continue anyway - maybe profile was created by another request
         } else {
-          logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
+          logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
         }
+      } else {
+        logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
       }
       
       const planPayload = {
@@ -221,14 +231,15 @@ export async function POST(request: NextRequest) {
         metadata: {
           model_used: usedModel,
           generated_at: new Date().toISOString()
-        }
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
 
       logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId })
       
-      // Dùng admin client để insert plan (bypass RLS)
-      const insertClient = admin || rh
-      const { data: inserted, error: insertError } = await insertClient
+      // Use admin client to insert plan (bypass RLS)
+      const { data: inserted, error: insertError } = await admin
         .from('plans')
         .insert([planPayload])
         .select()
