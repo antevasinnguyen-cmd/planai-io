@@ -86,7 +86,11 @@ async function createPartialPlan(admin: any, userId: string, title: string, goal
     if (createError) {
       logger.error('FAST_GENERATE_CREATE_PARTIAL_ERROR', { 
         error: String(createError), 
-        code: createError?.code
+        code: createError?.code,
+        message: createError?.message,
+        details: createError?.details,
+        userId,
+        payload: partialPlanPayload
       })
       throw createError
     }
@@ -212,7 +216,23 @@ export async function POST(request: NextRequest) {
         })
         
         if (profileError) {
-          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { error: String(profileError) })
+          logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { 
+            error: String(profileError), 
+            code: profileError?.code,
+            message: profileError?.message,
+            details: profileError?.details
+          })
+          // If FK violation, the user might not exist in auth.users
+          if (profileError?.code === '23503') {
+            logger.error('FAST_GENERATE_FK_VIOLATION', { 
+              userId, 
+              message: 'User does not exist in auth.users table'
+            })
+            return NextResponse.json(
+              { error: 'User authentication error', message: 'Vui lòng đăng xuất và đăng nhập lại.' },
+              { status: 401 }
+            )
+          }
           // Continue anyway - might be created by auth trigger
         } else {
           logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
