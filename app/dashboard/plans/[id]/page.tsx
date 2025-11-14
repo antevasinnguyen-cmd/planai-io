@@ -27,6 +27,7 @@ interface Plan {
 export default function PlanViewEnhanced() {
   const [plan, setPlan] = useState<Plan | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
   const [showExportMenu, setShowExportMenu] = useState(false)
@@ -117,9 +118,11 @@ export default function PlanViewEnhanced() {
         }
         
         // Fallback failed
-        console.error('=== PLAN_LOAD: Server API returned no plan data', { status: res.status, json: await res.json() })
-        alert('Không thể tải kế hoạch. Kế hoạch không tồn tại hoặc bạn không có quyền truy cập.')
-        router.push('/dashboard/plans')
+        const errorData = await res.json().catch(() => ({}))
+        console.error('=== PLAN_LOAD: Server API returned no plan data', { status: res.status, errorData })
+        
+        // Show error message but don't redirect immediately
+        setError(`Không thể tải kế hoạch (${res.status}). ${errorData.error || 'Vui lòng thử lại sau.'}`)
       } catch (e) {
         console.error('=== PLAN_LOAD: Fallback API failed:', e)
         alert('Không thể tải kế hoạch. Vui lòng thử lại sau.')

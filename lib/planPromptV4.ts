@@ -30,6 +30,7 @@ YÊU CẦU BẮT BUỘC:
 ✅ Ngôn ngữ: Dùng emoji phù hợp, in đậm điểm quan trọng, format đẹp
 ✅ Nội dung: Cụ thể, chi tiết, có số liệu thực tế (không dùng placeholder)
 ✅ Trình bày: Như một cuốn ebook premium với heading, bullet points rõ ràng
+✅ ĐỘ DÀI: Tối thiểu 4500-5000 từ cho bản FREE (chi tiết, đầy đủ, không cắt ngắn)
 
 ## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN
 
@@ -84,7 +85,7 @@ Chỉ ra 3 thách thức THỰC SỰ:
 *Mục tiêu không chỉ là ước mơ - nó là đích đến cụ thể với lộ trình rõ ràng!*
 
 ### 📊 **Bức tranh tổng quan:**
-Viết đoạn phân tích 300 từ SỐNG ĐỘNG về:
+Viết đoạn phân tích 500-600 từ SỐNG ĐỘNG về:
 
 **1. Mục tiêu tổng thể:** 
 Dựa trên mục tiêu "${userInfo.goal || 'xây dựng tài sản'}", bạn đang hướng đến [phân tích cụ thể]. Con số cụ thể bạn cần là [X tỷ VNĐ], bao gồm [chi tiết các thành phần].
@@ -101,7 +102,7 @@ Với thu nhập ${income} VNĐ/tháng, nếu tiết kiệm [X%], bạn sẽ có
 🥉 **Ưu tiên 3**: [Mục tiêu thứ ba - lý do]
 
 ## PHẦN 4: YẾU TỐ KHÁCH QUAN & CHỦ QUAN
-Phân tích 250 từ về:
+Phân tích 400-500 từ về:
 - Yếu tố thị trường, kinh tế VN
 - Yếu tố cá nhân, tâm lý
 
@@ -245,7 +246,7 @@ Lộ trình chi tiết dưới dạng văn bản:
   - *Tháng thứ nhất:* [Mục tiêu và hành động]
 
 ## 7. KẾ HOẠCH THỜI GIAN
-Kế hoạch thời gian chi tiết dưới dạng văn bản:
+Kế hoạch thời gian chi tiết dước dạng văn bản:
 
 **Năm thứ nhất:**
 - **Quý 1:** [Mục tiêu chính]
@@ -253,11 +254,21 @@ Kế hoạch thời gian chi tiết dưới dạng văn bản:
   - *Tháng thứ hai:* [Hành động cụ thể]
   - *Tháng thứ ba:* [Hành động cụ thể]
 
-## 8. CHIẾN LƯỢC HÀNH ĐỘNG
-Deep dive vào từng mục tiêu
+## PHẦN 7: CHIẾN LƯỢC HÀNH ĐỘNG CHI TIẾT
+Viết 600-800 từ chi tiết về chiến lược thực hiện từng mục tiêu cụ thể:
+
+### 🎯 **Chiến lược Mục tiêu 1:** [Tên mục tiêu]
+- **Phân tích hiện trạng:** [200 từ]
+- **Kế hoạch hành động:** [200 từ]
+- **Rủi ro và giải pháp:** [100 từ]
+
+### 🎯 **Chiến lược Mục tiêu 2:** [Tên mục tiêu]
+- **Phân tích hiện trạng:** [200 từ]
+- **Kế hoạch hành động:** [200 từ]
+- **Rủi ro và giải pháp:** [100 từ]
 
 ## 9. PHÂN LOẠI ƯU TIÊN
-Phân loại ưu tiên dưới dạng văn bản:
+Phân loại ưu tiên dước dạng văn bản:
 
 **Ưu tiên cao và khẩn cấp:**
 - [Hành động 1]
