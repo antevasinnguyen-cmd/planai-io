@@ -138,15 +138,15 @@ export async function POST(request: NextRequest) {
           const claudeErrorMsg = String(claudeError?.message || claudeError)
           logger.error('FAST_GENERATE_CLAUDE_FAILED', { error: claudeErrorMsg })
           return NextResponse.json(
-            { error: 'AI generation failed', message: 'Cả GPT-4o mini và Claude đều không thể xử lý. Vui lòng thử lại sau.' },
+            { error: 'AI generation failed', message: 'Hệ thống AI đang xử lý quá tải. Vui lòng thử lại sau.' },
             { status: 503 }
           )
         }
       } else {
-        // No Claude API key, return GPT error
+        // No Claude API key, return generic error
         logger.error('FAST_GENERATE_NO_FALLBACK', { error: 'Claude API key not configured' })
         return NextResponse.json(
-          { error: 'AI generation failed', message: `GPT-4o mini không thể xử lý: ${gptErrorMsg}. Vui lòng thử lại sau.` },
+          { error: 'AI generation failed', message: 'Hệ thống AI đang xử lý quá tải. Vui lòng thử lại sau.' },
           { status: 503 }
         )
       }
@@ -204,19 +204,9 @@ export async function POST(request: NextRequest) {
       
       if (!existingProfile) {
         logger.info('FAST_GENERATE_PROFILE_NOT_FOUND_CREATING', { userId })
-        // Use upsert with all required fields and defaultToNull for optional ones
+        // Upsert with only fields that definitely exist in profiles table
         const { error: createError } = await admin.from('profiles').upsert({
           id: userId,
-          email: null,
-          full_name: null,
-          age: null,
-          occupation: null,
-          location: null,
-          current_income: null,
-          savings: null,
-          financial_goal: null,
-          timeline: null,
-          risk_tolerance: null,
           subscription_tier: 'free',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -228,19 +218,9 @@ export async function POST(request: NextRequest) {
         if (createError) {
           logger.error('FAST_GENERATE_PROFILE_CREATE_ERROR', { 
             error: String(createError), 
-            code: createError?.code,
-            message: createError?.message,
-            details: createError?.details
+            code: createError?.code
           })
-          // Try one more time with minimal data
-          const { error: retryError } = await admin.from('profiles').upsert({
-            id: userId,
-            subscription_tier: 'free'
-          }, { onConflict: 'id' })
-          
-          if (retryError) {
-            logger.error('FAST_GENERATE_PROFILE_CREATE_RETRY_ERROR', { error: String(retryError) })
-          }
+          // Continue anyway - profile might exist or will be created by auth trigger
         } else {
           logger.info('FAST_GENERATE_PROFILE_CREATED', { userId })
         }
@@ -281,7 +261,7 @@ export async function POST(request: NextRequest) {
           userId
         })
         return NextResponse.json(
-          { error: 'Failed to save plan', details: insertError?.message || 'Database error' },
+          { error: 'Failed to save plan', message: 'Không thể lưu kế hoạch. Vui lòng thử lại sau.' },
           { status: 500 }
         )
       }
@@ -289,7 +269,7 @@ export async function POST(request: NextRequest) {
       if (!inserted) {
         logger.error('FAST_GENERATE_SAVE_NO_DATA', { error: 'No data returned from insert' })
         return NextResponse.json(
-          { error: 'Failed to save plan', details: 'No data returned' },
+          { error: 'Failed to save plan', message: 'Không thể lưu kế hoạch. Vui lòng thử lại sau.' },
           { status: 500 }
         )
       }
@@ -310,14 +290,14 @@ export async function POST(request: NextRequest) {
         stack: saveError?.stack?.slice(0, 500)
       })
       return NextResponse.json(
-        { error: 'Failed to save plan', details: String(saveError?.message || saveError) },
+        { error: 'Failed to save plan', message: 'Không thể lưu kế hoạch. Vui lòng thử lại sau.' },
         { status: 500 }
       )
     }
   } catch (error: any) {
     logger.error('FAST_GENERATE_ERROR', { error: String(error?.message || error) })
     return NextResponse.json(
-      { error: 'Generation failed', details: String(error?.message || error) },
+      { error: 'Generation failed', message: 'Không thể tạo kế hoạch. Vui lòng thử lại sau.' },
       { status: 500 }
     )
   }
