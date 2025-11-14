@@ -233,6 +233,7 @@ export default function GeneratePlanPage() {
   }, [jobStatus])
 
   const startPlanGeneration = async () => {
+    console.log('=== GENERATE: Function called ===', { user: user?.id })
     const userId = user?.id || 'anonymous'
     const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
 
@@ -459,8 +460,12 @@ export default function GeneratePlanPage() {
       pollJobStatus(newJobId)
 
     } catch (error) {
-      console.error('Error starting plan generation:', error)
-      setError('Có lỗi xảy ra khi bắt đầu tạo kế hoạch. Vui lòng thử lại.')
+      console.error('=== GENERATE: Function error ===', { 
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      setError(`Có lỗi xảy ra khi bắt đầu tạo kế hoạch: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
