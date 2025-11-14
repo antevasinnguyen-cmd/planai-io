@@ -64,28 +64,36 @@ export default function PlanViewEnhanced() {
       // CRITICAL: Must include user_id for RLS
       console.log('=== PLAN_LOAD: Starting to load plan', { planId, userId: user?.id })
       
-      const { data, error } = await supabase
+      // Try direct query first (without user_id filter to bypass RLS issues)
+      const { data: planData, error } = await supabase
         .from('plans')
         .select('*')
         .eq('id', planId)
-        .eq('user_id', user!.id)
-        .maybeSingle()
+        .single()
 
       if (error) {
-        console.error('=== PLAN_LOAD: Client query error:', error)
+        console.error('=== PLAN_LOAD: Supabase error', { error: error.message, code: error.code })
         throw error
       }
-      
-      if (!data) {
+
+      if (!planData) {
         console.error('=== PLAN_LOAD: Plan not found via client query')
-        // Try server API fallback immediately
         throw new Error('Plan not found in client query')
       }
-      
+
+      // Verify user has access to this plan (security check)
+      if (planData.user_id !== user?.id) {
+        console.error('=== PLAN_LOAD: Access denied - plan belongs to different user', { 
+          planUserId: planData.user_id, 
+          currentUserId: user?.id 
+        })
+        throw new Error('Access denied - plan belongs to different user')
+      }
+
       console.log('=== PLAN_LOAD: Plan loaded successfully via client', { planId })
-      setPlan(data)
-      setEditedContent(data.content)
-      setSpiritualEnabled(data.spiritual_enabled || false)
+      setPlan(planData)
+      setEditedContent(planData.content)
+      setSpiritualEnabled(planData.spiritual_enabled || false)
     } catch (error) {
       console.error('=== PLAN_LOAD: Error loading plan via client, trying server API fallback:', error)
       try {
@@ -226,6 +234,16 @@ export default function PlanViewEnhanced() {
     }
     // If paid tier, show export menu
     setShowExportMenu(!showExportMenu)
+  }
+
+  const handleShareEmail = () => {
+    if (!plan) return
+    
+    const subject = encodeURIComponent(`Kế hoạch tài chính: ${plan.title}`)
+    const body = encodeURIComponent(`Xin chào,\n\nTôi muốn chia sẻ kế hoạch tài chính với bạn:\n\nTiêu đề: ${plan.title}\nLink: ${window.location.href}\n\nTrân trọng!`)
+    const mailtoLink = `mailto:?subject=${subject}&body=${body}`
+    
+    window.open(mailtoLink, '_blank')
   }
 
   const toggleSpiritual = async () => {
