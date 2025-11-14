@@ -294,9 +294,19 @@ export default function GeneratePlanPage() {
       // Determine which route to use based on tier
       // For Free tier: use fast synchronous route (50s timeout)
       // For paid tiers: use background job route (300s timeout)
-      const userSub = await supabase.from('profiles').select('subscription_tier').eq('id', user?.id).single()
-      const tier = userSub?.data?.subscription_tier || 'free'
-      const useBackgroundJob = tier !== 'free'
+      let tier = 'free'
+      let useBackgroundJob = false
+      
+      try {
+        const userSub = await supabase.from('profiles').select('subscription_tier').eq('id', user?.id).single()
+        tier = userSub?.data?.subscription_tier || 'free'
+        console.log('=== GENERATE: Tier check success ===', { tier, hasData: !!userSub?.data })
+      } catch (tierError) {
+        console.warn('=== GENERATE: Tier check failed, defaulting to free ===', { error: tierError })
+        tier = 'free'
+      }
+      
+      useBackgroundJob = tier !== 'free'
       const apiRoute = useBackgroundJob ? '/api/plans/generate-background' : '/api/plans/generate-fast'
 
       setStatus(useBackgroundJob ? 'Hệ thống AI đang xử lý (có thể mất tới 5 phút)...' : 'Hệ thống AI đang xử lý...')

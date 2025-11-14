@@ -13,6 +13,8 @@ export async function POST(_req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('=== SUBSCRIPTION_INIT: User authenticated ===', { userId: user.id })
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
     // If service key is not configured, gracefully fallback to user client for reads
@@ -103,6 +105,10 @@ export async function POST(_req: NextRequest) {
     const row = Array.isArray(inserted) ? inserted[0] : inserted
     return NextResponse.json({ alreadyUsed: false, data: row })
   } catch (e: any) {
+    console.error('=== SUBSCRIPTION_INIT: Error ===', { 
+      error: e?.message || String(e),
+      stack: e?.stack?.slice(0, 500)
+    })
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 })
   }
 }
