@@ -350,6 +350,17 @@ export default function GeneratePlanPage() {
       // For fast route: result contains plan directly
       if (!useBackgroundJob && result.success && result.plan?.id) {
         console.log('=== GENERATE: Fast route completed ===', { planId: result.plan.id })
+        
+        // For streaming generation, we need to poll for progress updates
+        if (result.plan.status === 'generating' || result.plan.metadata?.progress < 100) {
+          console.log('=== GENERATE: Plan is still generating, polling for progress ===')
+          setProgress(result.plan.metadata?.progress || 10)
+          setStatus(`Hệ thống AI đang xử lý... ${result.plan.metadata?.progress || 10}%`)
+          pollPlanProgress(result.plan.id)
+          return
+        }
+        
+        // Plan is already completed
         setProgress(100)
         setStatus('Hoàn thành!')
         setJobStatus('completed')
@@ -404,6 +415,75 @@ export default function GeneratePlanPage() {
       console.error('Error starting plan generation:', error)
       setError('Có lỗi xảy ra khi bắt đầu tạo kế hoạch. Vui lòng thử lại.')
     }
+  }
+
+  // Poll for plan progress updates from metadata
+  const pollPlanProgress = async (planId: string) => {
+    const userId = user?.id || 'anonymous'
+    const maxAttempts = 300 // 5 minutes (300 * 1 second)
+    let attempts = 0
+    let lastProgress = 0
+    
+    const checkProgress = async () => {
+      try {
+        // Get auth token
+        const { supabase } = await import('@/lib/supabase')
+        const { data: sessionData } = await supabase.auth.getSession()
+        
+        const headers: any = {}
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+        }
+        
+        // Get plan metadata to check progress
+        const { data: plan } = await supabase
+          .from('plans')
+          .select('status, metadata')
+          .eq('id', planId)
+          .single()
+        
+        if (plan) {
+          const progress = plan.metadata?.progress || lastProgress
+          lastProgress = progress
+          
+          // Update UI
+          setProgress(progress)
+          setStatus(`Hệ thống AI đang xử lý... ${progress}%`)
+          
+          // If completed, redirect to plan
+          if (plan.status === 'completed' || progress >= 100) {
+            setProgress(100)
+            setStatus('Hoàn thành!')
+            setJobStatus('completed')
+            
+            // Clear storage
+            localStorage.removeItem(`pending_plan_${userId}`)
+            try { localStorage.removeItem('pending_plan_latest') } catch {}
+            
+            setTimeout(() => {
+              router.push(`/dashboard/plans/${planId}`)
+            }, 1200)
+            return
+          }
+        }
+        
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(checkProgress, 1000)
+        } else {
+          console.error('Max polling attempts reached')
+          setError('Quá trình tạo kế hoạch mất quá lâu. Vui lòng kiểm tra lại sau.')
+        }
+      } catch (error) {
+        console.error('Error checking plan progress:', error)
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(checkProgress, 1000)
+        }
+      }
+    }
+    
+    checkProgress()
   }
 
   const pollJobStatus = async (id: string) => {

@@ -5,6 +5,11 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["sin1"],
+  "functions": {
+    "app/api/plans/generate-fast/route.ts": {
+      "maxDuration": 300
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -32,6 +37,10 @@
     {
       "source": "/payment/cancel",
       "destination": "/pricing?payment=canceled"
+    },
+    {
+      "source": "/api/plans/generate-fast",
+      "destination": "/api/plans/generate-fast"
     }
   ]
 }

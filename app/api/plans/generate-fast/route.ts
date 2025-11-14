@@ -1,11 +1,12 @@
 /**
  * FAST GENERATION ROUTE - Direct synchronous generation for Free tier
- * Tries GPT-4o mini first, falls back to Claude 3 Opus on failure
+ * Tries GPT-4o mini first, falls back to Claude-3.5-haiku on failure
+ * Uses chunking and streaming for reliable generation
  * Returns immediately with plan or error
  */
 
 export const runtime = 'nodejs'
-export const maxDuration = 70
+export const maxDuration = 300 // 5 minutes for free tier
 
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
@@ -28,6 +29,7 @@ async function callClaudeHaiku(systemPrompt: string, userPrompt: string, maxToke
     const response = await claude.messages.create({
       model: 'claude-3-5-haiku-20241022',
       max_tokens: maxTokens,
+      temperature: 0.7,
       messages: [
         {
           role: 'user',
@@ -42,6 +44,83 @@ async function callClaudeHaiku(systemPrompt: string, userPrompt: string, maxToke
   } catch (e: any) {
     logger.error('FAST_FALLBACK_CLAUDE_HAIKU_ERROR', { error: String(e?.message || e) })
     throw e
+  }
+}
+
+// Helper: Create partial plan and return ID
+async function createPartialPlan(admin: any, userId: string, title: string, goals: string, collectedInfo: any) {
+  try {
+    logger.info('FAST_GENERATE_CREATE_PARTIAL', { userId })
+    
+    const partialPlanPayload = {
+      user_id: userId,
+      title: title || 'Kế hoạch tài chính (đang tạo...)',
+      goal: goals || 'Kế hoạch tài chính',
+      content: '**Đang tạo kế hoạch...**\n\nHệ thống đang xử lý yêu cầu của bạn. Vui lòng đợi trong giây lát.',
+      status: 'generating',
+      word_count: 0,
+      collected_info: collectedInfo || {},
+      metadata: {
+        generation_started: new Date().toISOString(),
+        progress: 0
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+    
+    const { data: partialPlan, error: createError } = await admin
+      .from('plans')
+      .insert([partialPlanPayload])
+      .select()
+      .single()
+      
+    if (createError) {
+      logger.error('FAST_GENERATE_CREATE_PARTIAL_ERROR', { 
+        error: String(createError), 
+        code: createError?.code
+      })
+      throw createError
+    }
+    
+    logger.info('FAST_GENERATE_PARTIAL_CREATED', { planId: partialPlan.id })
+    return partialPlan.id
+  } catch (e) {
+    logger.error('FAST_GENERATE_CREATE_PARTIAL_EXCEPTION', { error: String(e) })
+    throw e
+  }
+}
+
+// Helper: Update partial plan with progress
+async function updatePartialPlan(admin: any, planId: string, progress: number, content?: string) {
+  try {
+    const updatePayload: any = {
+      updated_at: new Date().toISOString(),
+      metadata: {
+        progress,
+        last_updated: new Date().toISOString()
+      }
+    }
+    
+    if (content) {
+      updatePayload.content = content
+      updatePayload.word_count = content.split(/\s+/).length
+    }
+    
+    const { error: updateError } = await admin
+      .from('plans')
+      .update(updatePayload)
+      .eq('id', planId)
+    
+    if (updateError) {
+      logger.error('FAST_GENERATE_UPDATE_PARTIAL_ERROR', { 
+        error: String(updateError),
+        planId
+      })
+    } else {
+      logger.info('FAST_GENERATE_UPDATE_PARTIAL', { progress, planId })
+    }
+  } catch (e) {
+    logger.error('FAST_GENERATE_UPDATE_PARTIAL_EXCEPTION', { error: String(e), planId })
   }
 }
 
@@ -94,35 +173,86 @@ export async function POST(request: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // 50s timeout for GPT (leave ~15s headroom for Claude fallback within Vercel 70s)
-    const timeoutMs = 50000 // Tăng từ 35s lên 50s để tránh timeout
-    const maxTokens = 2000 // Tăng từ 1500 lên 2000 để đủ nội dung
+    // Create partial plan first to avoid timeout issues
+    const admin = getAdminClient()
+    if (!admin) {
+      logger.error('FAST_GENERATE_NO_ADMIN_CLIENT', { userId: auth.user.id })
+      return NextResponse.json(
+        { error: 'Failed to save plan', message: 'Lỗi cấu hình máy chủ. Vui lòng thử lại sau.' },
+        { status: 500 }
+      )
+    }
+    
+    // Create partial plan first
+    let planId: string
+    try {
+      planId = await createPartialPlan(admin, auth.user.id, planName, goals, collectedInfo)
+    } catch (createError) {
+      return NextResponse.json(
+        { error: 'Failed to initialize plan', message: 'Không thể khởi tạo kế hoạch. Vui lòng thử lại sau.' },
+        { status: 500 }
+      )
+    }
+    
+    // Update progress to 5%
+    await updatePartialPlan(admin, planId, 5)
+    
+    // 120s timeout for GPT (we have 5 minutes total now)
+    const timeoutMs = 120000 // 2 minutes for GPT
+    const maxTokens = 4000 // Increase to get more content
 
     let raw = '{}'
     let usedModel = 'gpt-4o-mini'
 
-    // Try GPT-4o mini first
+    // Try GPT-4o mini first with streaming
     try {
       logger.info('FAST_GENERATE_CALL_OPENAI', {})
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
       
-      const completion = await openai.chat.completions.create(
+      // Update progress to 10%
+      await updatePartialPlan(admin, planId, 10)
+      
+      // Use streaming to get partial results
+      const stream = await openai.chat.completions.create(
         {
           model: 'gpt-4o-mini',
           response_format: { type: 'json_object' },
-          temperature: 0.5,
+          temperature: 0.7,
           max_tokens: maxTokens,
           messages: [
             { role: 'system', content: String(systemPrompt) },
             { role: 'user', content: userPrompt.slice(0, 7000) }
-          ]
+          ],
+          stream: true
         },
         { signal: controller.signal }
       )
+      
+      // Process stream
+      let streamedContent = ''
+      let lastProgressUpdate = Date.now()
+      let progressCounter = 15 // Start at 15%
+      
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || ''
+        streamedContent += content
+        
+        // Update progress every 3 seconds
+        const now = Date.now()
+        if (now - lastProgressUpdate > 3000 && progressCounter < 80) {
+          lastProgressUpdate = now
+          progressCounter += 5
+          await updatePartialPlan(admin, planId, progressCounter)
+        }
+      }
+      
       clearTimeout(timeoutId)
-      raw = completion.choices?.[0]?.message?.content || '{}'
+      raw = streamedContent || '{}'
       logger.info('FAST_GENERATE_OPENAI_DONE', { size: raw.length, model: 'gpt-4o-mini' })
+      
+      // Update progress to 85%
+      await updatePartialPlan(admin, planId, 85)
     } catch (gptError: any) {
       const gptErrorMsg = String(gptError?.message || gptError)
       logger.error('FAST_GENERATE_OPENAI_FAILED', { error: gptErrorMsg })
@@ -130,10 +260,16 @@ export async function POST(request: NextRequest) {
       // Fallback to Claude-3.5-haiku
       if (process.env.ANTHROPIC_API_KEY) {
         try {
+          // Update progress for fallback
+          await updatePartialPlan(admin, planId, 40, 'Đang tạo kế hoạch với Claude AI...')
+          
           logger.info('FAST_GENERATE_FALLBACK_CLAUDE_HAIKU', {})
           raw = await callClaudeHaiku(String(systemPrompt), userPrompt.slice(0, 7000), maxTokens)
           usedModel = 'claude-3-5-haiku'
           logger.info('FAST_GENERATE_CLAUDE_HAIKU_DONE', { size: raw.length, model: usedModel })
+          
+          // Update progress after Claude success
+          await updatePartialPlan(admin, planId, 85)
         } catch (fallbackError: any) {
           const fallbackErrorMsg = String(fallbackError?.message || fallbackError)
           logger.error('FAST_GENERATE_CLAUDE_HAIKU_FAILED', { error: fallbackErrorMsg })
@@ -151,12 +287,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Update progress to 90%
+    await updatePartialPlan(admin, planId, 90)
+    
     // Parse and sanitize
     let parsed: any
     try {
       parsed = JSON.parse(raw)
-    } catch {
-      parsed = {}
+    } catch (parseError) {
+      logger.error('FAST_GENERATE_PARSE_ERROR', { error: String(parseError) })
+      // If not valid JSON, try to extract JSON part
+      try {
+        const jsonMatch = raw.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0])
+          logger.info('FAST_GENERATE_PARSE_RECOVERED', {})
+        } else {
+          parsed = {}
+        }
+      } catch {
+        parsed = {}
+      }
     }
 
     let content_md = String(parsed?.content_markdown || '')
@@ -175,19 +326,12 @@ export async function POST(request: NextRequest) {
       content_md += `\n\n**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**\nBản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:\n✅ 24 phần phân tích chuyên sâu (gấp 3 lần)\n✅ Google Sheets tự động với 7 tabs tracking\n✅ Phân tích tử vi tài chính & thần số học\n✅ 3-5 mô hình kinh doanh cá nhân hóa\n✅ 50+ tài liệu học tập premium\n✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết\n✅ Dự báo 3 kịch bản & chiến lược rủi ro\n👉 Nâng cấp tại: https://planai.io.vn/pricing\n`
     }
 
+    // Update progress to 95%
+    await updatePartialPlan(admin, planId, 95)
+    
     // Save plan directly with proper error handling
     try {
       const userId = auth.user.id
-      
-      // Get admin client - MUST exist for save to work
-      const admin = getAdminClient()
-      if (!admin) {
-        logger.error('FAST_GENERATE_NO_ADMIN_CLIENT', { userId })
-        return NextResponse.json(
-          { error: 'Failed to save plan', details: 'Server configuration error: admin client not available' },
-          { status: 500 }
-        )
-      }
       
       // Ensure profile exists BEFORE inserting plan
       logger.info('FAST_GENERATE_ENSURE_PROFILE', { userId })
@@ -227,8 +371,8 @@ export async function POST(request: NextRequest) {
         logger.info('FAST_GENERATE_PROFILE_EXISTS', { userId })
       }
       
+      // Update existing plan instead of creating new one
       const planPayload = {
-        user_id: userId,
         title,
         goal: goals || 'Kế hoạch tài chính',
         content: content_md,
@@ -237,18 +381,19 @@ export async function POST(request: NextRequest) {
         collected_info: collectedInfo || {},
         metadata: {
           model_used: usedModel,
-          generated_at: new Date().toISOString()
+          generated_at: new Date().toISOString(),
+          progress: 100
         },
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
 
-      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId })
+      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId, planId })
       
-      // Use admin client to insert plan (bypass RLS)
+      // Update existing plan
       const { data: inserted, error: insertError } = await admin
         .from('plans')
-        .insert([planPayload])
+        .update(planPayload)
+        .eq('id', planId)
         .select()
         .single()
 
