@@ -81,10 +81,10 @@ ${financeSummary ? `\n💰 **Tình hình tài chính:**\n${financeSummary}` : ''
 *Để thành công, bạn cần hiểu rõ chính mình. Đây là phân tích SWOT chuyên sâu về năng lực tài chính của bạn:*
 
 ### 💪 **ĐIỂM MẠNH - Vũ khí của bạn:**
-Viết 3 điểm mạnh CỤ THỂ, CHỈ dựa trên dữ liệu đã cung cấp. Nếu thiếu dữ liệu, ghi "Chưa đủ dữ liệu để xác định".
+Viết 3–5 điểm mạnh CỤ THỂ dựa trên các kỹ năng đã nêu (nếu có), kinh nghiệm, thu nhập hiện tại, dự án đang theo đuổi (ví dụ: SaaS AI), và vị trí sinh sống (ví dụ: Bắc Ninh).
 
 ### ⚠️ **ĐIỂM YẾU - Cần khắc phục:**
-Phân tích 3 điểm yếu THỰC TẾ dựa trên dữ liệu có thật. Không suy đoán.
+Chỉ ra 3–5 hạn chế liên quan trực tiếp đến mục tiêu (ví dụ: vốn ban đầu, dòng tiền thấp, thiếu kênh bán…). Đề xuất cách khắc phục ngắn gọn.
 
 ### 🚀 **CƠ HỘI - Cánh cửa mở ra:**
 Nêu 3 cơ hội LIÊN QUAN TRỰC TIẾP tới mục tiêu của bạn. Tránh nhận định chung chung.
@@ -97,7 +97,7 @@ Chỉ ra 3 thách thức THỰC SỰ:
 
 ## 💎 PHẦN 3: PHÂN TÍCH MỤC TIÊU - LỘ TRÌNH ĐẾN THÀNH CÔNG
 
-*Chỉ dựa trên dữ liệu bạn đã cung cấp. Không dùng placeholder như [X], [Y]. Luôn viết số ra cụ thể hoặc ghi "Không đủ dữ liệu".*
+*Chỉ dựa trên dữ liệu bạn đã cung cấp. Không dùng placeholder. Nếu thiếu số dư tiết kiệm hiện có, **giả định 0 VNĐ để ước tính ban đầu** và ghi chú rõ ràng đây là giả định.*
 
 ### 📊 **Bức tranh tổng quan:**
 Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
@@ -106,14 +106,16 @@ Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
 - Liệt kê ĐÚNG các mục tiêu bạn đã nêu, không thêm mục tiêu mới.
 
 **2. Khoảng cách hiện tại (Gap):**
-- Nếu đã biết tổng mục tiêu và ${savings} VNĐ hiện có: Gap = Tổng mục tiêu - ${savings} VNĐ.
-- Nếu chưa biết savings hoặc mục tiêu chi tiết: ghi "Không đủ dữ liệu để tính Gap" và nêu rõ cần thêm thông tin nào.
+- Nếu có số tiền tiết kiệm hiện có: Gap = Tổng mục tiêu − Tiết kiệm hiện có.
+- Nếu chưa có dữ liệu tiết kiệm: ghi chú "Giả định: tiết kiệm hiện có = 0 VNĐ" và tính Gap theo giả định này.
 
 **3. Tính khả thi:**
-- Nếu thu nhập (${income} VNĐ/tháng) và thời gian (${timeline}) đều có: 
-  - Chuyển ${timeline} về số tháng (ví dụ: 24-36 tháng nếu là 2-3 năm thì trình bày thành phạm vi).
-  - Tính Tiền cần/tháng = Gap / số_tháng (nếu Gap có).
-  - Tính Tỷ lệ tiết kiệm = (Tiền cần/tháng) / Thu nhập.
+- Nếu thu nhập là khoảng (ví dụ: 7–10 triệu/tháng) và thời gian là khoảng (ví dụ: 2–3 năm), hãy tính cả kịch bản MIN và MAX:
+  - Quy đổi thời gian về tháng (ví dụ: 24–36 tháng).
+  - Tiền cần/tháng (MIN, MAX) = Gap / số_tháng (MAX, MIN).
+  - Tỷ lệ tiết kiệm cần thiết trên thu nhập (MIN, MAX) và nhận xét mức độ khả thi.
+  - Nếu mục tiêu thu nhập tương lai được nêu (ví dụ: 1 tỷ/tháng từ SaaS), bổ sung kịch bản có/không đạt mục tiêu này.
+/ Thu nhập.
   - Kết luận: Khả thi / Cần điều chỉnh / Cần tăng thu nhập (nêu lý do).
 - Nếu thiếu dữ liệu: ghi rõ "Không đủ dữ liệu để đánh giá khả thi".
 
@@ -127,21 +129,19 @@ Viết 300-400 từ, CHỈ nêu các yếu tố ảnh hưởng TRỰC TIẾP t�
 Liệt kê tối đa 5 kỹ năng, mỗi kỹ năng kèm: mục đích, thời lượng khuyến nghị, cách bắt đầu NGAY hôm nay. Liên kết chặt với mục tiêu (ví dụ: dòng tiền, đàm phán lãi suất, nghiên cứu thị trường bất động sản). Không liệt kê kỹ năng không liên quan.
 
 ## PHẦN 6: LỘ TRÌNH CHI TIẾT
-Trình bày theo văn bản. Mỗi tháng 2-3 hành động CỤ THỂ, đo được. Nếu đã tính được Tiền cần/tháng ở Phần 3, hãy nhắc lại và phân bổ vào kế hoạch.
+Linh hoạt theo thời gian mục tiêu người dùng nêu ra:
+- Nếu timeline là ≤ 3 tháng: chia theo THÁNG, mỗi tháng chia tiếp theo TUẦN (Tuần 1 → Tuần 4). Mỗi tuần nêu 2–3 hành động cụ thể, có tiêu chí hoàn thành.
+- Nếu timeline là 4–12 tháng: chia THEO THÁNG. Mỗi tháng 2–3 hành động cụ thể gắn với ngân sách và KPI.
+- Nếu timeline là ≥ 2 năm: chia THEO NĂM → mỗi năm chia THEO QUÝ (Q1–Q4). Mỗi quý nêu mục tiêu và 3–5 hành động chính.
+- Nếu là khoảng (ví dụ: 2–3 năm): trình bày đủ 2 năm theo Năm → Quý; phần thời gian còn lại tóm lược.
 
-**Năm thứ nhất:**
-- **Quý 1:**
-  - *Tháng thứ nhất:* [Hành động cụ thể + tiêu chí hoàn thành]
-  - *Tháng thứ hai:* [Hành động cụ thể + tiêu chí hoàn thành]
-  - *Tháng thứ ba:* [Hành động cụ thể + tiêu chí hoàn thành]
-- **Quý 2:**
-  - *Tháng thứ tư:* [Hành động cụ thể]
-  - *Tháng thứ năm:* [Hành động cụ thể]
-  - *Tháng thứ sáu:* [Hành động cụ thể]
+## 📅 PHẦN 7: HÀNH ĐỘNG CHI TIẾT THEO THỜI GIAN MỤC TIÊU
 
-## 📅 PHẦN 7: HÀNH ĐỘNG 12 THÁNG - TỪNG BƯỚC ĐẾN ĐÍCH
-
-Mỗi tháng liệt kê 3 hành động có thể thực hiện ngay, gắn với mục tiêu và ngân sách thực tế. Không đưa ví dụ chung chung. Nếu thiếu dữ liệu ngân sách, ghi rõ giả định tối thiểu (và đánh dấu là "Giả định") hoặc yêu cầu bổ sung thông tin.
+Tùy theo timeline người dùng:
+- ≤ 3 tháng: liệt kê HÀNH ĐỘNG THEO TUẦN cho toàn bộ số tháng (mỗi tuần 3 hành động rõ ràng, có tiêu chí hoàn thành, ngân sách ước tính).
+- 4–12 tháng: liệt kê HÀNH ĐỘNG THEO THÁNG (mỗi tháng 3 hành động).
+- ≥ 2 năm: liệt kê HÀNH ĐỘNG THEO QUÝ cho toàn bộ thời gian (mỗi quý 3–5 hành động). Nếu là khoảng 2–3 năm, ưu tiên đủ 2 năm theo quý, phần còn lại tóm lược.
+Không chèn câu hướng dẫn meta; chỉ đưa nội dung hành động cụ thể.
 
 ## PHẦN 8: TÀI LIỆU HỌC TẬP
 Tối thiểu 5 tài liệu:
@@ -411,12 +411,15 @@ export function getUserContextV4(collectedInfo: any) {
 📋 THÔNG TIN NGƯỜI DÙNG:
 - Họ tên: ${collectedInfo.full_name || 'Chưa cung cấp'}
 - Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
-- Thu nhập: ${collectedInfo.income || 'Chưa cung cấp'} VNĐ/tháng
+- Thu nhập: ${collectedInfo.income || collectedInfo.income_range || 'Chưa cung cấp'} VNĐ/tháng
 - Tiết kiệm: ${collectedInfo.savings || 'Chưa cung cấp'} VNĐ
 - Nơi sống: ${collectedInfo.location || 'Chưa cung cấp'}
 - Nghề nghiệp: ${collectedInfo.occupation || 'Chưa cung cấp'}
 - Mục tiêu: ${collectedInfo.goal || 'Chưa cung cấp'}
 - Timeline: ${collectedInfo.timeline || 'Chưa cung cấp'}
+- Thu nhập mục tiêu: ${collectedInfo.target_income || 'Chưa cung cấp'}
+- Dự án hiện tại: ${collectedInfo.project || collectedInfo.current_project || 'Chưa cung cấp'}
+- Kỹ năng: ${(Array.isArray(collectedInfo.skills) ? collectedInfo.skills.join(', ') : (collectedInfo.skills || 'Chưa cung cấp'))}
 - Risk tolerance: ${collectedInfo.risk_tolerance || 'Chưa cung cấp'}
 
 ⚠️ LƯU Ý: Phân biệt rõ HIỆN CÓ vs MỤC TIÊU khi phân tích.

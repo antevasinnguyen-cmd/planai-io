@@ -16,12 +16,53 @@ import { getUserSubscription, getSubscriptionLimits, getAdminClient } from '@/li
 import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
 import { logger } from '@/lib/logger'
 
+// --- Simple helpers to extract structured info from chat text (top-level) ---
+function extractLineAfter(label: RegExp, text: string): string | null {
+  const m = text.match(new RegExp(label.source + '[\\s:：-]*([^\\n]+)', label.flags))
+  return m ? m[1].trim() : null
+}
+
+function extractSkills(text: string): string[] | null {
+  const line = extractLineAfter(/kỹ năng/i, text)
+  if (!line) return null
+  return line.split(/[,;|]/).map(s => s.trim()).filter(Boolean).slice(0, 10)
+}
+
+function extractIncomeRange(text: string): string | null {
+  const m = text.match(/(\d+[\s\.,]*\d*)\s*[-–]\s*(\d+[\s\.,]*\d*)\s*(triệu|tr|million)/i)
+  if (m) return `${m[1].replace(/\s/g,'')}–${m[2].replace(/\s/g,'')} ${m[3].toLowerCase().includes('triệu') ? 'triệu' : 'triệu'}`
+  return null
+}
+
+function extractTimelineRange(text: string): string | null {
+  const m = text.match(/(\d+)\s*[-–]\s*(\d+)\s*(năm|years)/i)
+  if (m) return `${m[1]}–${m[2]} năm`
+  return null
+}
+
+function extractTimelineSingle(text: string): string | null {
+  const mYear = text.match(/(\d+)\s*(năm|year)s?/i)
+  if (mYear) return `${mYear[1]} năm`
+  const mMonth = text.match(/(\d+)\s*(tháng|month)s?/i)
+  if (mMonth) return `${mMonth[1]} tháng`
+  return null
+}
+
+function extractTargetIncome(text: string): string | null {
+  const m = text.match(/thu\s*nhập\s*mục\s*tiêu[^\d]*(\d+[\d\.,]*)\s*(tỷ|ty|triệu|tr)/i)
+  if (!m) return null
+  const unit = m[2].toLowerCase()
+  const num = m[1].replace(/[\.,]/g,'')
+  return unit.startsWith('t') ? `${num} tỷ/tháng` : `${num} triệu/tháng`
+}
+
 // Helper: Call Claude-3.5-haiku as fallback
 async function callClaudeHaiku(systemPrompt: string, userPrompt: string, maxTokens: number) {
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
       throw new Error('Claude API key not configured')
     }
+
     const Anthropic = require('@anthropic-ai/sdk').default
     const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -204,10 +245,26 @@ export async function POST(request: NextRequest) {
       resources_policy: 'gpt_only'
     }
 
-    // Build prompts
-    const systemPrompt = getPlanPromptV4(tier, constraints, collectedInfo)
-    const userContext = getUserContextV4(collectedInfo)
-    const userTimeline = collectedInfo?.timeline || '12 tháng'
+    // Build prompts (enrich with chat summary + lightweight extraction)
+    const messages = Array.isArray(body?.messages) ? body.messages : []
+    const fullChatSummary = messages
+      .filter((m: any) => m && m.role === 'user')
+      .map((m: any) => m.content || m.message)
+      .join('\n')
+      .slice(0, 4000)
+
+    const extracted = {
+      skills: extractSkills(fullChatSummary) || collectedInfo?.skills,
+      income: collectedInfo?.income || extractIncomeRange(fullChatSummary) || collectedInfo?.income_range,
+      target_income: collectedInfo?.target_income || extractTargetIncome(fullChatSummary),
+      timeline: collectedInfo?.timeline || extractTimelineRange(fullChatSummary) || extractTimelineSingle(fullChatSummary)
+    }
+
+    const enrichedCollectedInfo = { ...collectedInfo, chat_summary: fullChatSummary, ...extracted }
+
+    const systemPrompt = getPlanPromptV4(tier, constraints, enrichedCollectedInfo)
+    const userContext = getUserContextV4(enrichedCollectedInfo)
+    const userTimeline = enrichedCollectedInfo?.timeline || '12 tháng'
     const forceTextOnly = `\n\n⚠️⚠️⚠️ CHÚ Ý QUAN TRỌNG NHẤT ⚠️⚠️⚠️\n1. TUYỆT ĐỐI KHÔNG dùng bảng Markdown\n2. TUYỆT ĐỐI KHÔNG dùng Mermaid/sơ đồ\n3. Dùng thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", v.v.\n4. Nội dung là văn bản thuần với Markdown cơ bản\n5. KHÔNG có phần "Xuất Dữ Liệu Bảng"\n6. FREE = đúng 9 phần + CTA nâng cấp ở cuối\n`
     const userPrompt = `${userContext}\n\n🎯 YÊU CẦU CỤ THỂ:\n${goals}\n\n⏰ TIMELINE: ${userTimeline}\n\n📊 TIER: ${tier.toUpperCase()}\n${forceTextOnly}`
 
@@ -258,7 +315,7 @@ export async function POST(request: NextRequest) {
     
     // 120s timeout for GPT (we have 5 minutes total now)
     const timeoutMs = 120000 // 2 minutes for GPT
-    const maxTokens = 4000 // Increase to get more content
+    const maxTokens = 5000 // More content for detailed monthly roadmap
 
     let raw = '{}'
     let usedModel = 'gpt-4o-mini'
@@ -379,6 +436,8 @@ export async function POST(request: NextRequest) {
       .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
       .replace(/#+\s*$/gm, '')
       .replace(/\n{3,}/g, '\n\n')
+      // Remove meta-instruction leakage lines
+      .replace(/^(?:Mỗi tháng liệt kê|Không đưa ví dụ chung chung|Nếu thiếu dữ liệu|Trình bày theo văn bản|Hãy lập kế hoạch|Viết kế hoạch THEO THÁNG)[^\n]*$/gim, '')
 
     // Add CTA
     if (!content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
