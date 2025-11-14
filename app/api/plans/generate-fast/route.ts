@@ -223,17 +223,11 @@ export async function POST(request: NextRequest) {
         let upsertedProfile = null
         
         if (existingByEmail) {
-          // Profile exists with this email, update it with correct user_id
+          // Profile exists with this email - use existing profile for plan
+          // Don't try to update profile.id as it violates FK constraints
           logger.info('FAST_GENERATE_PROFILE_EXISTS_BY_EMAIL', { userId, email: userEmail, existingId: existingByEmail.id })
-          const { data: updated, error: updateErr } = await admin
-            .from('profiles')
-            .update({ id: userId })
-            .eq('email', userEmail)
-            .select()
-            .single()
-          
-          profileError = updateErr
-          upsertedProfile = updated
+          upsertedProfile = existingByEmail
+          profileError = null
         } else {
           // Profile doesn't exist, create new one
           logger.info('FAST_GENERATE_PROFILE_CREATING_NEW', { userId, email: userEmail })
@@ -287,9 +281,11 @@ export async function POST(request: NextRequest) {
     }
     
     // Create partial plan first
+    // Use upsertedProfile.id if available, otherwise use userId
+    const profileIdForPlan = upsertedProfile?.id || userId
     let planId: string
     try {
-      planId = await createPartialPlan(admin, userId, planName, goals, collectedInfo)
+      planId = await createPartialPlan(admin, profileIdForPlan, planName, goals, collectedInfo)
     } catch (createError) {
       return NextResponse.json(
         { error: 'Failed to initialize plan', message: 'Không thể khởi tạo kế hoạch. Vui lòng thử lại sau.' },
