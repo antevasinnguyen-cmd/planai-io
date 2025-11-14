@@ -352,10 +352,21 @@ export default function GeneratePlanPage() {
         console.log('=== GENERATE: Fast route completed ===', { planId: result.plan.id })
         
         // For streaming generation, we need to poll for progress updates
-        if (result.plan.status === 'generating' || result.plan.metadata?.progress < 100) {
+        let metadata = result.plan.metadata
+        if (typeof result.plan.metadata === 'string') {
+          try {
+            metadata = JSON.parse(result.plan.metadata)
+          } catch (e) {
+            console.error('Error parsing plan metadata:', e)
+            metadata = { progress: 10 }
+          }
+        }
+        
+        if (result.plan.status === 'generating' || (metadata && metadata.progress < 100)) {
           console.log('=== GENERATE: Plan is still generating, polling for progress ===')
-          setProgress(result.plan.metadata?.progress || 10)
-          setStatus(`Hệ thống AI đang xử lý... ${result.plan.metadata?.progress || 10}%`)
+          const progress = metadata?.progress || 10
+          setProgress(progress)
+          setStatus(`Hệ thống AI đang xử lý... ${progress}%`)
           pollPlanProgress(result.plan.id)
           return
         }
@@ -443,7 +454,18 @@ export default function GeneratePlanPage() {
           .single()
         
         if (plan) {
-          const progress = plan.metadata?.progress || lastProgress
+          // Parse metadata from JSON string if needed
+          let metadata = plan.metadata
+          if (typeof plan.metadata === 'string') {
+            try {
+              metadata = JSON.parse(plan.metadata)
+            } catch (e) {
+              console.error('Error parsing plan metadata:', e)
+              metadata = { progress: lastProgress }
+            }
+          }
+          
+          const progress = metadata?.progress || lastProgress
           lastProgress = progress
           
           // Update UI

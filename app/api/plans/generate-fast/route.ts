@@ -52,18 +52,26 @@ async function createPartialPlan(admin: any, userId: string, title: string, goal
   try {
     logger.info('FAST_GENERATE_CREATE_PARTIAL', { userId })
     
+    // Đảm bảo title và goal không null/undefined
+    const safeTitle = title || 'Kế hoạch tài chính (đang tạo...)'
+    const safeGoal = goals || 'Kế hoạch tài chính'
+    
+    // Đảm bảo collected_info là object hợp lệ
+    const safeCollectedInfo = typeof collectedInfo === 'object' && collectedInfo !== null ? 
+      collectedInfo : {}
+    
     const partialPlanPayload = {
       user_id: userId,
-      title: title || 'Kế hoạch tài chính (đang tạo...)',
-      goal: goals || 'Kế hoạch tài chính',
+      title: safeTitle,
+      goal: safeGoal,
       content: '**Đang tạo kế hoạch...**\n\nHệ thống đang xử lý yêu cầu của bạn. Vui lòng đợi trong giây lát.',
       status: 'generating',
       word_count: 0,
-      collected_info: collectedInfo || {},
-      metadata: {
+      collected_info: safeCollectedInfo,
+      metadata: JSON.stringify({
         generation_started: new Date().toISOString(),
         progress: 0
-      },
+      }),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
@@ -95,10 +103,10 @@ async function updatePartialPlan(admin: any, planId: string, progress: number, c
   try {
     const updatePayload: any = {
       updated_at: new Date().toISOString(),
-      metadata: {
+      metadata: JSON.stringify({
         progress,
         last_updated: new Date().toISOString()
-      }
+      })
     }
     
     if (content) {
@@ -379,11 +387,11 @@ export async function POST(request: NextRequest) {
         status: 'completed',
         word_count: content_md.split(/\s+/).length,
         collected_info: collectedInfo || {},
-        metadata: {
+        metadata: JSON.stringify({
           model_used: usedModel,
           generated_at: new Date().toISOString(),
           progress: 100
-        },
+        }),
         updated_at: new Date().toISOString()
       }
 
