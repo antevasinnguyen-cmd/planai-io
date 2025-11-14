@@ -212,12 +212,14 @@ export async function POST(request: NextRequest) {
         const { data: authUser } = await admin.auth.admin.getUserById(userId)
         const userEmail = authUser?.user?.email || `user-${userId.slice(0, 8)}@placeholder.com`
         
-        const { error: profileError } = await admin.from('profiles').insert({
+        const { error: profileError } = await admin.from('profiles').upsert({
           id: userId,
           email: userEmail,
           subscription_tier: 'free',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id,email'
         })
         
         if (profileError) {
@@ -241,7 +243,7 @@ export async function POST(request: NextRequest) {
               { status: 401 }
             )
           }
-          // Continue anyway for other errors - might be created by auth trigger
+          // Continue anyway for other errors (including 23505 duplicates) - upsert should handle them
         } else {
           logger.info('FAST_GENERATE_PROFILE_CREATED', { userId, email: userEmail })
         }
