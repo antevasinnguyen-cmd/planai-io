@@ -53,11 +53,11 @@ export async function GET(request: NextRequest) {
 
     console.log('=== PLAN_GET_API: Querying plan from database', { planId: id, userId: user.id })
     
+    // First, try to get plan by ID (without user_id filter since plan might be created with different profile ID)
     const { data, error } = await supabase
       .from('plans')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user.id)
       .maybeSingle()
 
     if (error) {
@@ -72,10 +72,26 @@ export async function GET(request: NextRequest) {
     if (!data) {
       console.error('=== PLAN_GET_API: Plan not found', { planId: id, userId: user.id })
       return NextResponse.json({ 
-        error: 'Plan not found or you do not have access to this plan',
+        error: 'Plan not found',
         planId: id,
         userId: user.id
       }, { status: 404 })
+    }
+
+    // Verify user has access to this plan by checking if plan.user_id matches any of user's profiles
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+    
+    // Allow access if plan belongs to user's profile or user's ID
+    if (data.user_id !== user.id && data.user_id !== userProfile?.id) {
+      console.error('=== PLAN_GET_API: Access denied', { planId: id, userId: user.id, planUserId: data.user_id })
+      return NextResponse.json({ 
+        error: 'You do not have access to this plan',
+        planId: id
+      }, { status: 403 })
     }
 
     console.log('=== PLAN_GET_API: Plan retrieved successfully', { planId: id, userId: user.id })
