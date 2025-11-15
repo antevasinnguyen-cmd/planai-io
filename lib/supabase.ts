@@ -171,14 +171,37 @@ export const getCurrentUser = async (request?: Request) => {
       } catch (cookieError) {
         console.log('=== SUPABASE: Cookie access failed ===', cookieError)
       }
+      
+      // In API routes, we can't use client-side getUser() without a token
+      // If we reach here in API context, authentication failed
+      console.log('=== SUPABASE: No authentication method worked (API) ===')
+      console.log('=== SUPABASE: Authorization header:', request?.headers.get('Authorization') ? 'present' : 'missing')
+      return null
     }
-    
-    // In API routes, we can't use getUser() without a token
-    // If we reach here, authentication failed
-    console.log('=== SUPABASE: No authentication method worked ===')
-    console.log('=== SUPABASE: Authorization header:', request?.headers.get('Authorization') ? 'present' : 'missing')
-    console.log('=== SUPABASE: Credentials include:', request ? 'API route' : 'client-side')
-    
+
+    // Client-side context (no Request provided): use supabase client session
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      console.log('=== SUPABASE: Client getSession ===', { hasSession: !!session, error: error?.message })
+      if (session?.user) {
+        return session.user
+      }
+    } catch (e) {
+      console.log('=== SUPABASE: getSession failed, fallback to getUser ===', e)
+    }
+
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      console.log('=== SUPABASE: Client getUser ===', { hasUser: !!user, error: error?.message })
+      if (user && !error) {
+        return user
+      }
+    } catch (e) {
+      console.log('=== SUPABASE: Client getUser failed ===', e)
+    }
+
+    // If we reach here, no authenticated user on client
+    console.log('=== SUPABASE: No authenticated user (client) ===')
     return null
   } catch (error) {
     console.error('=== SUPABASE: Error getting current user ===', error)

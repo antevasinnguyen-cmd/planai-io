@@ -94,16 +94,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('auth_success', 'true')
           setShowSuccessMessage(true)
 
-          // Chuyển hướng đến dashboard nếu không phải đang ở dashboard
+          // Ưu tiên quay lại đường dẫn đã lưu (ví dụ: checkout)
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname
-            if (currentPath !== '/dashboard' && !currentPath.startsWith('/dashboard/')) {
-              console.log('=== AUTHCONTEXT-NEW: Chuyển hướng đến dashboard ===')
-              
-              // Sử dụng setTimeout để đảm bảo thông báo được hiển thị trước khi chuyển trang
+            const savedRedirect = localStorage.getItem('auth_redirect')
+            const target = savedRedirect || '/dashboard'
+            
+            // Xóa redirect sau khi dùng để tránh vòng lặp
+            if (savedRedirect) localStorage.removeItem('auth_redirect')
+            
+            // Tránh redirect nếu đã ở đúng trang
+            if (currentPath !== target) {
+              console.log('=== AUTHCONTEXT-NEW: Chuyển hướng sau đăng nhập ===', { target })
               setTimeout(() => {
-                window.location.href = '/dashboard'
-              }, 500)
+                window.location.href = target
+              }, 300)
             }
           }
         } else if (event === 'SIGNED_OUT') {

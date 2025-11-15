@@ -56,7 +56,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Error initializing checkout:', error)
       // Nếu có lỗi, redirect đến login
-      router.push(`/auth/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
       return
     }
 
