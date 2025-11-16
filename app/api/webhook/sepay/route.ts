@@ -167,34 +167,61 @@ export async function POST(request: NextRequest) {
     }
 
     if (!payment) {
-      const errorMsg = `Payment not found after ${MAX_RETRIES} attempts`;
-      console.error(`=== SEPAY WEBHOOK: ${errorMsg} ===`, { 
-        orderId, 
-        error: lastError 
-      });
+      console.warn(`=== SEPAY WEBHOOK: Payment not found, attempting fallback creation ===`, { orderId });
       
-      // Log lỗi vào bảng error_logs nếu có
+      // FALLBACK: Tự động tạo payment record nếu không tìm thấy
+      // Điều này xảy ra khi payment creation endpoint thất bại nhưng SePay vẫn gửi webhook
       try {
-        await supabase
-          .from('error_logs')
-          .insert([{
-            type: 'webhook_error',
-            message: errorMsg,
-            metadata: { 
-              orderId,
-              error: (lastError as any)?.message || 'Unknown error',
-              webhookData: body
-            },
-            created_at: new Date().toISOString()
-          }]);
-      } catch (logError) {
-        console.error('=== SEPAY WEBHOOK: Failed to log error ===', logError);
-      }
+        const fallbackPaymentData = {
+          user_id: 'webhook_created_user', // Placeholder - sẽ được cập nhật sau
+          subscription_tier: 'basic', // Placeholder - sẽ được cập nhật sau
+          amount: paymentAmount,
+          currency: 'VND',
+          status: 'pending',
+          payment_method: 'sepay',
+          transaction_id: orderId,
+          provider: 'sepay',
+          metadata: {
+            created_by: 'webhook_fallback',
+            sepay_id: id,
+            gateway: gateway,
+            reference_code: referenceCode
+          }
+        };
 
-      return NextResponse.json({ 
-        success: false, 
-        error: errorMsg 
-      }, { status: 404 });
+        console.log('=== SEPAY WEBHOOK: Creating fallback payment record ===', fallbackPaymentData);
+
+        const { data: createdPayment, error: createError } = await supabase
+          .from('payments')
+          .insert([fallbackPaymentData])
+          .select();
+
+        if (createError) {
+          console.error('=== SEPAY WEBHOOK: Fallback creation failed ===', {
+            code: createError.code,
+            message: createError.message,
+            details: createError.details
+          });
+          
+          return NextResponse.json({ 
+            success: false, 
+            error: 'Payment not found and fallback creation failed'
+          }, { status: 404 });
+        }
+
+        payment = createdPayment?.[0];
+        console.log('=== SEPAY WEBHOOK: Fallback payment created successfully ===', {
+          id: payment?.id,
+          transaction_id: payment?.transaction_id
+        });
+      } catch (fallbackError) {
+        console.error('=== SEPAY WEBHOOK: Fallback creation exception ===', fallbackError);
+        
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Payment not found and fallback creation failed'
+        }, { status: 404 });
+      }
     }
 
     // Kiểm tra payment đã completed chưa
@@ -378,7 +405,7 @@ export async function POST(request: NextRequest) {
       orderId,
       status: paymentStatus,
       timestamp: now
-    });
+    }, { status: 200 }); // SePay requires 200 or 201 for success
 
   } catch (error) {
     const errorId = `err_${Date.now()}`;
