@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { AlertTriangle, Clock, CheckCircle, Phone, Mail, ArrowLeft } from 'lucide-react'
+import { XCircle, Mail, ArrowLeft, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 interface PaymentFailedClientProps {
@@ -10,6 +10,12 @@ interface PaymentFailedClientProps {
   amount?: string
   planId?: string
   reason?: string
+}
+
+const PLAN_INFO = {
+  basic: { name: 'Gói 1', price: 169000 },
+  pro: { name: 'Gói 2 - Pro', price: 289000 },
+  pro_max: { name: 'Gói 3 - Pro Max', price: 499000 }
 }
 
 export default function PaymentFailedClient({ 
@@ -72,46 +78,70 @@ export default function PaymentFailedClient({
   }
 
   const message = getFailureMessage()
+  const planInfo = PLAN_INFO[planId as keyof typeof PLAN_INFO] || { name: planId || 'N/A', price: parseInt(amount || '0') }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-red-50 to-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Link 
-            href="/pricing"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+        <div className="mb-8">
+          <button
+            onClick={() => router.push('/pricing')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Quay lại trang giá
-          </Link>
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại</span>
+          </button>
         </div>
 
-        {/* Main Error Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-6">
-              <AlertTriangle className="w-20 h-20 text-red-500" />
+        {/* Failed Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          {/* Failed Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
+              <XCircle className="w-16 h-16 text-red-500" />
             </div>
-            
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">{message.title}</h1>
-            <p className="text-lg text-gray-600 mb-6">{message.description}</p>
-            
-            {/* Order Info */}
-            {orderId && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6 inline-block">
-                <div className="text-sm text-gray-600 mb-1">Mã đơn hàng:</div>
-                <div className="font-mono font-bold text-gray-900">{orderId}</div>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-3xl font-bold text-red-600 mb-3">Thanh toán thất bại</h1>
+          
+          {/* Subtitle */}
+          <p className="text-gray-600 mb-8 text-lg">
+            {message.description}
+          </p>
+
+          {/* Plan Details */}
+          <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 mb-8 border border-red-200">
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Gói dịch vụ</p>
+                <p className="text-2xl font-bold text-gray-900">{planInfo.name}</p>
               </div>
-            )}
+              
+              <div className="border-t border-red-200 pt-4">
+                <p className="text-sm text-gray-600 mb-1">Số tiền thanh toán</p>
+                <p className="text-3xl font-bold text-red-600">
+                  {parseInt(amount || '0').toLocaleString('vi-VN')} VND
+                </p>
+              </div>
+
+              <div className="border-t border-red-200 pt-4 text-left space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Mã đơn hàng:</span>
+                  <span className="font-medium text-gray-900">{orderId || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Lý do:</span>
+                  <span className="font-medium text-red-600">{message.title}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Troubleshooting Guide */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-200">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
-              Hướng dẫn khắc phục
-            </h3>
+          <div className="bg-blue-50 rounded-xl p-4 mb-8 text-left border border-blue-200">
+            <p className="text-sm font-semibold text-blue-900 mb-3">💡 Hướng dẫn khắc phục:</p>
             
             <div className="space-y-3">
               {failureReason === 'expired' && (
@@ -221,55 +251,42 @@ export default function PaymentFailedClient({
           </div>
 
           {/* Important Notes */}
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <h4 className="font-bold text-yellow-900 mb-2">⚠️ Lưu ý quan trọng</h4>
-            <ul className="text-sm text-yellow-800 space-y-1">
-              <li>• Nếu bạn đã chuyển khoản thành công, vui lòng chờ 1-2 phút để hệ thống xác nhận</li>
-              <li>• Kiểm tra lại số tiền và nội dung chuyển khoản trước khi thử lại</li>
-              <li>• Nếu vấn đề vẫn tiếp tục, vui lòng liên hệ hỗ trợ kỹ thuật</li>
+          <div className="bg-yellow-50 rounded-xl p-4 mb-8 border border-yellow-200">
+            <p className="text-sm font-semibold text-yellow-900 mb-3">⚠️ Lưu ý quan trọng:</p>
+            <ul className="text-xs text-yellow-800 space-y-1">
+              <li>• Kiểm tra lại số tiền và nội dung chuyển khoản</li>
+              <li>• Nếu đã chuyển khoản, chờ 1-2 phút để hệ thống xác nhận</li>
+              <li>• Liên hệ hỗ trợ nếu vấn đề tiếp tục</li>
             </ul>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link 
-              href="/pricing" 
-              className="flex-1 bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 transition-colors font-medium text-center"
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => router.push('/pricing')}
+              className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors font-semibold text-lg shadow-md"
             >
               Thử lại thanh toán
-            </Link>
+            </button>
             
-            <Link 
-              href="/dashboard" 
-              className="flex-1 bg-gray-200 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-center"
+            <Link
+              href="/dashboard"
+              className="w-full bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors font-semibold text-center"
             >
               Quay về Dashboard
             </Link>
           </div>
-        </div>
 
-        {/* Support Section */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="font-bold text-gray-900 mb-4">Cần hỗ trợ?</h3>
-          
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900">Email hỗ trợ</p>
-                <a href="mailto:webappsaas.ai@gmail.com" className="text-primary-600 hover:underline">
-                  webappsaas.ai@gmail.com
-                </a>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-900">Thời gian hỗ trợ</p>
-                <p className="text-gray-600">Thứ Hai - Chủ Nhật, 8:00 - 22:00</p>
-              </div>
-            </div>
+          {/* Support Info */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-600 mb-3">Cần hỗ trợ?</p>
+            <a 
+              href="mailto:support@planai.io.vn" 
+              className="flex items-center gap-2 text-primary-600 hover:underline text-sm"
+            >
+              <Mail className="w-4 h-4" />
+              support@planai.io.vn
+            </a>
           </div>
         </div>
       </div>
