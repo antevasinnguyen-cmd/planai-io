@@ -52,17 +52,41 @@ export async function POST(request: NextRequest) {
   });
 
   // Xác thực webhook bằng API Key
-  // SePay có thể gửi API Key dưới dạng Authorization header hoặc x-api-key header
+  // SePay gửi API Key trong Authorization header (format: "Apikey YOUR_API_KEY")
   const authHeader = headers['authorization'] || headers['x-api-key'] || '';
-  const expectedAuth = `Apikey ${sepayToken}`;
   
-  // Kiểm tra cả hai format: "Apikey KEY" hoặc chỉ "KEY"
-  const isValidAuth = authHeader === expectedAuth || authHeader === sepayToken;
+  console.log('=== SEPAY WEBHOOK: Auth check ===', {
+    hasAuth: !!authHeader,
+    authHeaderLength: authHeader.length,
+    authHeaderStart: authHeader.substring(0, 20),
+    expectedTokenLength: sepayToken.length,
+    expectedTokenStart: sepayToken.substring(0, 20)
+  });
+  
+  // Kiểm tra API Key - hỗ trợ nhiều format
+  let isValidAuth = false;
+  
+  if (authHeader) {
+    // Format 1: "Apikey YOUR_API_KEY"
+    if (authHeader.toLowerCase().startsWith('apikey ')) {
+      const providedKey = authHeader.substring(7).trim();
+      isValidAuth = providedKey === sepayToken;
+    }
+    // Format 2: "Bearer YOUR_API_KEY"
+    else if (authHeader.toLowerCase().startsWith('bearer ')) {
+      const providedKey = authHeader.substring(7).trim();
+      isValidAuth = providedKey === sepayToken;
+    }
+    // Format 3: Chỉ API Key
+    else {
+      isValidAuth = authHeader === sepayToken;
+    }
+  }
   
   if (!isValidAuth) {
     console.error('=== SEPAY WEBHOOK: Invalid API Key ===', {
-      received: authHeader ? 'API Key present but invalid' : 'No API Key',
-      expected: 'Apikey API_KEY_CUA_BAN or just API_KEY_CUA_BAN'
+      received: authHeader ? `${authHeader.substring(0, 30)}...` : 'No API Key',
+      expected: `Apikey ${sepayToken.substring(0, 30)}...`
     });
     return NextResponse.json({ 
       success: false,
