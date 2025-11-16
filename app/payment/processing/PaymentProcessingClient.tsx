@@ -125,6 +125,28 @@ export default function PaymentProcessingClient({
     return () => clearInterval(timer)
   }, [paymentStatus])
 
+  // Tự động chạy auto-sync mỗi 10 giây
+  useEffect(() => {
+    const runAutoSync = async () => {
+      try {
+        console.log('Running auto-sync...')
+        const response = await fetch('/api/payment/auto-sync', {
+          method: 'GET'
+        })
+        const data = await response.json()
+        
+        if (data.synced > 0) {
+          console.log('✅ Auto-sync completed, payments synced:', data.synced)
+        }
+      } catch (error) {
+        console.error('Auto-sync error:', error)
+      }
+    }
+
+    const syncInterval = setInterval(runAutoSync, 10000)
+    return () => clearInterval(syncInterval)
+  }, [])
+
   // Kiểm tra trạng thái thanh toán mỗi 5 giây (tự động)
   useEffect(() => {
     const checkPaymentStatus = async () => {
