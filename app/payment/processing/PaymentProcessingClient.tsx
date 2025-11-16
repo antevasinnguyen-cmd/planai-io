@@ -125,7 +125,7 @@ export default function PaymentProcessingClient({
     return () => clearInterval(timer)
   }, [paymentStatus])
 
-  // Kiểm tra trạng thái thanh toán mỗi 5 giây
+  // Kiểm tra trạng thái thanh toán mỗi 5 giây (tự động)
   useEffect(() => {
     const checkPaymentStatus = async () => {
       if (paymentStatus !== 'pending' && paymentStatus !== 'checking') return
@@ -137,15 +137,27 @@ export default function PaymentProcessingClient({
         const response = await fetch(`/api/payment/check-status?orderId=${orderId}&provider=${provider}`)
         const data = await response.json()
 
+        console.log('Payment status check result:', {
+          status: data.status,
+          reason: data.reason,
+          checkCount
+        })
+
         if (data.status === 'completed') {
+          console.log('✅ Payment completed automatically')
           setPaymentStatus('success')
           setTimeout(() => {
             router.push(`/payment/success?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}`)
           }, 2000)
         } else if (data.status === 'failed') {
+          console.log('❌ Payment failed:', data.reason)
           setPaymentStatus('failed')
+          // Lưu lý do thất bại để hiển thị
+          sessionStorage.setItem(`payment_fail_reason_${orderId}`, data.reason || 'Unknown error')
         } else if (timeRemaining <= 0) { // Hết thời gian
+          console.log('⏱️ Payment timeout')
           setPaymentStatus('failed')
+          sessionStorage.setItem(`payment_fail_reason_${orderId}`, 'Payment timeout - no transaction received within 30 minutes')
         } else {
           setPaymentStatus('pending')
         }
@@ -157,7 +169,7 @@ export default function PaymentProcessingClient({
 
     const interval = setInterval(checkPaymentStatus, 5000)
     return () => clearInterval(interval)
-  }, [orderId, amount, planId, provider, router, paymentStatus, checkCount])
+  }, [orderId, amount, planId, provider, router, paymentStatus, checkCount, timeRemaining])
 
   const getPlanName = (id: string) => {
     switch (id) {
@@ -286,6 +298,50 @@ export default function PaymentProcessingClient({
               </div>
             </div>
           )}
+
+          {/* Success State */}
+          {paymentStatus === 'success' && (
+            <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 mb-6 mt-6 text-center">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-bounce">
+                  <CheckCircle className="w-10 h-10 text-green-600" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-green-600 mb-2">Thanh toán thành công</h3>
+              <p className="text-green-700 mb-4">Đơn hàng của bạn đã được xác nhận thành công.</p>
+              <p className="text-sm text-green-600">Đang chuyển hướng đến trang xác nhận...</p>
+            </div>
+          )}
+
+          {/* Failed State */}
+          {paymentStatus === 'failed' && (
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-6 mt-6">
+              <div className="flex items-start gap-4">
+                <XCircle className="w-8 h-8 text-red-600 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-red-600 mb-2">Thanh toán thất bại</h3>
+                  <p className="text-red-700 mb-3">
+                    {sessionStorage.getItem(`payment_fail_reason_${orderId}`) || 'Hệ thống không thể xác nhận thanh toán của bạn.'}
+                  </p>
+                  <div className="bg-red-100 border border-red-300 rounded p-3 mb-3 text-sm text-red-800">
+                    <p className="font-semibold mb-1">Các nguyên nhân có thể:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Số tiền chuyển không đúng hoặc không đủ</li>
+                      <li>Nội dung chuyển khoản không khớp</li>
+                      <li>Quá hạn thời gian (30 phút)</li>
+                    </ul>
+                  </div>
+                  <button
+                    onClick={() => router.push(`/payment/failed?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}`)}
+                    className="text-primary-600 hover:underline font-medium"
+                  >
+                    Xem chi tiết và thử lại →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="border-t pt-4 mt-6">
             {paymentStatus === 'pending' && (
               <div className="flex items-center justify-center gap-2 text-gray-600">
@@ -297,26 +353,6 @@ export default function PaymentProcessingClient({
               <div className="flex items-center justify-center gap-2 text-blue-600">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Đang kiểm tra thanh toán...</span>
-              </div>
-            )}
-            {paymentStatus === 'success' && (
-              <div className="flex items-center justify-center gap-2 text-green-600">
-                <CheckCircle className="w-5 h-5" />
-                <span>Thanh toán thành công! Đang chuyển hướng...</span>
-              </div>
-            )}
-            {paymentStatus === 'failed' && (
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-2 text-red-600">
-                  <XCircle className="w-5 h-5" />
-                  <span>Thanh toán thất bại</span>
-                </div>
-                <button
-                  onClick={() => router.push(`/payment/failed?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}&reason=timeout`)}
-                  className="mt-2 text-primary-600 hover:underline"
-                >
-                  Xem chi tiết lỗi
-                </button>
               </div>
             )}
           </div>

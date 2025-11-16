@@ -172,34 +172,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Nếu provider là SePay, kiểm tra trực tiếp trong database
-    // SePay không có webhook tự động, nên phải kiểm tra từ database
+    // Nếu provider là SePay, kiểm tra trực tiếp từ SePay API
+    // Tự động kiểm tra giao dịch thực tế mà không cần user nhấn nút
     if (provider === 'sepay' && payment) {
-      console.log('Checking SePay payment status from database:', { 
+      console.log('Checking SePay payment status from SePay API:', { 
         orderId, 
         paymentStatus: payment.status,
-        transactionId: payment.transaction_id 
+        expectedAmount: payment.amount
       })
 
-      // Nếu payment đã pending lâu (> 30 phút), kiểm tra xem có giao dịch nào vào tài khoản không
-      // Lưu ý: SePay không cung cấp webhook tự động, nên cần kiểm tra thủ công
-      // Tạm thời, nếu payment vẫn pending sau 30 phút, coi như thất bại
-      const createdAt = new Date(payment.created_at)
-      const now = new Date()
-      const diffMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60)
-
-      console.log('SePay payment age:', { diffMinutes, createdAt, now })
-
-      // Nếu payment vẫn pending sau 30 phút, coi như thất bại
-      if (diffMinutes > 30 && payment.status === 'pending') {
-        console.log('SePay payment timeout after 30 minutes')
-        return NextResponse.json({
-          status: 'pending',
-          message: 'Payment still pending. Please check your bank transfer status.'
-        })
-      }
-
-      // Nếu payment đã completed, trả về success
+      // Nếu đã completed, trả về success ngay
       if (payment.status === 'completed') {
         return NextResponse.json({
           status: 'completed',
@@ -212,7 +194,133 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      // Vẫn pending, trả về pending
+      // Kiểm tra timeout (30 phút)
+      const createdAt = new Date(payment.created_at)
+      const now = new Date()
+      const diffMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60)
+
+      if (diffMinutes > 30) {
+        console.log('SePay payment timeout after 30 minutes')
+        // Cập nhật status thành failed
+        await supabase
+          .from('payments')
+          .update({ 
+            status: 'failed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', payment.id)
+
+        return NextResponse.json({
+          status: 'failed',
+          reason: 'Payment timeout - no transaction received within 30 minutes'
+        })
+      }
+
+      // ===== TỰ ĐỘNG KIỂM TRA SEPAY API =====
+      // Kiểm tra xem có giao dịch thực từ SePay hay không
+      if (SEPAY_API_KEY) {
+        try {
+          const response = await axios.get(
+            `${SEPAY_API_URL}?limit=100&offset=0`,
+            {
+              headers: {
+                'Authorization': `Apikey ${SEPAY_API_KEY}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+
+          const transactions = response.data?.data || []
+          console.log('SePay API transactions found:', transactions.length)
+
+          // Tìm giao dịch trùng khớp
+          const matchedTransaction = transactions.find((tx: any) => {
+            const contentMatch = (tx.content || tx.code || '').includes(orderId)
+            const typeMatch = tx.transferType === 'in'
+            const amountMatch = tx.transferAmount >= payment.amount // Chấp nhận số tiền ≥ yêu cầu
+
+            return contentMatch && typeMatch && amountMatch
+          })
+
+          if (matchedTransaction) {
+            console.log('=== AUTO CONFIRM: Transaction found ===', {
+              orderId,
+              transactionAmount: matchedTransaction.transferAmount,
+              requiredAmount: payment.amount,
+              status: matchedTransaction.transferAmount >= payment.amount ? 'success' : 'failed'
+            })
+
+            // Cập nhật payment status thành completed
+            await updateSubscriptionOnSuccess(payment)
+
+            return NextResponse.json({
+              status: 'completed',
+              source: 'sepay_auto',
+              message: 'Payment verified automatically from SePay',
+              payment: {
+                id: payment.id,
+                amount: payment.amount,
+                planId: payment.subscription_tier,
+                transactionAmount: matchedTransaction.transferAmount
+              }
+            })
+          } else {
+            // Kiểm tra xem có giao dịch nào với số tiền < yêu cầu không
+            const insufficientTransaction = transactions.find((tx: any) => {
+              const contentMatch = (tx.content || tx.code || '').includes(orderId)
+              const typeMatch = tx.transferType === 'in'
+              const amountMatch = tx.transferAmount < payment.amount
+
+              return contentMatch && typeMatch && amountMatch
+            })
+
+            if (insufficientTransaction) {
+              console.log('=== AUTO REJECT: Insufficient amount ===', {
+                orderId,
+                transactionAmount: insufficientTransaction.transferAmount,
+                requiredAmount: payment.amount
+              })
+
+              // Cập nhật payment status thành failed
+              await supabase
+                .from('payments')
+                .update({ 
+                  status: 'failed',
+                  metadata: {
+                    reason: 'insufficient_amount',
+                    transactionAmount: insufficientTransaction.transferAmount,
+                    requiredAmount: payment.amount
+                  },
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', payment.id)
+
+              return NextResponse.json({
+                status: 'failed',
+                reason: `Insufficient amount: received ${insufficientTransaction.transferAmount} VND, required ${payment.amount} VND`,
+                transactionAmount: insufficientTransaction.transferAmount,
+                requiredAmount: payment.amount
+              })
+            }
+
+            // Vẫn chưa tìm thấy giao dịch, trả về pending
+            console.log('No matching transaction found yet')
+            return NextResponse.json({
+              status: 'pending',
+              message: 'Waiting for payment confirmation'
+            })
+          }
+        } catch (sepayError) {
+          console.error('SePay API error:', sepayError)
+          // Nếu SePay API lỗi, trả về pending
+          return NextResponse.json({
+            status: 'pending',
+            message: 'Checking payment status...'
+          })
+        }
+      }
+
+      // Nếu không có SEPAY_API_KEY, trả về pending
       return NextResponse.json({
         status: 'pending',
         message: 'Waiting for payment confirmation'
