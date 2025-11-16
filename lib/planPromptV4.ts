@@ -64,7 +64,7 @@ YÊU CẦU BẮT BUỘC:
 ✅ Ngôn ngữ: Dùng emoji phù hợp, in đậm điểm quan trọng, format đẹp
 ✅ Nội dung: Cụ thể, chi tiết, có số liệu thực tế (không dùng placeholder)
 ✅ Trình bày: Như một cuốn ebook premium với heading, bullet points rõ ràng
-✅ ĐỘ DÀI: Tối thiểu 4500-5000 từ cho bản FREE (chi tiết, đầy đủ, không cắt ngắn)
+✅ ĐỘ DÀI: 4.000–5.000 từ cho bản FREE (chi tiết, đầy đủ, không cắt ngắn; nếu thiếu dữ liệu vẫn phải phân tích sâu theo giả định minh bạch)
 
 ## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN
 
@@ -125,15 +125,16 @@ Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
 ## PHẦN 4: YẾU TỐ KHÁCH QUAN & CHỦ QUAN
 Viết 300-400 từ, CHỈ nêu các yếu tố ảnh hưởng TRỰC TIẾP tới mục tiêu đã cung cấp (ví dụ: lãi suất vay khi mục tiêu là mua nhà). Tránh nhận định chung chung. Nếu thiếu dữ liệu về mục tiêu, ghi rõ hạn chế.
 
-## PHẦN 5: KỸ NĂNG CẦN CÓ
-Liệt kê tối đa 5 kỹ năng, mỗi kỹ năng kèm: mục đích, thời lượng khuyến nghị, cách bắt đầu NGAY hôm nay. Liên kết chặt với mục tiêu (ví dụ: dòng tiền, đàm phán lãi suất, nghiên cứu thị trường bất động sản). Không liệt kê kỹ năng không liên quan.
+## PHẦN 5: KỸ NĂNG & KINH NGHIỆM CẦN CÓ + MÔ HÌNH KINH DOANH GỢI Ý
+1) Kỹ năng/kinh nghiệm cốt lõi (tối đa 6 mục): mỗi mục ghi rõ mục đích, ROI dự kiến, thời lượng khuyến nghị, tài nguyên học nhanh để bắt đầu NGAY hôm nay. Liên kết chặt với mục tiêu (ví dụ: tối ưu dòng tiền, đàm phán lãi suất, nghiện cứu thị trường, marketing, bán hàng, phân tích dữ liệu).
+2) 3–5 mô hình tăng thu nhập phù hợp hồ sơ hiện tại (ví dụ: freelancing theo kỹ năng A, bán sản phẩm số, dịch vụ tư vấn niche, micro-SaaS, affiliate). Với mỗi mô hình: mô tả ngắn, nguồn lực cần, rủi ro, KPI 90 ngày, ví dụ giá/biên lợi nhuận tại VN.
 
 ## PHẦN 6: LỘ TRÌNH CHI TIẾT
 Linh hoạt theo thời gian mục tiêu người dùng nêu ra:
 - Nếu timeline là ≤ 3 tháng: chia theo THÁNG, mỗi tháng chia tiếp theo TUẦN (Tuần 1 → Tuần 4). Mỗi tuần nêu 2–3 hành động cụ thể, có tiêu chí hoàn thành.
 - Nếu timeline là 4–12 tháng: chia THEO THÁNG. Mỗi tháng 2–3 hành động cụ thể gắn với ngân sách và KPI.
-- Nếu timeline là ≥ 2 năm: chia THEO NĂM → mỗi năm chia THEO QUÝ (Q1–Q4). Mỗi quý nêu mục tiêu và 3–5 hành động chính.
-- Nếu là khoảng (ví dụ: 2–3 năm): trình bày đủ 2 năm theo Năm → Quý; phần thời gian còn lại tóm lược.
+- Nếu timeline là ≥ 2 năm: BẮT BUỘC có "Năm thứ nhất" và "Năm thứ hai" (nếu 2 năm), mỗi năm chia THEO QUÝ (Q1–Q4). Mỗi quý nêu mục tiêu và 3–5 hành động chính. Không được thiếu năm/quý.
+- Nếu là khoảng (ví dụ: 2–3 năm): trình bày đủ tối thiểu 2 năm theo Năm → Quý; phần thời gian còn lại tóm lược có cấu trúc.
 
 ## 📅 PHẦN 7: HÀNH ĐỘNG CHI TIẾT THEO THỜI GIAN MỤC TIÊU
 
@@ -143,10 +144,10 @@ Tùy theo timeline người dùng:
 - ≥ 2 năm: liệt kê HÀNH ĐỘNG THEO QUÝ cho toàn bộ thời gian (mỗi quý 3–5 hành động). Nếu là khoảng 2–3 năm, ưu tiên đủ 2 năm theo quý, phần còn lại tóm lược.
 Không chèn câu hướng dẫn meta; chỉ đưa nội dung hành động cụ thể.
 
-## PHẦN 8: TÀI LIỆU HỌC TẬP
-Tối thiểu 5 tài liệu:
-1. [Tên khóa học] - [Link] - Học trong [X tuần]
-2. [Tên sách/video] - [Link] - Đọc trong [Y ngày]
+## PHẦN 8: TÀI LIỆU HỌC TẬP (8–12 tài liệu)
+Ưu tiên nguồn tiếng Việt và miễn phí; đa dạng sách/khóa học/YouTube/blog/công cụ. Mỗi dòng ghi rõ: Mục tiêu học gì → Link → Thời lượng đề xuất.
+1. [Tên] – [Link] – [Mục tiêu] – [Thời lượng]
+2. [Tên] – [Link] – [Mục tiêu] – [Thời lượng]
 ...
 
 ## PHẦN 9: KẾT LUẬN & HÀNH ĐỘNG
@@ -171,7 +172,7 @@ OUTPUT JSON:
   "content_markdown": "[Nội dung 9 phần ở trên, KHÔNG có phần Xuất dữ liệu bảng]",
   "mermaid_blocks": [],
   "tables_md": [],
-  "resources": [5-10 links]
+  "resources": [8-12 links]
 }
 `
 }
@@ -198,7 +199,7 @@ Executive summary + Hồ sơ chi tiết:
 - Mục tiêu: ${userInfo.goal}
 
 ## 3. PHÂN TÍCH SWOT NÂNG CAO
-Phân tích SWOT dưới dạng văn bản, không dùng bảng:
+Phân tích SWOT dước dạng văn bản, không dùng bảng:
 
 **Điểm mạnh:**
 - [Điểm mạnh 1]
@@ -228,7 +229,7 @@ Với sensitivity analysis ±20%
 Portfolio approach, risk-return optimization
 
 ## 6. LỘ TRÌNH CHI TIẾT
-Lộ trình chi tiết dưới dạng văn bản:
+Lộ trình chi tiết dước dạng văn bản:
 
 **Năm thứ nhất:**
 - **Quý 1:**
@@ -241,7 +242,7 @@ Lộ trình chi tiết dưới dạng văn bản:
   - *Tháng thứ nhất:* [Mục tiêu và hành động]
 
 ## 7. KẾ HOẠCH THỜI GIAN
-Kế hoạch thời gian chi tiết dước dạng văn bản:
+Kế hoạch thởi gian chi tiết dước dạng văn bản:
 
 **Năm thứ nhất:**
 - **Quý 1:** [Mục tiêu chính]
@@ -334,7 +335,7 @@ Cách dùng kế hoạch hiệu quả
 Lời khuyên cuối + First action in 24h
 
 **🚀 BẠN ĐÃ LÀ THÀNH VIÊN ${tier.toUpperCase()}!**
-Chúc mừng! Bạn đang sở hữu bản kế hoạch chuyên sâu nhất với:
+Chúc mừng! Bạn đang sở hữ bản kế hoạch chuyên sâu nhất với:
 ✅ 24 phần phân tích chi tiết
 ✅ ${tier === 'pro' || tier === 'premium' ? 'Google Sheets tự động' : 'Nội dung premium'}
 ✅ ${constraints.max_resources} tài liệu chất lượng cao
@@ -396,6 +397,14 @@ QUY TẮC CHẤT LƯỢNG VÀ ĐỘ TIN CẬY:
 ✅ KHÔNG sử dụng ngày/tháng cụ thể - luôn dùng "tháng thứ nhất", "tháng thứ hai", "quý thứ nhất", "năm thứ nhất", v.v.
 ✅ KHÔNG sử dụng bất kỳ cú pháp đặc biệt nào có thể gây lỗi hiển thị
 ✅ MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản (tiêu đề, đậm, nghiêng, danh sách)
+
+CHECKLIST HOÀN THIỆN (BẮT BUỘC):
+- Có đủ: PHẦN 1, PHẦN 2, PHẦN 3, PHẦN 4, PHẦN 5, PHẦN 6, PHẦN 7, PHẦN 8, PHẦN 9
+- Timeline ≥ 2 năm phải có Năm thứ nhất và Năm thứ hai, mỗi năm đủ Q1–Q4
+- Phần 5 phải có cả kỹ năng/kinh nghiệm và 3–5 mô hình tăng thu nhập
+- Phần 7 liệt kê hành động trọn vẹn cho toàn bộ timeline
+- Phần 8 tối thiểu 8 tài liệu
+- Có Kết luận rõ ràng
 
 IMPORTANT: Return ONLY valid JSON, no extra text.
 `

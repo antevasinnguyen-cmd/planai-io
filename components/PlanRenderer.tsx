@@ -185,54 +185,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         </div>
       )}
 
-      {/* Beautiful CTA Section - Only for FREE tier - moved to bottom */}
-      {userTier === 'free' && (
-        <div className="mt-12 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 p-[2px]">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8">
-            <div className="text-center space-y-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-4xl animate-pulse">
-                🎯
-              </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Nâng cấp để mở khóa đầy đủ tính năng
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Khi bạn sẵn sàng, hãy nâng cấp để có phân tích sâu hơn và công cụ quản trị thực tế.
-              </p>
-              <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
-                {[
-                  '✅ 24 phần phân tích chi tiết',
-                  '✅ Google Sheets theo dõi tự động',
-                  '✅ 3–5 mô hình kinh doanh cá nhân hóa',
-                  '✅ Dự báo và chiến lược rủi ro'
-                ].map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                <a
-                  href="/pricing"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105"
-                >
-                  <span>🚀</span>
-                  <span>Nâng cấp ngay</span>
-                </a>
-                <a
-                  href="/dashboard/subscription"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                >
-                  <span>ℹ️</span>
-                  <span>Xem chi tiết gói</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CTA will be rendered at the bottom now */}
+      {/* CTA sẽ được render ở cuối component */}
 
       {/* Main Content with Ebook Style */}
       <div className="prose prose-lg dark:prose-invert max-w-none mb-8 
@@ -462,6 +415,53 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
                 <span>Xuất Tất Cả</span>
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Beautiful CTA Section - Only for FREE tier - moved to absolute bottom */}
+      {userTier === 'free' && (
+        <div className="mt-12 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 p-[2px]">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8">
+            <div className="text-center space-y-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-4xl animate-pulse">
+                🎯
+              </div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Nâng cấp để mở khóa đầy đủ tính năng
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Khi bạn sẵn sàng, hãy nâng cấp để có phân tích sâu hơn và công cụ quản trị thực tế.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto text-left">
+                {[
+                  '✅ 24 phần phân tích chi tiết',
+                  '✅ Google Sheets theo dõi tự động',
+                  '✅ 3–5 mô hình kinh doanh cá nhân hóa',
+                  '✅ Dự báo và chiến lược rủi ro'
+                ].map((feature, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105"
+                >
+                  <span>🚀</span>
+                  <span>Nâng cấp ngay</span>
+                </a>
+                <a
+                  href="/dashboard/subscription"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                >
+                  <span>ℹ️</span>
+                  <span>Xem chi tiết gói</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}

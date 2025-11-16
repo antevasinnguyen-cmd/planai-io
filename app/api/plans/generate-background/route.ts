@@ -331,7 +331,7 @@ async function processJobInBackground(
           model: 'gpt-4o-mini',
           response_format: { type: 'json_object' },
           temperature: tier === 'free' ? 0.5 : 0.3,
-          max_tokens: Math.min(2000, Math.ceil((constraints.max_words || 1500) * 1.3)),
+          max_tokens: Math.min(2500, Math.ceil((constraints.max_words || 1500) * 1.3)),
           messages: [
             { role: 'system', content: String(systemPrompt) },
             { role: 'user', content: userPrompt.slice(0, 8000) }
@@ -383,7 +383,7 @@ async function processJobInBackground(
 
     // Optional QA validator pass (improve coherence and fill gaps). Enabled for paid tiers by default.
     try {
-      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false' && tier !== 'free'
+      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false'
       if (enableQa) {
         const qaController = new AbortController()
         const qaTimeoutMs = Math.min(180000, Math.max(60000, tierTimeoutMs - 10000)) // leave headroom

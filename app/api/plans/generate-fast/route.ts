@@ -56,6 +56,18 @@ function extractTargetIncome(text: string): string | null {
   return unit.startsWith('t') ? `${num} tỷ/tháng` : `${num} triệu/tháng`
 }
 
+function extractProject(text: string): string | null {
+  const m = text.match(/dự\s*án[^:]*[:\-]?\s*([^\n]+)/i)
+  if (m) return m[1].trim()
+  if (/saas/i.test(text)) return 'webapp SaaS AI'
+  return null
+}
+
+function extractLocation(text: string): string | null {
+  const m = text.match(/(?:hiện\s*đang\s*ở|đang\s*ở|ở|tại)\s+([^\n,\.]+)/i)
+  return m ? m[1].trim() : null
+}
+
 // Helper: Call Claude-3.5-haiku as fallback
 async function callClaudeHaiku(systemPrompt: string, userPrompt: string, maxTokens: number) {
   try {
@@ -257,7 +269,9 @@ export async function POST(request: NextRequest) {
       skills: extractSkills(fullChatSummary) || collectedInfo?.skills,
       income: collectedInfo?.income || extractIncomeRange(fullChatSummary) || collectedInfo?.income_range,
       target_income: collectedInfo?.target_income || extractTargetIncome(fullChatSummary),
-      timeline: collectedInfo?.timeline || extractTimelineRange(fullChatSummary) || extractTimelineSingle(fullChatSummary)
+      timeline: collectedInfo?.timeline || extractTimelineRange(fullChatSummary) || extractTimelineSingle(fullChatSummary),
+      project: collectedInfo?.project || collectedInfo?.current_project || extractProject(fullChatSummary) || undefined,
+      location: collectedInfo?.location || extractLocation(fullChatSummary) || undefined
     }
 
     const enrichedCollectedInfo = { ...collectedInfo, chat_summary: fullChatSummary, ...extracted }
@@ -442,6 +456,51 @@ export async function POST(request: NextRequest) {
     // Add CTA
     if (!content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
       content_md += `\n\n**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**\nBản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:\n✅ 24 phần phân tích chuyên sâu (gấp 3 lần)\n✅ Google Sheets tự động với 7 tabs tracking\n✅ Phân tích tử vi tài chính & thần số học\n✅ 3-5 mô hình kinh doanh cá nhân hóa\n✅ 50+ tài liệu học tập premium\n✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết\n✅ Dự báo 3 kịch bản & chiến lược rủi ro\n👉 Nâng cấp tại: https://planai.io.vn/pricing\n`
+    }
+
+    // Optional QA validator pass for FREE tier as well (fill gaps, enforce 9 sections)
+    try {
+      const qaController = new AbortController()
+      // Leave headroom from the 5-minute route maxDuration
+      const qaTimeoutMs = 90_000
+      const qaTimeout = setTimeout(() => qaController.abort(), qaTimeoutMs)
+      const qaPrompt = [
+        'Bạn là Trưởng biên tập, hãy HOÀN THIỆN nội dung kế hoạch dưới đây và CHỈ TRẢ VỀ Markdown hợp lệ.',
+        'YÊU CẦU BẮT BUỘC:',
+        '- Giữ đúng cấu trúc FREE = 9 phần với tiêu đề chuẩn (PHẦN 1 → PHẦN 9).',
+        '- Bổ sung khi thiếu: mô hình tăng thu nhập (3–5 mô hình) trong PHẦN 5, hành động chi tiết trọn vẹn timeline trong PHẦN 7, tài liệu học tập 8–12 nguồn trong PHẦN 8, KẾT LUẬN rõ ràng ở PHẦN 9.',
+        '- Nếu timeline ≥ 2 năm: PHẢI có Năm thứ nhất và Năm thứ hai, mỗi năm đủ Q1–Q4 (không được thiếu).',
+        '- Không dùng bảng Markdown, không dùng Mermaid, không thêm phần Xuất dữ liệu bảng.',
+        '- Viết văn bản thuần, trình bày đẹp, súc tích nhưng đủ sâu; ưu tiên 3.000–4.500 từ nếu có thể trong giới hạn.',
+        '',
+        'THÔNG TIN NGƯỜI DÙNG (rút gọn):',
+        userContext.slice(0, 1200),
+        '',
+        'NỘI DUNG GỐC CẦN HOÀN THIỆN:',
+        content_md.slice(0, 24000)
+      ].join('\n')
+
+      const qa = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        temperature: 0.25,
+        max_tokens: 1800,
+        messages: [
+          { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, chỉ trả về NỘI DUNG MARKDOWN HOÀN CHỈNH; không thêm text ngoài lề.' },
+          { role: 'user', content: qaPrompt }
+        ]
+      }, { signal: qaController.signal })
+      clearTimeout(qaTimeout)
+      const improved = qa.choices?.[0]?.message?.content || ''
+      if (improved && improved.length > content_md.length * 0.7) {
+        content_md = String(improved)
+          .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
+          .replace(/```mermaid[\s\S]*?```/g, '')
+          .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
+          .replace(/#+\s*$/gm, '')
+          .replace(/\n{3,}/g, '\n\n')
+      }
+    } catch (qaErr) {
+      logger.warn('FAST_QA_SKIPPED', { error: String(qaErr) })
     }
 
     // Update progress to 95%
