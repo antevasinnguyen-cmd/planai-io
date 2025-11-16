@@ -104,10 +104,24 @@ const PAYOS_CHECKSUM_KEY = process.env.PAYOS_CHECKSUM_KEY || ''
 const PAYOS_WEBHOOK_SECRET = process.env.PAYOS_WEBHOOK_SECRET || ''
 
 export async function POST(request: NextRequest) {
+  const requestId = `req_${Date.now()}`;
+  console.log('=== PAYMENT API: ENDPOINT CALLED ===', {
+    requestId,
+    timestamp: new Date().toISOString(),
+    url: request.url,
+    method: request.method
+  });
+
   try {
-    console.log('=== PAYMENT API: Received payment request ===')
+    console.log('=== PAYMENT API: Received payment request ===', { requestId })
     const { planId, amount, userId, paymentMethod } = await request.json()
-    console.log('Payment details:', { planId, amount, userId, paymentMethod })
+    console.log('=== PAYMENT API: Payment details ===', { 
+      requestId,
+      planId, 
+      amount, 
+      userId, 
+      paymentMethod 
+    })
     
     // Bỏ qua hoàn toàn phần kiểm tra xác thực người dùng
     console.log('=== PAYMENT API: Skipping user verification for all requests ===')
@@ -438,7 +452,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Return success response
-    console.log('=== PAYMENT API: Returning success response ===', { paymentUrl, transactionId })
+    console.log('=== PAYMENT API: Returning success response ===', { 
+      requestId,
+      paymentUrl, 
+      transactionId,
+      paymentSaved,
+      timestamp: new Date().toISOString()
+    })
     return NextResponse.json({
       success: true,
       paymentUrl: paymentUrl,
@@ -446,9 +466,17 @@ export async function POST(request: NextRequest) {
       qrCode: qrCode
     })
   } catch (error) {
-    console.error('Payment API Error:', error)
+    console.error('=== PAYMENT API: CRITICAL ERROR ===', {
+      requestId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    })
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
       { status: 500 }
     )
   }
