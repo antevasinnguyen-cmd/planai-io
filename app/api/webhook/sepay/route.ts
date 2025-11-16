@@ -247,7 +247,8 @@ export async function POST(request: NextRequest) {
       
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-          const { error: subscriptionError } = await supabase
+          // 1. Cập nhật profile
+          const { error: profileError } = await supabase
             .from('profiles')
             .update({
               subscription_tier: payment.subscription_tier,
@@ -258,15 +259,48 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', payment.user_id);
 
-          if (!subscriptionError) {
-            upgradeSuccess = true;
-            break;
+          if (profileError) {
+            lastUpgradeError = profileError;
+            if (attempt < MAX_RETRIES) {
+              await wait(1000 * attempt);
+            }
+            continue;
           }
+
+          // 2. Tạo hoặc cập nhật subscription
+          const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
           
-          lastUpgradeError = subscriptionError;
-          if (attempt < MAX_RETRIES) {
-            await wait(1000 * attempt);
+          const { data: existingSub } = await supabase
+            .from('subscriptions')
+            .select('id')
+            .eq('user_id', payment.user_id)
+            .eq('status', 'active')
+            .single();
+
+          if (existingSub) {
+            await supabase
+              .from('subscriptions')
+              .update({
+                tier: payment.subscription_tier,
+                current_period_end: endDate,
+                updated_at: now
+              })
+              .eq('id', existingSub.id);
+          } else {
+            await supabase
+              .from('subscriptions')
+              .insert({
+                user_id: payment.user_id,
+                tier: payment.subscription_tier,
+                status: 'active',
+                current_period_start: now,
+                current_period_end: endDate,
+                created_at: now
+              });
           }
+
+          upgradeSuccess = true;
+          break;
         } catch (error) {
           lastUpgradeError = error;
           console.error(`=== SEPAY WEBHOOK: Upgrade attempt ${attempt} failed ===`, error);
@@ -278,33 +312,6 @@ export async function POST(request: NextRequest) {
 
       if (!upgradeSuccess) {
         console.error('=== SEPAY WEBHOOK: Subscription update failed after retries ===', {
-          orderId,
-          userId: payment.user_id,
-          error: lastUpgradeError
-        });
-        
-        // Gửi thông báo lỗi cho admin
-        try {
-          await supabase
-            .from('admin_notifications')
-            .insert([{
-              type: 'subscription_upgrade_failed',
-              user_id: payment.user_id,
-              payment_id: payment.id,
-              message: `Failed to upgrade subscription for user ${payment.user_id} after payment ${orderId}`,
-              metadata: {
-                error: (lastUpgradeError as any)?.message || 'Unknown error',
-                payment_status: paymentStatus,
-                subscription_tier: payment.subscription_tier
-              },
-              created_at: now
-            }]);
-        } catch (notifyError) {
-          console.error('=== SEPAY WEBHOOK: Failed to send admin notification ===', notifyError);
-        }
-        
-        // Vẫn trả về thành công cho SePay nhưng ghi log lỗi
-        console.error('=== SEPAY WEBHOOK: Subscription update failed (non-blocking) ===', {
           orderId,
           userId: payment.user_id,
           error: lastUpgradeError

@@ -83,27 +83,37 @@ export default function PaymentProcessingClient({
 
   // Xác nhận thanh toán SePay (khi user đã chuyển khoản)
   const handleConfirmSepayPayment = async () => {
+    if (paymentStatus !== 'pending') return
     setIsConfirming(true)
+
     try {
-      const response = await fetch('/api/payment/confirm-sepay', {
+      const response = await fetch('/api/payment/manual-confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({
+          orderId,
+          userId: user?.id
+        })
       })
+
       const data = await response.json()
 
-      if (data.status === 'completed') {
+      if (data.success && data.status === 'completed') {
+        console.log('✅ Payment confirmed')
         setPaymentStatus('success')
         setTimeout(() => {
           router.push(`/payment/success?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}`)
         }, 2000)
       } else {
-        alert('Không thể xác nhận thanh toán. Vui lòng thử lại.')
-        setIsConfirming(false)
+        console.error('❌ Confirmation failed:', data.error || data.message)
+        setPaymentStatus('failed')
+        sessionStorage.setItem(`payment_fail_reason_${orderId}`, data.error || data.message || 'Confirmation failed')
       }
     } catch (error) {
       console.error('Error confirming payment:', error)
-      alert('Có lỗi xảy ra. Vui lòng thử lại.')
+      setPaymentStatus('failed')
+      sessionStorage.setItem(`payment_fail_reason_${orderId}`, 'Network error during confirmation')
+    } finally {
       setIsConfirming(false)
     }
   }
