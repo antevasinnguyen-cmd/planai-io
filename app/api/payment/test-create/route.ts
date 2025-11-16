@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now().toString().slice(-10);
     const transactionId = `PLAN${timestamp}`;
 
-    // Chuẩn bị payment data
+    // Chuẩn bị payment data (không gửi created_at, Supabase sẽ tự động tạo)
     const paymentData = {
       user_id: userId,
       subscription_tier: planId,

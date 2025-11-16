@@ -344,6 +344,7 @@ export async function POST(request: NextRequest) {
       const safeUserId = userId || 'anonymous'
 
       // Chuẩn bị dữ liệu để lưu - chỉ các field cần thiết
+      // Không gửi created_at vì Supabase sẽ tự động tạo
       const paymentData: any = {
         user_id: safeUserId,
         subscription_tier: planId,
