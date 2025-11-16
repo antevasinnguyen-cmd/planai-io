@@ -52,13 +52,17 @@ export async function POST(request: NextRequest) {
   });
 
   // Xác thực webhook bằng API Key
-  const authHeader = headers['authorization'] || '';
+  // SePay có thể gửi API Key dưới dạng Authorization header hoặc x-api-key header
+  const authHeader = headers['authorization'] || headers['x-api-key'] || '';
   const expectedAuth = `Apikey ${sepayToken}`;
   
-  if (authHeader !== expectedAuth) {
+  // Kiểm tra cả hai format: "Apikey KEY" hoặc chỉ "KEY"
+  const isValidAuth = authHeader === expectedAuth || authHeader === sepayToken;
+  
+  if (!isValidAuth) {
     console.error('=== SEPAY WEBHOOK: Invalid API Key ===', {
       received: authHeader ? 'API Key present but invalid' : 'No API Key',
-      expected: 'Apikey API_KEY_CUA_BAN'
+      expected: 'Apikey API_KEY_CUA_BAN or just API_KEY_CUA_BAN'
     });
     return NextResponse.json({ 
       success: false,
