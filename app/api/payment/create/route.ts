@@ -62,9 +62,12 @@ async function createSepayTransaction(sepayConfig: any, amount: number, transfer
   }
 }
 
-// Hàm tạo mã giao dịch duy nhất
-function generateTransactionId(prefix = 'PLANAI'): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+// Hàm tạo mã giao dịch duy nhất theo format SePay: PLAN + 3-10 ký tự số
+// Format: PLAN + timestamp (10 ký tự số)
+function generateTransactionId(): string {
+  // Lấy 10 ký tự cuối của timestamp (đủ unique)
+  const timestamp = Date.now().toString().slice(-10);
+  return `PLAN${timestamp}`;
 }
 
 // Hàm tạo URL xử lý thanh toán
@@ -110,8 +113,8 @@ export async function POST(request: NextRequest) {
     console.log('=== PAYMENT API: Skipping user verification for all requests ===')
     console.log('=== PAYMENT API: Requested userId ===', userId)
 
-    // Generate unique transaction ID
-    const transactionId = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Generate unique transaction ID (SePay format: PLAN + 3-10 ký tự số)
+    const transactionId = generateTransactionId()
     
     // Kiểm tra biến môi trường SePay
     if (paymentMethod === 'sepay') {
@@ -270,7 +273,7 @@ export async function POST(request: NextRequest) {
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://planai.io.vn'
 
         // Sử dụng PayOS API để tạo payment link
-        const orderCode = `PLANAI_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        const orderCode = transactionId
         // PayOS yêu cầu description tối đa 25 ký tự
         const description = `PlanAI ${planId}`.substring(0, 25)
         const returnUrl = `${baseUrl}/payment/success`
@@ -357,7 +360,6 @@ export async function POST(request: NextRequest) {
         const urlParams = new URL(paymentUrl).searchParams
         const payosOrderCode = urlParams.get('payosOrderCode')
         if (payosOrderCode) {
-          paymentData.order_code = parseInt(payosOrderCode.replace('PLANAI_', ''))
           paymentData.payos_payment_id = payosOrderCode
           paymentData.metadata = {
             payos_order_code: payosOrderCode,
