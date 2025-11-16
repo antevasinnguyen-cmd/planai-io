@@ -367,7 +367,9 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         payment_method: paymentMethod,
         transaction_id: transactionId,
-        provider: paymentMethod === 'sepay' ? 'sepay' : 'payos'
+        metadata: {
+          provider: paymentMethod === 'sepay' ? 'sepay' : 'payos'
+        }
       }
 
       // Thêm thông tin PayOS nếu có
@@ -377,6 +379,7 @@ export async function POST(request: NextRequest) {
         if (payosOrderCode) {
           paymentData.payos_payment_id = payosOrderCode
           paymentData.metadata = {
+            ...paymentData.metadata,
             payos_order_code: payosOrderCode,
             provider_url: paymentUrl
           }
