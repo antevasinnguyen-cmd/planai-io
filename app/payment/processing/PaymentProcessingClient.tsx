@@ -34,6 +34,7 @@ export default function PaymentProcessingClient({
   const [checkCount, setCheckCount] = useState(0)
   const [timeRemaining, setTimeRemaining] = useState(PAYMENT_TIMEOUT)
   const [isCancelling, setIsCancelling] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
 
   // Debug QR code format
   useEffect(() => {
@@ -77,6 +78,33 @@ export default function PaymentProcessingClient({
     } catch (error) {
       console.error('Error cancelling payment:', error)
       setIsCancelling(false)
+    }
+  }
+
+  // Xác nhận thanh toán SePay (khi user đã chuyển khoản)
+  const handleConfirmSepayPayment = async () => {
+    setIsConfirming(true)
+    try {
+      const response = await fetch('/api/payment/confirm-sepay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      })
+      const data = await response.json()
+
+      if (data.status === 'completed') {
+        setPaymentStatus('success')
+        setTimeout(() => {
+          router.push(`/payment/success?order=${orderId}&amount=${amount}&plan=${planId}&provider=${provider}`)
+        }, 2000)
+      } else {
+        alert('Không thể xác nhận thanh toán. Vui lòng thử lại.')
+        setIsConfirming(false)
+      }
+    } catch (error) {
+      console.error('Error confirming payment:', error)
+      alert('Có lỗi xảy ra. Vui lòng thử lại.')
+      setIsConfirming(false)
     }
   }
 
@@ -369,12 +397,34 @@ export default function PaymentProcessingClient({
           </div>
         </div>
 
-        {/* Cancel Button - Moved to bottom */}
-        <div className="flex justify-center mt-8 mb-6">
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-3 mt-8 mb-6">
+          {/* Confirm Payment Button for SePay */}
+          {provider === 'sepay' && paymentStatus === 'pending' && (
+            <button
+              onClick={handleConfirmSepayPayment}
+              disabled={isConfirming}
+              className="flex items-center justify-center gap-2 px-8 py-4 bg-green-50 text-green-600 border-2 border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-md"
+            >
+              {isConfirming ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <span>Đang xác nhận...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-6 h-6" />
+                  <span>Xác nhận thanh toán đã chuyển khoản</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Cancel Button */}
           <button
             onClick={handleCancelPayment}
             disabled={isCancelling || paymentStatus === 'success' || paymentStatus === 'cancelled'}
-            className="flex items-center gap-2 px-8 py-4 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-md"
+            className="flex items-center justify-center gap-2 px-8 py-4 bg-red-50 text-red-600 border-2 border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-md"
           >
             {isCancelling ? (
               <>
