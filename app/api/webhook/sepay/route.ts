@@ -24,12 +24,12 @@ function verifyWebhookSignature(signature: string, payload: any, secret: string)
 
 // Kiểm tra webhook secret và API key
 const sepayToken = process.env.SEPAY_API_KEY || process.env.SEPAY_TOKEN || '';
-const SEPAY_WEBHOOK_SECRET = process.env.SEPAY_WEBHOOK_SECRET || '';
+// SEPAY_WEBHOOK_SECRET không được sử dụng - SePay gửi API Key trong Authorization header
+// Nếu cần webhook signature verification, cần cấu hình trong SePay dashboard
 
 console.log('=== SEPAY WEBHOOK: Config check ===', {
   hasToken: !!sepayToken,
   tokenLength: sepayToken.length,
-  hasWebhookSecret: !!SEPAY_WEBHOOK_SECRET,
   envVars: Object.keys(process.env).filter(k => k.includes('SEPAY')).join(', ')
 });
 
