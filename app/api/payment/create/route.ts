@@ -338,11 +338,12 @@ export async function POST(request: NextRequest) {
 
     // Lưu bản ghi thanh toán vào database
     console.log('=== PAYMENT API: Saving payment record to database ===')
+    let paymentSaved = false
     try {
       // Đảm bảo userId luôn hợp lệ
       const safeUserId = userId || 'anonymous'
 
-      // Chuẩn bị dữ liệu để lưu
+      // Chuẩn bị dữ liệu để lưu - chỉ các field cần thiết
       const paymentData: any = {
         user_id: safeUserId,
         subscription_tier: planId,
@@ -351,8 +352,7 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         payment_method: paymentMethod,
         transaction_id: transactionId,
-        provider: paymentMethod === 'sepay' ? 'sepay' : 'payos',
-        created_at: new Date().toISOString()
+        provider: paymentMethod === 'sepay' ? 'sepay' : 'payos'
       }
 
       // Thêm thông tin PayOS nếu có
@@ -374,29 +374,57 @@ export async function POST(request: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY || ''
       )
 
+      console.log('=== PAYMENT API: Attempting to insert payment ===', {
+        transactionId,
+        userId: paymentData.user_id,
+        amount: paymentData.amount,
+        status: paymentData.status,
+        provider: paymentData.provider,
+        paymentData: JSON.stringify(paymentData)
+      })
+
       const { data: paymentRecord, error } = await adminSupabase
         .from('payments')
         .insert([paymentData])
         .select()
 
       if (error) {
-        // Ghi log lỗi nhưng không trả về lỗi cho client
-        console.error('=== PAYMENT API: Database error (non-blocking) ===', {
+        console.error('=== PAYMENT API: Database error ===', {
           code: error.code,
           message: error.message,
           details: error.details,
-          hint: error.hint
+          hint: error.hint,
+          fullError: JSON.stringify(error),
+          paymentData
+        })
+      } else if (!paymentRecord || paymentRecord.length === 0) {
+        console.error('=== PAYMENT API: Insert returned no records ===', {
+          transactionId,
+          paymentData
         })
       } else {
+        paymentSaved = true
         console.log('=== PAYMENT API: Payment record saved successfully ===', {
           id: paymentRecord?.[0]?.id,
           transactionId,
-          status: paymentRecord?.[0]?.status
+          status: paymentRecord?.[0]?.status,
+          createdAt: paymentRecord?.[0]?.created_at
         })
       }
     } catch (dbError) {
-      // Ghi log lỗi nhưng không trả về lỗi cho client
-      console.error('=== PAYMENT API: Database exception (non-blocking) ===', dbError)
+      console.error('=== PAYMENT API: Database exception ===', {
+        error: dbError,
+        message: dbError instanceof Error ? dbError.message : 'Unknown error',
+        transactionId
+      })
+    }
+
+    // Log warning nếu payment không được lưu
+    if (!paymentSaved) {
+      console.warn('=== PAYMENT API: WARNING - Payment may not have been saved to database ===', {
+        transactionId,
+        provider: paymentMethod
+      })
     }
 
     // Kiểm tra URL thanh toán có trống không
