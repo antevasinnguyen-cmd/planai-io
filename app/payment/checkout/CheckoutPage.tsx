@@ -185,41 +185,21 @@ export default function CheckoutPage() {
           <div></div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
+        <div className="max-w-2xl mx-auto">
+          {/* Payment Form */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Tóm tắt đơn hàng</h2>
-
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">{selectedPlan.name}</span>
-                <span className="font-semibold">{selectedPlan.price.toLocaleString('vi-VN')} VND</span>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Tổng cộng</span>
-                  <span className="text-primary-600">{selectedPlan.price.toLocaleString('vi-VN')} VND</span>
+            {/* Order Summary */}
+            <div className="mb-8 pb-8 border-b">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Tóm tắt đơn hàng</h2>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-gray-600 mb-1">{selectedPlan.name}</p>
+                  <p className="text-2xl font-bold text-primary-600">{selectedPlan.price.toLocaleString('vi-VN')} VND</p>
                 </div>
               </div>
             </div>
 
-            {/* Plan Features */}
-            <div className="mt-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Bao gồm:</h3>
-              <ul className="space-y-2">
-                {selectedPlan.features.map((feature: string, index: number) => (
-                  <li key={index} className="flex items-center text-sm text-gray-600">
-                    <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Payment Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+            {/* Payment Form Title */}
             <h2 className="text-xl font-bold text-gray-900 mb-6">Thông tin thanh toán</h2>
 
             {/* Payment Method */}
