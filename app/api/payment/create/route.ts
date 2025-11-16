@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 import { createPaymentLink, PaymentStatus } from '@/lib/payos'
 function getSepayConfig() {
@@ -347,6 +348,7 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         payment_method: paymentMethod,
         transaction_id: transactionId,
+        provider: paymentMethod === 'sepay' ? 'sepay' : 'payos',
         created_at: new Date().toISOString()
       }
 
@@ -364,16 +366,31 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const { data: paymentRecord, error } = await supabase
+      // Sử dụng admin client (service role) để bypass RLS
+      const adminSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      )
+
+      const { data: paymentRecord, error } = await adminSupabase
         .from('payments')
         .insert([paymentData])
         .select()
 
       if (error) {
         // Ghi log lỗi nhưng không trả về lỗi cho client
-        console.error('=== PAYMENT API: Database error (non-blocking) ===', error)
+        console.error('=== PAYMENT API: Database error (non-blocking) ===', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
       } else {
-        console.log('=== PAYMENT API: Payment record saved successfully ===', paymentRecord)
+        console.log('=== PAYMENT API: Payment record saved successfully ===', {
+          id: paymentRecord?.[0]?.id,
+          transactionId,
+          status: paymentRecord?.[0]?.status
+        })
       }
     } catch (dbError) {
       // Ghi log lỗi nhưng không trả về lỗi cho client
