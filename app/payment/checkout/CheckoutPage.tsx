@@ -73,7 +73,23 @@ export default function CheckoutPage() {
   }
 
   const handlePayment = async () => {
-    if (!selectedPlan || !user) return
+    console.log('=== CHECKOUT: handlePayment called ===', {
+      hasSelectedPlan: !!selectedPlan,
+      hasUser: !!user,
+      userId: user?.id,
+      planId: selectedPlan?.id,
+      paymentMethod,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!selectedPlan || !user) {
+      console.error('=== CHECKOUT: Missing required data ===', {
+        selectedPlan: !!selectedPlan,
+        user: !!user
+      });
+      setErrorMessage('Thiếu thông tin thanh toán. Vui lòng thử lại.');
+      return;
+    }
 
     setIsProcessing(true)
     setErrorMessage('') // Xóa thông báo lỗi cũ
@@ -85,11 +101,12 @@ export default function CheckoutPage() {
 
     try {
       // Tạo payment request với SePay hoặc PayOS
-      console.log('Sending payment request:', {
+      console.log('=== CHECKOUT: Sending payment request ===', {
         planId: selectedPlan.id,
         amount: selectedPlan.price,
         userId: user.id,
-        paymentMethod
+        paymentMethod,
+        timestamp: new Date().toISOString()
       })
 
       const fetchPromise = fetch('/api/payment/create', {
