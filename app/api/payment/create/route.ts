@@ -384,10 +384,29 @@ export async function POST(request: NextRequest) {
       }
 
       // Sử dụng admin client (service role) để bypass RLS
-      const adminSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-      )
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      console.log('=== PAYMENT API: Supabase config check ===', {
+        hasUrl: !!supabaseUrl,
+        urlLength: supabaseUrl?.length || 0,
+        hasKey: !!serviceRoleKey,
+        keyLength: serviceRoleKey?.length || 0
+      });
+
+      if (!supabaseUrl || !serviceRoleKey) {
+        console.error('=== PAYMENT API: CRITICAL - Missing Supabase config ===', {
+          hasUrl: !!supabaseUrl,
+          hasKey: !!serviceRoleKey,
+          transactionId
+        });
+        return NextResponse.json({
+          error: 'Payment service configuration error',
+          details: 'Database configuration is missing. Please contact support.'
+        }, { status: 500 });
+      }
+
+      const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
       console.log('=== PAYMENT API: Attempting to insert payment ===', {
         transactionId,
@@ -410,13 +429,23 @@ export async function POST(request: NextRequest) {
           details: error.details,
           hint: error.hint,
           fullError: JSON.stringify(error),
-          paymentData
-        })
+          paymentData,
+          transactionId
+        });
+        // FALLBACK: Webhook sẽ tạo payment record nếu không tìm thấy
+        console.warn('=== PAYMENT API: Database insert failed - webhook fallback will handle ===', {
+          transactionId,
+          reason: error.message
+        });
       } else if (!paymentRecord || paymentRecord.length === 0) {
         console.error('=== PAYMENT API: Insert returned no records ===', {
           transactionId,
           paymentData
-        })
+        });
+        // FALLBACK: Webhook sẽ tạo payment record nếu không tìm thấy
+        console.warn('=== PAYMENT API: No records returned - webhook fallback will handle ===', {
+          transactionId
+        });
       } else {
         paymentSaved = true
         console.log('=== PAYMENT API: Payment record saved successfully ===', {
@@ -430,8 +459,13 @@ export async function POST(request: NextRequest) {
       console.error('=== PAYMENT API: Database exception ===', {
         error: dbError,
         message: dbError instanceof Error ? dbError.message : 'Unknown error',
+        stack: dbError instanceof Error ? dbError.stack : undefined,
         transactionId
-      })
+      });
+      // FALLBACK: Webhook sẽ tạo payment record nếu không tìm thấy
+      console.warn('=== PAYMENT API: Database exception - webhook fallback will handle ===', {
+        transactionId
+      });
     }
 
     // Log warning nếu payment không được lưu
