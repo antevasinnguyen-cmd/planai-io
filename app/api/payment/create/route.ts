@@ -411,6 +411,45 @@ export async function POST(request: NextRequest) {
 
       const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
+      // Ensure user profile exists before creating payment (to avoid FK constraint violation)
+      if (safeUserId !== 'anonymous') {
+        try {
+          const { data: existingProfile, error: profileCheckError } = await adminSupabase
+            .from('profiles')
+            .select('id')
+            .eq('id', safeUserId)
+            .single();
+
+          if (profileCheckError && profileCheckError.code === 'PGRST116') {
+            // Profile doesn't exist, create it
+            console.log('=== PAYMENT API: Creating user profile ===', { userId: safeUserId });
+            const { error: profileCreateError } = await adminSupabase
+              .from('profiles')
+              .insert([{
+                id: safeUserId,
+                subscription_tier: 'free',
+                chat_count: 0,
+                plan_count: 0,
+                created_at: new Date().toISOString()
+              }]);
+
+            if (profileCreateError) {
+              console.warn('=== PAYMENT API: Profile creation failed ===', {
+                userId: safeUserId,
+                error: profileCreateError.message
+              });
+            } else {
+              console.log('=== PAYMENT API: User profile created successfully ===', { userId: safeUserId });
+            }
+          }
+        } catch (profileError) {
+          console.warn('=== PAYMENT API: Profile check exception ===', {
+            userId: safeUserId,
+            error: profileError instanceof Error ? profileError.message : 'Unknown error'
+          });
+        }
+      }
+
       console.log('=== PAYMENT API: Attempting to insert payment ===', {
         transactionId,
         userId: paymentData.user_id,
