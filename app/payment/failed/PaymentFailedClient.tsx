@@ -281,11 +281,11 @@ export default function PaymentFailedClient({
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-600 mb-3">Cần hỗ trợ?</p>
             <a 
-              href="mailto:support@planai.io.vn" 
+              href="mailto:webappsaas.ai@gmail.com" 
               className="flex items-center gap-2 text-primary-600 hover:underline text-sm"
             >
               <Mail className="w-4 h-4" />
-              support@planai.io.vn
+              webappsaas.ai@gmail.com
             </a>
           </div>
         </div>
