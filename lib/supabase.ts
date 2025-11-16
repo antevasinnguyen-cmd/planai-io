@@ -104,6 +104,45 @@ export const signOut = async () => {
   return { error }
 }
 
+export const getClientUser = async () => {
+  try {
+    console.log('=== SUPABASE: getClientUser called (client component) ===')
+    
+    // Use createClientComponentClient for proper session handling in client components
+    const clientSupabase = createClientComponentClient()
+    
+    // Try getSession first (most reliable for client components)
+    try {
+      const { data: { session }, error } = await clientSupabase.auth.getSession()
+      console.log('=== SUPABASE: Client getSession ===', { hasSession: !!session, error: error?.message })
+      if (session?.user) {
+        console.log('=== SUPABASE: User found from session ===', { userId: session.user.id })
+        return session.user
+      }
+    } catch (e) {
+      console.log('=== SUPABASE: getSession failed ===', e)
+    }
+
+    // Fallback to getUser
+    try {
+      const { data: { user }, error } = await clientSupabase.auth.getUser()
+      console.log('=== SUPABASE: Client getUser ===', { hasUser: !!user, error: error?.message })
+      if (user && !error) {
+        console.log('=== SUPABASE: User found from getUser ===', { userId: user.id })
+        return user
+      }
+    } catch (e) {
+      console.log('=== SUPABASE: getUser failed ===', e)
+    }
+
+    console.log('=== SUPABASE: No authenticated user found (client) ===')
+    return null
+  } catch (error) {
+    console.error('=== SUPABASE: Error in getClientUser ===', error)
+    return null
+  }
+}
+
 export const getCurrentUser = async (request?: Request) => {
   try {
     // For API routes, try to get user from Authorization header or session

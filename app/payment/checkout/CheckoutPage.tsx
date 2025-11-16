@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, CreditCard, Shield, Check } from 'lucide-react'
-import { getCurrentUser, getUserProfile } from '@/lib/supabase'
+import { getClientUser, getUserProfile } from '@/lib/supabase'
 
 const plans = {
   basic: {
@@ -40,7 +40,7 @@ export default function CheckoutPage() {
 
   const initializeCheckout = async () => {
     try {
-      const currentUser = await getCurrentUser()
+      const currentUser = await getClientUser()
       
       // Nếu chưa đăng nhập => redirect đến login
       if (!currentUser) {
@@ -50,6 +50,7 @@ export default function CheckoutPage() {
       }
       
       // Nếu có người dùng đăng nhập, sử dụng thông tin của họ
+      console.log('User logged in, initializing checkout:', { userId: currentUser.id })
       setUser(currentUser)
       const { data: profileData } = await getUserProfile(currentUser.id)
       setProfile(profileData)
