@@ -305,8 +305,7 @@ export async function POST(request: NextRequest) {
               subscription_tier: payment.subscription_tier,
               chat_count: 0,
               plan_count: 0,
-              updated_at: now,
-              subscription_updated_at: now
+              updated_at: now
             })
             .eq('id', payment.user_id);
 
