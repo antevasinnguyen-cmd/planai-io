@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import axios from 'axios'
 
 // Tắt static optimization vì route này cần đọc searchParams động
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+// Khởi tạo admin Supabase client để bypass RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 const PAYOS_API_URL = 'https://api-merchant.payos.vn'
 const PAYOS_API_KEY = process.env.PAYOS_API_KEY
@@ -30,7 +35,11 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Database error:', error)
+      console.error('=== PAYMENT STATUS CHECK: Database error ===', {
+        orderId,
+        errorCode: error.code,
+        errorMessage: error.message
+      })
       return NextResponse.json({
         status: 'pending',
         message: 'Database error'
@@ -38,6 +47,21 @@ export async function GET(request: NextRequest) {
     }
 
     const payment = payments
+
+    // Log khi payment không tìm thấy
+    if (!payment) {
+      console.log('=== PAYMENT STATUS CHECK: Payment not found ===', {
+        orderId,
+        reason: 'No record in database with this transaction_id'
+      })
+    } else {
+      console.log('=== PAYMENT STATUS CHECK: Payment found ===', {
+        orderId,
+        status: payment.status,
+        userId: payment.user_id,
+        amount: payment.amount
+      })
+    }
 
     // Nếu thanh toán đã hoàn thành trong DB, trả về ngay
     if (payment && payment.status === 'completed') {
