@@ -418,15 +418,16 @@ export async function POST(request: NextRequest) {
             .from('profiles')
             .select('id')
             .eq('id', safeUserId)
-            .single();
+            .maybeSingle();
 
-          if (profileCheckError && profileCheckError.code === 'PGRST116') {
+          if (!existingProfile) {
             // Profile doesn't exist, create it
             console.log('=== PAYMENT API: Creating user profile ===', { userId: safeUserId });
             const { error: profileCreateError } = await adminSupabase
               .from('profiles')
               .insert([{
                 id: safeUserId,
+                email: `user-${safeUserId}@planai.local`,
                 subscription_tier: 'free',
                 chat_count: 0,
                 plan_count: 0,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 
 /**
  * Debug endpoint to test the complete SePay payment flow
@@ -8,7 +9,9 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId') || 'test-user-' + Date.now();
+
+  const providedUserId = searchParams.get('userId');
+  const userId = providedUserId && providedUserId.trim().length > 0 ? providedUserId : randomUUID();
   const planId = searchParams.get('planId') || 'basic';
   const amount = parseInt(searchParams.get('amount') || '169000');
 
@@ -60,9 +63,13 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileCheckError && profileCheckError.code === 'PGRST116') {
+    if (profileCheckError) {
+      addLog(`⚠️ Profile lookup warning: ${profileCheckError.message}`);
+    }
+
+    if (!existingProfile) {
       addLog(`⚠️ Profile doesn't exist for user ${userId}, creating...`);
       
       const { error: profileCreateError } = await adminSupabase
@@ -80,11 +87,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, logs, error: profileCreateError.message }, { status: 500 });
       }
       addLog('✅ Profile created successfully');
-    } else if (existingProfile) {
+    } else {
       addLog(`✅ Profile exists for user ${userId}`);
-    } else if (profileCheckError) {
-      addLog(`❌ Profile check error: ${profileCheckError.message}`);
-      return NextResponse.json({ success: false, logs, error: profileCheckError.message }, { status: 500 });
     }
 
     // Step 4: Create a test payment record
