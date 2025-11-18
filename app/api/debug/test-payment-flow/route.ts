@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
         .from('profiles')
         .insert([{
           id: userId,
+          email: `debug-${userId}@planai.local`,
           subscription_tier: 'free',
           chat_count: 0,
           plan_count: 0,
