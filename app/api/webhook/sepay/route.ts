@@ -277,8 +277,6 @@ export async function POST(request: NextRequest) {
           }
 
           // 2. Tạo hoặc cập nhật subscription
-          const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-          
           const { data: existingSub } = await supabase
             .from('subscriptions')
             .select('id')
@@ -291,7 +289,6 @@ export async function POST(request: NextRequest) {
               .from('subscriptions')
               .update({
                 tier: payment.subscription_tier,
-                current_period_end: endDate,
                 updated_at: now
               })
               .eq('id', existingSub.id);
@@ -302,8 +299,6 @@ export async function POST(request: NextRequest) {
                 user_id: payment.user_id,
                 tier: payment.subscription_tier,
                 status: 'active',
-                current_period_start: now,
-                current_period_end: endDate,
                 created_at: now
               });
           }
