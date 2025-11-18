@@ -84,25 +84,36 @@ export async function POST(_req: NextRequest) {
     }
 
     const now = new Date().toISOString()
+    const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    
     const { data: inserted, error: insErr } = await admin
       .from('subscriptions')
       .insert({
         user_id: user.id,
         tier: 'free',
         status: 'active',
-        plan_limit: 1,
-        chat_limit: 5,
-        word_limit: 1000,
+        current_period_start: now,
+        current_period_end: endDate,
         created_at: now,
       })
       .select()
       .limit(1)
 
     if (insErr) {
+      console.error('=== SUBSCRIPTION_INIT: Insert error ===', {
+        error: insErr.message,
+        code: insErr.code,
+        details: insErr.details
+      })
       return NextResponse.json({ error: insErr.message }, { status: 500 })
     }
 
     const row = Array.isArray(inserted) ? inserted[0] : inserted
+    console.log('=== SUBSCRIPTION_INIT: Subscription created ===', {
+      userId: user.id,
+      tier: row?.tier,
+      status: row?.status
+    })
     return NextResponse.json({ alreadyUsed: false, data: row })
   } catch (e: any) {
     console.error('=== SUBSCRIPTION_INIT: Error ===', { 
