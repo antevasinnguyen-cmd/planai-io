@@ -362,6 +362,11 @@ export default function PlansPage() {
                     <span>{plan.word_count?.toLocaleString()} từ</span>
                     <span>{new Date(plan.created_at).toLocaleDateString('vi-VN')}</span>
                   </div>
+
+                  {/* Subscription tier note */}
+                  <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
+                    📦 Gói: <strong>{getTierName(subscription?.tier || 'free')}</strong>
+                  </div>
                   
                   <div className="flex gap-2">
                     <Link

@@ -20,17 +20,44 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies()
     const rh = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    // Compute start of month
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
+    // Get user's subscription to determine usage period
+    const { data: subscription } = await rh
+      .from('subscriptions')
+      .select('created_at, tier')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    // Determine usage start date:
+    // - If user has active subscription (paid tier), count from subscription creation
+    // - Otherwise, count from start of month (free tier)
+    let usageStartDate: Date
+    if (subscription?.tier && subscription.tier !== 'free') {
+      // Paid tier: count from when subscription was created (when they upgraded)
+      usageStartDate = new Date(subscription.created_at)
+      logger.info('API_USAGE_STATS: Using subscription start date for paid tier', {
+        userId: user.id,
+        tier: subscription.tier,
+        startDate: usageStartDate.toISOString()
+      })
+    } else {
+      // Free tier: count from start of month
+      usageStartDate = new Date()
+      usageStartDate.setDate(1)
+      usageStartDate.setHours(0, 0, 0, 0)
+      logger.info('API_USAGE_STATS: Using start of month for free tier', {
+        userId: user.id,
+        startDate: usageStartDate.toISOString()
+      })
+    }
 
     // Plans count
     const { count: planCount = 0, error: plansError } = await rh
       .from('plans')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
-      .gte('created_at', startOfMonth.toISOString())
+      .gte('created_at', usageStartDate.toISOString())
 
     // Chats count (user messages only)
     const { count: chatCount = 0, error: chatsError } = await rh
@@ -38,14 +65,14 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('type', 'user')
-      .gte('created_at', startOfMonth.toISOString())
+      .gte('created_at', usageStartDate.toISOString())
 
     // Words sum
     const { data: wordsRows, error: wordsError } = await rh
       .from('plans')
       .select('word_count')
       .eq('user_id', user.id)
-      .gte('created_at', startOfMonth.toISOString())
+      .gte('created_at', usageStartDate.toISOString())
 
     const words = (wordsRows || []).reduce((sum: number, r: any) => sum + (r?.word_count || 0), 0)
 

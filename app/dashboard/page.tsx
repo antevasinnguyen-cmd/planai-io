@@ -611,12 +611,12 @@ export default function DashboardFinal() {
 
         {/* Main Content Area */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-full">
-          {/* Upgrade banner when near limits */}
+          {/* Upgrade banner when near limits (only show at 90%+) */}
           {usage && limits && (
             (() => {
               const chatPct = Math.min(((usage.chats || 0) / (limits.chats || 1)) * 100, 100)
               const planPct = Math.min(((usage.plans || 0) / (limits.plans || 1)) * 100, 100)
-              const showBanner = chatPct >= 80 || planPct >= 80
+              const showBanner = chatPct >= 90 || planPct >= 90
               if (!showBanner) return null
               return (
                 <UpgradePrompt

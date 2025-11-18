@@ -285,9 +285,9 @@ export default function SubscriptionPage() {
             </div>
           )}
 
-          {/* Upgrade banner when near limits */}
-          {(getUsagePercentage(usage?.plans || 0, limits.plans) >= 80 ||
-            getUsagePercentage(usage?.chats || 0, limits.chats) >= 80) && (
+          {/* Upgrade banner when near limits (only show at 90%+) */}
+          {(getUsagePercentage(usage?.plans || 0, limits.plans) >= 90 ||
+            getUsagePercentage(usage?.chats || 0, limits.chats) >= 90) && (
             <UpgradePrompt
               variant="banner"
               trigger="quota_warning"
