@@ -102,23 +102,43 @@ export default function DashboardFinal() {
   const loadSubscription = async (userId: string) => {
     try {
       const { data } = await getUserSubscription(userId)
-      console.log('Subscription data:', data) // Debug log
+      console.log('=== DASHBOARD: Subscription data loaded ===', { 
+        userId,
+        tier: data?.tier,
+        status: data?.status,
+        hasData: !!data
+      })
       if (!data) {
         // Initialize free trial via secure API route (service role)
         try {
           const res = await fetch('/api/subscriptions/init', { method: 'POST' })
           const init = await res.json()
           if (res.ok && init?.data) {
+            console.log('=== DASHBOARD: Free trial initialized ===', { tier: init.data.tier })
             setSubscription(init.data)
             return
           }
-        } catch {}
+        } catch (e) {
+          console.error('=== DASHBOARD: Failed to initialize free trial ===', e)
+        }
       }
       setSubscription(data)
     } catch (error) {
-      console.error('Error loading subscription:', error)
+      console.error('=== DASHBOARD: Error loading subscription ===', error)
     }
   }
+
+  // Refresh subscription mỗi 5 giây để catch payment updates
+  useEffect(() => {
+    if (!user?.id) return
+    
+    const refreshInterval = setInterval(() => {
+      console.log('=== DASHBOARD: Auto-refreshing subscription ===')
+      loadSubscription(user.id)
+    }, 5000)
+
+    return () => clearInterval(refreshInterval)
+  }, [user?.id])
 
   const loadUsageStats = async (_userId: string) => {
     try {
