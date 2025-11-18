@@ -362,7 +362,11 @@ export const getUserPlans = async (userId: string) => {
 // Subscription and Usage helpers
 export const getUserSubscription = async (userId: string) => {
   try {
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS and ensure we can read subscriptions
+    const admin = getAdminClient()
+    const client = admin || supabase // Fallback to public client if admin not available
+    
+    const { data, error } = await client
       .from('subscriptions')
       .select('*')
       .eq('user_id', userId)
@@ -375,6 +379,7 @@ export const getUserSubscription = async (userId: string) => {
       console.log(`No subscription found for user ${userId}, using defaults`)
       return { data: null, error: null }
     }
+    console.log(`=== getUserSubscription: Found subscription ===`, { userId, tier: row.tier, status: row.status })
     return { data: row, error }
   } catch (err) {
     console.error('Error getting subscription:', err)

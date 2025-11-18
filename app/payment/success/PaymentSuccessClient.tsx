@@ -20,25 +20,8 @@ const PLAN_INFO = {
 
 export default function PaymentSuccessClient({ orderId, amount, planId, provider }: PaymentSuccessClientProps) {
   const router = useRouter()
-  const [countdown, setCountdown] = useState(5)
   
   const planInfo = PLAN_INFO[planId as keyof typeof PLAN_INFO] || { name: planId, price: parseInt(amount || '0') }
-  
-  useEffect(() => {
-    // Đếm ngược và chuyển hướng về trang dashboard
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          router.push('/dashboard')
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [router])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-gray-50 flex items-center justify-center p-4">
@@ -101,39 +84,6 @@ export default function PaymentSuccessClient({ orderId, amount, planId, provider
             </div>
           </div>
 
-          {/* Benefits Preview */}
-          <div className="bg-blue-50 rounded-xl p-4 mb-8 text-left border border-blue-200">
-            <p className="text-sm font-semibold text-blue-900 mb-3">✨ Bạn có thể sử dụng ngay:</p>
-            <ul className="space-y-2 text-sm text-blue-800">
-              {planId === 'basic' && (
-                <>
-                  <li>✓ 30 Chat với AI</li>
-                  <li>✓ 1 Ebook plan (5-8k từ)</li>
-                  <li>✓ Xuất PDF/Word/Docs</li>
-                  <li>✓ Phân tích tâm lính</li>
-                </>
-              )}
-              {planId === 'pro' && (
-                <>
-                  <li>✓ 70 Chat với AI</li>
-                  <li>✓ 3 Ebook plan (9-12k từ)</li>
-                  <li>✓ Xuất PDF/Word/Docs</li>
-                  <li>✓ Phân tích tâm lính</li>
-                  <li>✓ Blog trả phí</li>
-                </>
-              )}
-              {planId === 'pro_max' && (
-                <>
-                  <li>✓ 150 Chat với AI</li>
-                  <li>✓ 6 Ebook plan (15-20k từ)</li>
-                  <li>✓ Xuất PDF/Word/Docs</li>
-                  <li>✓ Phân tích tâm lính</li>
-                  <li>✓ Blog trả phí</li>
-                  <li>✓ Hỗ trợ 24/7</li>
-                </>
-              )}
-            </ul>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3">
@@ -141,7 +91,7 @@ export default function PaymentSuccessClient({ orderId, amount, planId, provider
               onClick={() => router.push('/dashboard')}
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold text-lg shadow-md"
             >
-              Vào Dashboard ({countdown}s)
+              Vào Dashboard
             </button>
             
             <Link

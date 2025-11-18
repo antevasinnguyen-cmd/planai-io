@@ -84,7 +84,6 @@ export async function POST(_req: NextRequest) {
     }
 
     const now = new Date().toISOString()
-    const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     
     const { data: inserted, error: insErr } = await admin
       .from('subscriptions')
@@ -92,8 +91,6 @@ export async function POST(_req: NextRequest) {
         user_id: user.id,
         tier: 'free',
         status: 'active',
-        current_period_start: now,
-        current_period_end: endDate,
         created_at: now,
       })
       .select()

@@ -47,7 +47,7 @@ export default function AboutPage() {
                   <FileText className="w-6 h-6 text-primary-600" />
                   <div>
                     <div className="font-semibold text-gray-900">Kế hoạch như một cuốn Ebook</div>
-                    <div className="text-sm text-gray-600">5.000–20.000 từ với lộ trình, KPI, SOP, checklist rõ ràng</div>
+                    <div className="text-sm text-gray-600">5.000–100.000 từ với lộ trình, KPI, SOP, checklist rõ ràng</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -102,7 +102,7 @@ export default function AboutPage() {
             {[
               { step: '01', title: 'Chia sẻ thông tin', desc: 'Mục tiêu, thời gian, thu nhập, bối cảnh' },
               { step: '02', title: 'AI phân tích', desc: 'Tạo chiến lược, lộ trình, KPI, ngân sách' },
-              { step: '03', title: 'Nhận kế hoạch', desc: 'Ebook cá nhân hóa 5.000–20.000 từ' },
+              { step: '03', title: 'Nhận kế hoạch', desc: 'Ebook cá nhân hóa 5.000–100.000 từ' },
               { step: '04', title: 'Thực thi & tối ưu', desc: 'Chat để điều chỉnh theo thực tế' },
             ].map((item, idx) => (
               <div key={idx} className="text-center bg-white rounded-2xl p-6 border border-gray-200">

@@ -199,7 +199,7 @@ export default function PaymentProcessingClient({
       }
     }
 
-    const interval = setInterval(checkPaymentStatus, 5000)
+    const interval = setInterval(checkPaymentStatus, 3000) // Giảm từ 5s xuống 3s để phản hồi nhanh hơn
     return () => clearInterval(interval)
   }, [orderId, amount, planId, provider, router, paymentStatus, checkCount, timeRemaining])
 
