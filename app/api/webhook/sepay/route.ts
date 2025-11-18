@@ -167,61 +167,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (!payment) {
-      console.warn(`=== SEPAY WEBHOOK: Payment not found, attempting fallback creation ===`, { orderId });
+      console.error(`=== SEPAY WEBHOOK: Payment not found in database ===`, { 
+        orderId,
+        reason: 'Transaction ID does not match any payment in database',
+        hint: 'User may have entered wrong transfer content or payment was not created via /api/payment/create'
+      });
       
-      // FALLBACK: Tự động tạo payment record nếu không tìm thấy
-      // Điều này xảy ra khi payment creation endpoint thất bại nhưng SePay vẫn gửi webhook
-      try {
-        const fallbackPaymentData = {
-          user_id: 'webhook_created_user', // Placeholder - sẽ được cập nhật sau
-          subscription_tier: 'basic', // Placeholder - sẽ được cập nhật sau
-          amount: paymentAmount,
-          currency: 'VND',
-          status: 'pending',
-          payment_method: 'sepay',
-          transaction_id: orderId,
-          provider: 'sepay',
-          metadata: {
-            created_by: 'webhook_fallback',
-            sepay_id: id,
-            gateway: gateway,
-            reference_code: referenceCode
-          }
-        };
-
-        console.log('=== SEPAY WEBHOOK: Creating fallback payment record ===', fallbackPaymentData);
-
-        const { data: createdPayment, error: createError } = await supabase
-          .from('payments')
-          .insert([fallbackPaymentData])
-          .select();
-
-        if (createError) {
-          console.error('=== SEPAY WEBHOOK: Fallback creation failed ===', {
-            code: createError.code,
-            message: createError.message,
-            details: createError.details
-          });
-          
-          return NextResponse.json({ 
-            success: false, 
-            error: 'Payment not found and fallback creation failed'
-          }, { status: 404 });
-        }
-
-        payment = createdPayment?.[0];
-        console.log('=== SEPAY WEBHOOK: Fallback payment created successfully ===', {
-          id: payment?.id,
-          transaction_id: payment?.transaction_id
-        });
-      } catch (fallbackError) {
-        console.error('=== SEPAY WEBHOOK: Fallback creation exception ===', fallbackError);
-        
-        return NextResponse.json({ 
-          success: false, 
-          error: 'Payment not found and fallback creation failed'
-        }, { status: 404 });
-      }
+      // Return success to acknowledge webhook, but don't create payment
+      // The payment must be created via /api/payment/create endpoint first
+      return NextResponse.json({ 
+        success: true,
+        message: 'Webhook received but payment not found in database',
+        orderId,
+        note: 'Payment must be created via /api/payment/create before webhook processing'
+      }, { status: 200 });
     }
 
     // Kiểm tra payment đã completed chưa
