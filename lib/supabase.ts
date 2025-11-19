@@ -436,11 +436,6 @@ export const getServerCapsByTier = (tier: string) => {
 }
 
 export const getUserUsageStats = async (userId: string, request?: Request) => {
-  // Get current month usage
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
-
   let planCount = 0 as number
   let chatsError: any = null
   let plansError: any = null
@@ -454,11 +449,37 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
       const { createRouteHandlerClient } = await import('@supabase/auth-helpers-nextjs')
       const cookieStore = cookies()
       const rh = createRouteHandlerClient({ cookies: () => cookieStore })
+      
+      // Get user's subscription to determine usage period
+      const { data: subscriptions } = await rh
+        .from('subscriptions')
+        .select('created_at, tier')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
+
+      // Determine usage start date:
+      // - If user has active subscription (paid tier), count from subscription creation
+      // - Otherwise, count from start of month (free tier)
+      let usageStartDate: Date
+      if (subscription?.tier && subscription.tier !== 'free') {
+        // Paid tier: count from when subscription was created (when they upgraded)
+        usageStartDate = new Date(subscription.created_at)
+      } else {
+        // Free tier: count from start of month
+        usageStartDate = new Date()
+        usageStartDate.setDate(1)
+        usageStartDate.setHours(0, 0, 0, 0)
+      }
+
       const plansRes = await rh
         .from('plans')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .gte('created_at', startOfMonth.toISOString())
+        .gte('created_at', usageStartDate.toISOString())
       planCount = plansRes.count || 0
       plansError = plansRes.error
 
@@ -467,17 +488,19 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('type', 'user')
-        .gte('created_at', startOfMonth.toISOString())
+        .gte('created_at', usageStartDate.toISOString())
+      chatCount = chatsRes.count || 0
+      
       const wordsRes = await rh
         .from('plans')
         .select('word_count')
         .eq('user_id', userId)
-        .gte('created_at', startOfMonth.toISOString())
+        .gte('created_at', usageStartDate.toISOString())
 
       totalWords = (wordsRes.data || []).reduce((sum: number, p: any) => sum + (p?.word_count || 0), 0)
       return {
         plans: planCount,
-        chats: chatsRes.count || 0,
+        chats: chatCount,
         words: totalWords,
         error: plansError || chatsRes.error || wordsRes.error
       }
@@ -486,7 +509,28 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
     // Fall through to anon client path
   }
 
-  // Count chat messages this month (user messages only)
+  // Fallback: Get subscription and determine usage period
+  const { data: subscriptions } = await supabase
+    .from('subscriptions')
+    .select('created_at, tier')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
+
+  // Determine usage start date (same logic as above)
+  let usageStartDate: Date
+  if (subscription?.tier && subscription.tier !== 'free') {
+    usageStartDate = new Date(subscription.created_at)
+  } else {
+    usageStartDate = new Date()
+    usageStartDate.setDate(1)
+    usageStartDate.setHours(0, 0, 0, 0)
+  }
+
+  // Count chat messages from usage start date (user messages only)
   let chatCount = 0
   try {
     const res = await supabase
@@ -494,7 +538,7 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('type', 'user')
-      .gte('created_at', startOfMonth.toISOString())
+      .gte('created_at', usageStartDate.toISOString())
 
     chatsError = res.error
     if (chatsError) {
@@ -504,7 +548,7 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
         .from('chat_messages')
         .select('id', { count: 'exact', head: false })
         .eq('user_id', userId)
-        .gte('created_at', startOfMonth.toISOString())
+        .gte('created_at', usageStartDate.toISOString())
 
       if (!fallbackRes.error) {
         chatCount = fallbackRes.data?.filter((_, i) => i % 2 === 0).length || 0

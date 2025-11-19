@@ -36,6 +36,7 @@ export default function CreatePlanV2() {
   const [collectedInfo, setCollectedInfo] = useState<Record<string, boolean>>({})
   const aiMemory = useRef(getAIMemorySystem())
   const [subscription, setSubscription] = useState<any>(null)
+  const [usage, setUsage] = useState<any>(null)
   const [spiritualEnabled, setSpiritualEnabled] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user, session, loading } = useAuth()
@@ -179,34 +180,18 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   const loadSubscription = async (userId: string) => {
     try {
       const { data } = await fetchUserSubscription(userId)
+      setSubscription(data)
+      console.log('Subscription loaded:', data)
       
-      // Ensure subscription has default values for usage tracking
-      if (data) {
-        const subscription = {
-          ...data,
-          chat_count: data.chat_count ?? 0,
-          plan_count: data.plan_count ?? 0
-        }
-        setSubscription(subscription)
-        console.log('=== SUBSCRIPTION LOADED ===', subscription)
-      } else {
-        // Create default free tier subscription
-        const defaultSub = {
-          tier: 'free',
-          chat_count: 0,
-          plan_count: 0
-        }
-        setSubscription(defaultSub)
-        console.log('=== DEFAULT SUBSCRIPTION CREATED ===', defaultSub)
+      // Load real-time usage stats
+      const usageRes = await fetch('/api/usage/stats', { credentials: 'include' })
+      if (usageRes.ok) {
+        const usageData = await usageRes.json()
+        setUsage(usageData.usage)
+        console.log('Usage loaded:', usageData.usage)
       }
     } catch (error) {
-      console.error('Error loading subscription:', error)
-      // Fallback to default free tier
-      setSubscription({
-        tier: 'free',
-        chat_count: 0,
-        plan_count: 0
-      })
+      console.error('Error loading subscription/usage:', error)
     }
   }
 
@@ -403,11 +388,11 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
   const canCreatePlan = () => {
     // CRITICAL: Default to FALSE if subscription not loaded (prevent bypass)
-    if (!subscription) return false
+    if (!subscription || !usage) return false
     
     const tier = subscription.tier || 'free'
     const planLimit = getPlanLimit(tier)
-    const planCount = subscription.plan_count || 0
+    const planCount = usage.plans || 0  // Use real-time usage instead of subscription.plan_count
     
     const canCreate = planCount < planLimit
     
@@ -415,7 +400,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       tier,
       planLimit,
       planCount,
-      canCreate
+      canCreate,
+      usage
     })
     
     return canCreate
@@ -423,11 +409,11 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
   const canChat = () => {
     // CRITICAL: Default to FALSE if subscription not loaded (prevent bypass)
-    if (!subscription) return false
+    if (!subscription || !usage) return false
     
     const tier = subscription.tier || 'free'
     const chatLimit = getChatLimit(tier)
-    const chatCount = subscription.chat_count || 0
+    const chatCount = usage.chats || 0  // Use real-time usage instead of subscription.chat_count
     
     const canChat = chatCount < chatLimit
     
@@ -866,7 +852,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                   </p>
                   {!canChat() && (
                     <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                      ⚠️ Bạn đã hết lượt chat ({subscription?.chat_count || 0}/{getChatLimit(subscription?.tier || 'free')}). Hãy nâng cấp gói để tiếp tục.
+                      ⚠️ Bạn đã hết lượt chat ({usage?.chats || 0}/{getChatLimit(subscription?.tier || 'free')}). Hãy nâng cấp gói để tiếp tục.
                     </p>
                   )}
                 </div>
@@ -893,14 +879,14 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
 
             {!canCreatePlan() && (
               <div className={`flex items-center justify-center space-x-2 text-sm ${
-                (subscription?.plan_count || 0) >= getPlanLimit(subscription?.tier || 'free')
+                (usage?.plans || 0) >= getPlanLimit(subscription?.tier || 'free')
                   ? 'text-red-600 dark:text-red-400 font-medium'
                   : 'text-gray-500 dark:text-gray-500'
               }`}>
                 <AlertCircle className="w-4 h-4" />
                 <span>
-                  {(subscription?.plan_count || 0) >= getPlanLimit(subscription?.tier || 'free')
-                    ? `⚠️ Bạn đã hết lượt tạo kế hoạch (${subscription?.plan_count || 0}/${getPlanLimit(subscription?.tier || 'free')}). Hãy nâng cấp gói để tiếp tục.`
+                  {(usage?.plans || 0) >= getPlanLimit(subscription?.tier || 'free')
+                    ? `⚠️ Bạn đã hết lượt tạo kế hoạch (${usage?.plans || 0}/${getPlanLimit(subscription?.tier || 'free')}). Hãy nâng cấp gói để tiếp tục.`
                     : 'Hãy chat với AI để bắt đầu tạo kế hoạch của bạn'
                   }
                 </span>
