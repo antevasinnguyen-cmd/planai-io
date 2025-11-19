@@ -553,7 +553,7 @@ export async function POST(request: NextRequest) {
     // Save plan directly - update existing plan instead of creating new one
     try {
       const userId = auth.user.id
-      const planPayload = {
+      const planPayload: Record<string, any> = {
         title,
         goal: goals || 'Kế hoạch tài chính',
         content: content_md,
@@ -572,12 +572,12 @@ export async function POST(request: NextRequest) {
       logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId, planId })
       
       // Update existing plan
-      const { data: inserted, error: insertError } = await admin
+      const { data: inserted, error: insertError } = await ((admin as any)
         .from('plans')
         .update(planPayload)
         .eq('id', planId)
         .select()
-        .single()
+        .single() as Promise<{ data: any; error: any }>)
 
       if (insertError) {
         logger.error('FAST_GENERATE_SAVE_ERROR', { 
