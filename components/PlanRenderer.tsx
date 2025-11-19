@@ -193,8 +193,8 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         prose-h1:text-4xl prose-h1:mt-8 prose-h1:mb-6 prose-h1:pb-4 prose-h1:border-b-2 prose-h1:border-purple-500
         prose-h2:text-3xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-purple-600 dark:prose-h2:text-purple-400
         prose-h3:text-2xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-gray-800 dark:prose-h3:text-gray-200
-        prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-base prose-p:whitespace-normal prose-p:break-words
-        prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-li:whitespace-normal prose-li:break-words
+        prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-base prose-p:whitespace-normal prose-p:break-words prose-p:overflow-wrap-anywhere prose-p:overflow-hidden prose-p:max-w-full
+        prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-li:whitespace-normal prose-li:break-words prose-li:overflow-wrap-anywhere prose-li:overflow-hidden
         prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-bold
         prose-ul:list-disc prose-ul:pl-6
         prose-ol:list-decimal prose-ol:pl-6

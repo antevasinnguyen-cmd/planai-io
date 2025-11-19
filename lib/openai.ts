@@ -339,13 +339,13 @@ ${spiritualInsights}
 
 Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}
 
-Yêu cầu tạo kế hoạch:
-1. Sử dụng DỮ LIỆU CỤ THỂ từ thông tin trên
-2. Cấu trúc rõ ràng: Tóm tắt, Phân tích, Lộ trình, Micro-tasks, Tài liệu học tập
-3. Phù hợp với thị trường tài chính Việt Nam
-4. Bao gồm lộ trình cụ thể theo tháng/quý/năm
-5. Checklist hành động hàng ngày/tuần/tháng
-6. Liên kết đến tài nguyên học tập thực tế
+Yêu cầu tạo kế hoạch PHÂN TÍCH CHUYÊN SÂU:
+1. Sử dụng DỮ LIỆU CỤ THỂ từ thông tin trên và cung cấp phân tích CHUYÊN SÂU (không sơ sài)
+2. Cấu trúc rõ ràng với ĐỘ SÂU CAO: Tóm tắt, Phân tích SWOT đầy đủ, Phân tích thị trường, Lộ trình chi tiết, Micro-tasks cụ thể, Tài liệu học tập thực tế
+3. Phân tích CHUYÊN SÂU phù hợp với thị trường tài chính Việt Nam, bao gồm các xu hướng kinh tế hiện tại
+4. Bao gồm lộ trình CỤ THỂ theo tháng/quý/năm với NHIỀU CHI TIẾT và các mốc cụ thể
+5. Checklist hành động chi tiết hàng ngày/tuần/tháng, phải rất cụ thể và thực tế
+6. Liên kết đến tài nguyên học tập thực tế từ nguồn uy tín (không dùng example.com)
 7. Tích hợp phân tích tử vi nếu có
 8. Giới hạn theo gói (${tier}): số micro-tasks/ngày = ${dailyTasks}; checklist tuần = ${weeklyItems} mục; checklist tháng = ${monthlyItems} mục
 9. Mức độ kịch bản/giải pháp: ${scenarioDepth}

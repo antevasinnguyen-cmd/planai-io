@@ -336,9 +336,46 @@ Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt 
 
     const resources = completion.choices[0]?.message?.content || 'Không có tài liệu'
     
-    // Validate that response contains actual links
+    // Validate that response contains real, working links
     if (!resources.includes('http')) {
       console.warn('Generated resources may not contain valid links')
+    }
+    
+    // Detect placeholder or fake links and try to regenerate if necessary
+    const hasFakeLinks = /(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com)/i.test(resources)
+    if (hasFakeLinks) {
+      console.warn('Generated resources contain placeholder/fake URLs - attempting to regenerate with stronger prompt')
+      
+      try {
+        // Try again with more forceful prompt
+        const retryPrompt = `Tạo danh sách tài liệu học tập với LINK THỰC TẾ (KHÔNG PHẢI example.com) cho: ${goal}\nNgành: ${occupation}\n\nLỖI NGHIÊM TRỌNG: Link giả/placeholder đã được phát hiện trong response trước đó.\n\nQUAN TRỌNG:\n- MỖI tài liệu PHẢI có link CÓ THẬT đến trang web thực tế (Coursera, edX, Khan Academy, LinkedIn Learning, Udemy)\n- TUYỆT ĐỐI KHÔNG dùng example.com, placeholder.com, domain.com, etc.\n- Nếu không chắc chắn về URL, hãy sử dụng link thực tế đến trang chủ khoá học\n\nCấu trúc giống như trước.`
+        
+        const retryCompletion = await openai.chat.completions.create({
+          model: selectModel(TaskType.REGULAR_CHAT),
+          messages: [
+            {
+              role: 'system',
+              content: 'Bạn là chuyên gia tư vấn học tập. Cung cấp tài liệu với link THỰC TẾ (KHÔNG PHẢI example.com). Nếu không chắc về URL cụ thể, dùng trang chủ của nguồn thực tế.',
+            },
+            {
+              role: 'user',
+              content: retryPrompt,
+            },
+          ],
+          max_tokens: 2500,
+          temperature: 0.7,
+        })
+        
+        const retryResources = retryCompletion.choices[0]?.message?.content || resources
+        
+        // Use retry resources only if they don't contain placeholder links
+        if (!/(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com)/i.test(retryResources)) {
+          return retryResources
+        }
+      } catch (retryError) {
+        console.error('Error during resource regeneration:', retryError)
+        // Fall through to original resources if retry fails
+      }
     }
     
     return resources
