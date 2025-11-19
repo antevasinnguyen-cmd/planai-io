@@ -20,8 +20,15 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies()
     const rh = createRouteHandlerClient({ cookies: () => cookieStore })
 
+    // Get user's profile to check counters and subscription tier
+    const { data: profile } = await rh
+      .from('profiles')
+      .select('chat_count, plan_count, subscription_tier')
+      .eq('id', user.id)
+      .single()
+
     // Get user's subscription to determine usage period
-    const { data: subscription } = await rh
+    const { data: subscriptions } = await rh
       .from('subscriptions')
       .select('created_at, tier')
       .eq('user_id', user.id)
@@ -29,16 +36,19 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1)
 
+    const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
+    const currentTier = subscription?.tier || profile?.subscription_tier || 'free'
+
     // Determine usage start date:
     // - If user has active subscription (paid tier), count from subscription creation
     // - Otherwise, count from start of month (free tier)
     let usageStartDate: Date
-    if (subscription?.tier && subscription.tier !== 'free') {
+    if (currentTier && currentTier !== 'free') {
       // Paid tier: count from when subscription was created (when they upgraded)
-      usageStartDate = new Date(subscription.created_at)
+      usageStartDate = new Date(subscription?.created_at || new Date())
       logger.info('API_USAGE_STATS: Using subscription start date for paid tier', {
         userId: user.id,
-        tier: subscription.tier,
+        tier: currentTier,
         startDate: usageStartDate.toISOString()
       })
     } else {
@@ -86,9 +96,13 @@ export async function GET(request: NextRequest) {
 
     logger.info('API_USAGE_STATS_SUCCESS', {
       userId: user.id,
+      tier: currentTier,
       plans: planCount,
       chats: chatCount,
-      words
+      words,
+      usageStartDate: usageStartDate.toISOString(),
+      profileTier: profile?.subscription_tier,
+      subscriptionTier: subscription?.tier
     })
 
     return NextResponse.json({
