@@ -289,15 +289,13 @@ Ngành: ${occupation}
 
 QUAN TRỌNG:
 - Mỗi tài liệu PHẢI kiểm tra chéo nguồn, link phải đúng với tên/mô tả, và thực sự liên quan tới kỹ năng/mục tiêu.
-- Nếu KHÔNG CHẮC CHẮN về link hoặc không tìm được link thực sự phù hợp, hãy chuyển sang PHƯƠNG ÁN B:
-    + Đề xuất nền tảng uy tín (ví dụ: Coursera, edX, YouTube, LinkedIn Learning, Udemy, v.v.) và hướng dẫn user tự tìm kiếm.
-    + Ghi rõ: "Bạn có thể vào trang web ... và tìm kiếm với các từ khoá: ..." (liệt kê tối thiểu 5 từ khoá liên quan đến kỹ năng/mục tiêu).
-    + Mô tả rõ user sẽ học được gì, các kỹ năng liên quan cần tìm kiếm.
-- ƯU TIÊN tối thiểu 3 nguồn YouTube chất lượng (tiếng Anh, nhiều sub, liên quan kỹ năng), chỉ chọn channel lớn, uy tín. Nếu không chắc link video cụ thể, hãy đề xuất channel và từ khoá tìm kiếm.
-- Không dùng link không liên quan đến từ khoá kỹ năng hoặc link trang chủ.
+- KHÔNG dùng link chung chung (ví dụ: youtube.com, google.com, coursera.org, v.v.)
+- Link YouTube PHẢI dẫn tới kênh uy tín (≥10.000 sub, tiếng Anh, đúng kỹ năng, có tên kênh rõ ràng, KHÔNG dùng link video ngẫu nhiên hoặc channel nhỏ).
+- Không gợi ý tài liệu/web Việt Nam trừ https://www.brandcamp.asia/.
+- ƯU TIÊN nguồn nước ngoài, tiếng Anh, web uy tín nhất (Coursera, Google, LinkedIn Learning, Skillshare, TED, v.v.).
+- Luôn LIỆT KÊ từ khoá tìm kiếm để user tự tra cứu nếu không chắc link (tối thiểu 5 từ khoá liên quan).
+- Nếu không chắc chắn về link, chuyển sang PHƯƠNG ÁN B: Đề xuất nền tảng uy tín, hướng dẫn user tự tìm kiếm với từ khoá, mô tả rõ user sẽ học được gì.
 - GHI RÕ TÊN khoá học/video/sách, mô tả chi tiết, và link phải đúng với tên đó. Nếu không chắc link, ghi chú rõ ràng.
-- Ưu tiên nguồn tài liệu uy tín bằng tiếng Anh (Coursera, edX, Khan Academy, YouTube, LinkedIn Learning, Skillshare, Google Books, TED...)
-- Nếu là tiếng Việt, phải là nguồn uy tín (Edumall, Unica, Topica, v.v.)
 - Bao gồm mô tả chi tiết về nội dung, lợi ích, và lý do chọn của mỗi tài liệu hoặc gợi ý tìm kiếm.
 
 Cấu trúc bắt buộc:
