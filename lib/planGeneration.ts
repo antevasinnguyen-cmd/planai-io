@@ -282,30 +282,33 @@ export const generateLearningResources = async (
   goal: string,
   occupation: string
 ): Promise<string> => {
+  // Helper: reject link chung chung, youtube.com, example.com, coursera.org...
+  const isInvalidLink = (url: string) => /example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(\/|$)(?!channel)|coursera\.org(\/|$)|edx\.org(\/|$)|google\.com(\/|$)|linkedin\.com(\/|$)|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com/i.test(url)
+  // Helper: chỉ cho phép brandcamp.asia nếu là web Việt Nam
+  const isAllowedVietnamese = (url: string) => url.includes('brandcamp.asia')
+
   try {
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
 
-    const prompt = `Tạo danh sách tài liệu học tập CHI TIẾT và CÓ LINK THỰC TẾ cho mục tiêu: ${goal}
+    const prompt = `Tạo danh sách tài liệu học tập CHI TIẾT, CHỈ LẤY LINK THẬT, cho mục tiêu: ${goal}
 Ngành: ${occupation}
 
 QUAN TRỌNG:
-- Mỗi tài liệu PHẢI kiểm tra chéo nguồn, link phải đúng với tên/mô tả, và thực sự liên quan tới kỹ năng/mục tiêu.
-- KHÔNG dùng link chung chung (ví dụ: youtube.com, google.com, coursera.org, v.v.)
-- Link YouTube PHẢI dẫn tới kênh uy tín (≥10.000 sub, tiếng Anh, đúng kỹ năng, có tên kênh rõ ràng, KHÔNG dùng link video ngẫu nhiên hoặc channel nhỏ).
-- Không gợi ý tài liệu/web Việt Nam trừ https://www.brandcamp.asia/.
-- ƯU TIÊN nguồn nước ngoài, tiếng Anh, web uy tín nhất (Coursera, Google, LinkedIn Learning, Skillshare, TED, v.v.).
-- Luôn LIỆT KÊ từ khoá tìm kiếm để user tự tra cứu nếu không chắc link (tối thiểu 5 từ khoá liên quan).
-- Nếu không chắc chắn về link, chuyển sang PHƯƠNG ÁN B: Đề xuất nền tảng uy tín, hướng dẫn user tự tìm kiếm với từ khoá, mô tả rõ user sẽ học được gì.
-- GHI RÕ TÊN khoá học/video/sách, mô tả chi tiết, và link phải đúng với tên đó. Nếu không chắc link, ghi chú rõ ràng.
-- Bao gồm mô tả chi tiết về nội dung, lợi ích, và lý do chọn của mỗi tài liệu hoặc gợi ý tìm kiếm.
+- Chỉ lấy link thật, KHÔNG lấy link chung chung (youtube.com, example.com, coursera.org, v.v.).
+- Link YouTube PHẢI là link kênh uy tín (≥10.000 sub, tiếng Anh, đúng kỹ năng, có tên kênh rõ ràng, KHÔNG dùng link video lẻ).
+- Không gợi ý web Việt Nam trừ https://www.brandcamp.asia/.
+- ƯU TIÊN nguồn nước ngoài, tiếng Anh, web uy tín (Coursera, Google, LinkedIn Learning, Skillshare, TED, v.v.).
+- Nếu không có link thật, PHẢI ghi rõ từ khoá tìm kiếm (tối thiểu 5 từ khoá liên quan) và nền tảng uy tín để user tự tra cứu.
+- GHI RÕ TÊN khoá học/video/sách, mô tả chi tiết, và link phải đúng với tên đó. Nếu không chắc link, chỉ ghi từ khoá và nền tảng.
+- Bao gồm mô tả chi tiết về nội dung, lợi ích, lý do chọn, và cách áp dụng.
 
 Cấu trúc bắt buộc:
 
 ## 📚 PHẦN 1: KỸ NĂNG TÀI CHÍNH CỐ LỖI
 1. [Tên khóa học]
-   - Link: [URL đầy đủ]
+   - Link: [URL đầy đủ hoặc ghi rõ TỪ KHOÁ TÌM KIẾM nếu không có link]
    - Mục tiêu: [Mô tả chi tiết]
    - Thời lượng: [Thời gian học]
    - Lý do chọn: [Tại sao phù hợp]
@@ -323,7 +326,7 @@ Cấu trúc bắt buộc:
 ## 💡 PHẦN 5: CÔNG CỤ HỖ TRỢ
 [Tương tự như trên]
 
-Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt động 100%`
+Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt động 100% hoặc từ khoá tìm kiếm rõ ràng.`
 
     const completion = await openai.chat.completions.create({
       model: selectModel(TaskType.REGULAR_CHAT),
@@ -341,13 +344,18 @@ Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt 
       temperature: 0.7,
     })
 
-    const resources = completion.choices[0]?.message?.content || 'Không có tài liệu'
-    
-    // Validate that response contains real, working links
+    let resources = completion.choices[0]?.message?.content || 'Không có tài liệu'
+
+    // Nếu phát hiện link chung chung hoặc link Việt Nam không phải brandcamp, thay thế bằng từ khoá tìm kiếm
+    resources = resources.replace(/\bhttps?:\/\/(www\.)?(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org|edx\.org|google\.com|linkedin\.com|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)\S*/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín quốc tế như Coursera, Google, LinkedIn Learning, TED, Brandcamp.asia]')
+    // Không cho phép web Việt Nam trừ brandcamp.asia
+    resources = resources.replace(/\bhttps?:\/\/(www\.)?(?!brandcamp\.asia)[a-zA-Z0-9-]+\.vn\S*/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín quốc tế như Coursera, Google, LinkedIn Learning, TED, Brandcamp.asia]')
+
+    // Nếu không có link thật, ép AI phải sinh từ khoá tìm kiếm
     if (!resources.includes('http')) {
-      console.warn('Generated resources may not contain valid links')
+      resources += '\n\n[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên Coursera, Google, LinkedIn Learning, TED, Brandcamp.asia với các từ khoá liên quan đến mục tiêu và kỹ năng của bạn]'
     }
-    
+
     // Detect placeholder or fake links and try to regenerate if necessary
     const hasFakeLinks = /(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com)/i.test(resources)
     if (hasFakeLinks) {
@@ -515,18 +523,15 @@ export async function generateLongPlanMultiStep(
       'Bạn là chuyên gia lập kế hoạch tài chính cá nhân hóa cho người Việt Nam.',
       'Mục đích: Tạo bản kế hoạch CHUYÊN SÂU, CÁ NHÂN HÓA ĐỘC QUYỀN dựa trên dữ liệu đầu vào từ chat.',
       '',
-      'CÁC XƯƠNG SỐNG CHÍNH (bắt buộc có):',
-      '1. Kiểm tra, xử lý & xác minh dữ liệu trước khi lập kế hoạch',
-      '2. Phân tích chi tiết tình hình hiện tại',
-      '3. Phân tích chi tiết mục tiêu',
-      '4. Phân tích chi tiết cá nhân (SWOT, điểm mạnh, điểm yếu, cơ hội, thách thức)',
-      '5. Phân tích kỹ năng & chuyên môn',
-      '6. Phân tích loại hình kinh doanh phù hợp tạo thu nhập',
-      '7. Đề xuất chuyên sâu: kỹ năng, hiểu biết, hành động cần có',
-      '8. Đề xuất phương án tài chính (tiết kiệm, đầu tư, kinh doanh) + hành động chi tiết',
-      '9. Mốc thời gian + hành động chi tiết, cặn kẽ',
-      '10. Tài nguyên học tập & tài nguyên kiến thức',
-      '11. Psychology & Mindset',
+      'BẮT BUỘC TUÂN THỦ ĐẦY ĐỦ 24 MỤC SAU (không được thiếu, không gộp, không bỏ sót):',
+      paidSections.map(s => `- ${s.title}`).join('\n'),
+      '',
+      'KIỂM TRA CHÉO & PHÂN TÍCH NHIỀU LỚP:',
+      '- Mỗi mục phải kiểm tra lại dữ liệu đầu vào, đối chiếu với các mục khác, đảm bảo không mâu thuẫn, không thiếu ý.',
+      '- Nếu thiếu dữ liệu, phải đề xuất cách bổ sung hoặc giả định hợp lý (ghi rõ).',
+      '- Không được trả lời máy móc, phải phân tích sâu, linh hoạt, có ví dụ thực tế.',
+      '- Mỗi mục đều phải có kiểm tra chéo với các mục còn lại, tránh trùng lặp, tránh bỏ sót nội dung.',
+      '- Nếu phát hiện thông tin mâu thuẫn, phải highlight rõ và đề xuất hướng xử lý.',
       '',
       'YÊU CẦU CHẤT LƯỢNG:',
       '- Chính xác, thực thi được ngay, không sơ sài',
