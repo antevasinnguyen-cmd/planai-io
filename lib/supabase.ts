@@ -437,6 +437,7 @@ export const getServerCapsByTier = (tier: string) => {
 
 export const getUserUsageStats = async (userId: string, request?: Request) => {
   let planCount = 0 as number
+  let chatCount = 0 as number
   let chatsError: any = null
   let plansError: any = null
   let wordsError: any = null
@@ -531,7 +532,6 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
   }
 
   // Count chat messages from usage start date (user messages only)
-  let chatCount = 0
   try {
     const res = await supabase
       .from('chat_messages')
@@ -564,19 +564,19 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
     chatsError = e
   }
 
-  // Sum word count from plans this month
+  // Sum word count from plans within usage period
   const { data: wordsData, error: wordsErrorLocal } = await supabase
     .from('plans')
     .select('word_count')
     .eq('user_id', userId)
-    .gte('created_at', startOfMonth.toISOString())
+    .gte('created_at', usageStartDate.toISOString())
 
   totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
   wordsError = wordsErrorLocal
 
   console.log('=== USER USAGE STATS ===', {
     userId,
-    month: startOfMonth.toISOString(),
+    usagePeriodStart: usageStartDate.toISOString(),
     plans: planCount,
     chats: chatCount,
     words: totalWords,
