@@ -25,9 +25,18 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
 
   // Strip JSON Data Layer from content (hide from user)
   const cleanContent = useMemo(() => {
-    // Remove JSON block at end of content (Data Layer for export only)
+    // Remove JSON block at end of content (Data Layer for export only) - only if truly at the end
     const jsonBlockRegex = /```json\s*\{[\s\S]*?\}\s*```\s*$/
-    return content.replace(jsonBlockRegex, '').trim()
+    let cleaned = content;
+    const match = cleaned.match(jsonBlockRegex);
+    if (match && match.index !== undefined) {
+      // Only cut if nothing but whitespace after JSON block
+      const after = cleaned.slice(match.index + match[0].length);
+      if (!after.trim()) {
+        cleaned = cleaned.slice(0, match.index).trim();
+      }
+    }
+    return cleaned;
   }, [content])
 
   // Auto-fix markdown tables: add separator row if missing + remove visible truncation markers

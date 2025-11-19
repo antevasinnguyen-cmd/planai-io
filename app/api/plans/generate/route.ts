@@ -4,11 +4,10 @@ import { supabase } from '@/lib/supabase'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
-import { generateFinancialPlan } from '@/lib/openai'
 import { generateFinancialPlanWithClaude } from '@/lib/claude'
-import { TaskType, selectModel, MODELS } from '@/lib/modelSelection'
+import { MODELS } from '@/lib/modelSelection'
 import { processFinancialPlanWithRAG } from '@/lib/rag'
-import { generateMicroTasks, generateWeeklyChecklist, generateMonthlyChecklist, generateLearningResources, formatMicroTasks, formatChecklists } from '@/lib/planGeneration'
+import { generateLongPlanMultiStep } from '@/lib/planGeneration'
 import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
@@ -103,7 +102,7 @@ export async function POST(request: NextRequest) {
       logger.info('PLAN_GENERATE_USE_CACHE', { userId: user.id })
       planContent = cachedPlan
     } else {
-      // Generate plan content using AI with fallback mechanism
+      // Generate plan content using AI with fallback mechanism (multi-step for long content)
       try {
         // First try with OpenAI's GPT-4o-mini
         // CRITICAL: Pass full userProfile with chat history
@@ -121,7 +120,8 @@ export async function POST(request: NextRequest) {
         const planTitle = userProfile.financial_goal
           ? `Kế hoạch: ${userProfile.financial_goal}`
           : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
-        planContent = await generateFinancialPlan(
+        // Multi-step long generation for all tiers to avoid truncation and hit tier-specific word targets
+        planContent = await generateLongPlanMultiStep(
           planTitle,
           goalsText,
           enrichedCollectedInfo
@@ -195,63 +195,10 @@ Format: Markdown với headings, lists, và tables.`
       ? planContent.replace(/```json[\s\S]*?```\s*$/i, '').trim()
       : planContent
 
-    // Generate enhanced plan components
-    logger.info('PLAN_GENERATE_ENHANCE_COMPONENTS', {})
-    
-    let microTasks, weeklyChecklist, monthlyChecklist, learningResources;
-    
-    try {
-      // Generate micro-tasks
-      microTasks = await generateMicroTasks(
-        userProfile,
-        userProfile.financial_goal || 'Mục tiêu tài chính',
-        userProfile.timeline || '1 năm'
-      )
-      logger.info('PLAN_GENERATE_MICROTASKS_OK', {})
-    } catch (e) {
-      logger.warn('PLAN_GENERATE_MICROTASKS_FAIL', { error: String(e) })
-      microTasks = { weekday: { tasks: [] }, weekend: { tasks: [] } }
-    }
-    
-    try {
-      // Generate weekly checklist
-      weeklyChecklist = await generateWeeklyChecklist(
-        userProfile.financial_goal || 'Mục tiêu tài chính'
-      )
-      logger.info('PLAN_GENERATE_WEEKLY_OK', {})
-    } catch (e) {
-      logger.warn('PLAN_GENERATE_WEEKLY_FAIL', { error: String(e) })
-      weeklyChecklist = { tasks: [] }
-    }
-    
-    try {
-      // Generate monthly checklist
-      monthlyChecklist = await generateMonthlyChecklist(
-        userProfile.financial_goal || 'Mục tiêu tài chính'
-      )
-      logger.info('PLAN_GENERATE_MONTHLY_OK', {})
-    } catch (e) {
-      logger.warn('PLAN_GENERATE_MONTHLY_FAIL', { error: String(e) })
-      monthlyChecklist = { tasks: [] }
-    }
-    
-    try {
-      // Generate learning resources
-      learningResources = await generateLearningResources(
-        userProfile.financial_goal || 'Mục tiêu tài chính',
-        userProfile.occupation || 'Chuyên gia tài chính'
-      )
-      logger.info('PLAN_GENERATE_LEARNING_OK', {})
-    } catch (e) {
-      logger.warn('PLAN_GENERATE_LEARNING_FAIL', { error: String(e) })
-      learningResources = ''
-    }
-    
-    // Combine all components into enhanced plan content
-    const enhancedPlanContent = displayContent + '\n\n' +
-      formatMicroTasks(microTasks) + '\n\n' +
-      formatChecklists(weeklyChecklist, monthlyChecklist) + '\n\n' +
-      (learningResources ? '📚 TÀI LIỆU HỌC TẬP:\n' + learningResources : '')
+    // Combine final content: Multi-step already contains checklist/roadmap/learning sections.
+    // To avoid exceeding tier limits and truncation, we DO NOT append extra sections here.
+    logger.info('PLAN_GENERATE_COMPOSE_FINAL', {})
+    const enhancedPlanContent = displayContent
     
     // Calculate word count for analytics
     const wordCount = enhancedPlanContent.split(/\s+/).length
