@@ -339,7 +339,13 @@ ${spiritualInsights}
 
 Hãy tích hợp những insights này vào kế hoạch tài chính.` : ''}
 
-Yêu cầu tạo kế hoạch PHÂN TÍCH CHUYÊN SÂU:
+YÊU CẦU PHÂN TÍCH CHUYÊN SÂU:
+- Mỗi mục phải có tối thiểu 300 từ, checklist phải đủ 20 mục, mỗi bảng phải đủ 15 hàng, có ít nhất 5 ví dụ thực tế, 2 case study, 1 phân tích SWOT, 1 phân tích thị trường, 2 kịch bản A/B, 2 bảng KPI, 2 bảng ngân sách, 1 bảng rủi ro.
+- Nếu chưa đủ 5000 từ, hãy tiếp tục phân tích sâu hơn, liệt kê thêm ví dụ thực tế, case study, bài học kinh nghiệm, checklist, bảng, phân tích phụ, v.v. cho đến khi đạt gần 5000 từ nhất có thể.
+- KHÔNG được dừng lại khi chưa đủ 5000 từ. Nếu cần, hãy lặp lại phân tích, mở rộng từng mục, thêm nhiều ví dụ, giải thích chi tiết từng bước, từng chỉ số, từng rủi ro, từng phương án dự phòng.
+- Checklist hành động phải rất cụ thể, có ngày/tháng, mục tiêu, KPI, link học tập thực tế.
+- Tài liệu học tập phải là link thật, không dùng example.com.
+- Phân tích phải ĐỦ SÂU, ĐẦY ĐỦ, KHÔNG ĐƯỢC SƠ SÀI.
 1. Sử dụng DỮ LIỆU CỤ THỂ từ thông tin trên và cung cấp phân tích CHUYÊN SÂU (không sơ sài)
 2. Cấu trúc rõ ràng với ĐỘ SÂU CAO: Tóm tắt, Phân tích SWOT đầy đủ, Phân tích thị trường, Lộ trình chi tiết, Micro-tasks cụ thể, Tài liệu học tập thực tế
 3. Phân tích CHUYÊN SÂU phù hợp với thị trường tài chính Việt Nam, bao gồm các xu hướng kinh tế hiện tại
