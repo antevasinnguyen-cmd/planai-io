@@ -64,36 +64,75 @@ YÊU CẦU BẮT BUỘC:
 ✅ Ngôn ngữ: Dùng emoji phù hợp, in đậm điểm quan trọng, format đẹp
 ✅ Nội dung: Cụ thể, chi tiết, có số liệu thực tế (không dùng placeholder)
 ✅ Trình bày: Như một cuốn ebook premium với heading, bullet points rõ ràng
-✅ ĐỘ DÀI: 4.000–5.000 từ cho bản FREE (chi tiết, đầy đủ, không cắt ngắn; nếu thiếu dữ liệu vẫn phải phân tích sâu theo giả định minh bạch)
+✅ ĐỘ DÀI: 4.500–5.000 từ cho bản FREE (chi tiết, đầy đủ, KHÔNG được cắt ngắn dù bất kỳ lý do gì)
+✅ CÁ NHÂN HÓA: Mỗi phần phải liên kết trực tiếp với thông tin cụ thể của user (nghề nghiệp, kỹ năng, dự án, địa điểm)
+✅ CHUYÊN SÂU: Không viết chung chung, phải có ví dụ số liệu cụ thể, case study thực tế từ thị trường Việt Nam
 
-## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN
+🔍 QUY TẮC VALIDATION 4 LẦN (BẮT BUỘC):
+Trước khi viết mỗi phần phân tích số liệu, BẠN PHẢI TỰ KIỂM TRA 4 LẦN:
+1️⃣ Lần 1: Đọc lại THÔNG TIN NGƯỜI DÙNG ở trên - thu nhập hiện tại là bao nhiêu? (VD: 7-10 triệu, KHÔNG PHẢI 20 triệu)
+2️⃣ Lần 2: Kiểm tra xem mình có đang tự bịa số liệu không? Nếu user nói "7-10 triệu" thì PHẢI dùng "7-10 triệu", KHÔNG được giả định "20 triệu"
+3️⃣ Lần 3: Cross-check logic: Nếu thu nhập 7-10 triệu/tháng, mục tiêu 1 tỷ/tháng, thì Gap = 1 tỷ - (7-10 triệu) = 990-993 triệu/tháng cần tăng thêm
+4️⃣ Lần 4: Đọc lại câu trả lời của mình - có số nào không khớp với dữ liệu gốc không? Nếu có thì SỬA NGAY
 
-**Tóm tắt nhanh những gì bạn đã chia sẻ:**
+⚠️ CẤM TUYỆT ĐỐI:
+❌ KHÔNG được tự bịa số liệu khi đã có dữ liệu thật (VD: user nói "7-10 triệu" mà viết "giả sử 20 triệu")
+❌ KHÔNG được bỏ qua dữ liệu user cung cấp
+❌ KHÔNG được dùng số liệu mơ hồ khi đã có số cụ thể
+❌ MỌI phép tính phải dựa trên SỐ LIỆU THẬT từ thông tin user
+
+## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN (600-800 từ)
+
+**Phân tích chuyên sâu về bản thân bạn:**
 
 ${personalSummary ? `📋 **Thông tin cá nhân:**\n${personalSummary}` : ''}
 
 ${financeSummary ? `\n💰 **Tình hình tài chính:**\n${financeSummary}` : ''}
 
-> Lưu ý: Các phần sau chỉ phân tích dựa trên dữ liệu có thật ở trên (không giả định thêm).
+**🔍 Phân tích điểm mạnh độc đáo của bạn:**
+- Dựa trên nghề nghiệp/dự án hiện tại, phân tích chi tiết 3-4 điểm mạnh CỤ THỂ (VD: nếu làm SaaS AI thì phân tích về kỹ năng tech, xu hướng thị trường AI tại VN, khả năng mở rộng...)
+- Mỗi điểm mạnh kèm ví dụ số liệu hoặc case study cụ thể từ thị trường Việt Nam
+- Liên kết với mục tiêu tài chính: điểm mạnh này giúp đạt mục tiêu như thế nào?
 
-## 🎯 PHẦN 2: PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH
+**⚠️ Phân tích thách thức thực tế:**
+- Dựa trên thu nhập hiện tại và mục tiêu, tính toán Gap cụ thể
+- Phân tích 3-4 thách thức THỰC TẾ với user này (không chung chung)
+- Mỗi thách thức đề xuất hướng giải quyết ngắn gọn
 
-*Để thành công, bạn cần hiểu rõ chính mình. Đây là phân tích SWOT chuyên sâu về năng lực tài chính của bạn:*
+> Lưu ý: Tất cả phân tích phải dựa trên dữ liệu thật user cung cấp, không giả định.
 
-### 💪 **ĐIỂM MẠNH - Vũ khí của bạn:**
-Viết 3–5 điểm mạnh CỤ THỂ dựa trên các kỹ năng đã nêu (nếu có), kinh nghiệm, thu nhập hiện tại, dự án đang theo đuổi (ví dụ: SaaS AI), và vị trí sinh sống (ví dụ: Bắc Ninh).
+## 🎯 PHẦN 2: PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH (700-900 từ)
 
-### ⚠️ **ĐIỂM YẾU - Cần khắc phục:**
-Chỉ ra 3–5 hạn chế liên quan trực tiếp đến mục tiêu (ví dụ: vốn ban đầu, dòng tiền thấp, thiếu kênh bán…). Đề xuất cách khắc phục ngắn gọn.
+*Phân tích SWOT chuyên sâu và CÁ NHÂN HÓA hoàn toàn dựa trên thông tin của bạn:*
 
-### 🚀 **CƠ HỘI - Cánh cửa mở ra:**
-Nêu 3 cơ hội LIÊN QUAN TRỰC TIẾP tới mục tiêu của bạn. Tránh nhận định chung chung.
+### 💪 **ĐIỂM MẠNH - Vũ khí của bạn (4-5 điểm):**
+- Phân tích CỤ THỂ dựa trên: kỹ năng user nêu, kinh nghiệm, dự án hiện tại, địa điểm (VD: ở Bắc Ninh có chi phí sinh hoạt thấp hơn HN/HCM)
+- MỖI điểm mạnh phải có:
+  + Mô tả cụ thể không chung chung
+  + Ví dụ số liệu hoặc case study từ thị trường VN (VD: "Nếu làm SaaS AI, thị trường VN đang thiếu hụt giải pháp AI nội địa, cơ hội tăng trưởng 200-300%/năm")
+  + Cách tận dụng điểm mạnh này để đạt mục tiêu tài chính
 
-### 🌊 **THÁCH THỨC - Rào cản cần vượt qua:**
-Chỉ ra 3 thách thức THỰC SỰ:
-• Lạm phát tại Việt Nam đang ở mức 4-5%/năm
-• Giá bất động sản tăng nhanh hơn thu nhập
-• Cạnh tranh gay gắt trong ngành [ngành của user]
+### ⚠️ **ĐIỂM YẾU - Cần khắc phục (4-5 điểm):**
+- Liên quan TRỰC TIẾP đến mục tiêu tài chính user nêu
+- MỖI điểm yếu phải có:
+  + Phân tích tác động cụ thể (VD: "Vốn ban đầu thấp → không thể thuê marketing agency → phải tự học SEO/content")
+  + Cách khắc phục ngắn hạn (1-3 tháng) và dài hạn (6-12 tháng)
+  + Ước tính chi phí/thời gian để khắc phục
+
+### 🚀 **CƠ HỘI - Cánh cửa mở ra (4-5 cơ hội):**
+- CHỈ nêu cơ hội LIÊN QUAN TRỰC TIẾP tới ngành/dự án/mục tiêu của user
+- MỖI cơ hội phải có:
+  + Xu hướng thị trường cụ thể tại VN (có số liệu nếu có thể)
+  + Cách user có thể tận dụng cơ hội này
+  + Timeline và ROI dự kiến (VD: "Nếu làm SaaS AI cho SMEs, thị trường 500K doanh nghiệp, chỉ cần chiếm 0.1% = 500 khách hàng")
+
+### 🌊 **THÁCH THỨC - Rào cản cần vượt qua (4-5 thách thức):**
+- Phân tích THỰC TẾ với user này, không chung chung
+- Bao gồm:
+  + Thách thức kinh tế vĩ mô (lạm phát 4-5%/năm tại VN, lãi suất...)
+  + Thách thức ngành cụ thể (cạnh tranh, rào cản gia nhập...)
+  + Thách thức cá nhân (dòng tiền, kinh nghiệm, network...)
+- MỖI thách thức có đề xuất cách ứng phó
 
 ## 💎 PHẦN 3: PHÂN TÍCH MỤC TIÊU - LỘ TRÌNH ĐẾN THÀNH CÔNG
 
@@ -109,15 +148,25 @@ Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
 - Nếu có số tiền tiết kiệm hiện có: Gap = Tổng mục tiêu − Tiết kiệm hiện có.
 - Nếu chưa có dữ liệu tiết kiệm: ghi chú "Giả định: tiết kiệm hiện có = 0 VNĐ" và tính Gap theo giả định này.
 
-**3. Tính khả thi:**
+**3. Tính khả thi (VALIDATION 4 LẦN BẮT BUỘC):**
+
+🔍 **BƯỚC KIỂM TRA TRƯỚC KHI TÍNH:**
+- Kiểm tra lần 1: Thu nhập hiện tại user cung cấp là bao nhiêu? (Đọc lại phần trên)
+- Kiểm tra lần 2: Mình có đang tự bịa số không? Phải dùng ĐÚNG số user nói
+- Kiểm tra lần 3: Tính toán logic có đúng không?
+- Kiểm tra lần 4: Đọc lại kết quả - có số nào sai so với dữ liệu gốc không?
+
+**Phân tích:**
 - Nếu thu nhập là khoảng (ví dụ: 7–10 triệu/tháng) và thời gian là khoảng (ví dụ: 2–3 năm), hãy tính cả kịch bản MIN và MAX:
-  - Quy đổi thời gian về tháng (ví dụ: 24–36 tháng).
-  - Tiền cần/tháng (MIN, MAX) = Gap / số_tháng (MAX, MIN).
-  - Tỷ lệ tiết kiệm cần thiết trên thu nhập (MIN, MAX) và nhận xét mức độ khả thi.
-  - Nếu mục tiêu thu nhập tương lai được nêu (ví dụ: 1 tỷ/tháng từ SaaS), bổ sung kịch bản có/không đạt mục tiêu này.
-/ Thu nhập.
-  - Kết luận: Khả thi / Cần điều chỉnh / Cần tăng thu nhập (nêu lý do).
-- Nếu thiếu dữ liệu: ghi rõ "Không đủ dữ liệu để đánh giá khả thi".
+  - Thu nhập HIỆN TẠI: [GHI RÕ SỐ USER CUNG CẤP, VD: 7-10 triệu/tháng]
+  - Quy đổi thời gian về tháng (ví dụ: 24–36 tháng)
+  - Tiền cần/tháng (MIN, MAX) = Gap / số_tháng (MAX, MIN)
+  - Tỷ lệ tiết kiệm cần thiết = Tiền cần/tháng / Thu nhập HIỆN TẠI (dùng số thật, không bịa)
+  - Nếu mục tiêu thu nhập tương lai được nêu (ví dụ: 1 tỷ/tháng từ SaaS), bổ sung kịch bản có/không đạt mục tiêu này
+  - Kết luận: Khả thi / Cần điều chỉnh / Cần tăng thu nhập (nêu lý do)
+- Nếu thiếu dữ liệu: ghi rõ "Không đủ dữ liệu để đánh giá khả thi"
+
+✅ **SAU KHI VIẾT XONG, ĐỌC LẠI VÀ TỰ HỎI:** "Mình có dùng đúng số liệu user cung cấp không? Có tự bịa số nào không?"
 
 **4. Thứ tự ưu tiên thông minh:**
 - Sắp xếp theo tiêu chí: Impact (tác động) / Cost (chi phí) / Time (thời gian). Không suy đoán nếu thiếu dữ liệu.
@@ -125,9 +174,25 @@ Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
 ## PHẦN 4: YẾU TỐ KHÁCH QUAN & CHỦ QUAN
 Viết 300-400 từ, CHỈ nêu các yếu tố ảnh hưởng TRỰC TIẾP tới mục tiêu đã cung cấp (ví dụ: lãi suất vay khi mục tiêu là mua nhà). Tránh nhận định chung chung. Nếu thiếu dữ liệu về mục tiêu, ghi rõ hạn chế.
 
-## PHẦN 5: KỸ NĂNG & KINH NGHIỆM CẦN CÓ + MÔ HÌNH KINH DOANH GỢI Ý
-1) Kỹ năng/kinh nghiệm cốt lõi (tối đa 6 mục): mỗi mục ghi rõ mục đích, ROI dự kiến, thời lượng khuyến nghị, tài nguyên học nhanh để bắt đầu NGAY hôm nay. Liên kết chặt với mục tiêu (ví dụ: tối ưu dòng tiền, đàm phán lãi suất, nghiện cứu thị trường, marketing, bán hàng, phân tích dữ liệu).
-2) 3–5 mô hình tăng thu nhập phù hợp hồ sơ hiện tại (ví dụ: freelancing theo kỹ năng A, bán sản phẩm số, dịch vụ tư vấn niche, micro-SaaS, affiliate). Với mỗi mô hình: mô tả ngắn, nguồn lực cần, rủi ro, KPI 90 ngày, ví dụ giá/biên lợi nhuận tại VN.
+## PHẦN 5: KỸ NĂNG & KINH NGHIỆM CẦN CÓ + MÔ HÌNH KINH DOANH GỢI Ý (600-800 từ)
+
+### 📚 **Kỹ năng/kinh nghiệm cốt lõi cần có (5-6 kỹ năng):**
+Dựa trên mục tiêu tài chính và dự án hiện tại của user, phân tích chi tiết:
+- MỖI kỹ năng phải có:
+  + Lý do tại sao kỹ năng này QUAN TRỌNG cho mục tiêu của user
+  + ROI dự kiến cụ thể (VD: "Học SEO → tăng traffic 200% trong 6 tháng → giảm 50% chi phí quảng cáo")
+  + Lộ trình học cụ thể: Thời lượng (VD: 2-3 tháng), Nguồn học (tên khóa học/sách cụ thể), Chi phí ước tính
+  + Cách áp dụng ngay vào dự án hiện tại của user
+
+### 💼 **3-5 mô hình tăng thu nhập phù hợp:**
+Dựa trên kỹ năng, kinh nghiệm, dự án hiện tại của user để gợi ý:
+- MỖI mô hình phải có:
+  + Mô tả cụ thể (không chung chung)
+  + Nguồn lực cần: Vốn ban đầu, Thời gian, Kỹ năng
+  + Phân tích rủi ro THỰC TẾ và cách giảm thiểu
+  + KPI 90 ngày đầu (số liệu cụ thể: VD "10 khách hàng đầu tiên, doanh thu 30 triệu")
+  + Ví dụ giá bán và biên lợi nhuận tại thị trường VN (VD: "SaaS B2B giá 500K-2M/tháng, biên lợi nhuận 70-80%")
+  + Case study thực tế từ VN nếu có
 
 ## PHẦN 6: LỘ TRÌNH CHI TIẾT
 Linh hoạt theo thời gian mục tiêu người dùng nêu ra:
@@ -144,16 +209,58 @@ Tùy theo timeline người dùng:
 - ≥ 2 năm: liệt kê HÀNH ĐỘNG THEO QUÝ cho toàn bộ thời gian (mỗi quý 3–5 hành động). Nếu là khoảng 2–3 năm, ưu tiên đủ 2 năm theo quý, phần còn lại tóm lược.
 Không chèn câu hướng dẫn meta; chỉ đưa nội dung hành động cụ thể.
 
-## PHẦN 8: TÀI LIỆU HỌC TẬP (8–12 tài liệu)
-Ưu tiên nguồn tiếng Việt và miễn phí; đa dạng sách/khóa học/YouTube/blog/công cụ. Mỗi dòng ghi rõ: Mục tiêu học gì → Link → Thời lượng đề xuất.
-1. [Tên] – [Link] – [Mục tiêu] – [Thời lượng]
-2. [Tên] – [Link] – [Mục tiêu] – [Thời lượng]
-...
+## 📚 PHẦN 8: TÀI LIỆU HỌC TẬP KỸ NĂNG (10-12 tài liệu chi tiết)
 
-## PHẦN 9: KẾT LUẬN & HÀNH ĐỘNG
-- Tóm tắt 3 điểm chính
-- 3 việc làm ngay trong 24h
-- Lời động viên cá nhân
+**YÊU CẦU BẮT BUỘC: 10-12 tài liệu, KHÔNG được thiếu**
+
+Phân loại theo nhóm kỹ năng liên quan đến mục tiêu của user:
+
+### 💰 **Nhóm 1: Kỹ năng tài chính cốt lõi (3-4 tài liệu):**
+1. **[Tên sách/khóa học]**
+   - Link: [URL cụ thể]
+   - Mục tiêu: Học gì từ tài liệu này (cụ thể, không chung chung)
+   - Thời lượng: [X giờ/tuần trong Y tuần]
+   - Lý do chọn: Tại sao tài liệu này phù hợp với user
+   - Cách áp dụng: Áp dụng vào dự án/mục tiêu như thế nào
+
+### 🚀 **Nhóm 2: Kỹ năng chuyên môn theo ngành (4-5 tài liệu):**
+(Dựa trên nghề nghiệp/dự án của user: VD nếu làm SaaS thì gợi ý về product development, marketing SaaS, pricing...)
+- Ưu tiên nguồn tiếng Việt và MIỄN PHÍ
+- Đa dạng: Sách, Khóa học, YouTube, Blog, Công cụ
+- Mỗi tài liệu có đầy đủ: Tên, Link, Mục tiêu, Thời lượng, Lý do chọn, Cách áp dụng
+
+### 🎯 **Nhóm 3: Kỹ năng mềm & tư duy (3-4 tài liệu):**
+(Marketing, Sales, Leadership, Productivity... phù hợp với mục tiêu tài chính)
+- Format tương tự như trên
+- Liên kết rõ ràng với mục tiêu tăng thu nhập
+
+**Lưu ý:** Mỗi tài liệu phải là GỢI Ý CỤ THỂ, có link thật (hoặc tên cụ thể để user tự tìm), KHÔNG viết chung chung kiểu "Tìm khóa học về..."
+
+## 🎯 PHẦN 9: KẾT LUẬN & HÀNH ĐỘNG NGAY (400-500 từ)
+
+### 📋 **Tóm tắt 3 điểm chính:**
+1. **Điểm mạnh lớn nhất:** [Dựa trên phân tích SWOT, nêu cụ thể điểm mạnh user có thể tận dụng ngay]
+2. **Thách thức lớn nhất:** [Rào cản chính cần vượt qua + cách khắc phục]
+3. **Cơ hội vàng:** [Cơ hội thị trường/ngành cần nắm bắt ngay]
+
+### ⚡ **3 việc làm NGAY trong 24 giờ tới:**
+1. **[Hành động cụ thể 1]**
+   - Làm gì: [Chi tiết cụ thể, không chung chung]
+   - Tại sao: [Lý do hành động này quan trọng]
+   - Kết quả mong đợi: [Output cụ thể sau 24h]
+
+2. **[Hành động cụ thể 2]**
+   - Làm gì, Tại sao, Kết quả mong đợi (tương tự)
+
+3. **[Hành động cụ thể 3]**
+   - Làm gì, Tại sao, Kết quả mong đợi (tương tự)
+
+### 💪 **Lời động viên cá nhân:**
+Viết 3-4 câu động viên CÁ NHÂN HÓA dựa trên:
+- Tình huống cụ thể của user (nghề nghiệp, mục tiêu, thách thức)
+- Điểm mạnh user đã có
+- Niềm tin vào khả năng đạt mục tiêu
+- Khích lệ hành động ngay, không trì hoãn
 
 **🎯 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**
 Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:
@@ -416,21 +523,35 @@ IMPORTANT: Return ONLY valid JSON, no extra text.
  * Enhanced user context - Simplified
  */
 export function getUserContextV4(collectedInfo: any) {
+  // Format income clearly
+  const currentIncome = collectedInfo.income || collectedInfo.income_range || 'Chưa cung cấp'
+  const targetIncome = collectedInfo.target_income || 'Chưa cung cấp'
+  
   return `
 📋 THÔNG TIN NGƯỜI DÙNG:
+
+💰 **TÀI CHÍNH HIỆN TẠI (QUAN TRỌNG - ĐỌC KỞ):**
+- Thu nhập HIỆN TẠI: ${currentIncome}${currentIncome !== 'Chưa cung cấp' ? ' VNĐ/tháng' : ''}
+- Tiết kiệm hiện có: ${collectedInfo.savings || 'Chưa cung cấp'}${collectedInfo.savings ? ' VNĐ' : ''}
+
+🎯 **MỤC TIÊU (KHÁC VỚI HIỆN TẠI):**
+- Mục tiêu tài chính: ${collectedInfo.goal || 'Chưa cung cấp'}
+- Thu nhập MỤC TIÊU: ${targetIncome}${targetIncome !== 'Chưa cung cấp' ? ' VNĐ/tháng' : ''}
+- Thời gian thực hiện: ${collectedInfo.timeline || 'Chưa cung cấp'}
+
+👤 **THÔNG TIN CÁ NHÂN:**
 - Họ tên: ${collectedInfo.full_name || 'Chưa cung cấp'}
 - Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
-- Thu nhập: ${collectedInfo.income || collectedInfo.income_range || 'Chưa cung cấp'} VNĐ/tháng
-- Tiết kiệm: ${collectedInfo.savings || 'Chưa cung cấp'} VNĐ
 - Nơi sống: ${collectedInfo.location || 'Chưa cung cấp'}
 - Nghề nghiệp: ${collectedInfo.occupation || 'Chưa cung cấp'}
-- Mục tiêu: ${collectedInfo.goal || 'Chưa cung cấp'}
-- Timeline: ${collectedInfo.timeline || 'Chưa cung cấp'}
-- Thu nhập mục tiêu: ${collectedInfo.target_income || 'Chưa cung cấp'}
 - Dự án hiện tại: ${collectedInfo.project || collectedInfo.current_project || 'Chưa cung cấp'}
 - Kỹ năng: ${(Array.isArray(collectedInfo.skills) ? collectedInfo.skills.join(', ') : (collectedInfo.skills || 'Chưa cung cấp'))}
 - Risk tolerance: ${collectedInfo.risk_tolerance || 'Chưa cung cấp'}
 
-⚠️ LƯU Ý: Phân biệt rõ HIỆN CÓ vs MỤC TIÊU khi phân tích.
+⚠️ LƯU Ý QUAN TRỌNG:
+1. Thu nhập HIỆN TẠI ≠ Thu nhập MỤC TIÊU
+2. KHÔNG được tự bịa số liệu khi đã có dữ liệu thật
+3. MỌI phép tính phải dùng số liệu ở trên, không được thay đổi
+4. Nếu user nói "7-10 triệu" thì PHẢI dùng "7-10 triệu", KHÔNG giả định "20 triệu"
 `
 }

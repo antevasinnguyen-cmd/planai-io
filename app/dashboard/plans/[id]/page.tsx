@@ -506,7 +506,7 @@ export default function PlanViewEnhanced() {
                           <div className="flex items-start space-x-2">
                             <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
                             <span className="text-sm text-gray-700 dark:text-gray-300">
-                              <strong>Nhiều từ hơn:</strong> Từ 3.000 từ lên 8.000-23.000 từ
+                              <strong>Nhiều từ hơn:</strong> Lên tới 50.000 từ cho gói trả phí
                             </span>
                           </div>
                           <div className="flex items-start space-x-2">

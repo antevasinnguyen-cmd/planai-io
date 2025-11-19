@@ -29,8 +29,18 @@ function extractSkills(text: string): string[] | null {
 }
 
 function extractIncomeRange(text: string): string | null {
-  const m = text.match(/(\d+[\s\.,]*\d*)\s*[-–]\s*(\d+[\s\.,]*\d*)\s*(triệu|tr|million)/i)
-  if (m) return `${m[1].replace(/\s/g,'')}–${m[2].replace(/\s/g,'')} ${m[3].toLowerCase().includes('triệu') ? 'triệu' : 'triệu'}`
+  // Pattern 1: "tầm 7 - 10 triệu" hoặc "7-10 triệu/tháng"
+  const m1 = text.match(/(?:tầm|khoảng|từ)?\s*(\d+[\s\.,]*\d*)\s*[-–~]\s*(\d+[\s\.,]*\d*)\s*(triệu|tr|million)/i)
+  if (m1) return `${m1[1].replace(/[\s\.,]/g,'')}–${m1[2].replace(/[\s\.,]/g,'')} triệu/tháng`
+  
+  // Pattern 2: "thu nhập: 7-10 triệu" (có context)
+  const m2 = text.match(/thu\s*nhập[^\d]*(\d+[\s\.,]*\d*)\s*[-–~]\s*(\d+[\s\.,]*\d*)\s*(triệu|tr)/i)
+  if (m2) return `${m2[1].replace(/[\s\.,]/g,'')}–${m2[2].replace(/[\s\.,]/g,'')} triệu/tháng`
+  
+  // Pattern 3: "lợi nhuận không cố định, tầm 7 - 10 triệu"
+  const m3 = text.match(/(?:lợi\s*nhuận|thu\s*nhập)[^\d]{0,30}(\d+[\s\.,]*\d*)\s*[-–~]\s*(\d+[\s\.,]*\d*)\s*(triệu|tr)/i)
+  if (m3) return `${m3[1].replace(/[\s\.,]/g,'')}–${m3[2].replace(/[\s\.,]/g,'')} triệu/tháng`
+  
   return null
 }
 
@@ -49,11 +59,23 @@ function extractTimelineSingle(text: string): string | null {
 }
 
 function extractTargetIncome(text: string): string | null {
-  const m = text.match(/thu\s*nhập\s*mục\s*tiêu[^\d]*(\d+[\d\.,]*)\s*(tỷ|ty|triệu|tr)/i)
-  if (!m) return null
-  const unit = m[2].toLowerCase()
-  const num = m[1].replace(/[\.,]/g,'')
-  return unit.startsWith('t') ? `${num} tỷ/tháng` : `${num} triệu/tháng`
+  // Pattern 1: "thu nhập mục tiêu là 1 tỷ/tháng"
+  const m1 = text.match(/thu\s*nhập\s*mục\s*tiêu[^\d]*(\d+[\d\.,]*)\s*(tỷ|ty|triệu|tr)(?:\/tháng)?/i)
+  if (m1) {
+    const unit = m1[2].toLowerCase()
+    const num = m1[1].replace(/[\.,]/g,'')
+    return unit.includes('tỷ') || unit.includes('ty') ? `${num} tỷ/tháng` : `${num} triệu/tháng`
+  }
+  
+  // Pattern 2: "mục tiêu: 1 tỷ/tháng"
+  const m2 = text.match(/mục\s*tiêu[^\d]*(\d+[\d\.,]*)\s*(tỷ|ty|triệu|tr)(?:\/tháng)?/i)
+  if (m2) {
+    const unit = m2[2].toLowerCase()
+    const num = m2[1].replace(/[\.,]/g,'')
+    return unit.includes('tỷ') || unit.includes('ty') ? `${num} tỷ/tháng` : `${num} triệu/tháng`
+  }
+  
+  return null
 }
 
 function extractProject(text: string): string | null {
@@ -276,6 +298,14 @@ export async function POST(request: NextRequest) {
 
     const enrichedCollectedInfo = { ...collectedInfo, chat_summary: fullChatSummary, ...extracted }
 
+    // Log extracted data for debugging
+    logger.info('FAST_GENERATE_EXTRACTED_DATA', {
+      income: extracted.income,
+      target_income: extracted.target_income,
+      timeline: extracted.timeline,
+      skills: extracted.skills?.length || 0
+    })
+
     const systemPrompt = getPlanPromptV4(tier, constraints, enrichedCollectedInfo)
     const userContext = getUserContextV4(enrichedCollectedInfo)
     const userTimeline = enrichedCollectedInfo?.timeline || '12 tháng'
@@ -329,7 +359,7 @@ export async function POST(request: NextRequest) {
     
     // 120s timeout for GPT (we have 5 minutes total now)
     const timeoutMs = 120000 // 2 minutes for GPT
-    const maxTokens = 5000 // More content for detailed monthly roadmap
+    const maxTokens = 8000 // Enough for 5,000 words as required (1 token ≈ 0.75 words in Vietnamese)
 
     let raw = '{}'
     let usedModel = 'gpt-4o-mini'
@@ -465,18 +495,32 @@ export async function POST(request: NextRequest) {
       const qaTimeoutMs = 90_000
       const qaTimeout = setTimeout(() => qaController.abort(), qaTimeoutMs)
       const qaPrompt = [
-        'Bạn là Trưởng biên tập, hãy HOÀN THIỆN nội dung kế hoạch dưới đây và CHỈ TRẢ VỀ Markdown hợp lệ.',
-        'YÊU CẦU BẮT BUỘC:',
-        '- Giữ đúng cấu trúc FREE = 9 phần với tiêu đề chuẩn (PHẦN 1 → PHẦN 9).',
-        '- Bổ sung khi thiếu: mô hình tăng thu nhập (3–5 mô hình) trong PHẦN 5, hành động chi tiết trọn vẹn timeline trong PHẦN 7, tài liệu học tập 8–12 nguồn trong PHẦN 8, KẾT LUẬN rõ ràng ở PHẦN 9.',
-        '- Nếu timeline ≥ 2 năm: PHẢI có Năm thứ nhất và Năm thứ hai, mỗi năm đủ Q1–Q4 (không được thiếu).',
-        '- Không dùng bảng Markdown, không dùng Mermaid, không thêm phần Xuất dữ liệu bảng.',
-        '- Viết văn bản thuần, trình bày đẹp, súc tích nhưng đủ sâu; ưu tiên 3.000–4.500 từ nếu có thể trong giới hạn.',
+        'Bạn là Trưởng biên tập chuyên kiểm tra số liệu và logic. Hãy HOÀN THIỆN + KIỂM TRA CHÉO nội dung kế hoạch dưới đây.',
         '',
-        'THÔNG TIN NGƯỜI DÙNG (rút gọn):',
+        '🔍 NHIỆM VỤ KIỂM TRA SỐ LIỆU (ƯU TIÊN CAO NHẤT):',
+        '1. Đọc lại THÔNG TIN NGƯỜI DÙNG bên dưới - thu nhập hiện tại là bao nhiêu?',
+        '2. Tìm tất cả chỗ trong kế hoạch có nhắc đến thu nhập hiện tại',
+        '3. Kiểm tra: AI có tự bịa số liệu không? (VD: user nói "7-10 triệu" mà AI viết "giả sử 20 triệu")',
+        '4. Nếu phát hiện số liệu SAI → SỬA NGAY thành số ĐÚNG từ thông tin user',
+        '5. Kiểm tra logic tính toán: Gap, Tiền cần/tháng, Tỷ lệ tiết kiệm - có dùng đúng thu nhập hiện tại không?',
+        '',
+        'YÊU CẦU HOÀN THIỆN NỘI DUNG:',
+        '- Giữ đúng cấu trúc FREE = 9 phần với tiêu đề chuẩn (PHẦN 1 → PHẦN 9)',
+        '- KIỂM TRA ĐẶC BIỆT PHẦN 8: PHẢI có 10-12 tài liệu học tập chi tiết, phân loại theo 3 nhóm kỹ năng, mỗi tài liệu có: Tên, Link, Mục tiêu, Thời lượng, Lý do chọn, Cách áp dụng',
+        '- Bổ sung khi thiếu: mô hình tăng thu nhập (3–5 mô hình) trong PHẦN 5, hành động chi tiết trọn vẹn timeline trong PHẦN 7, KẾT LUẬN đầy đủ 3 phần ở PHẦN 9',
+        '- Nếu timeline ≥ 2 năm: PHẢI có Năm thứ nhất và Năm thứ hai, mỗi năm đủ Q1–Q4 (không được thiếu)',
+        '- Không dùng bảng Markdown, không dùng Mermaid, không thêm phần Xuất dữ liệu bảng',
+        '- Viết văn bản thuần, trình bày đẹp, súc tích nhưng đủ sâu',
+        '',
+        '⚠️ CẤM TUYỆT ĐỐI:',
+        '❌ Tự bịa số liệu khi đã có dữ liệu thật từ user',
+        '❌ Thay đổi số liệu user cung cấp',
+        '❌ Dùng số liệu mơ hồ thay vì số cụ thể user đã nói',
+        '',
+        'THÔNG TIN NGƯỜI DÙNG (ĐỌC KỸ ĐỂ KIỂM TRA CHÉO):',
         userContext.slice(0, 1200),
         '',
-        'NỘI DUNG GỐC CẦN HOÀN THIỆN:',
+        'NỘI DUNG GỐC CẦN HOÀN THIỆN VÀ KIỂM TRA:',
         content_md.slice(0, 24000)
       ].join('\n')
 
