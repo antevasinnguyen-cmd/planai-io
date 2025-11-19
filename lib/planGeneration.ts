@@ -491,22 +491,18 @@ export async function generateLongPlanMultiStep(
     { key: 'closing', title: '24. Kết luận & động lực hành động', weight: 1 },
   ]
 
-  // Bố cục cho gói Free (giữ nguyên như logic cũ, không phải 24 mục)
+  // Bố cục cho gói Free (linh hoạt, tập trung chất lượng)
   const freeSections: { key: string; title: string; weight: number; extra?: string }[] = [
     { key: 'title', title: '1. Tiêu đề', weight: 1 },
-    { key: 'summary', title: '2. Tóm tắt', weight: 2 },
-    { key: 'swot', title: '3. Phân tích SWOT', weight: 2 },
-    { key: 'goals', title: '4. Phân tích mục tiêu', weight: 2 },
-    { key: 'factors', title: '5. Phân tích yếu tố', weight: 2 },
-    { key: 'skills', title: '6. Kỹ năng', weight: 2 },
-    { key: 'mindmap', title: '7. Mindmap lộ trình', weight: 2, extra: 'Dùng Mermaid mindmap, sau đó luôn có bản văn bản thay thế.' },
-    { key: 'roadmap', title: '8. Lộ trình', weight: 2 },
-    { key: 'actions', title: '9. Đề xuất hành động', weight: 2 },
-    { key: 'weekly', title: '10. Checklist Tuần', weight: 1 },
-    { key: 'monthly', title: '11. Checklist Tháng', weight: 1 },
-    { key: 'saving', title: '12. Kế hoạch tiết kiệm', weight: 1 },
-    { key: 'invest', title: '13. Kế hoạch đầu tư', weight: 1 },
-    { key: 'learning', title: '14. Tài liệu học tập', weight: 2, extra: 'Tuân thủ quy tắc link đã tối ưu.' }
+    { key: 'overview', title: '2. Tóm tắt & Phân tích tình hình hiện tại', weight: 3, extra: 'Bao gồm: mục tiêu, hồ sơ cá nhân, bối cảnh, tình hình tài chính hiện tại.' },
+    { key: 'swot', title: '3. Phân tích SWOT cá nhân', weight: 2, extra: 'Bảng 4 cột: Điểm mạnh, Điểm yếu, Cơ hội, Thách thức.' },
+    { key: 'goals', title: '4. Phân tích mục tiêu chi tiết', weight: 2, extra: 'Mục tiêu SMART, phân tích tài chính, timeline cụ thể.' },
+    { key: 'skills', title: '5. Phân tích kỹ năng & chuyên môn', weight: 2, extra: 'Kỹ năng hiện có, kỹ năng cần phát triển, chuyên môn liên quan.' },
+    { key: 'business', title: '6. Loại hình kinh doanh phù hợp', weight: 3, extra: 'Các mô hình kinh doanh phù hợp với profile, khả năng tạo thu nhập, rủi ro, timeline.' },
+    { key: 'strategy', title: '7. Chiến lược & phương án tài chính', weight: 3, extra: 'Phương án: tiết kiệm, đầu tư, kinh doanh. Hành động chi tiết cho từng phương án.' },
+    { key: 'timeline', title: '8. Kế hoạch chi tiết theo thời gian', weight: 3, extra: 'Mốc thời gian: năm, quý, tháng. Hành động cụ thể, cặn kẽ cho từng giai đoạn.' },
+    { key: 'learning', title: '9. Tài liệu học tập & tài nguyên', weight: 2, extra: 'Link thực, YouTube ≥10k sub, tiếng Anh ưu tiên, kèm từ khoá tìm kiếm.' },
+    { key: 'psychology', title: '10. Psychology & Mindset', weight: 1, extra: 'Khích lệ, động lực, cách vượt qua rào cản tâm lý.' }
   ]
 
   const sections = tier === 'free' ? freeSections : paidSections
@@ -517,9 +513,28 @@ export async function generateLongPlanMultiStep(
     role: 'system' as const,
     content: [
       'Bạn là chuyên gia lập kế hoạch tài chính cá nhân hóa cho người Việt Nam.',
-      'Yêu cầu chất lượng cao: chính xác, thực thi được ngay, không sơ sài.',
-      'Bắt buộc: bảng Markdown hợp lệ (có dòng header + separator), link thực tế, và luôn kèm fallback thuần nội dung cho sơ đồ.',
-      tier === 'free' ? 'Giới hạn tổng ~5.000 từ.' : 'Yêu cầu tổng ≥20.000 từ (tối đa 50.000).',
+      'Mục đích: Tạo bản kế hoạch CHUYÊN SÂU, CÁ NHÂN HÓA ĐỘC QUYỀN dựa trên dữ liệu đầu vào từ chat.',
+      '',
+      'CÁC XƯƠNG SỐNG CHÍNH (bắt buộc có):',
+      '1. Kiểm tra, xử lý & xác minh dữ liệu trước khi lập kế hoạch',
+      '2. Phân tích chi tiết tình hình hiện tại',
+      '3. Phân tích chi tiết mục tiêu',
+      '4. Phân tích chi tiết cá nhân (SWOT, điểm mạnh, điểm yếu, cơ hội, thách thức)',
+      '5. Phân tích kỹ năng & chuyên môn',
+      '6. Phân tích loại hình kinh doanh phù hợp tạo thu nhập',
+      '7. Đề xuất chuyên sâu: kỹ năng, hiểu biết, hành động cần có',
+      '8. Đề xuất phương án tài chính (tiết kiệm, đầu tư, kinh doanh) + hành động chi tiết',
+      '9. Mốc thời gian + hành động chi tiết, cặn kẽ',
+      '10. Tài nguyên học tập & tài nguyên kiến thức',
+      '11. Psychology & Mindset',
+      '',
+      'YÊU CẦU CHẤT LƯỢNG:',
+      '- Chính xác, thực thi được ngay, không sơ sài',
+      '- Bảng Markdown hợp lệ (header + separator + data)',
+      '- Link thực tế (YouTube ≥10k sub, tiếng Anh ưu tiên)',
+      '- Luôn kèm fallback thuần nội dung cho sơ đồ',
+      '- Dữ liệu được tổng hợp & xử lý từ chat input',
+      tier === 'free' ? '- Tổng ~5.000 từ, nhưng đảm bảo đầy đủ các xương sống' : '- Tổng ≥20.000 từ (tối đa 50.000), chuyên sâu & chi tiết',
     ].join('\n')
   }
 
