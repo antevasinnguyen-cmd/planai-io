@@ -27,7 +27,7 @@ export const getAnthropic = () => {
 // Model configuration
 export const MODELS = {
   CHAT_DEFAULT: 'gpt-4o-mini',  // Chat: GPT-4o mini (cost-effective)
-  COMPLEX_PLANNING: 'gpt-4o',    // Plan generation: GPT-4o (full) for deeper analysis
+  COMPLEX_PLANNING: 'gpt-4o-mini',  // Plan generation: GPT-4o mini (cost-effective)
   CHAT_FALLBACK: 'claude-3-5-sonnet-20241022',  // Plan fallback: Claude 3.5 Sonnet (latest)
   EMBEDDING: 'text-embedding-3-small'
 }

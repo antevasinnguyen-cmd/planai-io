@@ -266,9 +266,9 @@ export const generateFinancialPlan = async (
     // Tier-based micro-tasks and scenario depth gating (P1)
     const tier = String(collectedInfo.tier || 'free')
 
-    // TIER-SPECIFIC WORD LIMITS (Updated Nov 13, 2025)
+    // TIER-SPECIFIC WORD LIMITS (Updated Nov 19, 2025)
     const tierWordLimits = {
-      'free': 4000,      // Free: max 4000 words (giảm từ 5000 để tối ưu cost)
+      'free': 5000,      // Free: max 5000 words (tăng từ 4000 để có nội dung đủ chi tiết)
       'basic': 50000,    // Gói 1: max 50000 words
       'pro': 50000,      // Gói 2: max 50000 words
       'pro_max': 50000   // Gói 3: max 50000 words
@@ -279,13 +279,13 @@ export const generateFinancialPlan = async (
     const maxWords = Math.max(1000, Math.min(maxWordsInput, maxWordLimit))
 
     const wordRange = tier === 'free'
-      ? 'Tối đa 4.000 từ (Gói Free)'
+      ? 'Tối đa 5.000 từ (Gói Free)'
       : 'Tối đa 50.000 từ (Gói trả phí)'
 
     // Token budget aligned with model capacity (GPT-4 Turbo max: 4096 completion tokens)
     // But respect tier word limits
     const maxTokensForTier = (() => {
-      if (tier === 'free') return Math.min(3500, Math.ceil(maxWords * 1.5))  // Free: clamped to 4k words
+      if (tier === 'free') return Math.min(3500, Math.ceil(maxWords * 1.5))  // Free: clamped to 5k words
       if (tier === 'basic') return Math.min(4096, Math.ceil(maxWords * 1.5)) // Basic: up to 50k words
       return Math.min(4096, Math.ceil(maxWords * 1.5))  // Pro/Pro Max: up to 50k words (but clamped to 4096 tokens)
     })()
@@ -351,9 +351,10 @@ Yêu cầu tạo kế hoạch PHÂN TÍCH CHUYÊN SÂU:
 9. Mức độ kịch bản/giải pháp: ${scenarioDepth}
 
 QUAN TRỌNG: 
-- Giới hạn tối đa ${maxWords} từ
+- Giới hạn tối đa ${maxWords} từ - HÃY SỬ DỤNG ĐẦY ĐỦ KHÔNG GIAN NÀY để tạo nội dung CHI TIẾT
 - KHÔNG bao gồm số từ hoặc thống kê từ trong nội dung
-- Hãy tạo một kế hoạch toàn diện, thực tế, CÁ NHÂN HÓA và có thể thực hiện được
+- Hãy tạo một kế hoạch TOÀN DIỆN, THỰC TẾ, CÁ NHÂN HÓA, CHI TIẾT và có thể thực hiện được
+- Phân tích phải ĐỦ SÂU và CHI TIẾT, không được sơ sài hay vắn tắt
 
 YÊU CẦU BỔ SUNG DÀNH RIÊNG CHO GÓI FREE (nếu tier = "free"):
 - BẮT BUỘC đủ 14 mục: Tiêu đề, Tóm tắt, SWOT, Phân tích mục tiêu, Phân tích yếu tố, Kỹ năng, Mindmap, Lộ trình, Đề xuất hành động, Checklist Tuần, Checklist Tháng, Kế hoạch tiết kiệm, Kế hoạch đầu tư, Tài liệu học tập (11+).
