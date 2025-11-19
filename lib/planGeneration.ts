@@ -273,7 +273,7 @@ Trả về JSON:
 }
 
 /**
- * Generate learning resources
+ * Generate learning resources with real, working links
  */
 export const generateLearningResources = async (
   goal: string,
@@ -284,34 +284,67 @@ export const generateLearningResources = async (
       apiKey: process.env.OPENAI_API_KEY,
     })
 
-    const prompt = `Tạo danh sách tài liệu học tập cho mục tiêu: ${goal}
+    const prompt = `Tạo danh sách tài liệu học tập CHI TIẾT và CÓ LINK THỰC TẾ cho mục tiêu: ${goal}
 Ngành: ${occupation}
 
-Bao gồm:
-1. Sách (ưu tiên tiếng Việt)
-2. Khóa học online (Udemy, Coursera, etc.)
-3. YouTube channels
-4. Blogs/websites
-5. Công cụ hỗ trợ
+QUAN TRỌNG: 
+- Mỗi tài liệu PHẢI có link hoạt động, có thể click vào được ngay
+- Ưu tiên nguồn tài liệu uy tín bằng tiếng Anh (Coursera, edX, Khan Academy, YouTube)
+- Nếu là tiếng Việt, phải là nguồn uy tín (Edumall, Unica, Topica, etc.)
+- Mỗi link phải dẫn TRỰC TIẾP tới tài liệu/video/khóa học, không phải trang chủ
+- Bao gồm mô tả chi tiết về nội dung của mỗi tài liệu
 
-Format: Markdown với headings và lists`
+Cấu trúc bắt buộc:
+
+## 📚 PHẦN 1: KỸ NĂNG TÀI CHÍNH CỐ LỖI
+1. [Tên khóa học]
+   - Link: [URL đầy đủ]
+   - Mục tiêu: [Mô tả chi tiết]
+   - Thời lượng: [Thời gian học]
+   - Lý do chọn: [Tại sao phù hợp]
+   - Cách áp dụng: [Cách sử dụng vào công việc]
+
+## 🚀 PHẦN 2: KỸ NĂNG CHUYÊN MÔN THEO NGÀNH
+[Tương tự như trên]
+
+## 📖 PHẦN 3: SÁCH THAM KHẢO
+[Tương tự như trên]
+
+## 🎥 PHẦN 4: YOUTUBE CHANNELS
+[Tương tự như trên]
+
+## 💡 PHẦN 5: CÔNG CỤ HỖ TRỢ
+[Tương tự như trên]
+
+Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt động 100%`
 
     const completion = await openai.chat.completions.create({
       model: selectModel(TaskType.REGULAR_CHAT),
       messages: [
         {
+          role: 'system',
+          content: 'Bạn là chuyên gia tư vấn học tập. Cung cấp tài liệu chất lượng cao với link thực tế, hoạt động được. Mỗi tài liệu phải có mô tả chi tiết và link trực tiếp.',
+        },
+        {
           role: 'user',
           content: prompt,
         },
       ],
-      max_tokens: 1500,
+      max_tokens: 2500,
       temperature: 0.7,
     })
 
-    return completion.choices[0]?.message?.content || 'Không có tài liệu'
+    const resources = completion.choices[0]?.message?.content || 'Không có tài liệu'
+    
+    // Validate that response contains actual links
+    if (!resources.includes('http')) {
+      console.warn('Generated resources may not contain valid links')
+    }
+    
+    return resources
   } catch (error) {
     console.error('Error generating learning resources:', error)
-    return 'Không thể tạo danh sách tài liệu'
+    return 'Không thể tạo danh sách tài liệu. Vui lòng thử lại.'
   }
 }
 
