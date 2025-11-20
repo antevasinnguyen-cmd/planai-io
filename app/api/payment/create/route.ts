@@ -12,7 +12,11 @@ function getSepayConfig() {
     SEPAY_TOKEN: sepayToken, // Giữ tên cũ để tương thích ngược
     SEPAY_API_KEY: sepayToken, // Thêm tên mới
     SEPAY_ACCOUNT_NUMBER: process.env.SEPAY_ACCOUNT_NUMBER || 'VQRQAFKCR5422',
-    SEPAY_WEBHOOK_SECRET: process.env.SEPAY_WEBHOOK_SECRET || ''
+    SEPAY_WEBHOOK_SECRET: process.env.SEPAY_WEBHOOK_SECRET || '',
+    // Thông tin tài khoản ngân hàng
+    BANK_NAME: 'MB Bank',
+    BANK_CODE: '970422', // MB Bank BIN code
+    ACCOUNT_NAME: 'NGUYEN THI KHANH HUYEN'
   }
 }
 
@@ -27,9 +31,9 @@ async function createSepayTransaction(sepayConfig: any, amount: number, transfer
 
     // Sử dụng VietQR API - API chính thức của Việt Nam cho QR code ngân hàng (cả PayOS và SePay đều sử dụng VietQR)
     const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER
-    const bankName = 'MB Bank'
-    const bankCode = '970422' // MB Bank BIN code
-    const accountName = 'NGUYEN THI KHANH HUYEN'
+    const bankName = sepayConfig.BANK_NAME
+    const bankCode = sepayConfig.BANK_CODE
+    const accountName = sepayConfig.ACCOUNT_NAME
 
     // Tạo QR code bằng VietQR API (ổn định, không CORS, hỗ trợ banking app)
     // Format: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.jpg?amount={AMOUNT}&addInfo={DESCRIPTION}&accountName={ACC_NAME}
@@ -198,10 +202,10 @@ export async function POST(request: NextRequest) {
       });
       
       try {
-        // Thông tin tài khoản SePay
-        const bankName = 'MB Bank';
-        const bankCode = '970422'; // MB Bank BIN
-        const accountName = 'NGUYEN THI KHANH HUYEN';
+        // Thông tin tài khoản SePay (từ config)
+        const bankName = sepayConfig.BANK_NAME;
+        const bankCode = sepayConfig.BANK_CODE;
+        const accountName = sepayConfig.ACCOUNT_NAME;
         const accountNumber = sepayConfig.SEPAY_ACCOUNT_NUMBER;
 
         if (!accountNumber) {
@@ -222,7 +226,6 @@ export async function POST(request: NextRequest) {
         } else {
           // Fallback to VietQR nếu SePay API không hoạt động (SePay sử dụng VietQR)
           console.log('SePay API failed or no QR returned, using VietQR as fallback:', sepayResult.error)
-          const bankCode = '970422' // MB Bank BIN
           qrCode = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
         }
         
