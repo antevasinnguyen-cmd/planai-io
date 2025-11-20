@@ -564,30 +564,45 @@ export async function generateLongPlanMultiStep(
     return fixed
   }
 
+  // Helper: kiểm tra nội dung có placeholder, lặp prompt, hoặc quá ngắn
+  const needsRewrite = (content: string, sectionKey: string, minWords = 200) => {
+    if (!content) return true
+    if (/\b(true|chưa cung cấp|\[.*?\]|placeholder|URL cụ thể|Tên|Link|VALIDATION|prompt yêu cầu)\b/i.test(content)) return true
+    if (content.length < 100) return true
+    if ((content.match(/\w+/g) || []).length < minWords) return true
+    if (sectionKey === 'learning' && !content.includes('http') && !content.toLowerCase().includes('từ khoá')) return true
+    return false
+  }
+
   const make = async (title: string, instruction: string, targetWords: number, sectionKey?: string) => {
-    // Lớp 1: Tăng cường instruction cho mục "learning"
+    // Lớp 1: Tăng cường instruction cho từng mục, ép AI dùng dữ liệu user chat
     let finalInstruction = instruction
+    let userDataNote = `\n\nDỮ LIỆU NGƯỜI DÙNG: Mục tiêu: ${goal} | Thu nhập: ${collectedInfo?.income || 'Chưa cung cấp'} | Kỹ năng: ${collectedInfo?.skills || 'Chưa cung cấp'} | Location: ${collectedInfo?.location || 'Chưa cung cấp'} | Readiness: ${collectedInfo?.readiness || 'Chưa cung cấp'} | Savings: ${collectedInfo?.savings || 'Chưa cung cấp'} | Timeline: ${collectedInfo?.timeline || 'Chưa cung cấp'}\n\nBẮT BUỘC sử dụng đúng các dữ liệu này cho phân tích, KHÔNG được placeholder, KHÔNG lặp lại prompt, nếu thiếu dữ liệu phải giả định hợp lý và ghi rõ. Mỗi mục tối thiểu ${targetWords} từ, phân tích sâu, có ví dụ, số liệu, insight, không máy móc.`
     if (sectionKey === 'learning') {
       finalInstruction = `${instruction}\n\nQUAN TRỌNG - TUÂN THỦ NGHIÊM NGẶT:\n- CHỈ lấy link THẬT từ các nguồn uy tín quốc tế (Coursera, LinkedIn Learning, Google, TED, Skillshare).\n- Link YouTube PHẢI là link KÊNH (youtube.com/channel/...), ≥10k sub, tiếng Anh, đúng kỹ năng.\n- KHÔNG gợi ý web Việt Nam trừ https://www.brandcamp.asia/.\n- Nếu KHÔNG chắc link, PHẢI ghi rõ TỪ KHOÁ TÌM KIẾM (5-10 từ khoá cụ thể) và nền tảng uy tín.\n- TUYỆT ĐỐI KHÔNG dùng: example.com, placeholder.com, youtube.com (không phải kênh), coursera.org (không phải khóa học cụ thể).`
     }
 
-    const messages = [
-      system,
-      { role: 'user' as const, content: `${title}\n\n${baseContext}\n\nYÊU CẦU CHO MỤC NÀY:\n- Nội dung CHUYÊN SÂU, CỤ THỂ, có thể hành động ngay.\n- Dài khoảng ${targetWords} từ (có thể vượt nhẹ nếu cần).\n- Nếu sử dụng Mermaid, THÊM "Bản thay thế thuần nội dung" ngay bên dưới.\n${finalInstruction ? '- Ghi chú bổ sung: ' + finalInstruction : ''}` }
-    ]
-    const completion = await openai.chat.completions.create({
-      model: selectModel(TaskType.COMPLEX_PLANNING),
-      messages,
-      max_tokens: 1500,
-      temperature: 0.6,
-    })
-    let content = completion.choices[0]?.message?.content?.trim() || ''
-    
-    // Lớp 2: Post-processing - validate and fix links
-    if (sectionKey) {
-      content = validateAndFixLinks(content, sectionKey)
+    let content = ''
+    let retry = 0
+    while (retry < 3) {
+      const messages = [
+        system,
+        { role: 'user' as const, content: `${title}\n\n${baseContext}${userDataNote}\n\nYÊU CẦU CHO MỤC NÀY:\n- Nội dung CHUYÊN SÂU, CỤ THỂ, có thể hành động ngay.\n- Dài khoảng ${targetWords} từ (có thể vượt nhẹ nếu cần).\n- Nếu sử dụng Mermaid, THÊM "Bản thay thế thuần nội dung" ngay bên dưới.\n${finalInstruction ? '- Ghi chú bổ sung: ' + finalInstruction : ''}` }
+      ]
+      const completion = await openai.chat.completions.create({
+        model: selectModel(TaskType.COMPLEX_PLANNING),
+        messages,
+        max_tokens: 1800,
+        temperature: 0.7,
+      })
+      content = completion.choices[0]?.message?.content?.trim() || ''
+      if (sectionKey) {
+        content = validateAndFixLinks(content, sectionKey)
+      }
+      if (!needsRewrite(content, sectionKey, Math.max(200, targetWords * 0.8))) break
+      retry++
+      finalInstruction += '\n\nLưu ý: Bạn vừa trả lời chưa đạt yêu cầu (placeholder, thiếu dữ liệu, quá ngắn, lặp lại prompt, thiếu link thật/từ khoá). Hãy sửa lại mục này đúng chuẩn, phân tích sâu hơn, dài hơn, dùng đúng dữ liệu user.'
     }
-    
     return content
   }
 
