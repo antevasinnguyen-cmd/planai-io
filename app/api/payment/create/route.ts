@@ -11,7 +11,7 @@ function getSepayConfig() {
     SEPAY_API_URL: process.env.SEPAY_API_URL || 'https://my.sepay.vn/userapi/transactions/create',
     SEPAY_TOKEN: sepayToken, // Giữ tên cũ để tương thích ngược
     SEPAY_API_KEY: sepayToken, // Thêm tên mới
-    SEPAY_ACCOUNT_NUMBER: process.env.SEPAY_ACCOUNT_NUMBER || 'FLIOAI000',
+    SEPAY_ACCOUNT_NUMBER: process.env.SEPAY_ACCOUNT_NUMBER || 'VQRQAFKCR5422',
     SEPAY_WEBHOOK_SECRET: process.env.SEPAY_WEBHOOK_SECRET || ''
   }
 }

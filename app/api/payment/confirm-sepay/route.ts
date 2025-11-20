@@ -7,7 +7,7 @@ export const revalidate = 0
 
 const SEPAY_API_URL = process.env.SEPAY_API_URL || 'https://my.sepay.vn/userapi/transactions'
 const SEPAY_API_KEY = process.env.SEPAY_API_KEY || process.env.SEPAY_TOKEN || ''
-const SEPAY_ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || ''
+const SEPAY_ACCOUNT_NUMBER = process.env.SEPAY_ACCOUNT_NUMBER || 'VQRQAFKCR5422'
 
 /**
  * API endpoint để xác nhận thanh toán SePay thủ công
