@@ -71,7 +71,6 @@ const pricingTiers = [
 ]
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState('monthly')
 
   return (
     <div className="min-h-screen bg-white">
@@ -158,37 +157,6 @@ export default function PricingPage() {
               Bắt đầu miễn phí và nâng cấp khi cần. Tất cả gói đều bao gồm kế hoạch tài chính cá nhân hóa hoàn toàn.
             </p>
             
-            {/* Billing Toggle */}
-            <div className="inline-flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  billingCycle === 'monthly'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Thanh toán 1 lần
-              </button>
-              <button
-                onClick={() => setBillingCycle('yearly')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  billingCycle === 'yearly'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Gói năm (Tiết kiệm 10%)
-              </button>
-            </div>
-
-            {/* Yearly value proposition */}
-            {billingCycle === 'yearly' && (
-              <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold">−10% mỗi năm</span>
-                <span className="text-gray-600">Trả trước 1 lần cho 12 tháng • Không lo gia hạn hàng tháng • Tiết kiệm chi phí ngay</span>
-              </div>
-            )}
           </div>
 
           {/* Pricing Cards */}
@@ -222,32 +190,6 @@ export default function PricingPage() {
                         <div className="space-y-1">
                           <span className="text-4xl font-bold text-gray-900 block">Miễn phí</span>
                         </div>
-                      ) : billingCycle === 'yearly' ? (
-                        <div className="space-y-1">
-                          {(() => {
-                            // Hardcoded discounted monthly prices for each tier
-                            let discountedMonthly = 0;
-                            if (tier.id === 'basic') discountedMonthly = 152000;
-                            else if (tier.id === 'pro') discountedMonthly = 260000;
-                            else if (tier.id === 'pro_max') discountedMonthly = 449000;
-                            const monthly = tier.price;
-                            const yearlyTotal = discountedMonthly * 12;
-                            const savings = monthly * 12 - yearlyTotal;
-                            return (
-                              <>
-                                <div className="flex items-baseline justify-center">
-                                  <span className="text-4xl font-bold text-gray-900">{discountedMonthly.toLocaleString()}</span>
-                                  <span className="text-gray-600 ml-2">VNĐ/tháng</span>
-                                </div>
-                                <div className="text-sm text-gray-600 flex items-center justify-center gap-2">
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">−10%</span>
-                                  <span>Thanh toán {yearlyTotal.toLocaleString()}đ/năm</span>
-                                </div>
-                                <div className="text-xs text-gray-500">Tiết kiệm {savings.toLocaleString()}đ so với thanh toán hàng tháng</div>
-                              </>
-                            );
-                          })()}
-                        </div>
                       ) : (
                         <div className="space-y-1">
                           <div className="flex items-baseline justify-center">
@@ -268,7 +210,7 @@ export default function PricingPage() {
                       href={tier.id === 'free' ? '/start' : `/payment/checkout?plan=${tier.id}`}
                       className={`w-full inline-flex items-center justify-center py-3 px-4 rounded-lg font-medium transition-all duration-200 ${tier.buttonStyle}`}
                     >
-                      {tier.price === 0 ? 'Bắt đầu miễn phí' : billingCycle === 'yearly' ? `${tier.buttonText} (Tiết kiệm 10%)` : tier.buttonText}
+                      {tier.price === 0 ? 'Bắt đầu miễn phí' : tier.buttonText}
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Link>
                   </div>
@@ -300,18 +242,6 @@ export default function PricingPage() {
             ))}
           </div>
 
-          {/* Yearly Promo Band */}
-          {billingCycle === 'yearly' && (
-            <div className="mt-10 rounded-2xl border border-green-200 bg-green-50 p-6 text-center">
-              <div className="text-lg font-semibold text-green-800 mb-2">Ưu đãi gói năm: tiết kiệm 10% ngay hôm nay</div>
-              <div className="text-sm text-green-700 mb-4">Trả trước 12 tháng, nhận giá tốt nhất • Không lo gia hạn mỗi tháng • Toàn quyền sử dụng mọi tính năng</div>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-sm">
-                <span className="px-3 py-1 rounded-full bg-white text-green-800 border border-green-200">Tối ưu chi phí</span>
-                <span className="px-3 py-1 rounded-full bg-white text-green-800 border border-green-200">Tập trung vào kế hoạch dài hạn</span>
-                <span className="px-3 py-1 rounded-full bg-white text-green-800 border border-green-200">Không bị gián đoạn dịch vụ</span>
-              </div>
-            </div>
-          )}
 
           {/* Expected Users */}
           <div className="mt-16 bg-gradient-to-r from-primary-50 to-blue-50 rounded-3xl p-8 md:p-12">
