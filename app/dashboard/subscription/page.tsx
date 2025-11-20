@@ -302,7 +302,7 @@ export default function SubscriptionPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Các gói có sẵn</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">Chọn gói phù hợp với nhu cầu của bạn</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {pricingTiers.map((tier) => {
               const isCurrentTier = currentTier === tier.id
               

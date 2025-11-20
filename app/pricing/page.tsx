@@ -192,7 +192,7 @@ export default function PricingPage() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {pricingTiers.map((tier) => (
               <div
                 key={tier.id}
@@ -324,7 +324,7 @@ export default function PricingPage() {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="grid md:grid-cols-2 gap-8 text-center max-w-2xl mx-auto">
               <div className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="text-3xl font-bold text-primary-600 mb-2">10,000</div>
                 <div className="text-gray-900 font-medium mb-1">Gói 1</div>
@@ -333,11 +333,6 @@ export default function PricingPage() {
               <div className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="text-3xl font-bold text-blue-600 mb-2">6,000</div>
                 <div className="text-gray-900 font-medium mb-1">Gói 2 - Pro</div>
-                <div className="text-gray-600 text-sm">user trả phí/tháng</div>
-              </div>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <div className="text-3xl font-bold text-purple-600 mb-2">2,000</div>
-                <div className="text-gray-900 font-medium mb-1">Gói 3 - Pro Max</div>
                 <div className="text-gray-600 text-sm">user trả phí/tháng</div>
               </div>
             </div>
