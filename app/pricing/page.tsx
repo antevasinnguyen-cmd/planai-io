@@ -28,7 +28,7 @@ const pricingTiers = [
   {
     id: 'basic',
     name: 'Gói 1',
-    price: 169000,
+    price: 199000,
     period: 'VNĐ',
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     features: [
@@ -49,7 +49,7 @@ const pricingTiers = [
   {
     id: 'pro',
     name: 'Gói 2 - Pro',
-    price: 289000,
+    price: 379000,
     period: 'VNĐ',
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
@@ -71,7 +71,7 @@ const pricingTiers = [
   {
     id: 'pro_max',
     name: 'Gói 3 - Pro Max',
-    price: 499000,
+    price: 569000,
     period: 'VNĐ',
     description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
     features: [
@@ -143,7 +143,7 @@ export default function PricingPage() {
                         <span className="text-lg font-semibold text-gray-900">Gói 1</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-primary-600">169K</div>
+                        <div className="text-2xl font-bold text-primary-600">199K</div>
                         <div className="text-xs text-gray-500">VNĐ</div>
                       </div>
                     </div>
@@ -160,7 +160,7 @@ export default function PricingPage() {
                         <span className="text-lg font-semibold text-gray-900">Gói 2 - Pro</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-600">289K</div>
+                        <div className="text-2xl font-bold text-blue-600">379K</div>
                         <div className="text-xs text-gray-500">VNĐ</div>
                       </div>
                     </div>
@@ -178,7 +178,7 @@ export default function PricingPage() {
                         <span className="text-lg font-semibold text-gray-900">Gói 3 - Pro Max</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-purple-600">499K</div>
+                        <div className="text-2xl font-bold text-purple-600">569K</div>
                         <div className="text-xs text-gray-500">VNĐ</div>
                       </div>
                     </div>

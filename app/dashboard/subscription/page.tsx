@@ -35,7 +35,7 @@ const pricingTiers = [
   {
     id: 'basic',
     name: 'Gói 1',
-    price: 169000,
+    price: 199000,
     duration: '30 ngày',
     features: {
       plans: 1,
@@ -60,7 +60,7 @@ const pricingTiers = [
   {
     id: 'pro',
     name: 'Gói 2 - Pro',
-    price: 289000,
+    price: 379000,
     duration: '30 ngày',
     features: {
       plans: 2,
@@ -86,7 +86,7 @@ const pricingTiers = [
   {
     id: 'pro_max',
     name: 'Gói 3 - Pro Max',
-    price: 499000,
+    price: 569000,
     duration: '30 ngày',
     features: {
       plans: 5,
