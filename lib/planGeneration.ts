@@ -500,17 +500,17 @@ export async function generateLongPlanMultiStep(
   ]
 
   // Bố cục cho gói Free (linh hoạt, tập trung chất lượng)
+  // Bố cục Free linh hoạt, ưu tiên phân tích sâu, trình bày tự nhiên như bản tốt nhất từng xuất hiện
   const freeSections: { key: string; title: string; weight: number; extra?: string }[] = [
-    { key: 'title', title: '1. Tiêu đề', weight: 1 },
-    { key: 'overview', title: '2. Tóm tắt & Phân tích tình hình hiện tại', weight: 3, extra: 'Bao gồm: mục tiêu, hồ sơ cá nhân, bối cảnh, tình hình tài chính hiện tại.' },
-    { key: 'swot', title: '3. Phân tích SWOT cá nhân', weight: 2, extra: 'Bảng 4 cột: Điểm mạnh, Điểm yếu, Cơ hội, Thách thức.' },
-    { key: 'goals', title: '4. Phân tích mục tiêu chi tiết', weight: 2, extra: 'Mục tiêu SMART, phân tích tài chính, timeline cụ thể.' },
-    { key: 'skills', title: '5. Phân tích kỹ năng & chuyên môn', weight: 2, extra: 'Kỹ năng hiện có, kỹ năng cần phát triển, chuyên môn liên quan.' },
-    { key: 'business', title: '6. Loại hình kinh doanh phù hợp', weight: 3, extra: 'Các mô hình kinh doanh phù hợp với profile, khả năng tạo thu nhập, rủi ro, timeline.' },
-    { key: 'strategy', title: '7. Chiến lược & phương án tài chính', weight: 3, extra: 'Phương án: tiết kiệm, đầu tư, kinh doanh. Hành động chi tiết cho từng phương án.' },
-    { key: 'timeline', title: '8. Kế hoạch chi tiết theo thời gian', weight: 3, extra: 'Mốc thời gian: năm, quý, tháng. Hành động cụ thể, cặn kẽ cho từng giai đoạn.' },
-    { key: 'learning', title: '9. Tài liệu học tập & tài nguyên', weight: 2, extra: 'Link thực, YouTube ≥10k sub, tiếng Anh ưu tiên, kèm từ khoá tìm kiếm.' },
-    { key: 'psychology', title: '10. Psychology & Mindset', weight: 1, extra: 'Khích lệ, động lực, cách vượt qua rào cản tâm lý.' }
+    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 4, extra: 'Phân tích sâu về bản thân, kỹ năng, kinh nghiệm, điểm mạnh/yếu, dữ liệu thực tế, insight, ví dụ, số liệu.' },
+    { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 3, extra: 'Phân tích mục tiêu cụ thể, động lực, lý do chọn, SMART, gap phân tích.' },
+    { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 2, extra: 'Thu nhập hiện tại, tiết kiệm, phân tích gap, so sánh thực tế.' },
+    { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3, extra: 'Gợi ý mô hình kinh doanh, đầu tư, phân tích rủi ro, ví dụ thực tiễn.' },
+    { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 2, extra: 'Chiến lược tiết kiệm, đầu tư, cách áp dụng thực tế.' },
+    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 3, extra: 'Lộ trình từng năm/quý/tháng, hành động chi tiết, checklist.' },
+    { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 2, extra: 'Link thật, kênh uy tín, từ khoá tìm kiếm, mô tả chi tiết, cách áp dụng.' },
+    { key: 'mindset', title: '8. Psychology & Mindset', weight: 1, extra: 'Khích lệ, động lực, mindset, cách vượt qua rào cản.' },
+    { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1, extra: 'Tóm tắt, nhấn mạnh hành động, nhắc lại mục tiêu.' }
   ]
 
   const sections = tier === 'free' ? freeSections : paidSections
