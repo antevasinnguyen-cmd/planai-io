@@ -91,8 +91,9 @@ export async function POST(request: NextRequest) {
       Object.assign(userProfile, extracted)
     }
     
-    // Generate cache key for this plan request
-    const cacheKey = `plan_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`
+    // Generate cache key for this plan request (bump version to avoid stale cached layout)
+    const CACHE_VERSION = 'v3_free_layout_validate_links';
+    const cacheKey = `plan_${CACHE_VERSION}_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`
     
     // Check if we have a cached plan
     const { data: cachedPlan } = await getCachedResponse(cacheKey)
@@ -115,7 +116,22 @@ export async function POST(request: NextRequest) {
         const { data: subscription } = await getUserSubscription(user.id)
         const resolvedTier = subscription?.tier || usageCheck.tier || 'free'
         const tierLimits = getSubscriptionLimits(resolvedTier)
-        const enrichedCollectedInfo = { ...(collectedInfo || {}), chat_summary: chatSummary, tier: resolvedTier, maxWords: tierLimits.words }
+        const enrichedCollectedInfo = {
+          ...(collectedInfo || {}),
+          // Merge extracted profile for reliability
+          goal: userProfile.financial_goal,
+          income: userProfile.current_income,
+          current_income: userProfile.current_income,
+          occupation: userProfile.occupation,
+          timeline: userProfile.timeline,
+          location: userProfile.location,
+          savings: userProfile.savings,
+          readiness: userProfile.readiness,
+          // Context & tier limits
+          chat_summary: chatSummary,
+          tier: resolvedTier,
+          maxWords: tierLimits.words
+        }
         const goalsText = userProfile.financial_goal || (userProfile.description || 'Mục tiêu tài chính cá nhân')
         const planTitle = userProfile.financial_goal
           ? `Kế hoạch: ${userProfile.financial_goal}`

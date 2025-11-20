@@ -463,14 +463,20 @@ export async function generateLongPlanMultiStep(
   const MAX_WORDS = tier === 'free' ? 5000 : 50000
   const TARGET = Math.min(MAX_WORDS, Math.max(MIN_WORDS, Number(collectedInfo?.maxWords) || MIN_WORDS))
 
+  const normalizeCurrency = (v: any, suffix: string) => {
+    const num = typeof v === 'number' ? v : (typeof v === 'string' && v.trim() ? Number(v.replace(/[.,\s]/g, '')) : NaN)
+    return Number.isFinite(num) && num > 0 ? `${num.toLocaleString('vi-VN')} ${suffix}` : 'Chưa cung cấp'
+  }
+  const normalizeText = (v: any) => (v && String(v).trim().length > 0 ? String(v) : 'Chưa cung cấp')
+
   const baseContext = `Thông tin người dùng (tóm tắt):\n` +
-    `- Mục tiêu: ${goal}\n` +
-    `- Thu nhập: ${collectedInfo?.income ? `${collectedInfo.income.toLocaleString()} VNĐ/tháng` : 'Chưa cung cấp'}\n` +
-    `- Nghề nghiệp hiện tại: ${collectedInfo?.occupation || 'Chưa cung cấp'}\n` +
-    `- Thời gian: ${collectedInfo?.timeline || 'Chưa cung cấp'}\n` +
-    `- Vị trí: ${collectedInfo?.location || 'Chưa cung cấp'}\n` +
-    `- Tiết kiệm hiện có: ${collectedInfo?.savings ? `${collectedInfo.savings.toLocaleString()} VNĐ` : 'Chưa cung cấp'}\n` +
-    `- Mức độ sẵn sàng: ${collectedInfo?.readiness || 'Chưa cung cấp'}\n`
+    `- Mục tiêu: ${normalizeText(collectedInfo?.goal || goal)}\n` +
+    `- Thu nhập: ${normalizeCurrency(collectedInfo?.income ?? collectedInfo?.current_income, 'VNĐ/tháng')}\n` +
+    `- Nghề nghiệp hiện tại: ${normalizeText(collectedInfo?.occupation)}\n` +
+    `- Thời gian: ${normalizeText(collectedInfo?.timeline)}\n` +
+    `- Vị trí: ${normalizeText(collectedInfo?.location)}\n` +
+    `- Tiết kiệm hiện có: ${normalizeCurrency(collectedInfo?.savings, 'VNĐ')}\n` +
+    `- Mức độ sẵn sàng: ${normalizeText(collectedInfo?.readiness)}\n`
 
   // Bố cục cho gói trả phí (24 mục)
   const paidSections: { key: string; title: string; weight: number; extra?: string }[] = [
@@ -523,8 +529,10 @@ export async function generateLongPlanMultiStep(
       'Bạn là chuyên gia lập kế hoạch tài chính cá nhân hóa cho người Việt Nam.',
       'Mục đích: Tạo bản kế hoạch CHUYÊN SÂU, CÁ NHÂN HÓA ĐỘC QUYỀN dựa trên dữ liệu đầu vào từ chat.',
       '',
-      'BẮT BUỘC TUÂN THỦ ĐẦY ĐỦ 24 MỤC SAU (không được thiếu, không gộp, không bỏ sót):',
-      paidSections.map(s => `- ${s.title}`).join('\n'),
+      (tier === 'free'
+        ? ['BỐ CỤC FREE LINH HOẠT (tham chiếu, không ép cứng):', freeSections.map(s => `- ${s.title}`).join('\n')].join('\n')
+        : ['BẮT BUỘC TUÂN THỦ ĐẦY ĐỦ 24 MỤC SAU (không được thiếu, không gộp, không bỏ sót):', paidSections.map(s => `- ${s.title}`).join('\n')].join('\n')
+      ),
       '',
       'KIỂM TRA CHÉO & PHÂN TÍCH NHIỀU LỚP:',
       '- Mỗi mục phải kiểm tra lại dữ liệu đầu vào, đối chiếu với các mục khác, đảm bảo không mâu thuẫn, không thiếu ý.',
@@ -543,7 +551,7 @@ export async function generateLongPlanMultiStep(
     ].join('\n')
   }
 
-  // Helper: Validate and fix links (Lớp 2 - Post-processing)
+  // Helper: Validate and fix content per section (links + general placeholders)
   const validateAndFixLinks = (content: string, sectionKey: string): string => {
     let fixed = content
 
@@ -551,23 +559,38 @@ export async function generateLongPlanMultiStep(
     if (sectionKey === 'learning') {
       // Replace link giả/chung chung
       fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org(?!\/learn)|edx\.org(?!\/course)|google\.com(?!\/search)|linkedin\.com\/learning(?!\/)|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-      
+
       // Replace link web Việt Nam (trừ brandcamp.asia)
       fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(?!brandcamp\.asia)[a-zA-Z0-9-]+\.vn\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-      
+
+      // Dòng 'Link:' không có URL thực -> chuyển thành gợi ý từ khoá
+      fixed = fixed.replace(/^(\s*[-*]?\s*Link\s*:\s*)(?!https?:\/\/)(?!\[TỪ KHOÁ)/gim, `$1[TỪ KHOÁ TÌM KIẾM: gõ tên tài liệu + nền tảng uy tín (Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia)]`)
+
       // Nếu không có link thật, thêm gợi ý từ khoá
       if (!fixed.includes('http')) {
         fixed += '\n\n**GỢI Ý TÌM KIẾM:** Vui lòng tra cứu trên các nền tảng uy tín quốc tế: Coursera, LinkedIn Learning, Google, TED, Skillshare, hoặc Brandcamp.asia (Việt Nam) với các từ khoá liên quan đến mục tiêu và kỹ năng của bạn.'
       }
     }
 
+    // General placeholder cleanup for all sections
+    const normIncome = normalizeCurrency((collectedInfo as any)?.income ?? (collectedInfo as any)?.current_income, 'VNĐ/tháng')
+    const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
+    const normTimeline = normalizeText((collectedInfo as any)?.timeline)
+    const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
+
+    fixed = fixed
+      .replace(/(Thu\s*nhập\s*(HIỆN\s*TẠI|hiện\s*tại)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normIncome}`)
+      .replace(/(Tiết\s*kiệm\s*hiện\s*có[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normSavings}`)
+      .replace(/(Thời\s*gian\s*(thực\s*hiện|mục\s*tiêu|timeline)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normTimeline}`)
+      .replace(/(Mục\s*tiêu\s*tài\s*chính[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normGoal}`)
+
     return fixed
   }
 
   // Helper: kiểm tra nội dung có placeholder, lặp prompt, hoặc quá ngắn
-  const needsRewrite = (content: string, sectionKey: string, minWords = 200) => {
+  const needsRewrite = (content: string, sectionKey?: string, minWords = 200) => {
     if (!content) return true
-    if (/\b(true|chưa cung cấp|\[.*?\]|placeholder|URL cụ thể|Tên|Link|VALIDATION|prompt yêu cầu)\b/i.test(content)) return true
+    if (/\b(true|chưa cung cấp|không đủ dữ liệu|\[.*?\]|placeholder|URL cụ thể|Tên|Link\s*:\s*\(|VALIDATION|prompt yêu cầu)\b/i.test(content)) return true
     if (content.length < 100) return true
     if ((content.match(/\w+/g) || []).length < minWords) return true
     if (sectionKey === 'learning' && !content.includes('http') && !content.toLowerCase().includes('từ khoá')) return true
@@ -584,7 +607,7 @@ export async function generateLongPlanMultiStep(
 
     let content = ''
     let retry = 0
-    while (retry < 3) {
+    while (retry < 4) {
       const messages = [
         system,
         { role: 'user' as const, content: `${title}\n\n${baseContext}${userDataNote}\n\nYÊU CẦU CHO MỤC NÀY:\n- Nội dung CHUYÊN SÂU, CỤ THỂ, có thể hành động ngay.\n- Dài khoảng ${targetWords} từ (có thể vượt nhẹ nếu cần).\n- Nếu sử dụng Mermaid, THÊM "Bản thay thế thuần nội dung" ngay bên dưới.\n${finalInstruction ? '- Ghi chú bổ sung: ' + finalInstruction : ''}` }
