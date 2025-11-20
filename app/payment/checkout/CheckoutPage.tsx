@@ -8,18 +8,13 @@ import { getClientUser, getUserProfile } from '@/lib/supabase'
 const plans = {
   basic: {
     name: 'Gói 1',
-    price: 199000,
+    price: 249000,
     features: ['30 Chat với AI', '1 Ebook plan (5-8k từ)', 'Xuất PDF/Word/Docs', 'Phân tích tâm linh']
   },
   pro: {
     name: 'Gói 2 - Pro',
-    price: 379000,
+    price: 479000,
     features: ['70 Chat với AI', '3 Ebook plan (9-12k từ)', 'Xuất PDF/Word/Docs', 'Phân tích tâm linh', 'Blog trả phí']
-  },
-  pro_max: {
-    name: 'Gói 3 - Pro Max',
-    price: 569000,
-    features: ['150 Chat với AI', '6 Ebook plan (15-20k từ)', 'Xuất PDF/Word/Docs', 'Phân tích tâm linh', 'Blog trả phí', 'Hỗ trợ 24/7']
   }
 }
 

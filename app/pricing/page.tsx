@@ -28,7 +28,7 @@ const pricingTiers = [
   {
     id: 'basic',
     name: 'Gói 1',
-    price: 199000,
+    price: 249000,
     period: 'VNĐ',
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     features: [
@@ -49,7 +49,7 @@ const pricingTiers = [
   {
     id: 'pro',
     name: 'Gói 2 - Pro',
-    price: 379000,
+    price: 479000,
     period: 'VNĐ',
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
@@ -67,28 +67,6 @@ const pricingTiers = [
     buttonText: 'Chọn gói Pro',
     buttonStyle: 'btn-primary',
     popular: true
-  },
-  {
-    id: 'pro_max',
-    name: 'Gói 3 - Pro Max',
-    price: 569000,
-    period: 'VNĐ',
-    description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
-    features: [
-      '270 Chat với AI lập kế hoạch',
-      '5 Ebook plan cá nhân hóa độc quyền dài',
-      'Phân tích đầy đủ + Lộ trình',
-      'Đề xuất hành động để đạt được mục tiêu',
-      'Plan chuyên sâu + tất cả tài liệu liên quan',
-      'Xuất file PDF, Word, Docs',
-      'Xuất sang Notion, Google Trang Tính, Google Tài liệu',
-      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
-      'Mở khóa tính năng đọc các bài Blog trả phí',
-      'Truy cập sớm các tính năng mới nhất'
-    ],
-    buttonText: 'Chọn Pro Max',
-    buttonStyle: 'btn-primary',
-    popular: false
   }
 ]
 
@@ -143,7 +121,7 @@ export default function PricingPage() {
                         <span className="text-lg font-semibold text-gray-900">Gói 1</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-primary-600">199K</div>
+                        <div className="text-2xl font-bold text-primary-600">249K</div>
                         <div className="text-xs text-gray-500">VNĐ</div>
                       </div>
                     </div>
@@ -160,29 +138,12 @@ export default function PricingPage() {
                         <span className="text-lg font-semibold text-gray-900">Gói 2 - Pro</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-600">379K</div>
+                        <div className="text-2xl font-bold text-blue-600">479K</div>
                         <div className="text-xs text-gray-500">VNĐ</div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Gói 3 - Pro Max */}
-                  <div className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex">
-                          <Shirt className="w-12 h-12 text-gray-900" strokeWidth={1.5} />
-                          <Shirt className="w-12 h-12 text-gray-900 -ml-4" strokeWidth={1.5} />
-                          <Shirt className="w-12 h-12 text-gray-900 -ml-4" strokeWidth={1.5} />
-                        </div>
-                        <span className="text-lg font-semibold text-gray-900">Gói 3 - Pro Max</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-purple-600">569K</div>
-                        <div className="text-xs text-gray-500">VNĐ</div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

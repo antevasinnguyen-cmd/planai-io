@@ -13,9 +13,8 @@ interface PaymentSuccessClientProps {
 }
 
 const PLAN_INFO = {
-  basic: { name: 'Gói 1', price: 199000 },
-  pro: { name: 'Gói 2 - Pro', price: 379000 },
-  pro_max: { name: 'Gói 3 - Pro Max', price: 569000 }
+  basic: { name: 'Gói 1', price: 249000 },
+  pro: { name: 'Gói 2 - Pro', price: 479000 }
 }
 
 export default function PaymentSuccessClient({ orderId, amount, planId, provider }: PaymentSuccessClientProps) {

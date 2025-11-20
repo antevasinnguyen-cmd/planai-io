@@ -35,7 +35,7 @@ const pricingTiers = [
   {
     id: 'basic',
     name: 'Gói 1',
-    price: 199000,
+    price: 249000,
     duration: '30 ngày',
     features: {
       plans: 1,
@@ -60,7 +60,7 @@ const pricingTiers = [
   {
     id: 'pro',
     name: 'Gói 2 - Pro',
-    price: 379000,
+    price: 479000,
     duration: '30 ngày',
     features: {
       plans: 2,
@@ -78,32 +78,6 @@ const pricingTiers = [
       'Plan chuyên sâu + tất cả tài liệu liên quan',
       'Xuất file PDF, Word, Docs',
       'Xuất sang Notion, Google Trang tính, Google Tài liệu',
-      '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
-      'Mở khóa tính năng đọc các bài Blog trả phí',
-      'Truy cập sớm các tính năng mới nhất'
-    ]
-  },
-  {
-    id: 'pro_max',
-    name: 'Gói 3 - Pro Max',
-    price: 569000,
-    duration: '30 ngày',
-    features: {
-      plans: 5,
-      chats: 270,
-      words: 100000
-    },
-    description: 'Giải pháp hoàn hảo cho những người nghiêm túc với tài chính',
-    color: 'purple',
-    popular: false,
-    detailedFeatures: [
-      '270 Chat với AI lập kế hoạch',
-      '5 Ebook plan cá nhân hóa độc quyền dài',
-      'Phân tích đầy đủ + Lộ trình',
-      'Đề xuất hành động để đạt được mục tiêu',
-      'Plan chuyên sâu + tất cả tài liệu liên quan',
-      'Xuất file PDF, Word, Docs',
-      'Xuất sang Notion, Google Trang Tính, Google Tài liệu',
       '(Add-on) Phân tích kết hợp tử vi, số mệnh, thần số học',
       'Mở khóa tính năng đọc các bài Blog trả phí',
       'Truy cập sớm các tính năng mới nhất'
