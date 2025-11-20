@@ -543,10 +543,37 @@ export async function generateLongPlanMultiStep(
     ].join('\n')
   }
 
-  const make = async (title: string, instruction: string, targetWords: number) => {
+  // Helper: Validate and fix links (Lớp 2 - Post-processing)
+  const validateAndFixLinks = (content: string, sectionKey: string): string => {
+    let fixed = content
+
+    // Nếu là mục "learning" (tài liệu học tập), kiểm tra nghiêm ngặt
+    if (sectionKey === 'learning') {
+      // Replace link giả/chung chung
+      fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org(?!\/learn)|edx\.org(?!\/course)|google\.com(?!\/search)|linkedin\.com\/learning(?!\/)|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
+      
+      // Replace link web Việt Nam (trừ brandcamp.asia)
+      fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(?!brandcamp\.asia)[a-zA-Z0-9-]+\.vn\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
+      
+      // Nếu không có link thật, thêm gợi ý từ khoá
+      if (!fixed.includes('http')) {
+        fixed += '\n\n**GỢI Ý TÌM KIẾM:** Vui lòng tra cứu trên các nền tảng uy tín quốc tế: Coursera, LinkedIn Learning, Google, TED, Skillshare, hoặc Brandcamp.asia (Việt Nam) với các từ khoá liên quan đến mục tiêu và kỹ năng của bạn.'
+      }
+    }
+
+    return fixed
+  }
+
+  const make = async (title: string, instruction: string, targetWords: number, sectionKey?: string) => {
+    // Lớp 1: Tăng cường instruction cho mục "learning"
+    let finalInstruction = instruction
+    if (sectionKey === 'learning') {
+      finalInstruction = `${instruction}\n\nQUAN TRỌNG - TUÂN THỦ NGHIÊM NGẶT:\n- CHỈ lấy link THẬT từ các nguồn uy tín quốc tế (Coursera, LinkedIn Learning, Google, TED, Skillshare).\n- Link YouTube PHẢI là link KÊNH (youtube.com/channel/...), ≥10k sub, tiếng Anh, đúng kỹ năng.\n- KHÔNG gợi ý web Việt Nam trừ https://www.brandcamp.asia/.\n- Nếu KHÔNG chắc link, PHẢI ghi rõ TỪ KHOÁ TÌM KIẾM (5-10 từ khoá cụ thể) và nền tảng uy tín.\n- TUYỆT ĐỐI KHÔNG dùng: example.com, placeholder.com, youtube.com (không phải kênh), coursera.org (không phải khóa học cụ thể).`
+    }
+
     const messages = [
       system,
-      { role: 'user' as const, content: `${title}\n\n${baseContext}\n\nYÊU CẦU CHO MỤC NÀY:\n- Nội dung CHUYÊN SÂU, CỤ THỂ, có thể hành động ngay.\n- Dài khoảng ${targetWords} từ (có thể vượt nhẹ nếu cần).\n- Nếu sử dụng Mermaid, THÊM "Bản thay thế thuần nội dung" ngay bên dưới.\n${instruction ? '- Ghi chú bổ sung: ' + instruction : ''}` }
+      { role: 'user' as const, content: `${title}\n\n${baseContext}\n\nYÊU CẦU CHO MỤC NÀY:\n- Nội dung CHUYÊN SÂU, CỤ THỂ, có thể hành động ngay.\n- Dài khoảng ${targetWords} từ (có thể vượt nhẹ nếu cần).\n- Nếu sử dụng Mermaid, THÊM "Bản thay thế thuần nội dung" ngay bên dưới.\n${finalInstruction ? '- Ghi chú bổ sung: ' + finalInstruction : ''}` }
     ]
     const completion = await openai.chat.completions.create({
       model: selectModel(TaskType.COMPLEX_PLANNING),
@@ -554,13 +581,20 @@ export async function generateLongPlanMultiStep(
       max_tokens: 1500,
       temperature: 0.6,
     })
-    return completion.choices[0]?.message?.content?.trim() || ''
+    let content = completion.choices[0]?.message?.content?.trim() || ''
+    
+    // Lớp 2: Post-processing - validate and fix links
+    if (sectionKey) {
+      content = validateAndFixLinks(content, sectionKey)
+    }
+    
+    return content
   }
 
   let parts: string[] = []
   for (const s of sections) {
     const budget = wordBudgetFor(s.weight)
-    const content = await make(s.title, s.extra || '', budget)
+    const content = await make(s.title, s.extra || '', budget, s.key)  // Pass sectionKey để validate
     parts.push(`## ${s.title}\n\n${content}`)
   }
 
