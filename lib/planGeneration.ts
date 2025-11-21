@@ -447,6 +447,88 @@ export const formatChecklists = (
   return formatted
 }
 
+/**
+ * Creates a structured analytical report from raw user input.
+ * This acts as the "Analytical Brain" to standardize data before plan generation.
+ */
+const createAnalyticalReport = async (collectedInfo: any, goal: string): Promise<any> => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const userInputSummary = JSON.stringify({
+    goal,
+    ...collectedInfo
+  });
+
+  const systemPrompt = `
+Bạn là một chuyên gia phân tích dữ liệu tài chính. Nhiệm vụ của bạn là đọc một khối dữ liệu thô từ người dùng và chuyển đổi nó thành một bản báo cáo JSON có cấu trúc chặt chẽ. TUYỆT ĐỐI chỉ trả về JSON, không có bất kỳ văn bản nào khác.
+
+CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
+{
+  "analysis": {
+    "current_income": {
+      "min": number | null,
+      "max": number | null,
+      "average": number | null,
+      "text": string
+    },
+    "current_savings": number | null,
+    "asset_goals": [
+      { "item": string, "value": number, "timeline": string }
+    ],
+    "total_asset_goal": number,
+    "income_goal": number | null,
+    "timeline": string | null,
+    "skills": string[] | null,
+    "occupation": string | null,
+    "location": string | null,
+    "readiness": string | null
+  }
+}
+
+QUY TẮC TRÍCH XUẤT:
+1.  **current_income**: Nếu là một khoảng (vd: "8 - 10 triệu"), điền "min", "max", và "average". Nếu là một số, điền "average". Luôn chuyển đổi "triệu" thành 1,000,000.
+2.  **asset_goals**: Liệt kê TẤT CẢ các mục tiêu tích lũy tài sản (nhà, xe, tiết kiệm). TÍNH TỔNG chúng vào "total_asset_goal".
+3.  **income_goal**: Ghi nhận mục tiêu thu nhập (vd: 1 tỷ/tháng) riêng, không cộng vào "total_asset_goal".
+4.  **Luôn trả về số**: Mọi giá trị tiền tệ phải là kiểu number, không phải string.
+`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: selectModel(TaskType.COMPLEX_PLANNING),
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Dữ liệu thô: ${userInputSummary}` }
+      ],
+      max_tokens: 1000,
+      temperature: 0.0,
+      response_format: { type: 'json_object' },
+    });
+
+    const jsonResponse = completion.choices[0]?.message?.content;
+    if (jsonResponse) {
+      return JSON.parse(jsonResponse);
+    }
+    throw new Error('AI response was empty.');
+  } catch (error) {
+    console.error('Error creating analytical report:', error);
+    // Fallback to a simple structure if analysis fails
+    return {
+      analysis: {
+        current_income: { average: collectedInfo.income || 0, text: String(collectedInfo.income) },
+        current_savings: collectedInfo.savings || 0,
+        asset_goals: [{ item: goal, value: 0, timeline: collectedInfo.timeline }],
+        total_asset_goal: 0,
+        income_goal: null,
+        timeline: collectedInfo.timeline,
+        skills: collectedInfo.skills,
+        occupation: collectedInfo.occupation,
+        location: collectedInfo.location,
+        readiness: collectedInfo.readiness,
+      }
+    };
+  }
+};
+
 // ---
 // Multi-step long-form plan generation to bypass single-call token limits
 // Applies to all tiers; free clamps ~5k, paid targets 20k–50k words.
@@ -457,6 +539,10 @@ export async function generateLongPlanMultiStep(
 ): Promise<string> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const tier: string = String(collectedInfo?.tier || 'free')
+
+  // Step 1: Create the Analytical Report (The "Brain")
+  const analyticalReport = await createAnalyticalReport(collectedInfo, goal);
+  const analyzedData = analyticalReport.analysis;
 
   // Tier-specific word limits
   const MIN_WORDS = tier === 'free' ? 3000 : 20000
@@ -469,14 +555,16 @@ export async function generateLongPlanMultiStep(
   }
   const normalizeText = (v: any) => (v && String(v).trim().length > 0 ? String(v) : 'Chưa cung cấp')
 
-  const baseContext = `Thông tin người dùng (tóm tắt):\n` +
-    `- Mục tiêu: ${normalizeText(collectedInfo?.goal || goal)}\n` +
-    `- Thu nhập: ${normalizeCurrency(collectedInfo?.income ?? collectedInfo?.current_income, 'VNĐ/tháng')}\n` +
-    `- Nghề nghiệp hiện tại: ${normalizeText(collectedInfo?.occupation)}\n` +
-    `- Thời gian: ${normalizeText(collectedInfo?.timeline)}\n` +
-    `- Vị trí: ${normalizeText(collectedInfo?.location)}\n` +
-    `- Tiết kiệm hiện có: ${normalizeCurrency(collectedInfo?.savings, 'VNĐ')}\n` +
-    `- Mức độ sẵn sàng: ${normalizeText(collectedInfo?.readiness)}\n`
+  // Step 2: Build context from the validated Analytical Report
+  const baseContext = `Thông tin người dùng (đã được phân tích và xác thực):\n` +
+    `- Mục tiêu chính: ${normalizeText(analyzedData.asset_goals.map((g: any) => `${g.item} (${normalizeCurrency(g.value, 'VNĐ')})`).join(', ')) || goal}\n` +
+    `- Tổng mục tiêu tài sản: ${normalizeCurrency(analyzedData.total_asset_goal, 'VNĐ')}\n` +
+    `- Mục tiêu thu nhập: ${normalizeCurrency(analyzedData.income_goal, 'VNĐ/tháng')}\n` +
+    `- Thu nhập hiện tại: ${normalizeText(analyzedData.current_income.text)}\n` +
+    `- Tiết kiệm hiện có: ${normalizeCurrency(analyzedData.current_savings, 'VNĐ')}\n` +
+    `- Nghề nghiệp: ${normalizeText(analyzedData.occupation)}\n` +
+    `- Kỹ năng: ${normalizeText(analyzedData.skills?.join(', '))}\n` +
+    `- Thời gian thực hiện: ${normalizeText(analyzedData.timeline)}\n`
 
   // Bố cục cho gói trả phí (24 mục)
   const paidSections: { key: string; title: string; weight: number; extra?: string }[] = [
@@ -605,7 +693,8 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
   const make = async (title: string, instruction: string, targetWords: number, sectionKey?: string) => {
     // Lớp 1: Tăng cường instruction cho từng mục, ép AI dùng dữ liệu user chat
     let finalInstruction = instruction
-    let userDataNote = `\n\nDỮ LIỆU NGƯỜI DÙNG: Mục tiêu: ${goal} | Thu nhập: ${collectedInfo?.income || 'Chưa cung cấp'} | Kỹ năng: ${collectedInfo?.skills || 'Chưa cung cấp'} | Location: ${collectedInfo?.location || 'Chưa cung cấp'} | Readiness: ${collectedInfo?.readiness || 'Chưa cung cấp'} | Savings: ${collectedInfo?.savings || 'Chưa cung cấp'} | Timeline: ${collectedInfo?.timeline || 'Chưa cung cấp'}\n\nBẮT BUỘC sử dụng đúng các dữ liệu này cho phân tích, KHÔNG được placeholder, KHÔNG lặp lại prompt, nếu thiếu dữ liệu phải giả định hợp lý và ghi rõ. Mỗi mục tối thiểu ${targetWords} từ, phân tích sâu, có ví dụ, số liệu, insight, không máy móc.`
+    // The userDataNote now also uses the validated data from the analytical report.
+    let userDataNote = `\n\nDỮ LIỆU ĐÃ XÁC THỰC CỦA NGƯỜI DÙNG:\n${baseContext}\n\nBẮT BUỘC sử dụng đúng các dữ liệu ĐÃ XÁC THỰC này cho phân tích, KHÔNG được placeholder, KHÔNG lặp lại prompt, nếu thiếu dữ liệu phải giả định hợp lý và ghi rõ. Mỗi mục tối thiểu ${targetWords} từ, phân tích sâu, có ví dụ, số liệu, insight, không máy móc.`
     if (sectionKey === 'learning') {
       finalInstruction = `${instruction}\n\nQUAN TRỌNG - TUÂN THỦ NGHIÊM NGẶT:\n- CHỈ lấy link THẬT từ các nguồn uy tín quốc tế (Coursera, LinkedIn Learning, Google, TED, Skillshare).\n- Link YouTube PHẢI là link KÊNH (youtube.com/channel/...), ≥10k sub, tiếng Anh, đúng kỹ năng.\n- KHÔNG gợi ý web Việt Nam trừ https://www.brandcamp.asia/.\n- Nếu KHÔNG chắc link, PHẢI ghi rõ TỪ KHOÁ TÌM KIẾM (5-10 từ khoá cụ thể) và nền tảng uy tín.\n- TUYỆT ĐỐI KHÔNG dùng: example.com, placeholder.com, youtube.com (không phải kênh), coursera.org (không phải khóa học cụ thể).`
     }
