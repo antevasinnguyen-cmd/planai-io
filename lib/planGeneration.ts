@@ -454,10 +454,17 @@ export const formatChecklists = (
 const createAnalyticalReport = async (collectedInfo: any, goal: string): Promise<any> => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const userInputSummary = JSON.stringify({
-    goal,
-    ...collectedInfo
-  });
+  // CRITICAL: Include chat_summary for full context extraction
+  const chatContext = collectedInfo.chat_summary || '';
+  const userInputSummary = `
+MỤC TIÊU: ${goal}
+
+DỮ LIỆU TỪ FORM:
+${JSON.stringify(collectedInfo, null, 2)}
+
+TOÀN BỘ NỘI DUNG CHAT CỦA NGƯỜI DÙNG (QUAN TRỌNG - ĐỌC KỸ MỌI CON SỐ):
+${chatContext}
+`;
 
   const systemPrompt = `
 Bạn là một chuyên gia phân tích dữ liệu tài chính. Nhiệm vụ của bạn là đọc một khối dữ liệu thô từ người dùng và chuyển đổi nó thành một bản báo cáo JSON có cấu trúc chặt chẽ. TUYỆT ĐỐI chỉ trả về JSON, không có bất kỳ văn bản nào khác.
@@ -485,12 +492,37 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
   }
 }
 
-QUY TẮC TRÍCH XUẤT:
-1.  **current_income**: Nếu là một khoảng (vd: "8 - 10 triệu"), điền "min", "max", và "average". Nếu là một số, điền "average". Luôn chuyển đổi "triệu" thành 1,000,000.
-2.  **asset_goals**: Liệt kê TẤT CẢ các mục tiêu tích lũy tài sản (nhà, xe, tiết kiệm). TÍNH TỔNG chúng vào "total_asset_goal".
-3.  **income_goal**: Ghi nhận mục tiêu thu nhập (vd: 1 tỷ/tháng) riêng, không cộng vào "total_asset_goal".
-4.  **Luôn trả về số**: Mọi giá trị tiền tệ phải là kiểu number, không phải string.
-5.  **location**: Chỉ điền nếu người dùng nêu rõ (ví dụ: "TP.HCM", "Hà Nội"). Nếu không có, trả về null. TUYỆT ĐỐI KHÔNG suy diễn từ các trường khác.
+QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT KỲ CON SỐ NÀO):
+
+1.  **current_income**: 
+    - Đọc KỸ chat để tìm "thu nhập", "kiếm được", "earning".
+    - Nếu là khoảng (vd: "8 - 10 triệu", "8-10tr"), điền "min", "max", "average".
+    - Nếu là một số, điền "average".
+    - Chuyển đổi: "triệu" = 1,000,000; "tỷ" = 1,000,000,000; "tr" = 1,000,000.
+    - VÍ DỤ: "8 đến 10 triệu" → min: 8000000, max: 10000000, average: 9000000.
+
+2.  **current_savings** (QUAN TRỌNG - THƯỜNG BỊ BỎ SÓT):
+    - Đọc KỸ chat để tìm "tiết kiệm", "đang có", "tài khoản", "savings", "số dư".
+    - VÍ DỤ: "Hiện tại tài khoản tiết kiệm đang có 300 triệu" → current_savings: 300000000.
+    - VÍ DỤ: "đang có 300tr" → current_savings: 300000000.
+    - Nếu KHÔNG tìm thấy, trả về 0 (KHÔNG phải null).
+    - TUYỆT ĐỐI KHÔNG bỏ qua con số này nếu người dùng đã nêu.
+
+3.  **asset_goals**: 
+    - Liệt kê TẤT CẢ các mục tiêu tích lũy tài sản (nhà, xe, tiết kiệm mục tiêu).
+    - TÍNH TỔNG chúng vào "total_asset_goal".
+    - VÍ DỤ: "mua nhà 3 tỷ, xe 800 triệu, tiết kiệm 10 tỷ" → total_asset_goal: 13800000000.
+
+4.  **income_goal**: 
+    - Ghi nhận mục tiêu thu nhập (vd: "kiếm 1 tỷ/tháng", "thu nhập 1 tỷ").
+    - Đây là PHƯƠNG TIỆN, KHÔNG cộng vào "total_asset_goal".
+    - VÍ DỤ: "mục tiêu kiếm 1 tỷ/tháng" → income_goal: 1000000000.
+
+5.  **Luôn trả về số**: Mọi giá trị tiền tệ phải là kiểu number (VÍ DỤ: 300000000), KHÔNG phải string.
+
+6.  **location**: Chỉ điền nếu người dùng nêu rõ (ví dụ: "TP.HCM", "Hà Nội", "Sài Gòn"). Nếu không có, trả về null.
+
+7.  **KIỂM TRA LẠI**: Sau khi trích xuất, đọc lại chat một lần nữa để đảm bảo KHÔNG bỏ sót bất kỳ con số nào về tiền (thu nhập, tiết kiệm, mục tiêu).
 `;
 
   try {
@@ -500,14 +532,19 @@ QUY TẮC TRÍCH XUẤT:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Dữ liệu thô: ${userInputSummary}` }
       ],
-      max_tokens: 1000,
+      max_tokens: 1500,
       temperature: 0.0,
       response_format: { type: 'json_object' },
     });
 
     const jsonResponse = completion.choices[0]?.message?.content;
     if (jsonResponse) {
-      return JSON.parse(jsonResponse);
+      const parsed = JSON.parse(jsonResponse);
+      // Internal validation: log warning if current_savings is 0 but chat mentions savings
+      if (parsed.analysis?.current_savings === 0 && chatContext.match(/tiết\s*kiệm.*?\d+|đang\s*có.*?\d+.*?(triệu|tỷ|tr)/i)) {
+        console.warn('⚠️ ANALYTICAL BRAIN WARNING: current_savings = 0 but chat mentions savings. Re-check extraction.');
+      }
+      return parsed;
     }
     throw new Error('AI response was empty.');
   } catch (error) {
@@ -658,8 +695,16 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       // Replace link web Việt Nam (trừ brandcamp.asia)
       fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(?!brandcamp\.asia)[a-zA-Z0-9-]+\.vn\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
 
+      // AGGRESSIVE: Remove ALL bracket placeholders in learning section
+      fixed = fixed.replace(/\[URL\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
+      fixed = fixed.replace(/\[Link\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
+      fixed = fixed.replace(/\[.*?(URL|Link|url|link).*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
+      
       // Dòng 'Link:' không có URL thực -> chuyển thành gợi ý từ khoá
       fixed = fixed.replace(/^(\s*[-*]?\s*Link\s*:\s*)(?!https?:\/\/)(?!\[TỪ KHOÁ)/gim, `$1[TỪ KHOÁ TÌM KIẾM: gõ tên tài liệu + nền tảng uy tín (Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia)]`)
+      
+      // Remove entire lines with "Link: [" but no real URL
+      fixed = fixed.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
 
       // Nếu không có link thật, thêm gợi ý từ khoá
       if (!fixed.includes('http')) {
@@ -685,9 +730,14 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
   // Helper: kiểm tra nội dung có placeholder, lặp prompt, hoặc quá ngắn
   const needsRewrite = (content: string, sectionKey?: string, minWords = 200) => {
     if (!content) return true
-    if (/\b(true|chưa cung cấp|không đủ dữ liệu|placeholder|Tên|Link\s*:\s*\(|VALIDATION|prompt yêu cầu)\b/i.test(content) || /\[(URL cụ thể|.*?)\]/i.test(content)) return true
+    // Detect common placeholders and invalid patterns
+    if (/\b(true|chưa cung cấp|không đủ dữ liệu|placeholder|Tên|Link\s*:\s*\(|VALIDATION|prompt yêu cầu)\b/i.test(content)) return true
+    // Detect bracket placeholders: [URL cụ thể], [Link cụ thể], [URL ...], [Link ...], etc.
+    if (/\[(URL|Link|url|link)\s*(cụ\s*thể|c\u1ee5\s*th\u1ec3)?\]/i.test(content)) return true
+    if (/\[.*?(URL|Link).*?\]/i.test(content) && !/\[T\u1eea\s*KHO\u00c1/i.test(content)) return true
     if (content.length < 100) return true
     if ((content.match(/\w+/g) || []).length < minWords) return true
+    // For learning section, must have real links OR keyword suggestions
     if (sectionKey === 'learning' && !content.includes('http') && !content.toLowerCase().includes('từ khoá')) return true
     return false
   }
@@ -752,17 +802,65 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     let t = text
     // Remove any example/placeholder domains anywhere
     t = t.replace(/https?:\/\/([a-zA-Z0-9-]+\.)?(example|placeholder|domain|yoursite|mysite)\.com\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-    // Remove bracket placeholders like [URL cụ thể]
-    t = t.replace(/\[(URL\s*cụ\s*thể.*?)\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    
+    // Remove ALL bracket placeholders (multiple patterns)
+    t = t.replace(/\[URL\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    t = t.replace(/\[Link\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    t = t.replace(/\[.*?URL.*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    t = t.replace(/Link:\s*\[.*?\]/gi, 'Link: [TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    
+    // Remove lines with "Link: [" but no actual URL
+    t = t.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
+    
     // Demote in-content subheadings (### or deeper) to bold lines
     t = t.replace(/^#{3,6}\s+(.*)$/gm, '**$1**')
+    
     // Remove any visible VALIDATION/internal checks blocks
     t = t.replace(/^(?:\s*\d+\.|\s*[-*])?\s*VALIDATION[\s\S]*?(?=\n\s*\n|$)/gmi, '')
     t = t.replace(/\bVALIDATION\b.*$/gmi, '')
+    
     return t
   }
 
   combined = sanitizePlan(combined)
+
+  // INTERNAL AUDITOR: Final validation before returning to user
+  const internalAuditor = (plan: string, data: any): string => {
+    let warnings: string[] = []
+    
+    // Check 1: Verify current_savings is displayed correctly
+    const savingsValue = data.current_savings || 0
+    if (savingsValue > 0) {
+      const savingsPattern = new RegExp(`${savingsValue.toLocaleString('vi-VN')}|${(savingsValue / 1000000).toFixed(0)}\\s*(triệu|tr)`, 'i')
+      if (!savingsPattern.test(plan)) {
+        warnings.push(`⚠️ AUDITOR: current_savings = ${savingsValue} VNĐ nhưng không xuất hiện trong plan. Đang bổ sung...`)
+        // Auto-fix: ensure savings appears in the plan context
+        const savingsText = `\n\n**LƯU Ý QUAN TRỌNG:** Tiết kiệm hiện có: ${savingsValue.toLocaleString('vi-VN')} VNĐ (${(savingsValue / 1000000).toFixed(0)} triệu VNĐ).\n`
+        plan = plan.replace(/(##\s*.*?Khoảng\s*cách.*?Gap.*?:)/i, `$1${savingsText}`)
+      }
+    }
+    
+    // Check 2: Verify no "Giả định: Tiết kiệm hiện có = 0" if user has savings
+    if (savingsValue > 0 && /Giả\s*định.*?Tiết\s*kiệm.*?=\s*0/i.test(plan)) {
+      warnings.push(`⚠️ AUDITOR: Phát hiện "Giả định: Tiết kiệm = 0" nhưng user có ${savingsValue} VNĐ. Đang sửa...`)
+      plan = plan.replace(/Giả\s*định:\s*Tiết\s*kiệm.*?=\s*0\s*VN[ĐD]/gi, `Tiết kiệm hiện có: ${savingsValue.toLocaleString('vi-VN')} VNĐ`)
+    }
+    
+    // Check 3: Verify no [URL cụ thể] or similar patterns remain
+    if (/\[.*?URL.*?\]|\[.*?Link.*?\]|\[.*?cụ\s*thể.*?\]/i.test(plan)) {
+      warnings.push('⚠️ AUDITOR: Phát hiện placeholder link còn sót. Đang loại bỏ...')
+      plan = plan.replace(/\[.*?(URL|Link|cụ\s*thể).*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    }
+    
+    // Log all warnings
+    if (warnings.length > 0) {
+      console.warn('🔍 INTERNAL AUDITOR REPORT:\n' + warnings.join('\n'))
+    }
+    
+    return plan
+  }
+
+  combined = internalAuditor(combined, analyzedData)
 
   // Clamp final length by trimming softly if over MAX_WORDS (rare)
   const tokens = combined.split(/\s+/)
