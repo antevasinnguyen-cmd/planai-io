@@ -679,7 +679,7 @@ export async function generateLongPlanMultiStep(
   // Bố cục cho gói Free (linh hoạt, tập trung chất lượng)
   // Bố cục Free linh hoạt, ưu tiên phân tích sâu, trình bày tự nhiên như bản tốt nhất từng xuất hiện
   const freeSections: { key: string; title: string; weight: number; extra?: string }[] = [
-    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 4, extra: 'Phân tích sâu về bản thân, kỹ năng, kinh nghiệm, điểm mạnh/yếu, dữ liệu thực tế, insight, ví dụ, số liệu.' },
+    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 4, extra: 'Liệt kê: mục tiêu tài chính, thu nhập hiện tại, kỹ năng, mong muốn (nếu user cung cấp trong chat). KHÔNG hiển thị Nơi sinh sống/Nghề nghiệp.' },
     { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 3, extra: 'Phân tích mục tiêu cụ thể, động lực, lý do chọn, SMART, gap phân tích.' },
     { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 2, extra: 'Thu nhập hiện tại, tiết kiệm, phân tích gap, so sánh thực tế.' },
     { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3, extra: 'Gợi ý mô hình kinh doanh, đầu tư, phân tích rủi ro, ví dụ thực tiễn.' },
@@ -782,40 +782,32 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
           '6) Brandcamp.asia (Việt Nam)',
           kw(['digital marketing basics', 'branding fundamentals', 'content strategy', 'performance marketing', 'social media strategy']),
           '',
-          'Lợi ích: tiết kiệm thời gian tìm đúng tài liệu; tăng tốc học có định hướng; xây nền tảng để scale doanh thu.',
-          'Lý do cần học: kiến thức là đòn bẩy cốt lõi; giúp ra quyết định dựa số liệu; rút ngắn đường đến mục tiêu.'
-        ].join('\n')
-      }
-
-      // Nếu không có link thật hoặc còn placeholder, chèn fallback chi tiết
-      const hasRealLink = /https?:\/\//i.test(fixed)
-      const hasAliasPlaceholder = /\blink_[a-z0-9_\-]+/i.test(fixed)
-      if (!hasRealLink || hasAliasPlaceholder) {
-        fixed += `\n\n${createKeywordFallback()}`
-      }
     }
 
-    // General placeholder cleanup for all sections
-    const normIncome = normalizeCurrency((collectedInfo as any)?.income ?? (collectedInfo as any)?.current_income, 'VNĐ/tháng')
+    // Nếu có bất kỳ link không hợp lệ hoặc không có link thật, luôn ép fallback PHƯƠNG ÁN B
+    const hasInvalidLink = /(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org|edx\.org|google\.com|linkedin\.com|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)/i.test(fixed)
+    const hasRealLink = /https?:\/\//i.test(fixed)
+    const hasAliasPlaceholder = /\blink_[a-z0-9_\-]+/i.test(fixed)
+    if (hasInvalidLink || !hasRealLink || hasAliasPlaceholder) {
+      fixed += `\n\n${createKeywordFallback()}`
     const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
     const normTimeline = normalizeText((collectedInfo as any)?.timeline)
     const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
-    const normLocation = normalizeText((collectedInfo as any)?.location || (analyzedData as any)?.location)
+    // KHÔNG động vào location nữa
 
     fixed = fixed
       .replace(/(Thu\s*nhập\s*(HIỆN\s*TẠI|hiện\s*tại)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normIncome}`)
       .replace(/(Tiết\s*kiệm\s*hiện\s*có[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normSavings}`)
       .replace(/(Thời\s*gian\s*(thực\s*hiện|mục\s*tiêu|timeline)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normTimeline}`)
       .replace(/(Mục\s*tiêu\s*tài\s*chính[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normGoal}`)
+      // Remove any line containing VALIDATION or internal thoughts
+      .replace(/^.*VALIDATION.*\n?/gim, '')
+      .replace(/^.*Kiểm tra lần [1-9]:.*\n?/gim, '')
+      .replace(/^.*suy nghĩ nội bộ.*\n?/gim, '')
 
-    // Chuẩn hóa "Nơi sinh sống:" nếu AI điền nhầm nội dung (vd: thu nhập)
-    fixed = fixed.replace(/(Nơi\s*sinh\s*sống[^:]*:\s*)(.*)$/gim, (m, p1, p2) => {
-      const val = String(p2 || '').trim()
-      const looksWrong = /thu\s*nhập|triệu|tỷ|vn[đd]|vnd|\d/.test(val)
-      const locationValue = normLocation && normLocation.length > 0 ? normLocation : 'Chưa cung cấp'
-      if (!val || looksWrong) return p1 + locationValue
-      return m
-    })
+    // Xoá hoàn toàn dòng Nơi sinh sống và Nghề nghiệp ở mọi section
+    fixed = fixed.replace(/^.*Nơi\s*sinh\s*sống[^\n]*\n?/gim, '')
+    fixed = fixed.replace(/^.*Nghề\s*nghiệp[^\n]*\n?/gim, '')
 
     return fixed
   }
