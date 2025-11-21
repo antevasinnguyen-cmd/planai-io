@@ -492,7 +492,7 @@ CẤU TRÚC JSON ĐẦU RA BẮT BUỘC:
   }
 }
 
-QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT KỲ CON SỐ NÀO):
+QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT KỲ CON SỐ/KỸ NĂNG NÀO):
 
 1.  **current_income**: 
     - Đọc KỸ chat để tìm "thu nhập", "kiếm được", "earning".
@@ -522,7 +522,13 @@ QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT K�
 
 6.  **location**: Chỉ điền nếu người dùng nêu rõ (ví dụ: "TP.HCM", "Hà Nội", "Sài Gòn"). Nếu không có, trả về null.
 
-7.  **KIỂM TRA LẠI**: Sau khi trích xuất, đọc lại chat một lần nữa để đảm bảo KHÔNG bỏ sót bất kỳ con số nào về tiền (thu nhập, tiết kiệm, mục tiêu).
+7.  **skills**:
+    - Trích xuất mảng kỹ năng từ chat hoặc mô tả tự do. Tách theo dấu phẩy/dấu chấm/phép liệt kê.
+    - Nhận diện các biến thể phổ biến: "marketing", "digital marketing", "chạy ads", "quảng cáo Facebook/Google", "tiktok", "youtube", "sáng tạo nội dung", "content", "làm sản phẩm", "product", "SEO", "email marketing", "growth".
+    - Chuẩn hoá về dạng chữ thường tiếng Việt/Anh, loại bỏ trùng lặp.
+    - Ví dụ: "Có kinh nghiệm marketing, chạy ads, làm tiktok/youtube, sáng tạo nội dung, làm sản phẩm" → ["marketing", "chạy ads", "tiktok", "youtube", "sáng tạo nội dung", "làm sản phẩm"].
+
+8.  **KIỂM TRA LẠI**: Sau khi trích xuất, đọc lại chat một lần nữa để đảm bảo KHÔNG bỏ sót bất kỳ con số nào về tiền (thu nhập, tiết kiệm, mục tiêu) và KHÔNG bỏ sót kỹ năng/kinh nghiệm người dùng đã nêu.
 `;
 
   try {
@@ -699,10 +705,13 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       fixed = fixed.replace(/\[URL\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
       fixed = fixed.replace(/\[Link\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
       fixed = fixed.replace(/\[.*?(URL|Link|url|link).*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
-      
+
+      // Alias placeholders like: Link: link_khoa_hoc_...
+      fixed = fixed.replace(/^\s*[-*]?\s*Link\s*:\s*link[_a-z0-9-]+/gim, 'Link: [TỪ KHOÁ TÌM KIẾM: gõ tên tài liệu + nền tảng uy tín (Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia)]')
+
       // Dòng 'Link:' không có URL thực -> chuyển thành gợi ý từ khoá
       fixed = fixed.replace(/^(\s*[-*]?\s*Link\s*:\s*)(?!https?:\/\/)(?!\[TỪ KHOÁ)/gim, `$1[TỪ KHOÁ TÌM KIẾM: gõ tên tài liệu + nền tảng uy tín (Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia)]`)
-      
+
       // Remove entire lines with "Link: [" but no real URL
       fixed = fixed.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
 
@@ -735,6 +744,8 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     // Detect bracket placeholders: [URL cụ thể], [Link cụ thể], [URL ...], [Link ...], etc.
     if (/\[(URL|Link|url|link)\s*(cụ\s*thể|c\u1ee5\s*th\u1ec3)?\]/i.test(content)) return true
     if (/\[.*?(URL|Link).*?\]/i.test(content) && !/\[T\u1eea\s*KHO\u00c1/i.test(content)) return true
+    // Detect alias placeholder like link_sach_..., link_khoa_hoc_...
+    if (/\blink_[a-z0-9_\-]+/i.test(content)) return true
     if (content.length < 100) return true
     if ((content.match(/\w+/g) || []).length < minWords) return true
     // For learning section, must have real links OR keyword suggestions
@@ -752,7 +763,7 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     }
 
     // Quy tắc định dạng nghiêm ngặt cho mọi mục
-    finalInstruction += `\n- KHÔNG chèn tiêu đề Markdown cấp 3-6 trong nội dung; dùng đoạn văn, danh sách, bảng.\n- KHÔNG đưa bất kỳ nhãn/bước như VALIDATION hoặc suy nghĩ nội bộ vào nội dung trả cho người dùng.\n- 'Nơi sinh sống' chỉ hiển thị nếu có trong dữ liệu đã xác thực; nếu không có, ghi 'Chưa cung cấp'.`
+    finalInstruction += `\n- KHÔNG chèn tiêu đề Markdown cấp 3-6 trong nội dung; dùng đoạn văn, danh sách, bảng.\n- KHÔNG đưa bất kỳ nhãn/bước như VALIDATION hoặc suy nghĩ nội bộ vào nội dung trả cho người dùng.\n- 'Nơi sinh sống' chỉ hiển thị nếu có trong dữ liệu đã xác thực; nếu không có, ghi 'Chưa cung cấp'.\n- TUYỆT ĐỐI KHÔNG được kết luận người dùng THIẾU một kỹ năng nếu 'DỮ LIỆU ĐÃ XÁC THỰC' liệt kê họ CÓ kỹ năng đó (ví dụ: có 'marketing'/'chạy ads' thì không được ghi 'thiếu kiến thức marketing'). Thay vào đó hãy nêu rõ mức độ hiện tại và lộ trình nâng cấp.\n- Với mục 'Tài liệu học tập': nếu không chắc link thật, chuyển sang PHƯƠNG ÁN B: liệt kê ÍT NHẤT 5 nền tảng uy tín (YouTube, Coursera, LinkedIn Learning, Google, TED hoặc Brandcamp.asia) và cho MỖI nền tảng 5 từ khoá tìm kiếm (ưu tiên tiếng Anh) phù hợp với mục tiêu/kỹ năng của người dùng, kèm 1-2 câu lợi ích và lý do học.`
 
     let content = ''
     let retry = 0
@@ -850,6 +861,14 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     if (/\[.*?URL.*?\]|\[.*?Link.*?\]|\[.*?cụ\s*thể.*?\]/i.test(plan)) {
       warnings.push('⚠️ AUDITOR: Phát hiện placeholder link còn sót. Đang loại bỏ...')
       plan = plan.replace(/\[.*?(URL|Link|cụ\s*thể).*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    }
+
+    // Check 4: Skills contradiction - marketing present but plan says lacking marketing
+    const skillsArr = Array.isArray(data.skills) ? data.skills.map((s: any) => String(s).toLowerCase()) : []
+    const hasMarketing = skillsArr.some((s: string) => s.includes('marketing') || s.includes('ads') || s.includes('tiktok') || s.includes('youtube') || s.includes('sáng tạo') || s.includes('content'))
+    if (hasMarketing && /thiếu\s*kiến\s*thức[^\n]*marketing/i.test(plan)) {
+      warnings.push('⚠️ AUDITOR: User có kỹ năng marketing nhưng nội dung nói thiếu marketing. Đang điều chỉnh diễn đạt...')
+      plan = plan.replace(/Thiếu\s*kiến\s*thức[^\n]*marketing[^.]*\./gi, 'Bạn đã có nền tảng marketing; trọng tâm là nâng cấp kỹ năng chuyên sâu (performance, content, funnel, analytics) và hệ thống hoá quy trình để scale.')
     }
     
     // Log all warnings
