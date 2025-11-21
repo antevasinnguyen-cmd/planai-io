@@ -626,6 +626,64 @@ export async function generateLongPlanMultiStep(
     console.warn('Savings hard-fallback parse failed:', e)
   }
 
+  // HARD FALLBACK: extract current income (min/max/avg) from chat if analysis missed
+  try {
+    const text = (collectedInfo?.chat_summary || '').toString()
+    const normNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(/,/g, '.'))
+    const unitMul = (u: string) => (/tỷ|ty|bn|billion/i.test(u) ? 1_000_000_000 : 1_000_000)
+    const setIncome = (min?: number, max?: number, avg?: number, raw?: string) => {
+      analyzedData.current_income = analyzedData.current_income || { min: null, max: null, average: null, text: '' }
+      if (typeof min === 'number' && typeof max === 'number' && min > 0 && max > 0) {
+        analyzedData.current_income.min = Math.round(min)
+        analyzedData.current_income.max = Math.round(max)
+        analyzedData.current_income.average = Math.round((min + max) / 2)
+      } else if (typeof avg === 'number' && avg > 0) {
+        analyzedData.current_income.average = Math.round(avg)
+      }
+      if (raw) analyzedData.current_income.text = raw
+    }
+    const rRange = /(\d+)\s*(?:-|–|to|đến)\s*(\d+)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)\s*(?:\/|per|mỗi)?\s*tháng/i
+    const mRange = text.match(rRange)
+    if (mRange) {
+      const a = normNum(mRange[1]) * unitMul(mRange[3])
+      const b = normNum(mRange[2]) * unitMul(mRange[3])
+      setIncome(a, b, undefined, `${mRange[1]}-${mRange[2]} ${mRange[3]}/tháng`)
+    } else {
+      const rSingle = /([0-9]+(?:[.,][0-9]+)?)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)\s*(?:\/|per|mỗi)?\s*tháng/i
+      const mSingle = text.match(rSingle)
+      if (mSingle) {
+        const v = normNum(mSingle[1]) * unitMul(mSingle[2])
+        setIncome(undefined, undefined, v, `${mSingle[1]} ${mSingle[2]}/tháng`)
+      }
+    }
+  } catch (e) {
+    console.warn('Income hard-fallback parse failed:', e)
+  }
+
+  // HARD FALLBACK: extract timeline like "2-3 năm" or "36 tháng"
+  try {
+    const t = (collectedInfo?.chat_summary || '').toString()
+    const rYearRange = /(\d+)\s*[-–]\s*(\d+)\s*năm/i
+    const rYears = /(\d+)\s*năm/i
+    const rMonths = /(\d+)\s*tháng/i
+    if (!analyzedData.timeline || analyzedData.timeline === 'Chưa cung cấp') {
+      let tl: string | null = null
+      const mYR = t.match(rYearRange)
+      if (mYR) tl = `${mYR[1]} - ${mYR[2]} năm`
+      else {
+        const mY = t.match(rYears)
+        if (mY) tl = `${mY[1]} năm`
+        else {
+          const mM = t.match(rMonths)
+          if (mM) tl = `${mM[1]} tháng`
+        }
+      }
+      if (tl) analyzedData.timeline = tl
+    }
+  } catch (e) {
+    console.warn('Timeline hard-fallback parse failed:', e)
+  }
+
   // Tier-specific word limits
   const MIN_WORDS = tier === 'free' ? 3000 : 20000
   const MAX_WORDS = tier === 'free' ? 5000 : 50000
@@ -637,16 +695,29 @@ export async function generateLongPlanMultiStep(
   }
   const normalizeText = (v: any) => (v && String(v).trim().length > 0 ? String(v) : 'Chưa cung cấp')
 
+  // Format income string from analyzed current_income structure
+  const formatIncomeFromAnalysis = (ci: any): string => {
+    try {
+      if (!ci || typeof ci !== 'object') return 'Chưa cung cấp'
+      const min = Number(ci.min)
+      const max = Number(ci.max)
+      const avg = Number(ci.average)
+      const fmt = (n: number) => Number.isFinite(n) && n > 0 ? `${n.toLocaleString('vi-VN')} VNĐ/tháng` : ''
+      if (Number.isFinite(min) && Number.isFinite(max) && min > 0 && max > 0) return `${fmt(min)} - ${fmt(max)}`
+      if (Number.isFinite(avg) && avg > 0) return fmt(avg)
+      const t = typeof ci.text === 'string' ? ci.text.trim() : ''
+      return t && /\d/.test(t) ? t : 'Chưa cung cấp'
+    } catch { return 'Chưa cung cấp' }
+  }
+
   // Step 2: Build context from the validated Analytical Report
   const baseContext = `Thông tin người dùng (đã được phân tích và xác thực):\n` +
     `- Mục tiêu chính: ${normalizeText(analyzedData.asset_goals.map((g: any) => `${g.item} (${normalizeCurrency(g.value, 'VNĐ')})`).join(', ')) || goal}\n` +
     `- Tổng mục tiêu tài sản: ${normalizeCurrency(analyzedData.total_asset_goal, 'VNĐ')}\n` +
     `- Mục tiêu thu nhập: ${normalizeCurrency(analyzedData.income_goal, 'VNĐ/tháng')}\n` +
-    `- Thu nhập hiện tại: ${normalizeText(analyzedData.current_income.text)}\n` +
+    `- Thu nhập hiện tại: ${formatIncomeFromAnalysis(analyzedData.current_income)}\n` +
     `- Tiết kiệm hiện có: ${normalizeCurrency(analyzedData.current_savings, 'VNĐ')}\n` +
-    `- Nghề nghiệp: ${normalizeText(analyzedData.occupation)}\n` +
     `- Kỹ năng: ${normalizeText(analyzedData.skills?.join(', '))}\n` +
-    `- Nơi sinh sống: ${normalizeText(analyzedData.location)}\n` +
     `- Thời gian thực hiện: ${normalizeText(analyzedData.timeline)}\n`
 
   // Bố cục cho gói trả phí (24 mục)
@@ -759,6 +830,10 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       // Remove entire lines with "Link: [" but no real URL
       fixed = fixed.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
 
+      // BAN LINKS for learning: remove any remaining http(s) and convert any 'Link:' lines to 'Từ khoá:'
+      fixed = fixed.replace(/https?:\/\/\S+/gi, '')
+      fixed = fixed.replace(/^\s*[-*]?\s*Link\s*:/gim, 'Từ khoá:')
+
       // Build PHƯƠNG ÁN B fallback: 5+ platforms x 5 keywords each
       const createKeywordFallback = (): string => {
         const skills = Array.isArray(analyzedData?.skills)
@@ -814,6 +889,16 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     fixed = fixed.replace(/^.*Nơi\s*sinh\s*sống[^\n]*\n?/gim, '')
     fixed = fixed.replace(/^.*Nghề\s*nghiệp[^\n]*\n?/gim, '')
 
+    // Với PROFILE: ép thêm tóm lược dạng bullet theo yêu cầu
+    if (sectionKey === 'profile') {
+      const incomeText = formatIncomeFromAnalysis(analyzedData?.current_income)
+      const skillsText = Array.isArray(analyzedData?.skills) ? analyzedData.skills.join(', ') : 'Chưa cung cấp'
+      const desireText = normalizeText((analyzedData as any)?.readiness)
+      const goalText = normalizeText((collectedInfo as any)?.goal || goal)
+      const summary = `📋 Tóm lược thông tin:\n• Mục tiêu tài chính: ${goalText}\n• Thu nhập hiện tại: ${incomeText}\n• Kỹ năng: ${skillsText}\n• Mong muốn: ${desireText}\n`
+      fixed = `${summary}\n${fixed}`
+    }
+
     return fixed
   }
 
@@ -827,12 +912,13 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     if (/\[.*?(URL|Link).*?\]/i.test(content) && !/\[T\u1eea\s*KHO\u00c1/i.test(content)) return true
     // Detect alias placeholder like link_sach_..., link_khoa_hoc_...
     if (/\blink_[a-z0-9_\-]+/i.test(content)) return true
-    if (content.length < 100) return true
+    if (content.length < 150) return true
     if ((content.match(/\w+/g) || []).length < minWords) return true
     // For learning section, must have real links OR keyword suggestions
     if (sectionKey === 'learning' && !content.includes('http') && !content.toLowerCase().includes('từ khoá')) return true
-    return false
-  }
+    if (sectionKey === 'learning' && content.includes('http') && !content.toLowerCase().includes('coursera') && !content.toLowerCase().includes('linkedin learning') && !content.toLowerCase().includes('google') && !content.toLowerCase().includes('ted') && !content.toLowerCase().includes('brandcamp.asia')) return true
+  return false
+}
 
   const make = async (title: string, instruction: string, targetWords: number, sectionKey?: string) => {
     // Lớp 1: Tăng cường instruction cho từng mục, ép AI dùng dữ liệu user chat
@@ -841,6 +927,13 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     let userDataNote = `\n\nDỮ LIỆU ĐÃ XÁC THỰC CỦA NGƯỜI DÙNG:\n${baseContext}\n\nBẮT BUỘC sử dụng đúng các dữ liệu ĐÃ XÁC THỰC này cho phân tích, KHÔNG được placeholder, KHÔNG lặp lại prompt, nếu thiếu dữ liệu phải giả định hợp lý và ghi rõ. Mỗi mục tối thiểu ${targetWords} từ, phân tích sâu, có ví dụ, số liệu, insight, không máy móc.`
     if (sectionKey === 'learning') {
       finalInstruction = `${instruction}\n\nQUAN TRỌNG - TUÂN THỦ NGHIÊM NGẶT:\n- CHỈ lấy link THẬT từ các nguồn uy tín quốc tế (Coursera, LinkedIn Learning, Google, TED, Skillshare).\n- Link YouTube PHẢI là link KÊNH (youtube.com/channel/...), ≥10k sub, tiếng Anh, đúng kỹ năng.\n- KHÔNG gợi ý web Việt Nam trừ https://www.brandcamp.asia/.\n- Nếu KHÔNG chắc link, PHẢI ghi rõ TỪ KHOÁ TÌM KIẾM (5-10 từ khoá cụ thể) và nền tảng uy tín.\n- TUYỆT ĐỐI KHÔNG dùng: example.com, placeholder.com, youtube.com (không phải kênh), coursera.org (không phải khóa học cụ thể).`
+    }
+    else if (sectionKey === 'profile') {
+      finalInstruction = `${instruction}\n\nBẮT BUỘC: Mở đầu bằng danh sách gạch đầu dòng liệt kê đúng 4 mục: (1) Mục tiêu tài chính, (2) Thu nhập hiện tại (nếu là khoảng, ghi dạng A - B VNĐ/tháng), (3) Kỹ năng, (4) Mong muốn/Sẵn sàng. KHÔNG đưa 'Nơi sinh sống' hay 'Nghề nghiệp'.`
+    }
+    else if (sectionKey === 'plan') {
+      const timelineText = normalizeText(analyzedData?.timeline)
+      finalInstruction = `${instruction}\n\nTIMELINE BẮT BUỘC: Sử dụng đúng timeline đã xác thực: "${timelineText}" để xây lộ trình theo năm → quý → tháng. CẤM ghi 'Tùy theo timeline người dùng'. Nếu timeline là '2 - 3 năm' hãy phủ hết 24-36 tháng.`
     }
 
     // Quy tắc định dạng nghiêm ngặt cho mọi mục
@@ -910,6 +1003,11 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     // Remove any visible VALIDATION/internal checks blocks
     t = t.replace(/^(?:\s*\d+\.|\s*[-*])?\s*VALIDATION[\s\S]*?(?=\n\s*\n|$)/gmi, '')
     t = t.replace(/\bVALIDATION\b.*$/gmi, '')
+    // Remove lines like 'Kiểm tra lần X: ...' and the 'Tính khả thi (VALIDATION ...)' headings
+    t = t.replace(/^.*Kiểm\s*tra\s*lần\s*\d+\s*:\s*.*$/gmi, '')
+    t = t.replace(/^.*Tính\s*khả\s*thi\s*\(.*VALIDATION.*\).*$/gmi, '')
+    // Remove generic disclaimer lines we don't want
+    t = t.replace(/^.*Tùy\s*theo\s*timeline\s*người\s*dùng.*$/gmi, '')
     
     return t
   }
