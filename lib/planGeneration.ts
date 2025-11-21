@@ -490,6 +490,7 @@ QUY TẮC TRÍCH XUẤT:
 2.  **asset_goals**: Liệt kê TẤT CẢ các mục tiêu tích lũy tài sản (nhà, xe, tiết kiệm). TÍNH TỔNG chúng vào "total_asset_goal".
 3.  **income_goal**: Ghi nhận mục tiêu thu nhập (vd: 1 tỷ/tháng) riêng, không cộng vào "total_asset_goal".
 4.  **Luôn trả về số**: Mọi giá trị tiền tệ phải là kiểu number, không phải string.
+5.  **location**: Chỉ điền nếu người dùng nêu rõ (ví dụ: "TP.HCM", "Hà Nội"). Nếu không có, trả về null. TUYỆT ĐỐI KHÔNG suy diễn từ các trường khác.
 `;
 
   try {
@@ -564,6 +565,7 @@ export async function generateLongPlanMultiStep(
     `- Tiết kiệm hiện có: ${normalizeCurrency(analyzedData.current_savings, 'VNĐ')}\n` +
     `- Nghề nghiệp: ${normalizeText(analyzedData.occupation)}\n` +
     `- Kỹ năng: ${normalizeText(analyzedData.skills?.join(', '))}\n` +
+    `- Nơi sinh sống: ${normalizeText(analyzedData.location)}\n` +
     `- Thời gian thực hiện: ${normalizeText(analyzedData.timeline)}\n`
 
   // Bố cục cho gói trả phí (24 mục)
@@ -699,6 +701,9 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       finalInstruction = `${instruction}\n\nQUAN TRỌNG - TUÂN THỦ NGHIÊM NGẶT:\n- CHỈ lấy link THẬT từ các nguồn uy tín quốc tế (Coursera, LinkedIn Learning, Google, TED, Skillshare).\n- Link YouTube PHẢI là link KÊNH (youtube.com/channel/...), ≥10k sub, tiếng Anh, đúng kỹ năng.\n- KHÔNG gợi ý web Việt Nam trừ https://www.brandcamp.asia/.\n- Nếu KHÔNG chắc link, PHẢI ghi rõ TỪ KHOÁ TÌM KIẾM (5-10 từ khoá cụ thể) và nền tảng uy tín.\n- TUYỆT ĐỐI KHÔNG dùng: example.com, placeholder.com, youtube.com (không phải kênh), coursera.org (không phải khóa học cụ thể).`
     }
 
+    // Quy tắc định dạng nghiêm ngặt cho mọi mục
+    finalInstruction += `\n- KHÔNG chèn tiêu đề Markdown cấp 3-6 trong nội dung; dùng đoạn văn, danh sách, bảng.\n- KHÔNG đưa bất kỳ nhãn/bước như VALIDATION hoặc suy nghĩ nội bộ vào nội dung trả cho người dùng.\n- 'Nơi sinh sống' chỉ hiển thị nếu có trong dữ liệu đã xác thực; nếu không có, ghi 'Chưa cung cấp'.`
+
     let content = ''
     let retry = 0
     while (retry < 4) {
@@ -735,11 +740,29 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
 
   const wordCount = (t: string) => (t.match(/\S+/g) || []).length
   let safetyCounter = 0
-  while (wordCount(combined) < MIN_WORDS && safetyCounter < 12 && tier !== 'free') {
+  const EXTEND_TARGET = tier === 'free' ? 4800 : MIN_WORDS
+  while (wordCount(combined) < EXTEND_TARGET && safetyCounter < 12) {
     safetyCounter++
-    const extra = await make('PHỤ LỤC BỔ SUNG', 'Bổ sung case study, ví dụ thực tế, KPI chi tiết, bảng ngân sách, risk register, playbook thực thi theo tuần.', 1200)
+    const extra = await make('PHỤ LỤC BỔ SUNG', 'Bổ sung case study, ví dụ thực tế, KPI chi tiết, bảng ngân sách, risk register, playbook thực thi theo tuần. TUYỆT ĐỐI KHÔNG chèn tiêu đề Markdown cấp 3-6 trong nội dung; dùng đoạn văn/bullet.', 1200)
     combined += `\n\n## Phụ lục mở rộng ${safetyCounter}\n\n${extra}`
   }
+
+  // Final sanitization pass: remove internal markers and invalid links globally
+  const sanitizePlan = (text: string): string => {
+    let t = text
+    // Remove any example/placeholder domains anywhere
+    t = t.replace(/https?:\/\/([a-zA-Z0-9-]+\.)?(example|placeholder|domain|yoursite|mysite)\.com\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
+    // Remove bracket placeholders like [URL cụ thể]
+    t = t.replace(/\[(URL\s*cụ\s*thể.*?)\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
+    // Demote in-content subheadings (### or deeper) to bold lines
+    t = t.replace(/^#{3,6}\s+(.*)$/gm, '**$1**')
+    // Remove any visible VALIDATION/internal checks blocks
+    t = t.replace(/^(?:\s*\d+\.|\s*[-*])?\s*VALIDATION[\s\S]*?(?=\n\s*\n|$)/gmi, '')
+    t = t.replace(/\bVALIDATION\b.*$/gmi, '')
+    return t
+  }
+
+  combined = sanitizePlan(combined)
 
   // Clamp final length by trimming softly if over MAX_WORDS (rare)
   const tokens = combined.split(/\s+/)
