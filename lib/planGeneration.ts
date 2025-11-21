@@ -730,6 +730,12 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
   const validateAndFixLinks = (content: string, sectionKey: string): string => {
     let fixed = content
 
+    // Khai báo biến normalize trước để dùng trong mọi section
+    const normIncome = normalizeCurrency((collectedInfo as any)?.income ?? (collectedInfo as any)?.current_income, 'VNĐ/tháng')
+    const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
+    const normTimeline = normalizeText((collectedInfo as any)?.timeline)
+    const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
+
     // Nếu là mục "learning" (tài liệu học tập), kiểm tra nghiêm ngặt
     if (sectionKey === 'learning') {
       // Replace link giả/chung chung (tham lam hơn để bắt cả path)
@@ -782,18 +788,17 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
           '6) Brandcamp.asia (Việt Nam)',
           kw(['digital marketing basics', 'branding fundamentals', 'content strategy', 'performance marketing', 'social media strategy']),
           '',
-    }
+        ].join('\n')
+      }
 
-    // Nếu có bất kỳ link không hợp lệ hoặc không có link thật, luôn ép fallback PHƯƠNG ÁN B
-    const hasInvalidLink = /(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org|edx\.org|google\.com|linkedin\.com|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)/i.test(fixed)
-    const hasRealLink = /https?:\/\//i.test(fixed)
-    const hasAliasPlaceholder = /\blink_[a-z0-9_\-]+/i.test(fixed)
-    if (hasInvalidLink || !hasRealLink || hasAliasPlaceholder) {
-      fixed += `\n\n${createKeywordFallback()}`
-    const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
-    const normTimeline = normalizeText((collectedInfo as any)?.timeline)
-    const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
-    // KHÔNG động vào location nữa
+      // Nếu có bất kỳ link không hợp lệ hoặc không có link thật, luôn ép fallback PHƯƠNG ÁN B
+      const hasInvalidLink = /(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org|edx\.org|google\.com|linkedin\.com|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)/i.test(fixed)
+      const hasRealLink = /https?:\/\//i.test(fixed)
+      const hasAliasPlaceholder = /\blink_[a-z0-9_\-]+/i.test(fixed)
+      if (hasInvalidLink || !hasRealLink || hasAliasPlaceholder) {
+        fixed += `\n\n${createKeywordFallback()}`
+      }
+    }
 
     fixed = fixed
       .replace(/(Thu\s*nhập\s*(HIỆN\s*TẠI|hiện\s*tại)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normIncome}`)
