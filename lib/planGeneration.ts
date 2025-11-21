@@ -806,6 +806,7 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
     const normTimeline = normalizeText((collectedInfo as any)?.timeline)
     const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
+    const incomeTextForFix = formatIncomeFromAnalysis(analyzedData?.current_income)
 
     // Nếu là mục "learning" (tài liệu học tập), kiểm tra nghiêm ngặt
     if (sectionKey === 'learning') {
@@ -875,6 +876,11 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       }
     }
 
+    // Generic fix: replace any 'true VND' artifacts with normalized income text
+    fixed = fixed.replace(/\btrue\s*VN[ĐD](?:\/tháng)?\b/gi, incomeTextForFix || 'Chưa cung cấp')
+    fixed = fixed.replace(/(thu\s*nhập[^\n]*?)true\s*VN[ĐD](?:\/tháng)?/gi, `$1${incomeTextForFix || 'Chưa cung cấp'}`)
+    fixed = fixed.replace(/(Thu\s*nhập[^:]*:\s*)(true\b)/gi, `$1${incomeTextForFix || 'Chưa cung cấp'}`)
+
     fixed = fixed
       .replace(/(Thu\s*nhập\s*(HIỆN\s*TẠI|hiện\s*tại)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normIncome}`)
       .replace(/(Tiết\s*kiệm\s*hiện\s*có[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normSavings}`)
@@ -884,6 +890,7 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       .replace(/^.*VALIDATION.*\n?/gim, '')
       .replace(/^.*Kiểm tra lần [1-9]:.*\n?/gim, '')
       .replace(/^.*suy nghĩ nội bộ.*\n?/gim, '')
+      .replace(/^\s*Giả\s*định\s*:\s*.*$/gim, '')
 
     // Xoá hoàn toàn dòng Nơi sinh sống và Nghề nghiệp ở mọi section
     fixed = fixed.replace(/^.*Nơi\s*sinh\s*sống[^\n]*\n?/gim, '')
@@ -1008,6 +1015,14 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     t = t.replace(/^.*Tính\s*khả\s*thi\s*\(.*VALIDATION.*\).*$/gmi, '')
     // Remove generic disclaimer lines we don't want
     t = t.replace(/^.*Tùy\s*theo\s*timeline\s*người\s*dùng.*$/gmi, '')
+    // Remove conditional timeline lines (avoid generic templates)
+    t = t.replace(/^.*Nếu\s*timeline[^\n]*$/gmi, '')
+    t = t.replace(/^.*Nếu\s*thời\s*gian\s*mục\s*tiêu[^\n]*$/gmi, '')
+    // Remove any 'Giả định:' lines everywhere
+    t = t.replace(/^\s*Giả\s*định\s*:\s*.*$/gmi, '')
+    // Replace stray 'true VND' tokens globally as last guard
+    const incomeGuard = formatIncomeFromAnalysis(analyzedData?.current_income)
+    t = t.replace(/\btrue\s*VN[ĐD](?:\/tháng)?\b/gi, incomeGuard || 'Chưa cung cấp')
     
     return t
   }
