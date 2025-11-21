@@ -503,8 +503,10 @@ QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT K�
 
 2.  **current_savings** (QUAN TRỌNG - THƯỜNG BỊ BỎ SÓT):
     - Đọc KỸ chat để tìm "tiết kiệm", "đang có", "tài khoản", "savings", "số dư".
-    - VÍ DỤ: "Hiện tại tài khoản tiết kiệm đang có 300 triệu" → current_savings: 300000000.
-    - VÍ DỤ: "đang có 300tr" → current_savings: 300000000.
+    - Nhận biến thể/typo phổ biến: "tiế t kiệm", "tiet kiem", "tk", "sổ tiết kiệm", "tài khoản tiết kiệm".
+    - Nhận dạng đơn vị: "triệu", "tr", "trieu" = 1.000.000; "tỷ", "ty", "bn", "billion" = 1.000.000.000.
+    - Ví dụ: "300 triệu", "300tr", "0.3 tỷ", "300,000,000" → 300.000.000.
+    - Nếu có nhiều con số, ưu tiên con số gắn với "tiết kiệm" hoặc "đang có".
     - Nếu KHÔNG tìm thấy, trả về 0 (KHÔNG phải null).
     - TUYỆT ĐỐI KHÔNG bỏ qua con số này nếu người dùng đã nêu.
 
@@ -587,6 +589,42 @@ export async function generateLongPlanMultiStep(
   // Step 1: Create the Analytical Report (The "Brain")
   const analyticalReport = await createAnalyticalReport(collectedInfo, goal);
   const analyzedData = analyticalReport.analysis;
+
+  // HARD FALLBACK: If LLM missed savings in Analytical Report, try to extract via regex from chat/form
+  try {
+    const toText = (v: any) => (typeof v === 'string' ? v : JSON.stringify(v || ''))
+    const chatText = (collectedInfo?.chat_summary || '').toString()
+    const formText = toText(collectedInfo)
+
+    const parseAmount = (num: string, unit: string): number => {
+      const n = parseFloat(num.replace(/\./g, '').replace(/,/g, '.'))
+      if (!isFinite(n)) return 0
+      const u = unit.toLowerCase()
+      if (/tỷ|ty|bn|billion/.test(u)) return Math.round(n * 1_000_000_000)
+      // mặc định triệu
+      return Math.round(n * 1_000_000)
+    }
+
+    const findSavings = (t: string): number => {
+      // tìm cụm có từ khoá tiết kiệm/đang có/tài khoản và số + đơn vị gần kề
+      const r1 = /(ti(ế|e)t\s*ki(ệ|e)m|tiet\s*kiem|tài\s*khoản\s*ti(ế|e)t\s*ki(ệ|e)m|tk\b|savings|số\s*dư)[^\d]{0,30}?([0-9]+(?:[.,][0-9]+)?)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)/i
+      const m1 = t.match(r1)
+      if (m1) return parseAmount(m1[5] || m1[6] || m1[3], m1[6] || m1[7] || m1[4] || '')
+
+      // fallback: dạng "300 triệu" đứng gần chữ tiết kiệm trong 1 câu
+      const r2 = /([0-9]+(?:[.,][0-9]+)?)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)[^.!?\n]{0,40}?(ti(ế|e)t\s*ki(ệ|e)m|tiet\s*kiem|tk\b|savings)/i
+      const m2 = t.match(r2)
+      if (m2) return parseAmount(m2[1], m2[2])
+      return 0
+    }
+
+    const detected = Math.max(findSavings(chatText), findSavings(formText))
+    if ((!analyzedData.current_savings || analyzedData.current_savings === 0) && detected > 0) {
+      analyzedData.current_savings = detected
+    }
+  } catch (e) {
+    console.warn('Savings hard-fallback parse failed:', e)
+  }
 
   // Tier-specific word limits
   const MIN_WORDS = tier === 'free' ? 3000 : 20000
@@ -715,9 +753,45 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
       // Remove entire lines with "Link: [" but no real URL
       fixed = fixed.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
 
-      // Nếu không có link thật, thêm gợi ý từ khoá
-      if (!fixed.includes('http')) {
-        fixed += '\n\n**GỢI Ý TÌM KIẾM:** Vui lòng tra cứu trên các nền tảng uy tín quốc tế: Coursera, LinkedIn Learning, Google, TED, Skillshare, hoặc Brandcamp.asia (Việt Nam) với các từ khoá liên quan đến mục tiêu và kỹ năng của bạn.'
+      // Build PHƯƠNG ÁN B fallback: 5+ platforms x 5 keywords each
+      const createKeywordFallback = (): string => {
+        const skills = Array.isArray(analyzedData?.skills)
+          ? analyzedData.skills
+          : (Array.isArray((collectedInfo as any)?.skills) ? (collectedInfo as any).skills : [])
+        const topSkill = skills && skills.length > 0 ? String(skills[0]).toLowerCase() : 'marketing'
+        const kw = (arr: string[]) => arr.slice(0, 5).map(k => `    - ${k}`).join('\n')
+        return [
+          '**PHƯƠNG ÁN B (Fallback khi không có link thật):**',
+          'Dưới đây là các nền tảng uy tín và từ khoá gợi ý để tự tra cứu (ưu tiên tiếng Anh). Mỗi nền tảng kèm 5 từ khoá:',
+          '',
+          '1) YouTube Channels',
+          kw([`learn ${topSkill} online`, 'digital marketing strategy', 'performance ads tutorial', 'tiktok content strategy', 'youtube growth 0 to 1']),
+          '',
+          '2) Coursera',
+          kw([`${topSkill} specialization`, 'business analytics fundamentals', 'financial planning basics', 'product marketing for saas', 'marketing analytics']),
+          '',
+          '3) LinkedIn Learning',
+          kw(['growth marketing foundations', 'google ads essentials', 'facebook ads advanced', 'content strategy for social', 'seo fundamentals']),
+          '',
+          '4) Google Digital Garage / Google Learning',
+          kw(['digital marketing', 'analytics academy', 'search engine marketing', 'measurement plan', 'conversion rate optimization']),
+          '',
+          '5) TED / TED-Ed',
+          kw(['entrepreneurship', 'habit building', 'productivity systems', 'storytelling for business', 'innovation mindset']),
+          '',
+          '6) Brandcamp.asia (Việt Nam)',
+          kw(['digital marketing basics', 'branding fundamentals', 'content strategy', 'performance marketing', 'social media strategy']),
+          '',
+          'Lợi ích: tiết kiệm thời gian tìm đúng tài liệu; tăng tốc học có định hướng; xây nền tảng để scale doanh thu.',
+          'Lý do cần học: kiến thức là đòn bẩy cốt lõi; giúp ra quyết định dựa số liệu; rút ngắn đường đến mục tiêu.'
+        ].join('\n')
+      }
+
+      // Nếu không có link thật hoặc còn placeholder, chèn fallback chi tiết
+      const hasRealLink = /https?:\/\//i.test(fixed)
+      const hasAliasPlaceholder = /\blink_[a-z0-9_\-]+/i.test(fixed)
+      if (!hasRealLink || hasAliasPlaceholder) {
+        fixed += `\n\n${createKeywordFallback()}`
       }
     }
 
@@ -726,12 +800,22 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
     const normTimeline = normalizeText((collectedInfo as any)?.timeline)
     const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
+    const normLocation = normalizeText((collectedInfo as any)?.location || (analyzedData as any)?.location)
 
     fixed = fixed
       .replace(/(Thu\s*nhập\s*(HIỆN\s*TẠI|hiện\s*tại)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normIncome}`)
       .replace(/(Tiết\s*kiệm\s*hiện\s*có[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normSavings}`)
       .replace(/(Thời\s*gian\s*(thực\s*hiện|mục\s*tiêu|timeline)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normTimeline}`)
       .replace(/(Mục\s*tiêu\s*tài\s*chính[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normGoal}`)
+
+    // Chuẩn hóa "Nơi sinh sống:" nếu AI điền nhầm nội dung (vd: thu nhập)
+    fixed = fixed.replace(/(Nơi\s*sinh\s*sống[^:]*:\s*)(.*)$/gim, (m, p1, p2) => {
+      const val = String(p2 || '').trim()
+      const looksWrong = /thu\s*nhập|triệu|tỷ|vn[đd]|vnd|\d/.test(val)
+      const locationValue = normLocation && normLocation.length > 0 ? normLocation : 'Chưa cung cấp'
+      if (!val || looksWrong) return p1 + locationValue
+      return m
+    })
 
     return fixed
   }
@@ -869,6 +953,16 @@ Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn
     if (hasMarketing && /thiếu\s*kiến\s*thức[^\n]*marketing/i.test(plan)) {
       warnings.push('⚠️ AUDITOR: User có kỹ năng marketing nhưng nội dung nói thiếu marketing. Đang điều chỉnh diễn đạt...')
       plan = plan.replace(/Thiếu\s*kiến\s*thức[^\n]*marketing[^.]*\./gi, 'Bạn đã có nền tảng marketing; trọng tâm là nâng cấp kỹ năng chuyên sâu (performance, content, funnel, analytics) và hệ thống hoá quy trình để scale.')
+    }
+
+    // Check 5: Surface declared skills as strengths if missing
+    if (skillsArr.length > 0 && !skillsArr.some((s: string) => new RegExp(s.replace(/[-/\\^$*+?.()|[\]{}]/g, ''), 'i').test(plan))) {
+      warnings.push('⚠️ AUDITOR: Kỹ năng đã xác thực chưa được đưa vào nội dung. Đang bổ sung...')
+      const skillsBullet = skillsArr.map((s: string) => `- ${s}`).join('\n')
+      const insertText = `\n\n**Điểm mạnh bổ sung (theo dữ liệu đã xác thực):**\n${skillsBullet}\n`
+      const anchor = /(##\s*2\.[^\n]*Mục tiêu tài chính & động lực[^\n]*\n)/i
+      if (anchor.test(plan)) plan = plan.replace(anchor, `$1${insertText}`)
+      else plan += insertText
     }
     
     // Log all warnings
