@@ -379,35 +379,42 @@ CROSS-CHECK LOGIC (BEFORE FINALIZING):
 Remember: This plan should make them say "This is EXACTLY what I needed!" not "This is generic advice." ENSURE COMPLETENESS - NO TRUNCATION! ALWAYS VALIDATE DATA BEFORE FINALIZING!`,
 
   // User input analysis system prompt
-  USER_INPUT_ANALYSIS: `Phân tích input của người dùng (tiếng Việt) về tài chính và TRẢ VỀ DUY NHẤT MỘT JSON hợp lệ theo cấu trúc sau, không thêm mô tả hay văn bản khác:
-
-{
-  "intent": "thông tin cá nhân" | "mục tiêu tài chính" | "tình hình hiện tại" | "câu hỏi" | "khác",
-  "extractedInfo": {
-    "goal": string | null,
-    "income": number | null,
-    "timeline": string | null,
-    "age": number | null,
-    "occupation": string | null,
-    "skills": string[] | null,
-    "birth_date": string | null,
-    "location": string | null,
-    "savings": number | null,
-    "readiness": string | null,
-    "expenses": number | null,
-    "debt": number | null,
-    "assets": string | null
-  },
-  "suggestedQuestions": ["câu hỏi ngắn gọn 1", "câu hỏi 2", "câu hỏi 3"]
-}
+  USER_INPUT_ANALYSIS: `Bạn là một trợ lý AI chuyên phân tích và trích xuất thông tin từ tin nhắn của người dùng để xây dựng kế hoạch tài chính. Phân tích đầu vào của người dùng và trả về một đối tượng JSON.
 
 YÊU CẦU:
-- Nếu không chắc, đặt trường là null
-- Hỏi tiếp tối đa 3 câu, tập trung vào các trường còn thiếu theo thứ tự ưu tiên
-- Câu hỏi ngắn gọn, lịch sự, phù hợp người Việt 23-35
-- Trích xuất số tiền từ "triệu" (tr, trieu) thành VNĐ (nhân 1,000,000)
-- Trích xuất tuổi từ "tuổi", "sinh năm", "năm sinh"
-- Trích xuất ngày sinh format dd/mm/yyyy`,
+- Trích xuất các thông tin sau: 'goal' (mục tiêu tài chính), 'plan_name' (tên kế hoạch), 'income' (thu nhập), 'occupation' (nghề nghiệp), 'timeline' (thời gian), 'location' (địa điểm), 'readiness' (mức độ sẵn sàng), 'age' (tuổi), 'savings' (tiết kiệm), 'skills' (kỹ năng), 'current_situation' (tình hình hiện tại).
+- 'intent' phải là một trong các giá trị sau: 'tạo kế hoạch', 'hỏi đáp', 'chỉnh sửa kế hoạch', 'khác'.
+- 'suggestedQuestions' phải là một mảng gồm 3 câu hỏi gợi ý để thu thập thêm thông tin cần thiết cho việc lập kế hoạch.
+- Nếu người dùng cung cấp một khoảng giá trị (ví dụ: 'thu nhập 7-10 triệu'), hãy lấy giá trị TRUNG BÌNH (ví dụ: 8500000). LUÔN LUÔN diễn giải các số dạng chữ ('một tỷ' -> 1000000000) và khoảng giá trị thành một con số cụ thể.
+- ĐẶC BIỆT CHÚ Ý: Phải nắm bắt và diễn giải tất cả các con số, kể cả khi chúng nằm trong một câu dài hoặc phức tạp. Ví dụ: 'trong 3 năm có 1 căn nhà tầm 3 tỷ, 1 xe ô tô 800 triệu, 1 tài khoản tiết kiệm 10 tỷ' phải được phân tích và tổng hợp vào mục tiêu.
+- Chỉ trả về JSON, không có bất kỳ văn bản nào khác.
+
+Ví dụ:
+Input: 'Tôi muốn tạo một kế hoạch để mua nhà 2 tỷ trong 5 năm. Tôi 30 tuổi, làm marketing, thu nhập 25-30 triệu/tháng.'
+Output:
+{
+  "intent": "tạo kế hoạch",
+  "extractedInfo": {
+    "goal": "Mua nhà 2 tỷ trong 5 năm",
+    "income": 27500000,
+    "timeline": "5 năm",
+    "age": 30,
+    "occupation": "marketing",
+    "skills": null,
+    "birth_date": null,
+    "location": null,
+    "savings": null,
+    "readiness": null,
+    "expenses": null,
+    "debt": null,
+    "assets": null
+  },
+  "suggestedQuestions": [
+    "Bạn đã có khoản tiết kiệm nào cho mục tiêu này chưa?",
+    "Chi phí sinh hoạt hàng tháng của bạn là bao nhiêu?",
+    "Bạn có những kỹ năng tay trái nào có thể tạo thêm thu nhập không?"
+  ]
+}`,
 
   // Micro-tasks generation prompt
   MICRO_TASKS: `Tạo danh sách micro-tasks hàng ngày chi tiết dựa trên mục tiêu tài chính.

@@ -590,7 +590,7 @@ export async function generateLongPlanMultiStep(
   // Helper: kiểm tra nội dung có placeholder, lặp prompt, hoặc quá ngắn
   const needsRewrite = (content: string, sectionKey?: string, minWords = 200) => {
     if (!content) return true
-    if (/\b(true|chưa cung cấp|không đủ dữ liệu|\[.*?\]|placeholder|URL cụ thể|Tên|Link\s*:\s*\(|VALIDATION|prompt yêu cầu)\b/i.test(content)) return true
+    if (/\b(true|chưa cung cấp|không đủ dữ liệu|placeholder|Tên|Link\s*:\s*\(|VALIDATION|prompt yêu cầu)\b/i.test(content) || /\[(URL cụ thể|.*?)\]/i.test(content)) return true
     if (content.length < 100) return true
     if ((content.match(/\w+/g) || []).length < minWords) return true
     if (sectionKey === 'learning' && !content.includes('http') && !content.toLowerCase().includes('từ khoá')) return true
