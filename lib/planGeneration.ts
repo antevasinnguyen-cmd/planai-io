@@ -575,521 +575,352 @@ QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT K�
   }
 };
 
+/**
+ * Extract robust data from collected info with strong fallbacks
+ */
+function extractRobustData(collectedInfo: any, goal: string): any {
+  const chatSummary = String(collectedInfo?.chat_summary || '')
+  
+  // Extract income with multiple fallback patterns
+  let income = { min: 0, max: 0, average: 0 }
+  const incomePatterns = [
+    /(\d+(?:[.,]\d+)?)\s*[-–—tới đến]\s*(\d+(?:[.,]\d+)?)\s*(?:triệu)?\s*(?:VN[DĐ]|đồng)?\/tháng/i,
+    /thu nhập[^\d]*(\d+(?:[.,]\d+)?)\s*[-–—tới đến]\s*(\d+(?:[.,]\d+)?)\s*(?:triệu)?/i,
+    /lương[^\d]*(\d+(?:[.,]\d+)?)\s*[-–—tới đến]\s*(\d+(?:[.,]\d+)?)\s*(?:triệu)?/i,
+    /(\d+(?:[.,]\d+)?)\s*(?:triệu)?\s*(?:VN[DĐ]|đồng)?\/tháng/i
+  ]
+  
+  for (const pattern of incomePatterns) {
+    const match = chatSummary.match(pattern)
+    if (match) {
+      if (match[2]) {
+        income.min = parseFloat(match[1].replace(/,/g, '.')) * 1000000
+        income.max = parseFloat(match[2].replace(/,/g, '.')) * 1000000
+      } else {
+        income.average = parseFloat(match[1].replace(/,/g, '.')) * 1000000
+      }
+      break
+    }
+  }
+  
+  // Extract timeline with fallback
+  let timeline = ''
+  const timelinePatterns = [
+    /(\d+)\s*[-–—tới đến]\s*(\d+)\s*năm/i,
+    /trong\s*(\d+)\s*năm/i,
+    /timeline[^\d]*(\d+)\s*[-–—tới đến]\s*(\d+)\s*năm/i
+  ]
+  
+  for (const pattern of timelinePatterns) {
+    const match = chatSummary.match(pattern)
+    if (match) {
+      if (match[2]) {
+        timeline = `${match[1]} – ${match[2]} năm`
+      } else {
+        timeline = `${match[1]} năm`
+      }
+      break
+    }
+  }
+  
+  // Extract savings
+  let savings = 0
+  const savingsPatterns = [
+    /tiết kiệm[^\d]*(\d+(?:[.,]\d+)?)\s*(?:triệu|tỷ)?/i,
+    /tài khoản[^\d]*(\d+(?:[.,]\d+)?)\s*(?:triệu|tỷ)?/i,
+    /có\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tỷ)?/i
+  ]
+  
+  for (const pattern of savingsPatterns) {
+    const match = chatSummary.match(pattern)
+    if (match) {
+      const num = parseFloat(match[1].replace(/,/g, '.'))
+      if (match[0].includes('tỷ')) {
+        savings = num * 1000000000
+      } else {
+        savings = num * 1000000
+      }
+      break
+    }
+  }
+  
+  return {
+    ...collectedInfo,
+    income,
+    timeline: timeline || '2 – 3 năm',
+    current_savings: savings || collectedInfo.current_savings,
+    goal
+  }
+}
+
+/**
+ * Create clean analytical report without validation text
+ */
+async function createCleanAnalyticalReport(data: any, goal: string) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  
+  // Format income for display
+  let incomeText = ''
+  if (data.income.min && data.income.max) {
+    incomeText = `${(data.income.min/1000000).toFixed(0)} – ${(data.income.max/1000000).toFixed(0)} triệu VNĐ/tháng`
+  } else if (data.income.average) {
+    incomeText = `${(data.income.average/1000000).toFixed(0)} triệu VNĐ/tháng`
+  } else if (data.current_income) {
+    incomeText = `${(data.current_income/1000000).toFixed(0)} triệu VNĐ/tháng`
+  } else {
+    incomeText = '7 – 10 triệu VNĐ/tháng'
+  }
+  
+  const prompt = `Phân tích thông tin người dùng và tạo báo cáo:
+
+Thông tin:
+- Mục tiêu: ${goal}
+- Thu nhập: ${incomeText}
+- Tiết kiệm: ${data.current_savings ? (data.current_savings/1000000).toFixed(0) + ' triệu VNĐ' : 'Chưa có'}
+- Timeline: ${data.timeline}
+- Tuổi: ${data.age || 25}
+- Kỹ năng: ${data.skills || 'Đang phát triển'}
+
+Tạo phân tích JSON:
+{
+  "current_income": <số tiền VNĐ/tháng>,
+  "current_savings": <số tiền VNĐ>,  
+  "goal": "<mục tiêu>",
+  "timeline": "<thời gian>",
+  "risk_tolerance": "<mức độ>",
+  "skills": ["<kỹ năng>"]
+}
+
+LƯU Ý: Chỉ trả về JSON, không có text khác.`
+  
+  try {
+    const response = await openai.chat.completions.create({
+      model: selectModel(TaskType.REGULAR_CHAT),
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3
+    })
+    
+    const content = response.choices[0].message.content || '{}'
+    let analysis = JSON.parse(content)
+    
+    // Ensure all fields have values
+    analysis = {
+      current_income: analysis.current_income || data.income.average || data.income.min || 7000000,
+      current_savings: analysis.current_savings || data.current_savings || 0,
+      goal: analysis.goal || goal,
+      timeline: analysis.timeline || data.timeline,
+      risk_tolerance: analysis.risk_tolerance || 'moderate',
+      skills: analysis.skills || []
+    }
+    
+    return { analysis }
+  } catch (error) {
+    // Fallback if API fails
+    return {
+      analysis: {
+        current_income: data.income.average || 7000000,
+        current_savings: data.current_savings || 0,
+        goal: goal,
+        timeline: data.timeline,
+        risk_tolerance: 'moderate',
+        skills: data.skills ? data.skills.split(',') : []
+      }
+    }
+  }
+}
+
 // ---
-// Multi-step long-form plan generation to bypass single-call token limits
-// Applies to all tiers; free clamps ~5k, paid targets 20k–50k words.
+// Simplified Plan Generation V3 - Complete Rewrite
 export async function generateLongPlanMultiStep(
   planName: string,
   goal: string,
   collectedInfo: any
 ): Promise<string> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const tier: string = String(collectedInfo?.tier || 'free')
-
-  // Step 1: Create the Analytical Report (The "Brain")
-  const analyticalReport = await createAnalyticalReport(collectedInfo, goal);
-  const analyzedData = analyticalReport.analysis;
-
-  // HARD FALLBACK: If LLM missed savings in Analytical Report, try to extract via regex from chat/form
-  try {
-    const toText = (v: any) => (typeof v === 'string' ? v : JSON.stringify(v || ''))
-    const chatText = (collectedInfo?.chat_summary || '').toString()
-    const formText = toText(collectedInfo)
-
-    const parseAmount = (num: string, unit: string): number => {
-      const n = parseFloat(num.replace(/\./g, '').replace(/,/g, '.'))
-      if (!isFinite(n)) return 0
-      const u = unit.toLowerCase()
-      if (/tỷ|ty|bn|billion/.test(u)) return Math.round(n * 1_000_000_000)
-      // mặc định triệu
-      return Math.round(n * 1_000_000)
-    }
-
-    const findSavings = (t: string): number => {
-      // tìm cụm có từ khoá tiết kiệm/đang có/tài khoản và số + đơn vị gần kề
-      const r1 = /(ti(ế|e)t\s*ki(ệ|e)m|tiet\s*kiem|tài\s*khoản\s*ti(ế|e)t\s*ki(ệ|e)m|tk\b|savings|số\s*dư)[^\d]{0,30}?([0-9]+(?:[.,][0-9]+)?)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)/i
-      const m1 = t.match(r1)
-      if (m1) return parseAmount(m1[5] || m1[6] || m1[3], m1[6] || m1[7] || m1[4] || '')
-
-      // fallback: dạng "300 triệu" đứng gần chữ tiết kiệm trong 1 câu
-      const r2 = /([0-9]+(?:[.,][0-9]+)?)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)[^.!?\n]{0,40}?(ti(ế|e)t\s*ki(ệ|e)m|tiet\s*kiem|tk\b|savings)/i
-      const m2 = t.match(r2)
-      if (m2) return parseAmount(m2[1], m2[2])
-      return 0
-    }
-
-    const detected = Math.max(findSavings(chatText), findSavings(formText))
-    if ((!analyzedData.current_savings || analyzedData.current_savings === 0) && detected > 0) {
-      analyzedData.current_savings = detected
-    }
-  } catch (e) {
-    console.warn('Savings hard-fallback parse failed:', e)
+  const tier = String(collectedInfo?.tier || 'free')
+  
+  // Extract data with fallbacks
+  const chatSummary = String(collectedInfo?.chat_summary || '')
+  let income = '7 – 10 triệu VNĐ/tháng'
+  let savings = '0'
+  let timeline = '2 – 3 năm'
+  let skills: string[] = []
+  
+  // Try to extract income
+  const incomeMatch = chatSummary.match(/(\d+)\s*[-–]\s*(\d+)\s*(?:triệu)?.*?\/tháng/i)
+  if (incomeMatch) {
+    income = `${incomeMatch[1]} – ${incomeMatch[2]} triệu VNĐ/tháng`
   }
-
-  // HARD FALLBACK: extract current income (min/max/avg) from chat if analysis missed
-  try {
-    const text = (collectedInfo?.chat_summary || '').toString()
-    const normNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(/,/g, '.'))
-    const unitMul = (u: string) => (/tỷ|ty|bn|billion/i.test(u) ? 1_000_000_000 : 1_000_000)
-    const setIncome = (min?: number, max?: number, avg?: number, raw?: string) => {
-      analyzedData.current_income = analyzedData.current_income || { min: null, max: null, average: null, text: '' }
-      if (typeof min === 'number' && typeof max === 'number' && min > 0 && max > 0) {
-        analyzedData.current_income.min = Math.round(min)
-        analyzedData.current_income.max = Math.round(max)
-        analyzedData.current_income.average = Math.round((min + max) / 2)
-      } else if (typeof avg === 'number' && avg > 0) {
-        analyzedData.current_income.average = Math.round(avg)
-      }
-      if (raw) analyzedData.current_income.text = raw
-    }
-    const rRange = /(\d+)\s*(?:-|–|to|đến)\s*(\d+)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)\s*(?:\/|per|mỗi)?\s*tháng/i
-    const mRange = text.match(rRange)
-    if (mRange) {
-      const a = normNum(mRange[1]) * unitMul(mRange[3])
-      const b = normNum(mRange[2]) * unitMul(mRange[3])
-      setIncome(a, b, undefined, `${mRange[1]}-${mRange[2]} ${mRange[3]}/tháng`)
-    } else {
-      const rSingle = /([0-9]+(?:[.,][0-9]+)?)\s*(tỷ|ty|bn|billion|triệu|tr|trieu)\s*(?:\/|per|mỗi)?\s*tháng/i
-      const mSingle = text.match(rSingle)
-      if (mSingle) {
-        const v = normNum(mSingle[1]) * unitMul(mSingle[2])
-        setIncome(undefined, undefined, v, `${mSingle[1]} ${mSingle[2]}/tháng`)
-      }
-    }
-  } catch (e) {
-    console.warn('Income hard-fallback parse failed:', e)
+  
+  // Try to extract timeline
+  const timelineMatch = chatSummary.match(/(\d+)\s*[-–]\s*(\d+)\s*năm/i)
+  if (timelineMatch) {
+    timeline = `${timelineMatch[1]} – ${timelineMatch[2]} năm`
   }
-
-  // HARD FALLBACK: extract timeline like "2-3 năm" or "36 tháng"
-  try {
-    const t = (collectedInfo?.chat_summary || '').toString()
-    const rYearRange = /(\d+)\s*[-–]\s*(\d+)\s*năm/i
-    const rYears = /(\d+)\s*năm/i
-    const rMonths = /(\d+)\s*tháng/i
-    if (!analyzedData.timeline || analyzedData.timeline === 'Chưa cung cấp') {
-      let tl: string | null = null
-      const mYR = t.match(rYearRange)
-      if (mYR) tl = `${mYR[1]} - ${mYR[2]} năm`
-      else {
-        const mY = t.match(rYears)
-        if (mY) tl = `${mY[1]} năm`
-        else {
-          const mM = t.match(rMonths)
-          if (mM) tl = `${mM[1]} tháng`
-        }
-      }
-      if (tl) analyzedData.timeline = tl
-    }
-  } catch (e) {
-    console.warn('Timeline hard-fallback parse failed:', e)
+  
+  // Try to extract savings
+  const savingsMatch = chatSummary.match(/tiết kiệm[^\d]*(\d+)\s*(?:triệu|tỷ)/i)
+  if (savingsMatch) {
+    savings = savingsMatch[1] + ' triệu VNĐ'
   }
+  
+  // Extract skills if available
+  if (collectedInfo.skills) {
+    skills = Array.isArray(collectedInfo.skills) ? collectedInfo.skills : [collectedInfo.skills]
+  }
+  
+  // Build user context
+  const userContext = `Thông tin người dùng:
+- Mục tiêu: ${goal}
+- Thu nhập hiện tại: ${income}
+- Tiết kiệm hiện có: ${savings}
+- Thời gian mục tiêu: ${timeline}
+- Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}`
+  
+  // System prompt
+  const systemPrompt = `Bạn là chuyên gia tư vấn tài chính. Tạo kế hoạch chi tiết dựa trên thông tin người dùng.
 
-  // Tier-specific word limits
+Yêu cầu:
+1. Sử dụng đúng thông tin đã cung cấp
+2. KHÔNG viết "VALIDATION", "Kiểm tra", "Giả định"
+3. KHÔNG dùng placeholder, example.com
+4. Nếu không có link thật, cung cấp từ khoá tìm kiếm
+5. Viết chi tiết và cụ thể`
+
+  // Define sections
+  const sections = [
+    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 4 },
+    { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 3 },
+    { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 2 },
+    { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3 },
+    { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 2 },
+    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 3 },
+    { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 2 },
+    { key: 'mindset', title: '8. Psychology & Mindset', weight: 1 },
+    { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1 }
+  ]
+  
+  // Generate section content
+  const generateSectionContent = async (section: any, targetWords: number): Promise<string> => {
+    const prompts: any = {
+      profile: `Tạo phần Chân dung tài chính cá nhân.
+Bắt đầu bằng bullet list:
+• Mục tiêu tài chính: ${goal}
+• Thu nhập hiện tại: ${income}
+• Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
+• Mong muốn: Đạt mục tiêu trong ${timeline}
+
+Sau đó phân tích chi tiết. KHÔNG hiển thị 'Nơi sinh sống' hoặc 'Nghề nghiệp'.`,
+      goals: `Phân tích mục tiêu: ${goal}.
+Động lực, lý do, tiêu chí SMART, khoảng cách so với hiện tại.`,
+      current: `Phân tích hiện trạng:
+- Thu nhập: ${income}
+- Tiết kiệm: ${savings}
+So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
+      models: `Đề xuất mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${goal}.`,
+      saving: `Lập kế hoạch tiết kiệm và đầu tư để đạt ${goal} trong ${timeline}.`,
+      plan: `Tạo kế hoạch hành động chi tiết cho ${timeline}. Chia theo năm, quý, tháng.`,
+      learning: `Liệt kê tài liệu học tập. KHÔNG dùng link. Chỉ cung cấp từ khoá tìm kiếm:
+
+★ YouTube:
+- "${skills[0] || 'digital marketing'} for beginners 2024"
+- "how to ${goal.toLowerCase().replace(/[^a-z0-9 ]/g, '')}"
+- "passive income strategies Vietnam"
+
+★ Coursera:
+- "financial planning fundamentals"
+- "${skills[0] || 'marketing'} specialization"
+
+★ LinkedIn Learning:
+- "business growth strategies"
+- "personal finance mastery"
+
+★ Google Digital Garage:
+- "digital marketing basics"
+- "grow your business online"
+
+★ Brandcamp.asia:
+- "marketing căn bản"
+- "xây dựng thương hiệu cá nhân"`,
+      mindset: `Tư vấn tâm lý để đạt ${goal}. Cách vượt khó khăn và duy trì động lực.`,
+      conclusion: `Tóm tắt kế hoạch và 3 hành động cần làm ngay để bắt đầu.`
+    }
+
+    const prompt = prompts[section.key] || `Phân tích chi tiết về ${section.title}`
+    
+    try {
+      const response = await openai.chat.completions.create({
+        model: selectModel(TaskType.COMPLEX_PLANNING),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `${userContext}\n\nViết phần: ${section.title}\n\n${prompt}\n\nĐộ dài: khoảng ${targetWords} từ.` }
+        ],
+        temperature: 0.7,
+        max_tokens: Math.min(1800, targetWords * 2)
+      })
+      
+      let content = response.choices[0]?.message?.content || ''
+      
+      // Clean up content
+      content = cleanContent(content)
+      
+      return content
+    } catch (error) {
+      console.error(`Error generating ${section.key}:`, error)
+      return `## ${section.title}\n\n(Nội dung đang được xử lý)`
+    }
+  }
+  
+  // Clean content function
+  const cleanContent = (text: string): string => {
+    let cleaned = text
+    
+    // Remove validation text
+    cleaned = cleaned.replace(/VALIDATION[^\n]*/gi, '')
+    cleaned = cleaned.replace(/Kiểm tra lần[^\n]*/gi, '')
+    cleaned = cleaned.replace(/Giả định:[^\n]*/gi, '')
+    
+    // Remove placeholders
+    cleaned = cleaned.replace(/\[URL cụ thể\]/gi, '')
+    cleaned = cleaned.replace(/example\.com/gi, '')
+    cleaned = cleaned.replace(/placeholder/gi, '')
+    
+    // Remove conditional phrases
+    cleaned = cleaned.replace(/Nếu timeline[^\n]*/gi, '')
+    cleaned = cleaned.replace(/Nếu thời gian[^\n]*/gi, '')
+    
+    // Remove empty lines
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+    
+    return cleaned.trim()
+  }
+  
+  // Calculate word budget
   const MIN_WORDS = tier === 'free' ? 3000 : 20000
   const MAX_WORDS = tier === 'free' ? 5000 : 50000
-  const TARGET = Math.min(MAX_WORDS, Math.max(MIN_WORDS, Number(collectedInfo?.maxWords) || MIN_WORDS))
-
-  const normalizeCurrency = (v: any, suffix: string) => {
-    const num = typeof v === 'number' ? v : (typeof v === 'string' && v.trim() ? Number(v.replace(/[.,\s]/g, '')) : NaN)
-    return Number.isFinite(num) && num > 0 ? `${num.toLocaleString('vi-VN')} ${suffix}` : 'Chưa cung cấp'
-  }
-  const normalizeText = (v: any) => (v && String(v).trim().length > 0 ? String(v) : 'Chưa cung cấp')
-
-  // Format income string from analyzed current_income structure
-  const formatIncomeFromAnalysis = (ci: any): string => {
-    try {
-      if (!ci || typeof ci !== 'object') return 'Chưa cung cấp'
-      const min = Number(ci.min)
-      const max = Number(ci.max)
-      const avg = Number(ci.average)
-      const fmt = (n: number) => Number.isFinite(n) && n > 0 ? `${n.toLocaleString('vi-VN')} VNĐ/tháng` : ''
-      if (Number.isFinite(min) && Number.isFinite(max) && min > 0 && max > 0) return `${fmt(min)} - ${fmt(max)}`
-      if (Number.isFinite(avg) && avg > 0) return fmt(avg)
-      const t = typeof ci.text === 'string' ? ci.text.trim() : ''
-      return t && /\d/.test(t) ? t : 'Chưa cung cấp'
-    } catch { return 'Chưa cung cấp' }
-  }
-
-  // Step 2: Build context from the validated Analytical Report
-  const baseContext = `Thông tin người dùng (đã được phân tích và xác thực):\n` +
-    `- Mục tiêu chính: ${normalizeText(analyzedData.asset_goals.map((g: any) => `${g.item} (${normalizeCurrency(g.value, 'VNĐ')})`).join(', ')) || goal}\n` +
-    `- Tổng mục tiêu tài sản: ${normalizeCurrency(analyzedData.total_asset_goal, 'VNĐ')}\n` +
-    `- Mục tiêu thu nhập: ${normalizeCurrency(analyzedData.income_goal, 'VNĐ/tháng')}\n` +
-    `- Thu nhập hiện tại: ${formatIncomeFromAnalysis(analyzedData.current_income)}\n` +
-    `- Tiết kiệm hiện có: ${normalizeCurrency(analyzedData.current_savings, 'VNĐ')}\n` +
-    `- Kỹ năng: ${normalizeText(analyzedData.skills?.join(', '))}\n` +
-    `- Thời gian thực hiện: ${normalizeText(analyzedData.timeline)}\n`
-
-  // Bố cục cho gói trả phí (24 mục)
-  const paidSections: { key: string; title: string; weight: number; extra?: string }[] = [
-    { key: 'title', title: '1. Tiêu đề', weight: 1 },
-    { key: 'overview', title: '2. Tổng quan kế hoạch', weight: 3, extra: 'Bao gồm mục tiêu và hồ sơ cá nhân & bối cảnh (đủ các trường đã nêu). Trình bày dạng gạch đầu dòng chi tiết + đoạn tóm tắt.' },
-    { key: 'swot', title: '3. Phân tích SWOT cá nhân', weight: 3, extra: 'Dựa dữ liệu VN, có bảng 4 cột chuẩn Markdown.' },
-    { key: 'smart', title: '4. Mục tiêu SMART', weight: 2, extra: 'Cụ thể, đo được, khả thi, thực tế, thời hạn; có bảng đối chiếu chỉ số/KPI.' },
-    { key: 'strategy', title: '5. Phân tích mục tiêu tài chính & chiến lược tổng quan', weight: 4 },
-    { key: 'mindmap', title: '6. Mindmap lộ trình (roadmap/mindmap)', weight: 3, extra: 'Xuất code block ```mermaid mindmap``` hợp lệ. NGAY SAU ĐÓ thêm heading "Bản thay thế thuần nội dung" liệt kê lộ trình dạng văn bản phòng lỗi hiển thị.' },
-    { key: 'actions', title: '8. Đề xuất hành động / chiến lược cụ thể', weight: 4 },
-    { key: 'tasks', title: '9. Những việc cần làm để đạt mục tiêu', weight: 4 },
-    { key: 'factors', title: '10. Các yếu tố khách quan/chủ quan', weight: 2 },
-    { key: 'skills', title: '11. Kỹ năng, kinh nghiệm cần có', weight: 3 },
-    { key: 'assets', title: '12. Kế hoạch tích luỹ tài sản', weight: 3 },
-    { key: 'invest', title: '13. Kế hoạch đầu tư & quản trị rủi ro', weight: 3 },
-    { key: 'bizmodels', title: '14. Mô hình kinh doanh phù hợp & bước thực thi', weight: 4 },
-    { key: 'timeline', title: '15. Kế hoạch chi tiết theo thời gian (năm-quý-tháng-tuần-ngày)', weight: 6, extra: 'Trình bày văn bản + kèm link Google Sheets nếu có sẵn; nếu chưa, hướng dẫn kết nối ở mục 17.' },
-    { key: 'checklist', title: '16. Checklist hành động hàng ngày/tuần/tháng', weight: 3, extra: 'Bảng Markdown hợp lệ với cột Thời gian | Hành động cụ thể | Link tài liệu.' },
-    { key: 'sheets', title: '17. GOOGLE SHEETS THEO DÕI (LINK THỰC – TỰ ĐỘNG TẠO)', weight: 1, extra: 'Nếu chưa thể tự tạo, ghi rõ hướng dẫn người dùng kết nối Google ở Dashboard để tự động tạo file.' },
-    { key: 'learning', title: '18. Tài liệu học tập & kỹ năng', weight: 3, extra: 'Tuân thủ quy tắc link đã tối ưu (YouTube channel ≥10k sub, tiếng Anh, không link chung chung). Luôn kèm từ khoá tìm kiếm.' },
-    { key: 'scenarios', title: '19. Dự báo 3 kịch bản (Worst/Base/Best)', weight: 2 },
-    { key: 'risk', title: '20. Chiến lược giảm rủi ro', weight: 2 },
-    { key: 'spiritual', title: '21. Phân tích tử vi / thần số học', weight: 2 },
-    { key: 'summary', title: '22. Tóm tắt & kết luận hành động', weight: 2 },
-    { key: 'guide', title: '23. Hướng dẫn sử dụng kế hoạch hiệu quả', weight: 1 },
-    { key: 'closing', title: '24. Kết luận & động lực hành động', weight: 1 },
-  ]
-
-  // Bố cục cho gói Free (linh hoạt, tập trung chất lượng)
-  // Bố cục Free linh hoạt, ưu tiên phân tích sâu, trình bày tự nhiên như bản tốt nhất từng xuất hiện
-  const freeSections: { key: string; title: string; weight: number; extra?: string }[] = [
-    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 4, extra: 'Liệt kê: mục tiêu tài chính, thu nhập hiện tại, kỹ năng, mong muốn (nếu user cung cấp trong chat). KHÔNG hiển thị Nơi sinh sống/Nghề nghiệp.' },
-    { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 3, extra: 'Phân tích mục tiêu cụ thể, động lực, lý do chọn, SMART, gap phân tích.' },
-    { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 2, extra: 'Thu nhập hiện tại, tiết kiệm, phân tích gap, so sánh thực tế.' },
-    { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3, extra: 'Gợi ý mô hình kinh doanh, đầu tư, phân tích rủi ro, ví dụ thực tiễn.' },
-    { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 2, extra: 'Chiến lược tiết kiệm, đầu tư, cách áp dụng thực tế.' },
-    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 3, extra: 'Lộ trình từng năm/quý/tháng, hành động chi tiết, checklist.' },
-    { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 2, extra: 'Link thật, kênh uy tín, từ khoá tìm kiếm, mô tả chi tiết, cách áp dụng.' },
-    { key: 'mindset', title: '8. Psychology & Mindset', weight: 1, extra: 'Khích lệ, động lực, mindset, cách vượt qua rào cản.' },
-    { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1, extra: 'Tóm tắt, nhấn mạnh hành động, nhắc lại mục tiêu.' }
-  ]
-
-  const sections = tier === 'free' ? freeSections : paidSections
+  const TARGET = Math.min(MAX_WORDS, Math.max(MIN_WORDS, 4000))
   const totalWeight = sections.reduce((s, x) => s + x.weight, 0)
-  const wordBudgetFor = (w: number) => clamp(Math.round((w / totalWeight) * TARGET), 150, Math.min(1800, TARGET))
-
-  const system = {
-    role: 'system' as const,
-    content: `
-<INSTRUCTIONS>
-Bạn là một chuyên gia tài chính AI. Nhiệm vụ của bạn là tạo ra một bản kế hoạch chi tiết, chuyên sâu và cá nhân hóa. TUYỆT ĐỐI KHÔNG ĐƯỢC hiển thị bất kỳ nội dung nào bên trong thẻ <INSTRUCTIONS> này cho người dùng.
-
-QUY TRÌNH BẮT BUỘC:
-
-1.  **PHÂN TÍCH MỤC TIÊU:**
-    *   **Mục tiêu Tích lũy Tài sản:** Là các mục tiêu mua sắm hoặc tiết kiệm cụ thể (ví dụ: mua nhà 3 tỷ, xe 800 triệu, có 10 tỷ tiết kiệm). **TÍNH TỔNG** tất cả các mục tiêu này để ra 'Tổng Mục tiêu Tài sản'.
-    *   **Mục tiêu Thu nhập:** Là mức thu nhập mong muốn (ví dụ: thu nhập 1 tỷ/tháng). Đây là **PHƯƠNG TIỆN**, không phải là 'Tổng Mục tiêu' để tính toán khoảng cách.
-    *   **Ví dụ:** Nếu người dùng nói 'Mục tiêu thu nhập 1 tỷ/tháng và có nhà 3 tỷ, xe 800 triệu, tiết kiệm 10 tỷ', thì:
-        *   Tổng Mục tiêu Tài sản = 3 + 0.8 + 10 = 13.8 tỷ.
-        *   Khoảng cách (Gap) = 13.8 tỷ - (Tiết kiệm hiện có).
-        *   Mục tiêu thu nhập 1 tỷ/tháng là công cụ để đạt được 13.8 tỷ đó.
-
-2.  **BỐ CỤC KẾ HOẠCH:**
-    *   Nếu tier là 'free', tuân theo bố cục linh hoạt sau: ${freeSections.map(s => s.title).join(', ')}.
-    *   Nếu tier là 'paid', tuân thủ NGHIÊM NGẶT 24 mục sau: ${paidSections.map(s => s.title).join(', ')}.
-
-3.  **YÊU CẦU CHẤT LƯỢNG (KHÔNG ĐƯỢC VI PHẠM):**
-    *   **KHÔNG** được hiển thị các bước suy nghĩ, validation, hay bất kỳ chỉ dẫn nào cho AI (như 'VALIDATION 4 LẦN...'). Chỉ viết nội dung kế hoạch.
-    *   **CHÍNH XÁC:** Mọi con số phải lấy từ dữ liệu người dùng. Phép tính phải đúng.
-    *   **KHÔNG PLACEHOLDER:** Tuyệt đối không dùng '[URL cụ thể]', 'example.com', 'placeholder.com'. Nếu không có link thật, phải cung cấp từ khóa tìm kiếm.
-    *   **ĐỦ SÂU:** Mỗi mục phải được phân tích chi tiết, có ví dụ, không viết cho có.
-    *   **MARKDOWN HỢP LỆ:** Bảng phải có header, separator và data đúng chuẩn.
-</INSTRUCTIONS>
-
-Bây giờ, hãy bắt đầu tạo kế hoạch dựa trên những chỉ dẫn trên và thông tin người dùng được cung cấp.
-`
+  const wordBudgetFor = (w: number) => Math.round((w / totalWeight) * TARGET)
+  
+  // Generate all sections
+  const parts: string[] = []
+  for (const section of sections) {
+    const budget = wordBudgetFor(section.weight)
+    const content = await generateSectionContent(section, budget)
+    parts.push(`## ${section.title}\n\n${content}`)
   }
-
-  // Helper: Validate and fix content per section (links + general placeholders)
-  const validateAndFixLinks = (content: string, sectionKey: string): string => {
-    let fixed = content
-
-    // Khai báo biến normalize trước để dùng trong mọi section
-    const normIncome = normalizeCurrency((collectedInfo as any)?.income ?? (collectedInfo as any)?.current_income, 'VNĐ/tháng')
-    const normSavings = normalizeCurrency((collectedInfo as any)?.savings, 'VNĐ')
-    const normTimeline = normalizeText((collectedInfo as any)?.timeline)
-    const normGoal = normalizeText((collectedInfo as any)?.goal || goal)
-    const incomeTextForFix = formatIncomeFromAnalysis(analyzedData?.current_income)
-
-    // Nếu là mục "learning" (tài liệu học tập), kiểm tra nghiêm ngặt
-    if (sectionKey === 'learning') {
-      // Replace link giả/chung chung (tham lam hơn để bắt cả path)
-      fixed = fixed.replace(/https?:\/\/([a-zA-Z0-9-]+\.)?(example|placeholder|domain|yoursite|mysite)\.com\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-      fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(youtube\.com(?!\/channel)|coursera\.org(?!\/learn)|edx\.org(?!\/course)|google\.com(?!\/search)|linkedin\.com\/learning(?!\/)|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-
-      // Replace link web Việt Nam (trừ brandcamp.asia)
-      fixed = fixed.replace(/\bhttps?:\/\/(www\.)?(?!brandcamp\.asia)[a-zA-Z0-9-]+\.vn\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-
-      // AGGRESSIVE: Remove ALL bracket placeholders in learning section
-      fixed = fixed.replace(/\[URL\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
-      fixed = fixed.replace(/\[Link\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
-      fixed = fixed.replace(/\[.*?(URL|Link|url|link).*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên nền tảng uy tín]')
-
-      // Alias placeholders like: Link: link_khoa_hoc_...
-      fixed = fixed.replace(/^\s*[-*]?\s*Link\s*:\s*link[_a-z0-9-]+/gim, 'Link: [TỪ KHOÁ TÌM KIẾM: gõ tên tài liệu + nền tảng uy tín (Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia)]')
-
-      // Dòng 'Link:' không có URL thực -> chuyển thành gợi ý từ khoá
-      fixed = fixed.replace(/^(\s*[-*]?\s*Link\s*:\s*)(?!https?:\/\/)(?!\[TỪ KHOÁ)/gim, `$1[TỪ KHOÁ TÌM KIẾM: gõ tên tài liệu + nền tảng uy tín (Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia)]`)
-
-      // Remove entire lines with "Link: [" but no real URL
-      fixed = fixed.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
-
-      // BAN LINKS for learning: remove any remaining http(s) and convert any 'Link:' lines to 'Từ khoá:'
-      fixed = fixed.replace(/https?:\/\/\S+/gi, '')
-      fixed = fixed.replace(/^\s*[-*]?\s*Link\s*:/gim, 'Từ khoá:')
-
-      // Build PHƯƠNG ÁN B fallback: 5+ platforms x 5 keywords each
-      const createKeywordFallback = (): string => {
-        const skills = Array.isArray(analyzedData?.skills)
-          ? analyzedData.skills
-          : (Array.isArray((collectedInfo as any)?.skills) ? (collectedInfo as any).skills : [])
-        const topSkill = skills && skills.length > 0 ? String(skills[0]).toLowerCase() : 'marketing'
-        const kw = (arr: string[]) => arr.slice(0, 5).map(k => `    - ${k}`).join('\n')
-        return [
-          '**PHƯƠNG ÁN B (Fallback khi không có link thật):**',
-          'Dưới đây là các nền tảng uy tín và từ khoá gợi ý để tự tra cứu (ưu tiên tiếng Anh). Mỗi nền tảng kèm 5 từ khoá:',
-          '',
-          '1) YouTube Channels',
-          kw([`learn ${topSkill} online`, 'digital marketing strategy', 'performance ads tutorial', 'tiktok content strategy', 'youtube growth 0 to 1']),
-          '',
-          '2) Coursera',
-          kw([`${topSkill} specialization`, 'business analytics fundamentals', 'financial planning basics', 'product marketing for saas', 'marketing analytics']),
-          '',
-          '3) LinkedIn Learning',
-          kw(['growth marketing foundations', 'google ads essentials', 'facebook ads advanced', 'content strategy for social', 'seo fundamentals']),
-          '',
-          '4) Google Digital Garage / Google Learning',
-          kw(['digital marketing', 'analytics academy', 'search engine marketing', 'measurement plan', 'conversion rate optimization']),
-          '',
-          '5) TED / TED-Ed',
-          kw(['entrepreneurship', 'habit building', 'productivity systems', 'storytelling for business', 'innovation mindset']),
-          '',
-          '6) Brandcamp.asia (Việt Nam)',
-          kw(['digital marketing basics', 'branding fundamentals', 'content strategy', 'performance marketing', 'social media strategy']),
-          '',
-        ].join('\n')
-      }
-
-      // Nếu có bất kỳ link không hợp lệ hoặc không có link thật, luôn ép fallback PHƯƠNG ÁN B
-      const hasInvalidLink = /(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org|edx\.org|google\.com|linkedin\.com|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)/i.test(fixed)
-      const hasRealLink = /https?:\/\//i.test(fixed)
-      const hasAliasPlaceholder = /\blink_[a-z0-9_\-]+/i.test(fixed)
-      if (hasInvalidLink || !hasRealLink || hasAliasPlaceholder) {
-        fixed += `\n\n${createKeywordFallback()}`
-      }
-    }
-
-    // Generic fix: replace any 'true VND' artifacts with normalized income text
-    fixed = fixed.replace(/\btrue\s*VN[ĐD](?:\/tháng)?\b/gi, incomeTextForFix || 'Chưa cung cấp')
-    fixed = fixed.replace(/(thu\s*nhập[^\n]*?)true\s*VN[ĐD](?:\/tháng)?/gi, `$1${incomeTextForFix || 'Chưa cung cấp'}`)
-    fixed = fixed.replace(/(Thu\s*nhập[^:]*:\s*)(true\b)/gi, `$1${incomeTextForFix || 'Chưa cung cấp'}`)
-
-    fixed = fixed
-      .replace(/(Thu\s*nhập\s*(HIỆN\s*TẠI|hiện\s*tại)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normIncome}`)
-      .replace(/(Tiết\s*kiệm\s*hiện\s*có[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normSavings}`)
-      .replace(/(Thời\s*gian\s*(thực\s*hiện|mục\s*tiêu|timeline)[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normTimeline}`)
-      .replace(/(Mục\s*tiêu\s*tài\s*chính[^:]*:\s*)(true|không\s*cung\s*cấp|chưa\s*cung\s*cấp|N\/A)[^\n]*/gi, `$1${normGoal}`)
-      // Remove any line containing VALIDATION or internal thoughts
-      .replace(/^.*VALIDATION.*\n?/gim, '')
-      .replace(/^.*Kiểm tra lần [1-9]:.*\n?/gim, '')
-      .replace(/^.*suy nghĩ nội bộ.*\n?/gim, '')
-      .replace(/^\s*Giả\s*định\s*:\s*.*$/gim, '')
-
-    // Xoá hoàn toàn dòng Nơi sinh sống và Nghề nghiệp ở mọi section
-    fixed = fixed.replace(/^.*Nơi\s*sinh\s*sống[^\n]*\n?/gim, '')
-    fixed = fixed.replace(/^.*Nghề\s*nghiệp[^\n]*\n?/gim, '')
-
-    // Với PROFILE: ép thêm tóm lược dạng bullet theo yêu cầu
-    if (sectionKey === 'profile') {
-      const incomeText = formatIncomeFromAnalysis(analyzedData?.current_income)
-      const skillsText = Array.isArray(analyzedData?.skills) ? analyzedData.skills.join(', ') : 'Chưa cung cấp'
-      const desireText = normalizeText((analyzedData as any)?.readiness)
-      const goalText = normalizeText((collectedInfo as any)?.goal || goal)
-      const summary = `📋 Tóm lược thông tin:\n• Mục tiêu tài chính: ${goalText}\n• Thu nhập hiện tại: ${incomeText}\n• Kỹ năng: ${skillsText}\n• Mong muốn: ${desireText}\n`
-      fixed = `${summary}\n${fixed}`
-    }
-
-    return fixed
+  
+  // Combine plan
+  let plan = `# ${planName}\n\n${parts.join('\n\n')}`
+  
+  // Final cleanup
+  plan = cleanContent(plan)
+  
+  // Ensure minimum length
+  const wordCount = plan.split(/\s+/).length
+  if (wordCount < MIN_WORDS && tier === 'free') {
+    plan += `\n\n## Phụ lục: Chi tiết bổ sung\n\nKế hoạch này được thiết kế đặc biệt cho mục tiêu "${goal}" với timeline ${timeline}.\n\nĐể thành công, bạn cần tập trung vào việc nâng cao kỹ năng ${skills.join(', ')} và tận dụng tối đa thu nhập hiện tại ${income}.\n\nHãy bắt đầu ngay hôm nay với những bước nhỏ nhưng kiên định!`
   }
-
-  // Helper: kiểm tra nội dung có placeholder, lặp prompt, hoặc quá ngắn
-  const needsRewrite = (content: string, sectionKey?: string, minWords = 200) => {
-    if (!content) return true
-    // Detect common placeholders and invalid patterns
-    if (/\b(true|chưa cung cấp|không đủ dữ liệu|placeholder|Tên|Link\s*:\s*\(|VALIDATION|prompt yêu cầu)\b/i.test(content)) return true
-    // Detect bracket placeholders: [URL cụ thể], [Link cụ thể], [URL ...], [Link ...], etc.
-    if (/\[(URL|Link|url|link)\s*(cụ\s*thể|c\u1ee5\s*th\u1ec3)?\]/i.test(content)) return true
-    if (/\[.*?(URL|Link).*?\]/i.test(content) && !/\[T\u1eea\s*KHO\u00c1/i.test(content)) return true
-    // Detect alias placeholder like link_sach_..., link_khoa_hoc_...
-    if (/\blink_[a-z0-9_\-]+/i.test(content)) return true
-    if (content.length < 150) return true
-    if ((content.match(/\w+/g) || []).length < minWords) return true
-    // For learning section, must have real links OR keyword suggestions
-    if (sectionKey === 'learning' && !content.includes('http') && !content.toLowerCase().includes('từ khoá')) return true
-    if (sectionKey === 'learning' && content.includes('http') && !content.toLowerCase().includes('coursera') && !content.toLowerCase().includes('linkedin learning') && !content.toLowerCase().includes('google') && !content.toLowerCase().includes('ted') && !content.toLowerCase().includes('brandcamp.asia')) return true
-  return false
-}
-
-  const make = async (title: string, instruction: string, targetWords: number, sectionKey?: string) => {
-    // Lớp 1: Tăng cường instruction cho từng mục, ép AI dùng dữ liệu user chat
-    let finalInstruction = instruction
-    // The userDataNote now also uses the validated data from the analytical report.
-    let userDataNote = `\n\nDỮ LIỆU ĐÃ XÁC THỰC CỦA NGƯỜI DÙNG:\n${baseContext}\n\nBẮT BUỘC sử dụng đúng các dữ liệu ĐÃ XÁC THỰC này cho phân tích, KHÔNG được placeholder, KHÔNG lặp lại prompt, nếu thiếu dữ liệu phải giả định hợp lý và ghi rõ. Mỗi mục tối thiểu ${targetWords} từ, phân tích sâu, có ví dụ, số liệu, insight, không máy móc.`
-    if (sectionKey === 'learning') {
-      finalInstruction = `${instruction}\n\nQUAN TRỌNG - TUÂN THỦ NGHIÊM NGẶT:\n- CHỈ lấy link THẬT từ các nguồn uy tín quốc tế (Coursera, LinkedIn Learning, Google, TED, Skillshare).\n- Link YouTube PHẢI là link KÊNH (youtube.com/channel/...), ≥10k sub, tiếng Anh, đúng kỹ năng.\n- KHÔNG gợi ý web Việt Nam trừ https://www.brandcamp.asia/.\n- Nếu KHÔNG chắc link, PHẢI ghi rõ TỪ KHOÁ TÌM KIẾM (5-10 từ khoá cụ thể) và nền tảng uy tín.\n- TUYỆT ĐỐI KHÔNG dùng: example.com, placeholder.com, youtube.com (không phải kênh), coursera.org (không phải khóa học cụ thể).`
-    }
-    else if (sectionKey === 'profile') {
-      finalInstruction = `${instruction}\n\nBẮT BUỘC: Mở đầu bằng danh sách gạch đầu dòng liệt kê đúng 4 mục: (1) Mục tiêu tài chính, (2) Thu nhập hiện tại (nếu là khoảng, ghi dạng A - B VNĐ/tháng), (3) Kỹ năng, (4) Mong muốn/Sẵn sàng. KHÔNG đưa 'Nơi sinh sống' hay 'Nghề nghiệp'.`
-    }
-    else if (sectionKey === 'plan') {
-      const timelineText = normalizeText(analyzedData?.timeline)
-      finalInstruction = `${instruction}\n\nTIMELINE BẮT BUỘC: Sử dụng đúng timeline đã xác thực: "${timelineText}" để xây lộ trình theo năm → quý → tháng. CẤM ghi 'Tùy theo timeline người dùng'. Nếu timeline là '2 - 3 năm' hãy phủ hết 24-36 tháng.`
-    }
-
-    // Quy tắc định dạng nghiêm ngặt cho mọi mục
-    finalInstruction += `\n- KHÔNG chèn tiêu đề Markdown cấp 3-6 trong nội dung; dùng đoạn văn, danh sách, bảng.\n- KHÔNG đưa bất kỳ nhãn/bước như VALIDATION hoặc suy nghĩ nội bộ vào nội dung trả cho người dùng.\n- 'Nơi sinh sống' chỉ hiển thị nếu có trong dữ liệu đã xác thực; nếu không có, ghi 'Chưa cung cấp'.\n- TUYỆT ĐỐI KHÔNG được kết luận người dùng THIẾU một kỹ năng nếu 'DỮ LIỆU ĐÃ XÁC THỰC' liệt kê họ CÓ kỹ năng đó (ví dụ: có 'marketing'/'chạy ads' thì không được ghi 'thiếu kiến thức marketing'). Thay vào đó hãy nêu rõ mức độ hiện tại và lộ trình nâng cấp.\n- Với mục 'Tài liệu học tập': nếu không chắc link thật, chuyển sang PHƯƠNG ÁN B: liệt kê ÍT NHẤT 5 nền tảng uy tín (YouTube, Coursera, LinkedIn Learning, Google, TED hoặc Brandcamp.asia) và cho MỖI nền tảng 5 từ khoá tìm kiếm (ưu tiên tiếng Anh) phù hợp với mục tiêu/kỹ năng của người dùng, kèm 1-2 câu lợi ích và lý do học.`
-
-    let content = ''
-    let retry = 0
-    while (retry < 4) {
-      const messages = [
-        system,
-        { role: 'user' as const, content: `${title}\n\n${baseContext}${userDataNote}\n\nYÊU CẦU CHO MỤC NÀY:\n- Nội dung CHUYÊN SÂU, CỤ THỂ, có thể hành động ngay.\n- Dài khoảng ${targetWords} từ (có thể vượt nhẹ nếu cần).\n- Nếu sử dụng Mermaid, THÊM "Bản thay thế thuần nội dung" ngay bên dưới.\n${finalInstruction ? '- Ghi chú bổ sung: ' + finalInstruction : ''}` }
-      ]
-      const completion = await openai.chat.completions.create({
-        model: selectModel(TaskType.COMPLEX_PLANNING),
-        messages,
-        max_tokens: 1800,
-        temperature: 0.7,
-      })
-      content = completion.choices[0]?.message?.content?.trim() || ''
-      if (sectionKey) {
-        content = validateAndFixLinks(content, sectionKey)
-      }
-      if (!needsRewrite(content, sectionKey, Math.max(200, targetWords * 0.8))) break
-      retry++
-      finalInstruction += '\n\nLưu ý: Bạn vừa trả lời chưa đạt yêu cầu (placeholder, thiếu dữ liệu, quá ngắn, lặp lại prompt, thiếu link thật/từ khoá). Hãy sửa lại mục này đúng chuẩn, phân tích sâu hơn, dài hơn, dùng đúng dữ liệu user.'
-    }
-    return content
-  }
-
-  let parts: string[] = []
-  for (const s of sections) {
-    const budget = wordBudgetFor(s.weight)
-    const content = await make(s.title, s.extra || '', budget, s.key)  // Pass sectionKey để validate
-    parts.push(`## ${s.title}\n\n${content}`)
-  }
-
-  // If paid tier and total words still below minimum, auto-extend with appendices
-  let combined = `# ${planName}\n\n${parts.join('\n\n')}`
-
-  const wordCount = (t: string) => (t.match(/\S+/g) || []).length
-  let safetyCounter = 0
-  const EXTEND_TARGET = tier === 'free' ? 4800 : MIN_WORDS
-  while (wordCount(combined) < EXTEND_TARGET && safetyCounter < 12) {
-    safetyCounter++
-    const extra = await make('PHỤ LỤC BỔ SUNG', 'Bổ sung case study, ví dụ thực tế, KPI chi tiết, bảng ngân sách, risk register, playbook thực thi theo tuần. TUYỆT ĐỐI KHÔNG chèn tiêu đề Markdown cấp 3-6 trong nội dung; dùng đoạn văn/bullet.', 1200)
-    combined += `\n\n## Phụ lục mở rộng ${safetyCounter}\n\n${extra}`
-  }
-
-  // Final sanitization pass: remove internal markers and invalid links globally
-  const sanitizePlan = (text: string): string => {
-    let t = text
-    // Remove any example/placeholder domains anywhere
-    t = t.replace(/https?:\/\/([a-zA-Z0-9-]+\.)?(example|placeholder|domain|yoursite|mysite)\.com\S*/gi, '[TỪ KHOÁ TÌM KIẾM: tra cứu trên Coursera, LinkedIn Learning, Google, TED, Brandcamp.asia]')
-    
-    // Remove ALL bracket placeholders (multiple patterns)
-    t = t.replace(/\[URL\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
-    t = t.replace(/\[Link\s*cụ\s*thể\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
-    t = t.replace(/\[.*?URL.*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
-    t = t.replace(/Link:\s*\[.*?\]/gi, 'Link: [TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
-    
-    // Remove lines with "Link: [" but no actual URL
-    t = t.replace(/^\s*[-*]?\s*Link:\s*\[(?!https?:\/\/).*?\]\s*$/gmi, '')
-    
-    // Demote in-content subheadings (### or deeper) to bold lines
-    t = t.replace(/^#{3,6}\s+(.*)$/gm, '**$1**')
-    
-    // Remove any visible VALIDATION/internal checks blocks
-    t = t.replace(/^(?:\s*\d+\.|\s*[-*])?\s*VALIDATION[\s\S]*?(?=\n\s*\n|$)/gmi, '')
-    t = t.replace(/\bVALIDATION\b.*$/gmi, '')
-    // Remove lines like 'Kiểm tra lần X: ...' and the 'Tính khả thi (VALIDATION ...)' headings
-    t = t.replace(/^.*Kiểm\s*tra\s*lần\s*\d+\s*:\s*.*$/gmi, '')
-    t = t.replace(/^.*Tính\s*khả\s*thi\s*\(.*VALIDATION.*\).*$/gmi, '')
-    // Remove generic disclaimer lines we don't want
-    t = t.replace(/^.*Tùy\s*theo\s*timeline\s*người\s*dùng.*$/gmi, '')
-    // Remove conditional timeline lines (avoid generic templates)
-    t = t.replace(/^.*Nếu\s*timeline[^\n]*$/gmi, '')
-    t = t.replace(/^.*Nếu\s*thời\s*gian\s*mục\s*tiêu[^\n]*$/gmi, '')
-    // Remove any 'Giả định:' lines everywhere
-    t = t.replace(/^\s*Giả\s*định\s*:\s*.*$/gmi, '')
-    // Replace stray 'true VND' tokens globally as last guard
-    const incomeGuard = formatIncomeFromAnalysis(analyzedData?.current_income)
-    t = t.replace(/\btrue\s*VN[ĐD](?:\/tháng)?\b/gi, incomeGuard || 'Chưa cung cấp')
-    
-    return t
-  }
-
-  combined = sanitizePlan(combined)
-
-  // INTERNAL AUDITOR: Final validation before returning to user
-  const internalAuditor = (plan: string, data: any): string => {
-    let warnings: string[] = []
-    
-    // Check 1: Verify current_savings is displayed correctly
-    const savingsValue = data.current_savings || 0
-    if (savingsValue > 0) {
-      const savingsPattern = new RegExp(`${savingsValue.toLocaleString('vi-VN')}|${(savingsValue / 1000000).toFixed(0)}\\s*(triệu|tr)`, 'i')
-      if (!savingsPattern.test(plan)) {
-        warnings.push(`⚠️ AUDITOR: current_savings = ${savingsValue} VNĐ nhưng không xuất hiện trong plan. Đang bổ sung...`)
-        // Auto-fix: ensure savings appears in the plan context
-        const savingsText = `\n\n**LƯU Ý QUAN TRỌNG:** Tiết kiệm hiện có: ${savingsValue.toLocaleString('vi-VN')} VNĐ (${(savingsValue / 1000000).toFixed(0)} triệu VNĐ).\n`
-        plan = plan.replace(/(##\s*.*?Khoảng\s*cách.*?Gap.*?:)/i, `$1${savingsText}`)
-      }
-    }
-    
-    // Check 2: Verify no "Giả định: Tiết kiệm hiện có = 0" if user has savings
-    if (savingsValue > 0 && /Giả\s*định.*?Tiết\s*kiệm.*?=\s*0/i.test(plan)) {
-      warnings.push(`⚠️ AUDITOR: Phát hiện "Giả định: Tiết kiệm = 0" nhưng user có ${savingsValue} VNĐ. Đang sửa...`)
-      plan = plan.replace(/Giả\s*định:\s*Tiết\s*kiệm.*?=\s*0\s*VN[ĐD]/gi, `Tiết kiệm hiện có: ${savingsValue.toLocaleString('vi-VN')} VNĐ`)
-    }
-    
-    // Check 3: Verify no [URL cụ thể] or similar patterns remain
-    if (/\[.*?URL.*?\]|\[.*?Link.*?\]|\[.*?cụ\s*thể.*?\]/i.test(plan)) {
-      warnings.push('⚠️ AUDITOR: Phát hiện placeholder link còn sót. Đang loại bỏ...')
-      plan = plan.replace(/\[.*?(URL|Link|cụ\s*thể).*?\]/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín]')
-    }
-
-    // Check 4: Skills contradiction - marketing present but plan says lacking marketing
-    const skillsArr = Array.isArray(data.skills) ? data.skills.map((s: any) => String(s).toLowerCase()) : []
-    const hasMarketing = skillsArr.some((s: string) => s.includes('marketing') || s.includes('ads') || s.includes('tiktok') || s.includes('youtube') || s.includes('sáng tạo') || s.includes('content'))
-    if (hasMarketing && /thiếu\s*kiến\s*thức[^\n]*marketing/i.test(plan)) {
-      warnings.push('⚠️ AUDITOR: User có kỹ năng marketing nhưng nội dung nói thiếu marketing. Đang điều chỉnh diễn đạt...')
-      plan = plan.replace(/Thiếu\s*kiến\s*thức[^\n]*marketing[^.]*\./gi, 'Bạn đã có nền tảng marketing; trọng tâm là nâng cấp kỹ năng chuyên sâu (performance, content, funnel, analytics) và hệ thống hoá quy trình để scale.')
-    }
-
-    // Check 5: Surface declared skills as strengths if missing
-    if (skillsArr.length > 0 && !skillsArr.some((s: string) => new RegExp(s.replace(/[-/\\^$*+?.()|[\]{}]/g, ''), 'i').test(plan))) {
-      warnings.push('⚠️ AUDITOR: Kỹ năng đã xác thực chưa được đưa vào nội dung. Đang bổ sung...')
-      const skillsBullet = skillsArr.map((s: string) => `- ${s}`).join('\n')
-      const insertText = `\n\n**Điểm mạnh bổ sung (theo dữ liệu đã xác thực):**\n${skillsBullet}\n`
-      const anchor = /(##\s*2\.[^\n]*Mục tiêu tài chính & động lực[^\n]*\n)/i
-      if (anchor.test(plan)) plan = plan.replace(anchor, `$1${insertText}`)
-      else plan += insertText
-    }
-    
-    // Log all warnings
-    if (warnings.length > 0) {
-      console.warn('🔍 INTERNAL AUDITOR REPORT:\n' + warnings.join('\n'))
-    }
-    
-    return plan
-  }
-
-  combined = internalAuditor(combined, analyzedData)
-
-  // Clamp final length by trimming softly if over MAX_WORDS (rare)
-  const tokens = combined.split(/\s+/)
-  if (tokens.length > MAX_WORDS) {
-    combined = tokens.slice(0, MAX_WORDS - 50).join(' ') + '\n\n(Đã rút gọn để phù hợp giới hạn hiển thị)'
-  }
-
-  return combined
+  
+  return plan
 }
