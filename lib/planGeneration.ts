@@ -4,6 +4,7 @@
  */
 
 import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { selectModel, TaskType } from './modelSelection'
 import { getMicroTasksSystemPrompt } from './prompts'
 
@@ -800,6 +801,53 @@ Yêu cầu:
     { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1 }
   ]
   
+  // Helper: GPT-4o-mini first, then Claude-3-5-haiku fallback
+  const generateTextWithFallback = async (
+    system: string,
+    user: string,
+    maxTokens: number,
+    temperature: number
+  ): Promise<string> => {
+    // Try OpenAI first
+    try {
+      const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      const completion = await openaiClient.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user }
+        ],
+        temperature,
+        max_tokens: maxTokens
+      })
+      const text = completion.choices?.[0]?.message?.content || ''
+      if (text && text.trim().length > 0) return text
+    } catch (err) {
+      // Fall through to Claude
+    }
+
+    // Fallback to Claude Haiku
+    try {
+      if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key missing')
+      const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const resp = await claude.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        system,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [
+          { role: 'user', content: user }
+        ]
+      })
+      const c0: any = resp.content?.[0]
+      const text = c0 && c0.type === 'text' ? String(c0.text || '') : ''
+      if (text && text.trim().length > 0) return text
+      throw new Error('Empty Claude response')
+    } catch (err2) {
+      throw err2
+    }
+  }
+  
   // Generate section content
   const generateSectionContent = async (section: any, targetWords: number): Promise<string> => {
     const prompts: any = {
@@ -849,21 +897,14 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
     const prompt = prompts[section.key] || `Phân tích chi tiết về ${section.title}`
     
     try {
-      const response = await openai.chat.completions.create({
-        model: selectModel(TaskType.COMPLEX_PLANNING),
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `${userContext}\n\nViết phần: ${section.title}\n\n${prompt}\n\nĐộ dài: khoảng ${targetWords} từ.` }
-        ],
-        temperature: 0.7,
-        max_tokens: Math.min(1800, targetWords * 2)
-      })
-      
-      let content = response.choices[0]?.message?.content || ''
-      
-      // Clean up content
+      const raw = await generateTextWithFallback(
+        systemPrompt,
+        `${userContext}\n\nViết phần: ${section.title}\n\n${prompt}\n\nĐộ dài: khoảng ${targetWords} từ.`,
+        Math.min(1800, targetWords * 2),
+        0.7
+      )
+      let content = raw || ''
       content = cleanContent(content)
-      
       return content
     } catch (error) {
       console.error(`Error generating ${section.key}:`, error)
