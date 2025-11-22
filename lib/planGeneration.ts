@@ -765,27 +765,87 @@ export async function generateLongPlanMultiStep(
   const assetsValueVndVal: number | null = typeof collectedInfo?.assets_value === 'number' ? collectedInfo.assets_value : null
   const assetsCategoriesVal: string[] = Array.isArray(collectedInfo?.assets) ? collectedInfo.assets : []
   
-  // Try to extract income
-  const incomeMatch = chatSummary.match(/(\d+)\s*[-–]\s*(\d+)\s*(?:triệu)?.*?\/tháng/i)
+  // Try to extract income (range or single)
+  const incomeMatch =
+    chatSummary.match(/(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)?(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i) ||
+    chatSummary.match(/thu\s*nhập[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)/i)
   if (incomeMatch) {
-    income = `${incomeMatch[1]} – ${incomeMatch[2]} triệu VNĐ/tháng`
+    income = `${incomeMatch[1].replace(/[.,]/g,'')} – ${incomeMatch[2].replace(/[.,]/g,'')} triệu VNĐ/tháng`
+  } else {
+    const incomeSingle = chatSummary.match(/(?:thu\s*nhập|kiếm|lợi\s*nhuận)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i)
+    if (incomeSingle) {
+      income = `${incomeSingle[1].replace(/[.,]/g,'')} triệu VNĐ/tháng`
+    }
   }
   
   // Try to extract timeline
-  const timelineMatch = chatSummary.match(/(\d+)\s*[-–]\s*(\d+)\s*năm/i)
+  const timelineMatch = chatSummary.match(/(\d+)\s*(?:[-–~]|tới|đến|to)\s*(\d+)\s*năm/i)
   if (timelineMatch) {
     timeline = `${timelineMatch[1]} – ${timelineMatch[2]} năm`
+  } else {
+    const timelineSingleMatch = chatSummary.match(/(?:trong|trong\s*vòng)?\s*(\d+)\s*năm/i)
+    if (timelineSingleMatch) {
+      timeline = `${timelineSingleMatch[1]} năm`
+    }
   }
   
-  // Try to extract savings
-  const savingsMatch = chatSummary.match(/tiết kiệm[^\d]*(\d+)\s*(?:triệu|tỷ)/i)
-  if (savingsMatch) {
-    savings = savingsMatch[1] + ' triệu VNĐ'
+  // Try to extract savings (prefer current over target)
+  let savingsVnd: number | null = null
+  if (typeof collectedInfo?.current_savings === 'number' && collectedInfo.current_savings > 0) {
+    savingsVnd = collectedInfo.current_savings
+  } else {
+    const currentSavingsMatch = chatSummary.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+    if (currentSavingsMatch) {
+      const num = parseFloat(currentSavingsMatch[1].replace(/[.,]/g, ''))
+      const unit = (currentSavingsMatch[2] || '').toLowerCase()
+      savingsVnd = unit.includes('tỷ') || unit.includes('ty') ? num * 1_000_000_000 : num * 1_000_000
+    } else {
+      const targetCtx = /mục\s*tiêu[^\n]{0,80}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)/i.test(chatSummary)
+      if (!targetCtx) {
+        const generic = chatSummary.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+        if (generic) {
+          const num2 = parseFloat(generic[1].replace(/[.,]/g, ''))
+          const unit2 = (generic[2] || '').toLowerCase()
+          savingsVnd = unit2.includes('tỷ') || unit2.includes('ty') ? num2 * 1_000_000_000 : num2 * 1_000_000
+        }
+      }
+    }
+  }
+  if (typeof savingsVnd === 'number' && savingsVnd > 0) {
+    savings = savingsVnd >= 1_000_000_000
+      ? `${(savingsVnd / 1_000_000_000).toFixed(1)} tỷ VNĐ`
+      : `${Math.round(savingsVnd / 1_000_000)} triệu VNĐ`
   }
   
   // Extract skills if available
   if (collectedInfo.skills) {
     skills = Array.isArray(collectedInfo.skills) ? collectedInfo.skills : [collectedInfo.skills]
+  }
+  if (!skills || skills.length === 0) {
+    const dict = [
+      { re: /digital\s*marketing/i, val: 'digital marketing' },
+      { re: /\bmarketing\b/i, val: 'marketing' },
+      { re: /chạy\s*ads|quảng\s*cáo|\bads\b/i, val: 'chạy ads' },
+      { re: /facebook\s*ads/i, val: 'facebook ads' },
+      { re: /google\s*ads/i, val: 'google ads' },
+      { re: /tiktok/i, val: 'tiktok' },
+      { re: /youtube/i, val: 'youtube' },
+      { re: /sáng\s*tạo\s*nội\s*dung|\bcontent\b/i, val: 'sáng tạo nội dung' },
+      { re: /làm\s*sản\s*phẩm|\bproduct\b/i, val: 'làm sản phẩm' },
+      { re: /\bseo\b/i, val: 'SEO' },
+      { re: /email\s*marketing/i, val: 'email marketing' },
+      { re: /kinh\s*doanh\s*online/i, val: 'kinh doanh online' },
+      { re: /growth/i, val: 'growth' },
+    ]
+    const set = new Set<string>()
+    for (const d of dict) {
+      if (d.re.test(chatSummary)) set.add(d.val)
+    }
+    const line = /(?:kỹ\s*năng|kinh\s*nghiệm)[^:：\-]*[:：\-]?\s*([^\n]+)/i.exec(chatSummary)
+    if (line && line[1]) {
+      line[1].split(/[\,\|\/;]|\s+và\s+/i).map(s => s.trim()).filter(Boolean).forEach(s => set.add(s))
+    }
+    skills = Array.from(set).slice(0, 10)
   }
   
   // Build user context
@@ -875,7 +935,7 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
       learning: `Liệt kê tài liệu học tập. KHÔNG dùng link. Chỉ cung cấp từ khoá tìm kiếm:
 
 ★ YouTube:
-- "${skills[0] || 'digital marketing'} for beginners 2024"
+- "${skills[0] || 'digital marketing'} for beginners"
 - "how to ${goal.toLowerCase().replace(/[^a-z0-9 ]/g, '')}"
 - "passive income strategies Vietnam"
 

@@ -22,9 +22,52 @@ function extractLineAfter(label: RegExp, text: string): string | null {
 }
 
 function extractSkills(text: string): string[] | null {
-  const line = extractLineAfter(/kỹ năng/i, text)
-  if (!line) return null
-  return line.split(/[,;|]/).map(s => s.trim()).filter(Boolean).slice(0, 10)
+  const line = extractLineAfter(/kỹ năng|kinh nghiệm/i, text)
+  let list: string[] = []
+  if (line) {
+    list = line.split(/[;,|\/]|\s+và\s+/i).map(s => s.trim()).filter(Boolean)
+  }
+  if (!list.length) {
+    const dict: Array<{ re: RegExp; val: string }> = [
+      { re: /digital\s*marketing/i, val: 'digital marketing' },
+      { re: /\bmarketing\b/i, val: 'marketing' },
+      { re: /chạy\s*ads|quảng\s*cáo|\bads\b/i, val: 'chạy ads' },
+      { re: /facebook\s*ads/i, val: 'facebook ads' },
+      { re: /google\s*ads/i, val: 'google ads' },
+      { re: /tiktok/i, val: 'tiktok' },
+      { re: /youtube/i, val: 'youtube' },
+      { re: /sáng\s*tạo\s*nội\s*dung|\bcontent\b/i, val: 'sáng tạo nội dung' },
+      { re: /làm\s*sản\s*phẩm|\bproduct\b/i, val: 'làm sản phẩm' },
+      { re: /\bseo\b/i, val: 'SEO' },
+      { re: /email\s*marketing/i, val: 'email marketing' },
+      { re: /kinh\s*doanh\s*online/i, val: 'kinh doanh online' },
+      { re: /growth/i, val: 'growth' },
+    ]
+    const set = new Set<string>()
+    for (const d of dict) if (d.re.test(text)) set.add(d.val)
+    if (set.size) return Array.from(set).slice(0, 10)
+    return null
+  }
+  return Array.from(new Set(list)).slice(0, 10)
+}
+
+function extractSavingsVnd(text: string): number | null {
+  const current = text.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+  if (current) {
+    const num = parseFloat(current[1].replace(/[.,]/g, ''))
+    const unit = (current[2] || '').toLowerCase()
+    return unit.includes('tỷ') || unit.includes('ty') ? num * 1_000_000_000 : num * 1_000_000
+  }
+  const targetCtx = /mục\s*tiêu[^\n]{0,80}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)/i.test(text)
+  if (!targetCtx) {
+    const generic = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+    if (generic) {
+      const num2 = parseFloat(generic[1].replace(/[.,]/g, ''))
+      const unit2 = (generic[2] || '').toLowerCase()
+      return unit2.includes('tỷ') || unit2.includes('ty') ? num2 * 1_000_000_000 : num2 * 1_000_000
+    }
+  }
+  return null
 }
 
 function extractIncomeRange(text: string): string | null {
@@ -251,7 +294,8 @@ export async function POST(request: NextRequest) {
       target_income: collectedInfo?.target_income || extractTargetIncome(fullChatSummary),
       timeline: collectedInfo?.timeline || extractTimelineRange(fullChatSummary) || extractTimelineSingle(fullChatSummary),
       project: collectedInfo?.project || collectedInfo?.current_project || extractProject(fullChatSummary) || undefined,
-      location: collectedInfo?.location || extractLocation(fullChatSummary) || undefined
+      location: collectedInfo?.location || extractLocation(fullChatSummary) || undefined,
+      current_savings: collectedInfo?.current_savings || extractSavingsVnd(fullChatSummary) || undefined
     }
 
     const enrichedCollectedInfo = { ...collectedInfo, chat_summary: fullChatSummary, ...extracted }
