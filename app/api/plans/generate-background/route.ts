@@ -3,12 +3,11 @@ export const maxDuration = 300
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
-import OpenAI from 'openai'
 import { logger } from '@/lib/logger'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
-import { getPlanPromptV4, getUserContextV4 } from '@/lib/planPromptV4'
+import { generateLongPlanMultiStep } from '@/lib/planGeneration'
 
 /**
  * Background Job API - Starts plan generation in background
@@ -295,80 +294,14 @@ async function processJobInBackground(
       logger.error('BG_ENSURE_PROFILE_FAIL', { userId, error: String(ensureErr) })
     }
 
-    // Generate plan using V4 one-call JSON with short timeout to avoid long hangs
-    logger.info('BG_ONECALL_START', { jobId })
+    // Generate plan using unified clean generator (no legacy prompts)
+    logger.info('BG_GENERATOR_V4_START', { jobId })
     const tier = String(collectedInfo?.tier || 'free')
     const limits = getSubscriptionLimits(tier)
-    const constraints = {
-      max_words: limits.words || 1500,
-      max_mermaid: tier === 'free' ? 0 : tier === 'basic' ? 0 : 0,
-      max_tables: 0,
-      min_resources: tier === 'free' ? 5 : tier === 'basic' ? 25 : tier === 'pro' ? 45 : 60,
-      max_resources: tier === 'free' ? 15 : tier === 'basic' ? 35 : tier === 'pro' ? 60 : 80,
-      resources_policy: 'gpt_only'
-    }
-
-    const systemPrompt = getPlanPromptV4(tier, constraints, collectedInfo)
-    const userContext = getUserContextV4(collectedInfo)
-    const userTimeline = collectedInfo?.timeline || '12 tháng'
-    const forceTextOnly = `\n\n⚠️⚠️⚠️ CHÚ Ý QUAN TRỌNG NHẤT ⚠️⚠️⚠️\n1. TUYỆT ĐỐI KHÔNG dùng bảng Markdown\n2. TUYỆT ĐỐI KHÔNG dùng Mermaid/sơ đồ\n3. Dùng thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", v.v.\n4. Nội dung là văn bản thuần với Markdown cơ bản\n5. KHÔNG có phần "Xuất Dữ Liệu Bảng"\n6. FREE = đúng 9 phần + CTA nâng cấp ở cuối; PREMIUM = đúng 24 phần\n`
-    const userPrompt = `${userContext}\n\n🎯 YÊU CẦU CỤ THỂ:\n${goals}\n\n⏰ TIMELINE: ${userTimeline}\n\n📊 TIER: ${tier.toUpperCase()}\n${forceTextOnly}`
-
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured')
-    }
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-    // Dynamic timeout by tier (free: 60s, paid: 300s)
-    const controller = new AbortController()
-    const tierTimeoutMs = tier === 'free' ? 60000 : 300000
-    const timeoutId = setTimeout(() => controller.abort(), tierTimeoutMs)
-    let raw = '{}'
-    try {
-      logger.info('BG_OPENAI_CALL', { jobId, model: 'gpt-4o-mini' })
-      const completion = await openai.chat.completions.create(
-        {
-          model: 'gpt-4o-mini',
-          response_format: { type: 'json_object' },
-          temperature: tier === 'free' ? 0.5 : 0.3,
-          max_tokens: Math.min(2500, Math.ceil((constraints.max_words || 1500) * 1.3)),
-          messages: [
-            { role: 'system', content: String(systemPrompt) },
-            { role: 'user', content: userPrompt.slice(0, 8000) }
-          ]
-        },
-        { signal: controller.signal }
-      )
-      clearTimeout(timeoutId)
-      raw = completion.choices?.[0]?.message?.content || '{}'
-      logger.info('BG_OPENAI_DONE', { jobId, size: raw.length })
-    } catch (e: any) {
-      clearTimeout(timeoutId)
-      logger.warn('BG_OPENAI_FAILED', { jobId, error: String(e?.message || e) })
-      // Fallback to Claude 3 Opus
-      try {
-        const Anthropic = require('@anthropic-ai/sdk').default
-        const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-        const claudeResp = await claude.messages.create({
-          model: 'claude-3-5-sonnet-20241022', // Cập nhật model mới nhất
-          max_tokens: Math.min(3000, Math.ceil((constraints.max_words || 1500) * 1.5)),
-          messages: [
-            { role: 'user', content: `${String(systemPrompt)}\n\n${userPrompt.slice(0, 8000)}` }
-          ]
-        })
-        raw = claudeResp.content?.[0]?.type === 'text' ? claudeResp.content[0].text : '{}'
-        logger.info('BG_CLAUDE_DONE', { jobId, size: raw.length })
-      } catch (fallbackErr: any) {
-        logger.error('BG_CLAUDE_FAILED', { jobId, error: String(fallbackErr?.message || fallbackErr) })
-        throw new Error(`AI call failed (GPT then Claude): ${fallbackErr?.message || String(fallbackErr)}`)
-      }
-    }
-
-    // Parse and sanitize
-    let parsed: any
-    try { parsed = JSON.parse(raw) } catch { parsed = {} }
-    let content_md = String(parsed?.content_markdown || '')
-    const title = typeof parsed?.title === 'string' && parsed.title.trim().length ? parsed.title : (planName || 'Kế hoạch tài chính')
+    const safeTitle = planName || 'Kế hoạch tài chính'
+    const safeGoals = goals || collectedInfo?.goal || 'Kế hoạch tài chính'
+    let content_md = await generateLongPlanMultiStep(safeTitle, safeGoals, { ...collectedInfo, maxWords: limits.words, tier })
+    const title = safeTitle
 
     content_md = content_md
       .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
@@ -377,65 +310,9 @@ async function processJobInBackground(
       .replace(/#+\s*$/gm, '')
       .replace(/\n{3,}/g, '\n\n')
 
-    if (tier === 'free' && !content_md.includes('NÂNG CẤP GÓI TRẢ PHÍ NGAY')) {
-      content_md += `\n\n**🏁 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**\nBản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:\n✅ 24 phần phân tích chuyên sâu (gấp 3 lần)\n✅ Google Sheets tự động với 7 tabs tracking\n✅ Phân tích tử vi tài chính & thần số học\n✅ 3-5 mô hình kinh doanh cá nhân hóa\n✅ 50+ tài liệu học tập premium\n✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết\n✅ Dự báo 3 kịch bản & chiến lược rủi ro\n👉 Nâng cấp tại: https://planai.io.vn/pricing\n`
-    }
+    // Do not inject CTA or legacy text
 
-    // Optional QA validator pass (improve coherence and fill gaps). Enabled for paid tiers by default.
-    try {
-      const enableQa = process.env.ENABLE_QA_VALIDATOR !== 'false'
-      if (enableQa) {
-        const qaController = new AbortController()
-        const qaTimeoutMs = Math.min(180000, Math.max(60000, tierTimeoutMs - 10000)) // leave headroom
-        const qaTimeout = setTimeout(() => qaController.abort(), qaTimeoutMs)
-        const qaPrompt = [
-          'Bạn là Trưởng biên tập chuyên kiểm tra số liệu và logic. Hãy KIỂM TRA CHÉO + HOÀN THIỆN nội dung kế hoạch.',
-          '',
-          '🔍 NHIỆM VỤ KIỂM TRA SỐ LIỆU (ƯU TIÊN CAO NHẤT):',
-          '1. Đọc lại THÔNG TIN NGƯỜI DÙNG - thu nhập HIỆN TẠI là bao nhiêu?',
-          '2. Tìm tất cả chỗ trong kế hoạch có nhắc đến thu nhập hiện tại',
-          '3. Kiểm tra: AI có tự bịa số liệu không? (VD: user nói "7-10 triệu" mà AI viết "giả sử 20 triệu")',
-          '4. Nếu phát hiện số liệu SAI → SỬA NGAY thành số ĐÚNG từ thông tin user',
-          '5. Kiểm tra logic tính toán: Gap, Tiền cần/tháng, Tỷ lệ tiết kiệm - có dùng đúng thu nhập HIỆN TẠI không?',
-          '6. Phân biệt rõ: Thu nhập HIỆN TẠI ≠ Thu nhập MỤC TIÊU',
-          '',
-          'YÊU CẦU CHẤT LƯỢNG:',
-          '- Giữ nguyên cấu trúc bắt buộc (FREE=9 phần, PREMIUM=24 phần)',
-          '- KIỂM TRA ĐẶC BIỆT: Nếu FREE tier, PHẦN 8 phải có 10-12 tài liệu học tập chi tiết',
-          '- Loại mọi bảng/Mermaid. Chỉ dùng tiêu đề, danh sách, đoạn văn',
-          '- Check chéo số liệu và logic, loại placeholder, bổ sung thiếu sót',
-          '- KHÔNG được tự bịa số liệu khi đã có dữ liệu thật từ user',
-          '- Dùng mốc thời gian chung chung: "tháng thứ nhất", "quý thứ nhất", ...',
-          '',
-          'THÔNG TIN NGƯỜI DÙNG (rút gọn):',
-          userContext.slice(0, 1500),
-          '',
-          'NỘI DUNG GỐC CẦN SỬA:',
-          content_md.slice(0, 24000)
-        ].join('\n')
-        const qa = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          temperature: 0.2,
-          max_tokens: Math.min(1800, Math.ceil((constraints.max_words || 1500) * 1.4)),
-          messages: [
-            { role: 'system', content: 'Bạn là biên tập viên nghiêm khắc, trả về duy nhất nội dung Markdown hợp lệ, không thêm text ngoài lề.' },
-            { role: 'user', content: qaPrompt }
-          ]
-        }, { signal: qaController.signal })
-        clearTimeout(qaTimeout)
-        const improved = qa.choices?.[0]?.message?.content || ''
-        if (improved && improved.length > 100) {
-          content_md = String(improved)
-            .replace(/\|[^\n]*\|[^\n]*\|[\s\S]*?(?=\n\s*\n|$)/g, '')
-            .replace(/```mermaid[\s\S]*?```/g, '')
-            .replace(/#+\s*Xuất Dữ Liệu Bảng[\s\S]*?(#+|$)/i, '$1')
-            .replace(/#+\s*$/gm, '')
-            .replace(/\n{3,}/g, '\n\n')
-        }
-      }
-    } catch (qaErr) {
-      logger.warn('BG_QA_PASS_SKIPPED', { jobId, error: String(qaErr) })
-    }
+    // No QA rewriter pass in background route
 
     // Save plan (RLS first, fallback admin)
     let planData: any = null

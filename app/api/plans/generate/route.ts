@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
-import { generateFinancialPlanWithClaude } from '@/lib/claude'
 import { MODELS } from '@/lib/modelSelection'
 import { processFinancialPlanWithRAG } from '@/lib/rag'
 import { generateLongPlanMultiStep } from '@/lib/planGeneration'
@@ -91,8 +90,8 @@ export async function POST(request: NextRequest) {
       Object.assign(userProfile, extracted)
     }
     
-    // Generate cache key for this plan request (bump version to avoid stale cached layout)
-    const CACHE_VERSION = 'v3_free_layout_validate_links';
+    // Generate cache key for this plan request (bump version to avoid stale cached layout and legacy prompts)
+    const CACHE_VERSION = 'v4_clean_rewrite';
     const cacheKey = `plan_${CACHE_VERSION}_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`
     
     // Check if we have a cached plan
@@ -144,45 +143,8 @@ export async function POST(request: NextRequest) {
         )
       } catch (aiError) {
         logger.error('PLAN_GENERATE_OPENAI_ERROR', { error: aiError instanceof Error ? aiError.message : String(aiError) })
-        
-        try {
-          // Fallback to Claude-3.5-Sonnet
-          const systemPrompt = `Bạn là chuyên gia tài chính hàng đầu Việt Nam, chuyên tạo kế hoạch tài chính cá nhân hóa chi tiết.
-
-Thông tin người dùng:
-- Mục tiêu: ${userProfile.financial_goal}
-- Thu nhập: ${userProfile.current_income} VĐ/tháng
-- Nghề nghiệp: ${userProfile.occupation}
-- Thời gian: ${userProfile.timeline}
-- Địa điểm: ${userProfile.location}
-- Sẵn sàng: ${userProfile.readiness}
-
-Thông tin từ cuộc trò chuyện:
-${userProfile.description || 'Không có'}`
-          
-          const userPrompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam.
-
-Mục tiêu cụ thể: ${userProfile.financial_goal}
-Thu nhập: ${userProfile.current_income?.toLocaleString()} VĐ/tháng
-Thời gian: ${userProfile.timeline}
-
-Hãy tạo kế hoạch bao gồm:
-1. Tóm tắt mục tiêu với số liệu cụ thể
-2. Phân tích tình hình hiện tại
-3. Lộ trình chi tiết theo tháng/quý/năm
-4. Ngân sách và phân bổ tài chính
-5. Checklist hành động hàng ngày
-6. Tài liệu học tập
-7. Lời không và động viên
-
-Format: Markdown với headings, lists, và tables.`
-          
-          logger.info('PLAN_GENERATE_FALLBACK_CLAUDE', { goal: userProfile.financial_goal })
-          planContent = await generateFinancialPlanWithClaude(systemPrompt, userPrompt)
-        } catch (claudeError) {
-          logger.error('PLAN_GENERATE_CLAUDE_ERROR', { error: claudeError instanceof Error ? claudeError.message : String(claudeError) })
-          throw new Error('Không thể tạo kế hoạch tài chính. Vui lòng thử lại sau.')
-        }
+        // No legacy prompt fallbacks. Re-throw to surface meaningful error to client
+        throw aiError
       }
       
       // Cache the generated plan
