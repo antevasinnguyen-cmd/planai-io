@@ -11,6 +11,79 @@ import { getMicroTasksSystemPrompt } from './prompts'
 // Small utility: clamp a number between [lo, hi]
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
 
+const sleep = (ms: number) => new Promise(res => setTimeout(res, ms))
+const shouldRetry = (err: any): boolean => {
+  try {
+    const e = err || {}
+    const msg: string = String((e?.message || e?.toString || '') && (e.message || e.toString()))
+    const status: number | undefined = (e?.status || e?.code)
+    if (status && [408, 409, 425, 429, 500, 502, 503, 504].includes(Number(status))) return true
+    if (/timeout|timed out|ECONNRESET|ENETRESET|EHOSTUNREACH|ENOTFOUND|connection reset by peer|incomplete envelope|protocol error/i.test(msg)) return true
+  } catch {}
+  return false
+}
+
+async function aiTextWithFallback(
+  system: string | null | undefined,
+  user: string,
+  maxTokens: number,
+  temperature: number
+): Promise<string> {
+  const OPENAI_ATTEMPTS = 2
+  for (let i = 0; i < OPENAI_ATTEMPTS; i++) {
+    try {
+      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      const messages: any[] = system
+        ? [
+            { role: 'system', content: system },
+            { role: 'user', content: user }
+          ]
+        : [{ role: 'user', content: user }]
+      const c = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature,
+        max_tokens: Math.min(maxTokens, 2000)
+      })
+      const text = c.choices?.[0]?.message?.content || ''
+      if (text && text.trim().length > 0) return text
+    } catch (err) {
+      if (i < OPENAI_ATTEMPTS - 1 && shouldRetry(err)) {
+        await sleep(500 * (i + 1))
+        continue
+      }
+      break
+    }
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key missing')
+  const CLAUDE_ATTEMPTS = 2
+  for (let j = 0; j < CLAUDE_ATTEMPTS; j++) {
+    try {
+      const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const resp = await claude.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        system: system || undefined,
+        max_tokens: Math.min(maxTokens, 2000),
+        temperature,
+        messages: [
+          { role: 'user', content: user }
+        ]
+      })
+      const c0: any = resp.content?.[0]
+      const text = c0 && c0.type === 'text' ? String(c0.text || '') : ''
+      if (text && text.trim().length > 0) return text
+      throw new Error('Empty Claude response')
+    } catch (err) {
+      if (j < CLAUDE_ATTEMPTS - 1 && shouldRetry(err)) {
+        await sleep(500 * (j + 1))
+        continue
+      }
+      throw err
+    }
+  }
+}
+
 export interface MicroTask {
   priority: 'P0' | 'P1' | 'P2'
   task: string
@@ -58,10 +131,6 @@ export const generateMicroTasks = async (
   timeline: string
 ): Promise<DailyTasks> => {
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
     const prompt = `Tạo danh sách micro-tasks hàng ngày chi tiết cho người dùng:
 
 Thông tin:
@@ -95,26 +164,13 @@ Trả về JSON hợp lệ theo cấu trúc:
   }
 }`
 
-    const completion = await openai.chat.completions.create({
-      model: selectModel(TaskType.REGULAR_CHAT),
-      messages: [
-        {
-          role: 'system',
-          content: getMicroTasksSystemPrompt(),
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      max_tokens: 1000,
-      temperature: 0.7,
-    })
-
-    const response = completion.choices[0]?.message?.content || '{}'
+    const response = await aiTextWithFallback(getMicroTasksSystemPrompt(), prompt, 1400, 0.7)
     
     try {
-      return JSON.parse(response)
+      const text = String(response || '')
+      const fence = /```json\s*([\s\S]*?)```/i.exec(text)
+      const jsonStr = fence ? fence[1] : text
+      return JSON.parse(jsonStr)
     } catch {
       return {
         weekday: {
@@ -169,10 +225,6 @@ Trả về JSON hợp lệ theo cấu trúc:
  */
 export const generateWeeklyChecklist = async (goal: string): Promise<WeeklyChecklist> => {
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
     const prompt = `Tạo checklist hàng tuần (5-7 items) cho mục tiêu: ${goal}
 
 Mỗi item phải:
@@ -185,19 +237,7 @@ Trả về JSON:
   "tasks": ["item 1", "item 2", ...]
 }`
 
-    const completion = await openai.chat.completions.create({
-      model: selectModel(TaskType.REGULAR_CHAT),
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      max_tokens: 500,
-      temperature: 0.7,
-    })
-
-    const response = completion.choices[0]?.message?.content || '{}'
+    const response = await aiTextWithFallback('Bạn là trợ lý lập kế hoạch. Trả về JSON hợp lệ.', prompt, 800, 0.7)
     
     try {
       return JSON.parse(response)
@@ -225,10 +265,6 @@ Trả về JSON:
  */
 export const generateMonthlyChecklist = async (goal: string): Promise<MonthlyChecklist> => {
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
     const prompt = `Tạo checklist hàng tháng (5-7 items) cho mục tiêu: ${goal}
 
 Mỗi item phải:
@@ -240,23 +276,13 @@ Trả về JSON:
 {
   "tasks": ["item 1", "item 2", ...]
 }`
-
-    const completion = await openai.chat.completions.create({
-      model: selectModel(TaskType.REGULAR_CHAT),
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      max_tokens: 500,
-      temperature: 0.7,
-    })
-
-    const response = completion.choices[0]?.message?.content || '{}'
+    const response = await aiTextWithFallback('Bạn là trợ lý lập kế hoạch. Trả về JSON hợp lệ.', prompt, 800, 0.7)
     
     try {
-      return JSON.parse(response)
+      const text = String(response || '')
+      const fence = /```json\s*([\s\S]*?)```/i.exec(text)
+      const jsonStr = fence ? fence[1] : text
+      return JSON.parse(jsonStr)
     } catch {
       return {
         tasks: [
@@ -289,10 +315,6 @@ export const generateLearningResources = async (
   const isAllowedVietnamese = (url: string) => url.includes('brandcamp.asia')
 
   try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
     const prompt = `Tạo danh sách tài liệu học tập CHI TIẾT, CHỈ LẤY LINK THẬT, cho mục tiêu: ${goal}
 Ngành: ${occupation}
 
@@ -329,23 +351,7 @@ Cấu trúc bắt buộc:
 
 Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt động 100% hoặc từ khoá tìm kiếm rõ ràng.`
 
-    const completion = await openai.chat.completions.create({
-      model: selectModel(TaskType.REGULAR_CHAT),
-      messages: [
-        {
-          role: 'system',
-          content: 'Bạn là chuyên gia tư vấn học tập. Cung cấp tài liệu chất lượng cao với link thực tế, hoạt động được. Mỗi tài liệu phải có mô tả chi tiết và link trực tiếp.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      max_tokens: 2500,
-      temperature: 0.7,
-    })
-
-    let resources = completion.choices[0]?.message?.content || 'Không có tài liệu'
+    let resources = await aiTextWithFallback('Bạn là chuyên gia tư vấn học tập. Cung cấp tài liệu chất lượng cao với link thực tế, hoạt động được. Mỗi tài liệu phải có mô tả chi tiết và link trực tiếp.', prompt, 2500, 0.7)
 
     // Nếu phát hiện link chung chung hoặc link Việt Nam không phải brandcamp, thay thế bằng từ khoá tìm kiếm
     resources = resources.replace(/\bhttps?:\/\/(www\.)?(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com|youtube\.com(?!\/channel)|coursera\.org|edx\.org|google\.com|linkedin\.com|facebook\.com|tiktok\.com|zalo\.me|vnexpress\.net|dantri\.com|cafef\.vn|kenh14\.vn|vietnamnet\.vn|tuoitre\.vn|thanhnien\.vn|zingnews\.vn|bnews\.vn|vneconomy\.vn|cafebiz\.vn|vietstock\.vn|stockbiz\.vn|cafeland\.vn|webtretho\.com|vozforums\.com|reddit\.com|stackoverflow\.com|github\.com|bitbucket\.org|gitlab\.com)\S*/gi, '[TỪ KHOÁ TÌM KIẾM: vui lòng tra cứu trên nền tảng uy tín quốc tế như Coursera, Google, LinkedIn Learning, TED, Brandcamp.asia]')
@@ -364,25 +370,11 @@ Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt 
       
       try {
         // Try again with more forceful prompt
-        const retryPrompt = `Tạo danh sách tài liệu học tập với LINK THỰC TẾ (KHÔNG PHẢI example.com) cho: ${goal}\nNgành: ${occupation}\n\nLỖI NGHIÊM TRỌNG: Link giả/placeholder đã được phát hiện trong response trước đó.\n\nQUAN TRỌNG:\n- MỖI tài liệu PHẢI có link CÓ THẬT đến trang web thực tế (Coursera, edX, Khan Academy, LinkedIn Learning, Udemy)\n- TUYỆT ĐỐI KHÔNG dùng example.com, placeholder.com, domain.com, etc.\n- Nếu không chắc chắn về URL, hãy sử dụng link thực tế đến trang chủ khoá học\n\nCấu trúc giống như trước.`
+        const retryPrompt = `Tạo danh sách tài liệu học tập với LINK THỰC TẾ (KHÔNG PHẢI example.com) cho: ${goal}
+Ngành: ${occupation}
+\n\nLỖI NGHIÊM TRỌNG: Link giả/placeholder đã được phát hiện trong response trước đó.\n\nQUAN TRỌNG:\n- MỖI tài liệu PHẢI có link CÓ THẬT đến trang web thực tế (Coursera, edX, Khan Academy, LinkedIn Learning, Udemy)\n- TUYỆT ĐỐI KHÔNG dùng example.com, placeholder.com, domain.com, etc.\n- Nếu không chắc chắn về URL, hãy sử dụng link thực tế đến trang chủ khoá học\n\nCấu trúc giống như trước.`
         
-        const retryCompletion = await openai.chat.completions.create({
-          model: selectModel(TaskType.REGULAR_CHAT),
-          messages: [
-            {
-              role: 'system',
-              content: 'Bạn là chuyên gia tư vấn học tập. Cung cấp tài liệu với link THỰC TẾ (KHÔNG PHẢI example.com). Nếu không chắc về URL cụ thể, dùng trang chủ của nguồn thực tế.',
-            },
-            {
-              role: 'user',
-              content: retryPrompt,
-            },
-          ],
-          max_tokens: 2500,
-          temperature: 0.7,
-        })
-        
-        const retryResources = retryCompletion.choices[0]?.message?.content || resources
+        const retryResources = await aiTextWithFallback('Bạn là chuyên gia tư vấn học tập. Cung cấp tài liệu với link THỰC TẾ (KHÔNG PHẢI example.com). Nếu không chắc về URL cụ thể, dùng trang chủ của nguồn thực tế.', retryPrompt, 2500, 0.7)
         
         // Use retry resources only if they don't contain placeholder links
         if (!/(example\.com|placeholder\.com|domain\.com|mysite\.com|yoursite\.com)/i.test(retryResources)) {
@@ -399,6 +391,25 @@ Format: Markdown với headings rõ ràng, đầy đủ thông tin, link hoạt 
     console.error('Error generating learning resources:', error)
     return 'Không thể tạo danh sách tài liệu. Vui lòng thử lại.'
   }
+}
+
+// --- Smoke tests: validate output content without altering behavior
+export function smokeCheckPlanContent(content: string, tier: string = 'free'): { ok: boolean; issues: string[] } {
+  const issues: string[] = []
+  const text = String(content || '')
+  const has = (re: RegExp) => re.test(text)
+  const wc = text.trim().split(/\s+/).length
+  const min = tier === 'free' ? 3000 : 20000
+  const max = tier === 'free' ? 5000 : 50000
+  if (wc < min) issues.push(`word_count_below_min:${wc}<${min}`)
+  if (wc > max) issues.push(`word_count_above_max:${wc}>${max}`)
+  if (has(/VALIDATION/i)) issues.push('banned:VALIDATION')
+  if (has(/Giả định/i)) issues.push('banned:Gia_dinh')
+  if (has(/Kiểm\s*tra/i)) issues.push('banned:Kiem_tra')
+  if (has(/```mermaid[\s\S]*?```/i)) issues.push('banned:mermaid_block')
+  if (has(/\|\s*[-:]+\s*\|/)) issues.push('banned:markdown_table')
+  if (has(/example\.com|placeholder|\[URL cụ thể\]/i)) issues.push('banned:placeholder_or_fake_link')
+  return { ok: issues.length === 0, issues }
 }
 
 /**
@@ -841,53 +852,6 @@ Tự kiểm tra trước khi trả kết quả: nếu thấy bảng/Mermaid/plac
   ]
   const sections = tier === 'free' ? baseSections : paidSections
   
-  // Helper: GPT-4o-mini first, then Claude-3-5-haiku fallback
-  const generateTextWithFallback = async (
-    system: string,
-    user: string,
-    maxTokens: number,
-    temperature: number
-  ): Promise<string> => {
-    // Try OpenAI first
-    try {
-      const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ],
-        temperature,
-        max_tokens: maxTokens
-      })
-      const text = completion.choices?.[0]?.message?.content || ''
-      if (text && text.trim().length > 0) return text
-    } catch (err) {
-      // Fall through to Claude
-    }
-
-    // Fallback to Claude Haiku
-    try {
-      if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key missing')
-      const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-      const resp = await claude.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        system,
-        max_tokens: maxTokens,
-        temperature,
-        messages: [
-          { role: 'user', content: user }
-        ]
-      })
-      const c0: any = resp.content?.[0]
-      const text = c0 && c0.type === 'text' ? String(c0.text || '') : ''
-      if (text && text.trim().length > 0) return text
-      throw new Error('Empty Claude response')
-    } catch (err2) {
-      throw err2
-    }
-  }
-  
   // Generate section content (multi-step, continues until targetWords reached)
   const generateSectionContent = async (section: any, targetWords: number): Promise<string> => {
     const prompts: any = {
@@ -931,7 +895,29 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
 - "marketing căn bản"
 - "xây dựng thương hiệu cá nhân"`,
       mindset: `Tư vấn tâm lý để đạt ${goal}. Cách vượt khó khăn và duy trì động lực.`,
-      conclusion: `Tóm tắt kế hoạch và 3 hành động cần làm ngay để bắt đầu.`
+      conclusion: `Tóm tắt kế hoạch và 3 hành động cần làm ngay để bắt đầu.`,
+      // Paid-tier specialized prompts (24+)
+      budget: `Xây dựng ngân sách cá nhân thực dụng theo ${timeline}. Chia nhóm chi tiêu 50/30/20 (hoặc tuỳ biến theo rủi ro ${riskToleranceVal}) và bối cảnh ${familyStatusVal || 'cá nhân'}. Nêu rõ:
+1) Chi tiêu thiết yếu (ăn ở, đi lại, bảo hiểm cơ bản)
+2) Không thiết yếu (giải trí, mua sắm)
+3) Tiết kiệm & đầu tư định kỳ
+4) Ngưỡng cảnh báo vượt trần từng nhóm và cách điều chỉnh trong tháng ít/ nhiều thu nhập.
+Không dùng bảng. Viết hướng dẫn từng bước.
+Tận dụng thu nhập hiện tại: ${income}.`,
+      expenses: `Phân tích chi phí cố định vs biến đổi dựa trên hoàn cảnh ${familyStatusVal || 'cá nhân'} và mục tiêu ${goal}. Xác định cách cắt giảm 10-20% chi phí biến đổi mà không ảnh hưởng chất lượng sống. Cung cấp checklist rà soát định kỳ không dùng bảng, liệt kê theo gạch đầu dòng.`,
+      cashflow: `Mô tả dòng tiền vào/ra theo chu kỳ (lương, thu phụ, chi tiêu, nợ, tiết kiệm). Đề xuất cơ chế “pay-yourself-first” (trích trước ${riskToleranceVal === 'low' ? '25%' : '15%'} thu nhập) và tự động hoá chuyển khoản. Nêu các kịch bản dòng tiền trong tháng tốt/xấu và cách xử lý.`,
+      income_streams: `Đề xuất bộ đa nguồn thu phù hợp kỹ năng ${skills.join(', ') || 'đang phát triển'} và thời gian rảnh ${freeHoursPerWeekVal || '10-15'} giờ/tuần: 1) Nguồn chủ lực 2) Nguồn bổ sung 3) Nguồn thụ động. Với mỗi nguồn: mô tả mô hình, bước bắt đầu trong 4-6 tuần, tiêu chí đạt-đủ để mở rộng.`,
+      pricing_strategy: `Nếu có dịch vụ/sản phẩm, xây chiến lược định giá theo giá trị. Nêu: định vị, gói, mức giá mỏ neo, ưu đãi giới hạn, và khung “giá tâm lý”. Hướng dẫn A/B test gói trong 4 tuần và tiêu chí điều chỉnh.`,
+      client_acquisition: `Xây kênh tìm kiếm & chuyển đổi khách hàng: inbound (nội dung/SEO), outbound (DM/email), network (cộng đồng). Cho mỗi kênh: thông điệp mẫu 3-5 dòng, lịch đăng/tiếp cận hằng tuần, thước đo (CTR, reply rate, booking). Không dùng bảng.`,
+      risk_mgmt: `Lập danh mục rủi ro cá nhân: thu nhập giảm, bệnh tật, thị trường, pháp lý. Đề xuất bảo hiểm tối thiểu theo bối cảnh ${familyStatusVal || 'độc thân'} và quỹ dự phòng (xem mục quỹ dự phòng). Đưa checklist ứng phó nhanh khi rủi ro xảy ra.`,
+      emergency_fund: `Thiết kế quỹ dự phòng ${familyStatusVal || 'cá nhân'}: ${riskToleranceVal === 'low' ? '6-12' : '3-6'} tháng chi phí thiết yếu. Cách tích luỹ đều đặn, nơi giữ tiền (thanh khoản), nguyên tắc “không đụng vào”, quy trình nạp lại sau khi dùng.`,
+      debt_strategy: `Nếu có nợ ${debtsVndVal ? fmtVND(debtsVndVal) : '(nếu có)'}: chọn snowball/avalanche, thương lượng lãi, hợp nhất khoản vay (nếu phù hợp), kỷ luật trả nợ theo tuần/tháng. Đưa timeline dự kiến và tín hiệu cần điều chỉnh.`,
+      asset_allocation: `Phân bổ tài sản theo mức rủi ro ${riskToleranceVal}. Không gợi ý tài sản cụ thể, chỉ nêu tỷ lệ mẫu và nguyên tắc cân bằng lại định kỳ (quarterly). Nhấn mạnh quản trị rủi ro và thời gian nắm giữ theo ${timeline}.`,
+      tax_planning: `Tổng quan thuế cơ bản cá nhân/kinh doanh nhỏ (ở VN, nói tổng quan; KHÔNG tư vấn pháp lý). Nguyên tắc sổ sách, hoá đơn, ghi nhận chi phí hợp lệ, và thói quen phòng ngừa rủi ro kiểm tra thuế.`,
+      performance_kpis: `Đặt KPIs cho thu nhập, tiết kiệm, hiệu suất kênh. Mỗi KPI: định nghĩa, cách đo, tần suất cập nhật, ngưỡng hành động. Không dùng bảng. Viết dạng danh sách rõ ràng.`,
+      review_cadence: `Thiết lập chu kỳ rà soát (tuần/tháng/quý): nội dung rà soát, câu hỏi đánh giá, cách cập nhật mục tiêu, cách phản hồi với kết quả không đạt.`,
+      contingency_plans: `Kế hoạch dự phòng khi biến động (mất việc, chi phí đột xuất, sụt doanh số). Mô tả “playbook 7-14 ngày” để cắt chi/phục hồi doanh thu.`,
+      investment_roadmap: `Lộ trình đầu tư theo giai đoạn, tương thích ${timeline} và mức rủi ro ${riskToleranceVal}. Không nêu mã cụ thể; chỉ nguyên tắc, tỷ lệ, mốc nâng tỷ trọng và cách cân bằng lại. Nêu cách học & thử với số vốn nhỏ trước.`
     }
 
     const basePrompt = prompts[section.key] || `Phân tích chi tiết về ${section.title}`
@@ -952,13 +938,13 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
     let pass = 1
     while (wc(aggregated) < targetWords && pass <= MAX_PASSES) {
       const remaining = targetWords - wc(aggregated)
-      const chunkTarget = Math.max(300, Math.min(remaining, PASS_WORDS))
+      const chunkTarget = clamp(remaining, 300, PASS_WORDS)
       const userPrompt = pass === 1
         ? `${userContext}\n\nViết phần: ${section.title}\n\n${basePrompt}\n\nĐộ dài: khoảng ${chunkTarget} từ.`
         : `${userContext}\n\nTIẾP TỤC mở rộng phần: ${section.title}\n\nYÊU CẦU QUAN TRỌNG:\n- Không lặp lại nội dung đã viết.\n- Không mở đầu lại, không kết luận lại, không tóm tắt lại.\n- Không nhắc lại tiêu đề.\n- Bổ sung luận điểm mới, ví dụ mới, hướng dẫn chi tiết hơn.\n\nĐộ dài: khoảng ${chunkTarget} từ.`
 
       try {
-        const raw = await generateTextWithFallback(
+        const raw = await aiTextWithFallback(
           systemPrompt,
           userPrompt,
           Math.min(2000, Math.round(chunkTarget * 2)),
@@ -1041,6 +1027,13 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
   if (wordCount < MIN_WORDS && tier === 'free') {
     plan += `\n\n## Phụ lục: Chi tiết bổ sung\n\nKế hoạch này được thiết kế đặc biệt cho mục tiêu "${goal}" với timeline ${timeline}.\n\nĐể thành công, bạn cần tập trung vào việc nâng cao kỹ năng ${skills.join(', ')} và tận dụng tối đa thu nhập hiện tại ${income}.\n\nHãy bắt đầu ngay hôm nay với những bước nhỏ nhưng kiên định!`
   }
+  // Smoke tests (log-only)
+  try {
+    const smoke = smokeCheckPlanContent(plan, tier)
+    if (!smoke.ok) {
+      console.warn('SMOKE_TEST_FAILED', { issues: smoke.issues })
+    }
+  } catch {}
   
   return plan
 }
