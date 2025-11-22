@@ -52,19 +52,21 @@ function extractSkills(text: string): string[] | null {
 }
 
 function extractSavingsVnd(text: string): number | null {
-  const current = text.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+  const current = text.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm|\btk\b)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
   if (current) {
     const num = parseFloat(current[1].replace(/[.,]/g, ''))
     const unit = (current[2] || '').toLowerCase()
-    return unit.includes('tỷ') || unit.includes('ty') ? num * 1_000_000_000 : num * 1_000_000
+    if (unit.includes('tỷ') || unit.includes('ty') || unit.includes('bn') || unit.includes('billion')) return num * 1_000_000_000
+    return num * 1_000_000
   }
   const targetCtx = /mục\s*tiêu[^\n]{0,80}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)/i.test(text)
   if (!targetCtx) {
-    const generic = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+    const generic = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm|\btk\b)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
     if (generic) {
       const num2 = parseFloat(generic[1].replace(/[.,]/g, ''))
       const unit2 = (generic[2] || '').toLowerCase()
-      return unit2.includes('tỷ') || unit2.includes('ty') ? num2 * 1_000_000_000 : num2 * 1_000_000
+      if (unit2.includes('tỷ') || unit2.includes('ty') || unit2.includes('bn') || unit2.includes('billion')) return num2 * 1_000_000_000
+      return num2 * 1_000_000
     }
   }
   return null

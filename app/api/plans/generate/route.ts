@@ -9,6 +9,54 @@ import { processFinancialPlanWithRAG } from '@/lib/rag'
 import { generateLongPlanMultiStep } from '@/lib/planGeneration'
 import { logger } from '@/lib/logger'
 
+function extractSkillsFromText(text: string): string[] | null {
+  const m = text.match(/(?:kỹ\s*năng|kinh\s*nghiệm)[\s:：-]*([^\n]+)/i)
+  let list: string[] = []
+  if (m && m[1]) list = m[1].split(/[;,|\/]|\s+và\s+/i).map(s => s.trim()).filter(Boolean)
+  if (!list.length) {
+    const dict: Array<{ re: RegExp; val: string }> = [
+      { re: /digital\s*marketing/i, val: 'digital marketing' },
+      { re: /\bmarketing\b/i, val: 'marketing' },
+      { re: /chạy\s*ads|quảng\s*cáo|\bads\b/i, val: 'chạy ads' },
+      { re: /facebook\s*ads/i, val: 'facebook ads' },
+      { re: /google\s*ads/i, val: 'google ads' },
+      { re: /tiktok/i, val: 'tiktok' },
+      { re: /youtube/i, val: 'youtube' },
+      { re: /sáng\s*tạo\s*nội\s*dung|\bcontent\b/i, val: 'sáng tạo nội dung' },
+      { re: /làm\s*sản\s*phẩm|\bproduct\b/i, val: 'làm sản phẩm' },
+      { re: /\bseo\b/i, val: 'SEO' },
+      { re: /email\s*marketing/i, val: 'email marketing' },
+      { re: /kinh\s*doanh\s*online/i, val: 'kinh doanh online' },
+      { re: /growth/i, val: 'growth' },
+    ]
+    const set = new Set<string>()
+    for (const d of dict) if (d.re.test(text)) set.add(d.val)
+    if (set.size) return Array.from(set).slice(0, 10)
+    return null
+  }
+  return Array.from(new Set(list)).slice(0, 10)
+}
+
+function extractSavingsVndFromText(text: string): number | null {
+  const current = text.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
+  if (current) {
+    const num = parseFloat(current[1].replace(/[.,]/g, ''))
+    const unit = (current[2] || '').toLowerCase()
+    if (unit.includes('tỷ') || unit.includes('ty') || unit.includes('bn') || unit.includes('billion')) return num * 1_000_000_000
+    return num * 1_000_000
+  }
+  const targetCtx = /mục\s*tiêu[^\n]{0,80}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)/i.test(text)
+  if (!targetCtx) {
+    const generic = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm|tk)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
+    if (generic) {
+      const num2 = parseFloat(generic[1].replace(/[.,]/g, ''))
+      const unit2 = (generic[2] || '').toLowerCase()
+      if (unit2.includes('tỷ') || unit2.includes('ty') || unit2.includes('bn') || unit2.includes('billion')) return num2 * 1_000_000_000
+      return num2 * 1_000_000
+    }
+  }
+  return null
+}
 export async function POST(request: NextRequest) {
   try {
     let user = await getCurrentUser(request)
@@ -125,6 +173,8 @@ export async function POST(request: NextRequest) {
           timeline: userProfile.timeline,
           location: userProfile.location,
           savings: userProfile.savings,
+          skills: extractSkillsFromText(chatSummary) || (collectedInfo as any)?.skills || undefined,
+          current_savings: (collectedInfo as any)?.current_savings || extractSavingsVndFromText(chatSummary) || undefined,
           readiness: (userProfile as any).readiness || userProfile.readiness_level,
           age: (userProfile as any).age || null,
           family_status: (userProfile as any).family_status || '',

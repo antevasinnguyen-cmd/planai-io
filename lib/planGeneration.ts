@@ -82,6 +82,7 @@ async function aiTextWithFallback(
       throw err
     }
   }
+  throw new Error('All model providers failed')
 }
 
 export interface MicroTask {
@@ -464,8 +465,6 @@ export const formatChecklists = (
  * This acts as the "Analytical Brain" to standardize data before plan generation.
  */
 const createAnalyticalReport = async (collectedInfo: any, goal: string): Promise<any> => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
   // CRITICAL: Include chat_summary for full context extraction
   const chatContext = collectedInfo.chat_summary || '';
   const userInputSummary = `
@@ -546,44 +545,47 @@ QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT K�
 `;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: selectModel(TaskType.COMPLEX_PLANNING),
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Dữ liệu thô: ${userInputSummary}` }
-      ],
-      max_tokens: 1500,
-      temperature: 0.0,
-      response_format: { type: 'json_object' },
-    });
-
-    const jsonResponse = completion.choices[0]?.message?.content;
+    const completionText = await aiTextWithFallback(
+      systemPrompt,
+      `Dữ liệu thô: ${userInputSummary}`,
+      1800,
+      0.0
+    )
+    const jsonResponse = completionText && completionText.trim()
     if (jsonResponse) {
-      const parsed = JSON.parse(jsonResponse);
-      // Internal validation: log warning if current_savings is 0 but chat mentions savings
-      if (parsed.analysis?.current_savings === 0 && chatContext.match(/tiết\s*kiệm.*?\d+|đang\s*có.*?\d+.*?(triệu|tỷ|tr)/i)) {
-        console.warn('⚠️ ANALYTICAL BRAIN WARNING: current_savings = 0 but chat mentions savings. Re-check extraction.');
+      let payload = jsonResponse
+      const fence = /```json\s*([\s\S]*?)```/i.exec(jsonResponse) || /```\s*([\s\S]*?)```/i.exec(jsonResponse)
+      if (fence && fence[1]) {
+        payload = fence[1].trim()
+      } else if (!jsonResponse.trim().startsWith('{')) {
+        // Try slicing between first { and last }
+        const first = jsonResponse.indexOf('{')
+        const last = jsonResponse.lastIndexOf('}')
+        if (first >= 0 && last > first) payload = jsonResponse.slice(first, last + 1)
       }
-      return parsed;
+      const parsed = JSON.parse(payload)
+      if (parsed.analysis?.current_savings === 0 && chatContext.match(/tiết\s*kiệm.*?\d+|đang\s*có.*?\d+.*?(triệu|tỷ|tr)/i)) {
+        console.warn('⚠️ ANALYTICAL BRAIN WARNING: current_savings = 0 but chat mentions savings. Re-check extraction.')
+      }
+      return parsed
     }
-    throw new Error('AI response was empty.');
+    throw new Error('AI response was empty.')
   } catch (error) {
-    console.error('Error creating analytical report:', error);
-    // Fallback to a simple structure if analysis fails
+    console.error('Error creating analytical report:', error)
     return {
       analysis: {
-        current_income: { average: collectedInfo.income || 0, text: String(collectedInfo.income) },
-        current_savings: collectedInfo.savings || 0,
+        current_income: { average: collectedInfo.income || 0, text: String(collectedInfo.income || '') },
+        current_savings: collectedInfo.current_savings || collectedInfo.savings || 0,
         asset_goals: [{ item: goal, value: 0, timeline: collectedInfo.timeline }],
         total_asset_goal: 0,
         income_goal: null,
-        timeline: collectedInfo.timeline,
-        skills: collectedInfo.skills,
-        occupation: collectedInfo.occupation,
-        location: collectedInfo.location,
-        readiness: collectedInfo.readiness,
+        timeline: collectedInfo.timeline || null,
+        skills: Array.isArray(collectedInfo.skills) ? collectedInfo.skills : (collectedInfo.skills ? [collectedInfo.skills] : []),
+        occupation: collectedInfo.occupation || null,
+        location: collectedInfo.location || null,
+        readiness: collectedInfo.readiness || null,
       }
-    };
+    }
   }
 };
 
@@ -765,7 +767,13 @@ export async function generateLongPlanMultiStep(
   const assetsValueVndVal: number | null = typeof collectedInfo?.assets_value === 'number' ? collectedInfo.assets_value : null
   const assetsCategoriesVal: string[] = Array.isArray(collectedInfo?.assets) ? collectedInfo.assets : []
   
-  // Try to extract income (range or single)
+  // Analytical Brain: canonicalize data first
+  let brain: any = null
+  try {
+    brain = await createAnalyticalReport(collectedInfo, goal)
+  } catch {}
+
+  // Try to extract income (range or single) — fallback if brain missing
   const incomeMatch =
     chatSummary.match(/(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)?(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i) ||
     chatSummary.match(/thu\s*nhập[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)/i)
@@ -1081,6 +1089,36 @@ Tận dụng thu nhập hiện tại: ${income}.`,
   
   // Final cleanup
   plan = cleanContent(plan)
+
+  // QA-pass nhẹ: điều chỉnh dòng mô tả chính theo dữ liệu chuẩn từ Analytical Brain (nếu có)
+  try {
+    const a = brain?.analysis
+    if (a) {
+      const toMil = (v: number) => Math.round((v || 0) / 1_000_000)
+      const incomeLine = ((): string => {
+        if (a.current_income?.min && a.current_income?.max) return `${toMil(a.current_income.min)} – ${toMil(a.current_income.max)} triệu VNĐ/tháng`
+        if (a.current_income?.average) return `${toMil(a.current_income.average)} triệu VNĐ/tháng`
+        return income
+      })()
+      const savingsLine = ((): string => {
+        const v = a.current_savings
+        if (typeof v === 'number') return v >= 1_000_000_000 ? `${(v/1_000_000_000).toFixed(1)} tỷ VNĐ` : `${Math.round(v/1_000_000)} triệu VNĐ`
+        return savings
+      })()
+      const skillsLine = Array.isArray(a.skills) && a.skills.length ? a.skills.join(', ') : skills.join(', ')
+
+      // Thay thế các dòng bullet phổ biến
+      plan = plan
+        .replace(/^(?:[•\-*])\s*Thu\s*nhập\s*hiện\s*tại:\s*.*$/gim, `• Thu nhập hiện tại: ${incomeLine}`)
+        .replace(/^(?:[•\-*])\s*Tiết\s*kiệm.*?:\s*.*$/gim, `• Tiết kiệm hiện có: ${savingsLine}`)
+        .replace(/^(?:[•\-*])\s*Kỹ\s*năng:\s*.*$/gim, `• Kỹ năng: ${skillsLine}`)
+
+      // Cập nhật các dòng trong phần “Hiện trạng” nếu gặp định dạng "- Thu nhập:" / "- Tiết kiệm:"
+      plan = plan
+        .replace(/^[-*]\s*Thu\s*nhập:\s*.*$/gim, `- Thu nhập: ${incomeLine}`)
+        .replace(/^[-*]\s*Tiết\s*kiệm:\s*.*$/gim, `- Tiết kiệm: ${savingsLine}`)
+    }
+  } catch {}
   
   // Ensure minimum length
   const wordCount = plan.split(/\s+/).length
