@@ -746,6 +746,13 @@ export async function generateLongPlanMultiStep(
   let savings = '0'
   let timeline = '2 – 3 năm'
   let skills: string[] = []
+  const ageVal = (typeof collectedInfo?.age === 'number' || typeof collectedInfo?.age === 'string') ? collectedInfo.age : null
+  const familyStatusVal = collectedInfo?.family_status || ''
+  const riskToleranceVal = collectedInfo?.risk_tolerance || 'moderate'
+  const freeHoursPerWeekVal = typeof collectedInfo?.free_hours_per_week === 'number' ? collectedInfo.free_hours_per_week : null
+  const debtsVndVal: number | null = typeof collectedInfo?.debts === 'number' ? collectedInfo.debts : null
+  const assetsValueVndVal: number | null = typeof collectedInfo?.assets_value === 'number' ? collectedInfo.assets_value : null
+  const assetsCategoriesVal: string[] = Array.isArray(collectedInfo?.assets) ? collectedInfo.assets : []
   
   // Try to extract income
   const incomeMatch = chatSummary.match(/(\d+)\s*[-–]\s*(\d+)\s*(?:triệu)?.*?\/tháng/i)
@@ -771,35 +778,68 @@ export async function generateLongPlanMultiStep(
   }
   
   // Build user context
+  const fmtVND = (v: number | null | undefined) => {
+    if (typeof v !== 'number' || isNaN(v)) return ''
+    if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)} tỷ VNĐ`
+    return `${Math.round(v / 1_000_000)} triệu VNĐ`
+  }
   const userContext = `Thông tin người dùng:
 - Mục tiêu: ${goal}
 - Thu nhập hiện tại: ${income}
 - Tiết kiệm hiện có: ${savings}
 - Thời gian mục tiêu: ${timeline}
-- Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}`
+- Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
+${ageVal ? `- Tuổi: ${ageVal}` : ''}
+${familyStatusVal ? `- Tình trạng gia đình: ${familyStatusVal}` : ''}
+${riskToleranceVal ? `- Mức chịu rủi ro: ${riskToleranceVal}` : ''}
+${typeof freeHoursPerWeekVal === 'number' ? `- Giờ rảnh/tuần: ${freeHoursPerWeekVal}` : ''}
+${debtsVndVal ? `- Nợ hiện có: ${fmtVND(debtsVndVal)}` : ''}
+${assetsValueVndVal ? `- Tổng tài sản: ${fmtVND(assetsValueVndVal)}` : ''}
+${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.join(', ')}` : ''}`
   
-  // System prompt
-  const systemPrompt = `Bạn là chuyên gia tư vấn tài chính. Tạo kế hoạch chi tiết dựa trên thông tin người dùng.
+  // System prompt (strict guardrails + self-check)
+  const systemPrompt = `Bạn là chuyên gia tư vấn tài chính (Việt Nam). Viết kế hoạch chi tiết, chính xác và cá nhân hoá dựa trên thông tin người dùng.
 
 Yêu cầu:
-1. Sử dụng đúng thông tin đã cung cấp
-2. KHÔNG viết "VALIDATION", "Kiểm tra", "Giả định"
-3. KHÔNG dùng placeholder, example.com
-4. Nếu không có link thật, cung cấp từ khoá tìm kiếm
-5. Viết chi tiết và cụ thể`
+1. Chỉ dùng thông tin đã cung cấp; không bịa số liệu.
+2. KHÔNG viết "VALIDATION", "Kiểm tra", "Giả định".
+3. KHÔNG dùng placeholder hoặc link giả (ví dụ: example.com). Nếu thiếu link, chỉ đưa từ khoá tìm kiếm.
+4. KHÔNG dùng bảng Markdown, KHÔNG dùng Mermaid/sơ đồ, KHÔNG phần "Xuất Dữ Liệu Bảng".
+5. Viết tiếng Việt, giọng chuyên gia, cụ thể, có hành động rõ ràng.
 
-  // Define sections
-  const sections = [
-    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 4 },
-    { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 3 },
-    { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 2 },
+Tự kiểm tra trước khi trả kết quả: nếu thấy bảng/Mermaid/placeholder hoặc các từ bị cấm → loại bỏ và sửa lại bằng văn bản thông thường.`
+
+  // Define sections (Free: 9 mục, Paid: >=24 mục chuyên sâu)
+  const baseSections = [
+    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 3 },
+    { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 2 },
+    { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 3 },
     { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3 },
-    { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 2 },
-    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 3 },
+    { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 3 },
+    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 4 },
     { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 2 },
-    { key: 'mindset', title: '8. Psychology & Mindset', weight: 1 },
+    { key: 'mindset', title: '8. Psychology & Mindset', weight: 2 },
     { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1 }
   ]
+  const paidSections = [
+    ...baseSections,
+    { key: 'budget', title: '10. Ngân sách và phân bổ chi tiêu', weight: 2 },
+    { key: 'expenses', title: '11. Phân tích chi phí cố định & biến đổi', weight: 2 },
+    { key: 'cashflow', title: '12. Dòng tiền cá nhân & tối ưu hoá', weight: 2 },
+    { key: 'income_streams', title: '13. Chiến lược đa nguồn thu', weight: 3 },
+    { key: 'pricing_strategy', title: '14. Chiến lược định giá & gói dịch vụ', weight: 2 },
+    { key: 'client_acquisition', title: '15. Kênh tìm kiếm & chuyển đổi khách hàng', weight: 3 },
+    { key: 'risk_mgmt', title: '16. Quản trị rủi ro & bảo vệ tài chính', weight: 2 },
+    { key: 'emergency_fund', title: '17. Quỹ dự phòng & quy tắc an toàn', weight: 2 },
+    { key: 'debt_strategy', title: '18. Chiến lược xử lý nợ', weight: 2 },
+    { key: 'asset_allocation', title: '19. Phân bổ tài sản theo mức rủi ro', weight: 3 },
+    { key: 'tax_planning', title: '20. Thuế & tuân thủ pháp lý cơ bản', weight: 2 },
+    { key: 'performance_kpis', title: '21. KPIs & thước đo hiệu suất', weight: 2 },
+    { key: 'review_cadence', title: '22. Chu kỳ rà soát & tối ưu kế hoạch', weight: 2 },
+    { key: 'contingency_plans', title: '23. Kế hoạch dự phòng khi biến động', weight: 2 },
+    { key: 'investment_roadmap', title: '24. Lộ trình đầu tư theo giai đoạn', weight: 3 }
+  ]
+  const sections = tier === 'free' ? baseSections : paidSections
   
   // Helper: GPT-4o-mini first, then Claude-3-5-haiku fallback
   const generateTextWithFallback = async (
@@ -848,7 +888,7 @@ Yêu cầu:
     }
   }
   
-  // Generate section content
+  // Generate section content (multi-step, continues until targetWords reached)
   const generateSectionContent = async (section: any, targetWords: number): Promise<string> => {
     const prompts: any = {
       profile: `Tạo phần Chân dung tài chính cá nhân.
@@ -894,22 +934,55 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
       conclusion: `Tóm tắt kế hoạch và 3 hành động cần làm ngay để bắt đầu.`
     }
 
-    const prompt = prompts[section.key] || `Phân tích chi tiết về ${section.title}`
-    
-    try {
-      const raw = await generateTextWithFallback(
-        systemPrompt,
-        `${userContext}\n\nViết phần: ${section.title}\n\n${prompt}\n\nĐộ dài: khoảng ${targetWords} từ.`,
-        Math.min(1800, targetWords * 2),
-        0.7
-      )
-      let content = raw || ''
-      content = cleanContent(content)
-      return content
-    } catch (error) {
-      console.error(`Error generating ${section.key}:`, error)
-      return `## ${section.title}\n\n(Nội dung đang được xử lý)`
+    const basePrompt = prompts[section.key] || `Phân tích chi tiết về ${section.title}`
+
+    // Helpers
+    const wc = (s: string) => (s ? s.trim().split(/\s+/).length : 0)
+    const stripRedundantHeadings = (s: string) => {
+      const titleRe = new RegExp(`^(?:#{1,3}\\s*)?${section.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, 'im')
+      return s
+        .replace(titleRe, '')
+        .replace(/^#+\s*(Kết luận|Conclusion)\s*$/gim, '')
     }
+
+    const PASS_WORDS = tier === 'free' ? 500 : 1200
+    const MAX_PASSES = tier === 'free' ? 2 : 12
+
+    let aggregated = ''
+    let pass = 1
+    while (wc(aggregated) < targetWords && pass <= MAX_PASSES) {
+      const remaining = targetWords - wc(aggregated)
+      const chunkTarget = Math.max(300, Math.min(remaining, PASS_WORDS))
+      const userPrompt = pass === 1
+        ? `${userContext}\n\nViết phần: ${section.title}\n\n${basePrompt}\n\nĐộ dài: khoảng ${chunkTarget} từ.`
+        : `${userContext}\n\nTIẾP TỤC mở rộng phần: ${section.title}\n\nYÊU CẦU QUAN TRỌNG:\n- Không lặp lại nội dung đã viết.\n- Không mở đầu lại, không kết luận lại, không tóm tắt lại.\n- Không nhắc lại tiêu đề.\n- Bổ sung luận điểm mới, ví dụ mới, hướng dẫn chi tiết hơn.\n\nĐộ dài: khoảng ${chunkTarget} từ.`
+
+      try {
+        const raw = await generateTextWithFallback(
+          systemPrompt,
+          userPrompt,
+          Math.min(2000, Math.round(chunkTarget * 2)),
+          0.7
+        )
+        let chunk = raw || ''
+        chunk = cleanContent(stripRedundantHeadings(chunk))
+        // Avoid accidental duplication by trimming overlapping last paragraph
+        if (aggregated && chunk && aggregated.endsWith(chunk.slice(0, 50))) {
+          chunk = chunk.slice(50)
+        }
+        aggregated += (aggregated ? '\n\n' : '') + chunk
+      } catch (e) {
+        console.error(`Error generating ${section.key} (pass ${pass}):`, e)
+        if (!aggregated) {
+          aggregated = `(Nội dung đang được xử lý)`
+        }
+        break
+      }
+
+      pass++
+    }
+
+    return aggregated.trim()
   }
   
   // Clean content function
@@ -926,6 +999,12 @@ So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
     cleaned = cleaned.replace(/example\.com/gi, '')
     cleaned = cleaned.replace(/placeholder/gi, '')
     
+    // Remove Mermaid blocks and markdown tables
+    cleaned = cleaned.replace(/```mermaid[\s\S]*?```/gi, '')
+    cleaned = cleaned.replace(/^\|.*$/gm, '')
+    cleaned = cleaned.replace(/mermaid/gi, '')
+    cleaned = cleaned.replace(/graph\s+(TD|LR)/gi, '')
+
     // Remove conditional phrases
     cleaned = cleaned.replace(/Nếu timeline[^\n]*/gi, '')
     cleaned = cleaned.replace(/Nếu thời gian[^\n]*/gi, '')

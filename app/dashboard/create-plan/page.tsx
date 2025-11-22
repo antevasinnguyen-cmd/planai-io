@@ -27,6 +27,12 @@ const requiredInfo = [
   { id: 'birth_date', label: 'Ngày sinh', icon: '🎂', required: false, description: 'Để phân tích tử vi (tùy chọn)' },
   { id: 'savings', label: 'Tiết kiệm hiện có', icon: '🏦', required: false, description: 'Số tiền đã tiết kiệm' },
   { id: 'location', label: 'Khu vực sinh sống', icon: '📍', required: false, description: 'Thành phố bạn đang sống' },
+  { id: 'age', label: 'Độ tuổi', icon: '🧑', required: false, description: 'Tuổi hiện tại của bạn' },
+  { id: 'family_status', label: 'Tình trạng gia đình', icon: '👨‍👩‍👧', required: false, description: 'Độc thân, kết hôn, số con...' },
+  { id: 'risk_tolerance', label: 'Mức chịu rủi ro', icon: '⚖️', required: false, description: 'An toàn / Cân bằng / Mạo hiểm' },
+  { id: 'free_hours_per_week', label: 'Giờ rảnh/tuần', icon: '🕒', required: false, description: 'Số giờ có thể dành cho kế hoạch mỗi tuần' },
+  { id: 'debts', label: 'Nợ hiện có', icon: '📉', required: false, description: 'Khoản nợ hiện tại (nếu có)' },
+  { id: 'assets', label: 'Tài sản', icon: '📈', required: false, description: 'Giá trị & danh mục tài sản (nhà, xe, cổ phiếu...)' },
 ]
 
 export default function CreatePlanV2() {
@@ -362,7 +368,13 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     if (collectedFields.includes('savings')) newInfo['savings'] = true
     if (collectedFields.includes('location')) newInfo['location'] = true
     if (collectedFields.includes('readiness_level')) newInfo['readiness'] = true
-    if (collectedFields.includes('age') || userInput.length > 50) newInfo['description'] = true
+    if (collectedFields.includes('age')) newInfo['age'] = true
+    if (collectedFields.includes('family_status')) newInfo['family_status'] = true
+    if (collectedFields.includes('risk_tolerance')) newInfo['risk_tolerance'] = true
+    if (collectedFields.includes('free_hours_per_week') || collectedFields.includes('available_time')) newInfo['free_hours_per_week'] = true
+    if (collectedFields.includes('debts')) newInfo['debts'] = true
+    if (collectedFields.includes('assets') || collectedFields.includes('assets_value')) newInfo['assets'] = true
+    if (userInput.length > 50) newInfo['description'] = true
 
     // Robust fallback detection for timeline (e.g., "2-3 năm", "6 tháng", "trong 2 năm", "sau 3 tháng")
     try {

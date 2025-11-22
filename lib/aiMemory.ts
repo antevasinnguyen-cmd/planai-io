@@ -8,12 +8,15 @@ export interface UserProfile {
   birth_date: string | null
   occupation: string
   location: string
+  family_status?: string
   
   // Financial information
   current_income: number | null
   savings: number | null
   expenses: number | null
   debts: number | null
+  assets_value?: number | null
+  assets?: string[]
   
   // Goals and planning
   financial_goal: string
@@ -26,6 +29,7 @@ export interface UserProfile {
   readiness_level: string
   skills: string[]
   available_time: string
+  free_hours_per_week?: number | null
   learning_preference: string
   
   // Additional context
@@ -57,10 +61,13 @@ export class AIMemorySystem {
       birth_date: null,
       occupation: '',
       location: '',
+      family_status: '',
       current_income: null,
       savings: null,
       expenses: null,
       debts: null,
+      assets_value: null,
+      assets: [],
       financial_goal: '',
       goal_amount: null,
       timeline: '',
@@ -69,6 +76,7 @@ export class AIMemorySystem {
       readiness_level: '',
       skills: [],
       available_time: '',
+      free_hours_per_week: null,
       learning_preference: '',
       description: '',
       challenges: [],
@@ -105,6 +113,8 @@ export class AIMemorySystem {
     this.extractReadiness(message)
     this.extractSkills(message)
     this.extractTime(message)
+    this.extractFamilyStatus(message)
+    this.extractAssets(message)
     this.extractChallenges(message)
     this.extractOpportunities(message)
     
@@ -510,8 +520,81 @@ export class AIMemorySystem {
       if (match) {
         this.profile.available_time = match[0]
         this.collectedFields.add('available_time')
+        // Compute free hours/week if pattern provides value
+        if (match.length >= 4) {
+          const qty = parseInt(match[1])
+          const unit2 = (match[3] || '').toLowerCase()
+          if (!isNaN(qty)) {
+            if (unit2.includes('ngày') || unit2.includes('day')) {
+              this.profile.free_hours_per_week = qty * 7
+            } else if (unit2.includes('tuần') || unit2.includes('week')) {
+              this.profile.free_hours_per_week = qty
+            }
+            if (this.profile.free_hours_per_week != null) {
+              this.collectedFields.add('free_hours_per_week')
+            }
+          }
+        }
         break
       }
+    }
+  }
+
+  private extractFamilyStatus(text: string) {
+    const lower = text.toLowerCase()
+    if (/(độc thân|single|fa\b)/i.test(lower)) {
+      this.profile.family_status = 'độc thân'
+      this.collectedFields.add('family_status')
+      return
+    }
+    if (/(kết hôn|đã kết hôn|married|có vợ|có chồng)/i.test(lower)) {
+      this.profile.family_status = 'kết hôn'
+      this.collectedFields.add('family_status')
+    } else if (/(ly hôn|divorce|divorced|ly thân|separated)/i.test(lower)) {
+      this.profile.family_status = 'ly hôn/ly thân'
+      this.collectedFields.add('family_status')
+    }
+    // Children count (optional enrichment)
+    const childMatch = lower.match(/(\d+)\s*(con|children|kid)/i)
+    if (childMatch) {
+      const count = childMatch[1]
+      const base = this.profile.family_status || 'kết hôn'
+      this.profile.family_status = `${base} (${count} con)`
+      this.collectedFields.add('family_status')
+    }
+  }
+
+  private extractAssets(text: string) {
+    const lower = text.toLowerCase()
+    // Value patterns: "tài sản X triệu/tỷ"
+    const valMatch = lower.match(/tài\s*sản[^\d]*(\d+(?:[.,]\d+)?)\s*(tỷ|ty|billion|triệu|tr|million)/i)
+    if (valMatch) {
+      let val = parseFloat(valMatch[1].replace(/[.,]/g, ''))
+      const unit = valMatch[2]
+      if (/tỷ|ty|billion/i.test(unit)) val *= 1000000000
+      else val *= 1000000
+      if (!isNaN(val)) {
+        this.profile.assets_value = val
+        this.collectedFields.add('assets_value')
+      }
+    }
+    // Categories
+    const cats = [
+      { kw: ['bất động sản', 'nhà', 'căn hộ', 'đất'], tag: 'bất động sản' },
+      { kw: ['ô tô', 'xe'], tag: 'phương tiện' },
+      { kw: ['cổ phiếu', 'stock', 'chứng khoán'], tag: 'cổ phiếu' },
+      { kw: ['trái phiếu', 'bond'], tag: 'trái phiếu' },
+      { kw: ['vàng', 'gold'], tag: 'vàng' },
+      { kw: ['tiền mặt', 'cash'], tag: 'tiền mặt' },
+      { kw: ['crypto', 'tiền số', 'tiền điện tử'], tag: 'crypto' }
+    ]
+    const found: string[] = []
+    for (const c of cats) {
+      if (c.kw.some(k => lower.includes(k))) found.push(c.tag)
+    }
+    if (found.length > 0) {
+      this.profile.assets = Array.from(new Set([...(this.profile.assets || []), ...found]))
+      this.collectedFields.add('assets')
     }
   }
   
