@@ -257,15 +257,51 @@ export async function POST(request: NextRequest) {
       
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
-          // 1. Cập nhật profile
+          // 1. Get current profile to check existing tier
+          const { data: currentProfile } = await supabase
+            .from('profiles')
+            .select('subscription_tier, chat_count, plan_count')
+            .eq('id', payment.user_id)
+            .single();
+
+          const currentTier = currentProfile?.subscription_tier || 'free';
+          const newTier = payment.subscription_tier;
+          
+          // Determine if this is Free->Paid (reset) or Paid->Paid (accumulate)
+          const isFreeToPaid = currentTier === 'free' && newTier !== 'free';
+          const isPaidToPaid = currentTier !== 'free' && newTier !== 'free';
+          
+          let updateData: any = {
+            subscription_tier: newTier,
+            updated_at: now
+          };
+          
+          if (isFreeToPaid) {
+            // Free -> Paid: Reset usage to 0
+            updateData.chat_count = 0;
+            updateData.plan_count = 0;
+            console.log('=== SEPAY WEBHOOK: Free->Paid upgrade, resetting usage ===', {
+              userId: payment.user_id,
+              from: currentTier,
+              to: newTier
+            });
+          } else if (isPaidToPaid) {
+            // Paid -> Paid: Keep current usage, limits will be accumulated
+            console.log('=== SEPAY WEBHOOK: Paid->Paid upgrade, keeping usage ===', {
+              userId: payment.user_id,
+              from: currentTier,
+              to: newTier,
+              currentUsage: { chats: currentProfile?.chat_count, plans: currentProfile?.plan_count }
+            });
+          } else {
+            // Other cases (e.g., same tier): reset to be safe
+            updateData.chat_count = 0;
+            updateData.plan_count = 0;
+          }
+          
           const { error: profileError } = await supabase
             .from('profiles')
-            .update({
-              subscription_tier: payment.subscription_tier,
-              chat_count: 0,
-              plan_count: 0,
-              updated_at: now
-            })
+            .update(updateData)
             .eq('id', payment.user_id);
 
           if (profileError) {
@@ -276,19 +312,50 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          // 2. Tạo hoặc cập nhật subscription
+          // 2. Tạo hoặc cập nhật subscription với logic cộng dồn limits
           const { data: existingSub } = await supabase
             .from('subscriptions')
-            .select('id')
+            .select('id, tier, plan_limit, chat_limit')
             .eq('user_id', payment.user_id)
             .eq('status', 'active')
             .single();
+
+          // Get limits for new tier
+          const { getSubscriptionLimits } = await import('@/lib/supabase');
+          const newTierLimits = getSubscriptionLimits(payment.subscription_tier);
+          
+          let finalLimits = {
+            plan_limit: newTierLimits.plans,
+            chat_limit: newTierLimits.chats
+          };
+          
+          if (existingSub && isPaidToPaid) {
+            // Paid -> Paid: Accumulate limits
+            const currentLimits = {
+              plans: existingSub.plan_limit || getSubscriptionLimits(existingSub.tier || 'free').plans,
+              chats: existingSub.chat_limit || getSubscriptionLimits(existingSub.tier || 'free').chats
+            };
+            
+            finalLimits = {
+              plan_limit: currentLimits.plans + newTierLimits.plans,
+              chat_limit: currentLimits.chats + newTierLimits.chats
+            };
+            
+            console.log('=== SEPAY WEBHOOK: Accumulating limits ===', {
+              userId: payment.user_id,
+              currentLimits,
+              newTierLimits,
+              finalLimits
+            });
+          }
 
           if (existingSub) {
             await supabase
               .from('subscriptions')
               .update({
                 tier: payment.subscription_tier,
+                plan_limit: finalLimits.plan_limit,
+                chat_limit: finalLimits.chat_limit,
                 updated_at: now
               })
               .eq('id', existingSub.id);
@@ -299,6 +366,8 @@ export async function POST(request: NextRequest) {
                 user_id: payment.user_id,
                 tier: payment.subscription_tier,
                 status: 'active',
+                plan_limit: finalLimits.plan_limit,
+                chat_limit: finalLimits.chat_limit,
                 created_at: now
               });
           }

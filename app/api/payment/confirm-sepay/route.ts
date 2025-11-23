@@ -235,13 +235,53 @@ export async function POST(request: NextRequest) {
     const now = new Date()
     const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
 
-    // Cập nhật hoặc tạo subscription record
+    // Get current profile to check existing tier (moved up for logic)
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, chat_count, plan_count')
+      .eq('id', payment.user_id)
+      .single()
+
+    const currentTier = currentProfile?.subscription_tier || 'free'
+    const newTier = payment.subscription_tier
+    const isPaidToPaid = currentTier !== 'free' && newTier !== 'free'
+
+    // Cập nhật hoặc tạo subscription record với logic cộng dồn limits
     const { data: existingSub } = await supabase
       .from('subscriptions')
-      .select('id')
+      .select('id, tier, plan_limit, chat_limit')
       .eq('user_id', payment.user_id)
       .eq('status', 'active')
       .single()
+
+    // Get limits for new tier
+    const { getSubscriptionLimits } = await import('@/lib/supabase')
+    const newTierLimits = getSubscriptionLimits(payment.subscription_tier)
+    
+    let finalLimits = {
+      plan_limit: newTierLimits.plans,
+      chat_limit: newTierLimits.chats
+    }
+    
+    if (existingSub && isPaidToPaid) {
+      // Paid -> Paid: Accumulate limits
+      const currentLimits = {
+        plans: existingSub.plan_limit || getSubscriptionLimits(existingSub.tier || 'free').plans,
+        chats: existingSub.chat_limit || getSubscriptionLimits(existingSub.tier || 'free').chats
+      }
+      
+      finalLimits = {
+        plan_limit: currentLimits.plans + newTierLimits.plans,
+        chat_limit: currentLimits.chats + newTierLimits.chats
+      }
+      
+      console.log('=== CONFIRM SEPAY: Accumulating limits ===', {
+        userId: payment.user_id,
+        currentLimits,
+        newTierLimits,
+        finalLimits
+      })
+    }
 
     if (existingSub) {
       // Cập nhật subscription hiện tại
@@ -249,6 +289,8 @@ export async function POST(request: NextRequest) {
         .from('subscriptions')
         .update({
           tier: payment.subscription_tier,
+          plan_limit: finalLimits.plan_limit,
+          chat_limit: finalLimits.chat_limit,
           current_period_end: endDate.toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -261,21 +303,49 @@ export async function POST(request: NextRequest) {
           user_id: payment.user_id,
           tier: payment.subscription_tier,
           status: 'active',
+          plan_limit: finalLimits.plan_limit,
+          chat_limit: finalLimits.chat_limit,
           current_period_start: now.toISOString(),
           current_period_end: endDate.toISOString(),
           created_at: now.toISOString()
         })
     }
 
+    // Determine if this is Free->Paid (reset) or Paid->Paid (accumulate)
+    const isFreeToPaid = currentTier === 'free' && newTier !== 'free'
+    
+    let updateData: any = {
+      subscription_tier: newTier,
+      updated_at: new Date().toISOString()
+    }
+    
+    if (isFreeToPaid) {
+      // Free -> Paid: Reset usage to 0
+      updateData.chat_count = 0
+      updateData.plan_count = 0
+      console.log('=== CONFIRM SEPAY: Free->Paid upgrade, resetting usage ===', {
+        userId: payment.user_id,
+        from: currentTier,
+        to: newTier
+      })
+    } else if (isPaidToPaid) {
+      // Paid -> Paid: Keep current usage, limits will be accumulated
+      console.log('=== CONFIRM SEPAY: Paid->Paid upgrade, keeping usage ===', {
+        userId: payment.user_id,
+        from: currentTier,
+        to: newTier,
+        currentUsage: { chats: currentProfile?.chat_count, plans: currentProfile?.plan_count }
+      })
+    } else {
+      // Other cases (e.g., same tier): reset to be safe
+      updateData.chat_count = 0
+      updateData.plan_count = 0
+    }
+
     // Cập nhật subscription cho user
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({
-        subscription_tier: payment.subscription_tier,
-        chat_count: 0,
-        plan_count: 0,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', payment.user_id)
 
     if (profileError) {
