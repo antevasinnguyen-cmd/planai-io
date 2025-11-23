@@ -55,21 +55,33 @@ function extractSkills(text: string): string[] | null {
 
 function extractSavingsVnd(text: string): number | null {
   if (!text || typeof text !== 'string') return null
-  const current = text.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm|\btk\b)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
+  
+  // Look for explicit current savings indicators
+  const current = text.match(/(?:hiện\s*tại|\bđang\s*có|hiện\s*có|số\s*dư)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)\s*(?:tiết\s*kiệm|gửi\s*ngân\s*hàng)/i)
   if (current) {
     const num = parseFloat(current[1].replace(/[.,]/g, ''))
     const unit = (current[2] || '').toLowerCase()
     if (unit.includes('tỷ') || unit.includes('ty') || unit.includes('bn') || unit.includes('billion')) return num * 1_000_000_000
     return num * 1_000_000
   }
-  const targetCtx = /mục\s*tiêu[^\n]{0,80}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)/i.test(text)
-  if (!targetCtx) {
-    const generic = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm|\btk\b)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
-    if (generic) {
-      const num2 = parseFloat(generic[1].replace(/[.,]/g, ''))
-      const unit2 = (generic[2] || '').toLowerCase()
-      if (unit2.includes('tỷ') || unit2.includes('ty') || unit2.includes('bn') || unit2.includes('billion')) return num2 * 1_000_000_000
-      return num2 * 1_000_000
+  
+  // Only match savings that are NOT in target context
+  const isTargetContext = /mục\s*tiêu[^\n]{0,200}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)\s*(\d+)/i.test(text)
+  if (!isTargetContext) {
+    const savingsOnly = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)\s*(?:gửi\s*ngân\s*hàng)?[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
+    if (savingsOnly) {
+      // Double check this is not in a target sentence
+      const matchIndex = text.search(savingsOnly[0])
+      const beforeMatch = text.substring(Math.max(0, matchIndex - 100), matchIndex)
+      const afterMatch = text.substring(matchIndex, matchIndex + 100)
+      const hasTargetKeywords = /mục\s*tiêu|trong\s*\d+\s*năm|có\s*\d+|muốn\s*có/i.test(beforeMatch + afterMatch)
+      
+      if (!hasTargetKeywords) {
+        const num2 = parseFloat(savingsOnly[1].replace(/[.,]/g, ''))
+        const unit2 = (savingsOnly[2] || '').toLowerCase()
+        if (unit2.includes('tỷ') || unit2.includes('ty') || unit2.includes('bn') || unit2.includes('billion')) return num2 * 1_000_000_000
+        return num2 * 1_000_000
+      }
     }
   }
   return null

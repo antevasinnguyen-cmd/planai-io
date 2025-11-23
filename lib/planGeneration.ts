@@ -772,48 +772,82 @@ export async function generateLongPlanMultiStep(
     brain = await createAnalyticalReport(collectedInfo, goal)
   } catch {}
 
-  // Try to extract income (range or single) — fallback if brain missing
-  const incomeMatch =
-    chatSummary.match(/(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)?(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i) ||
-    chatSummary.match(/thu\s*nhập[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)/i)
-  if (incomeMatch) {
-    income = `${incomeMatch[1].replace(/[.,]/g,'')} – ${incomeMatch[2].replace(/[.,]/g,'')} triệu VNĐ/tháng`
-  } else {
-    const incomeSingle = chatSummary.match(/(?:thu\s*nhập|kiếm|lợi\s*nhuận)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i)
-    if (incomeSingle) {
-      income = `${incomeSingle[1].replace(/[.,]/g,'')} triệu VNĐ/tháng`
+  // Use brain data if available, otherwise fallback to manual extraction
+  if (brain?.analysis) {
+    if (typeof brain.analysis.current_savings === 'number' && brain.analysis.current_savings > 0) {
+      const brainSavings = brain.analysis.current_savings
+      savings = brainSavings >= 1_000_000_000
+        ? `${(brainSavings / 1_000_000_000).toFixed(1)} tỷ VNĐ`
+        : `${Math.round(brainSavings / 1_000_000)} triệu VNĐ`
     }
-  }
-  
-  // Try to extract timeline
-  const timelineMatch = chatSummary.match(/(\d+)\s*(?:[-–~]|tới|đến|to)\s*(\d+)\s*năm/i)
-  if (timelineMatch) {
-    timeline = `${timelineMatch[1]} – ${timelineMatch[2]} năm`
-  } else {
-    const timelineSingleMatch = chatSummary.match(/(?:trong|trong\s*vòng)?\s*(\d+)\s*năm/i)
-    if (timelineSingleMatch) {
-      timeline = `${timelineSingleMatch[1]} năm`
+    if (brain.analysis.current_income?.text) {
+      income = brain.analysis.current_income.text
     }
-  }
+    if (brain.analysis.skills?.length) {
+      skills = brain.analysis.skills
+    }
+    if (brain.analysis.timeline) {
+      timeline = brain.analysis.timeline
+    }
+  } else {
+    // Try to extract income (range or single) — fallback if brain missing
+    if (!brain?.analysis?.current_income?.text) {
+      const incomeMatch =
+        chatSummary.match(/(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)?(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i) ||
+        chatSummary.match(/thu\s*nhập[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:[-–~]|tới|đến|to)\s*(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)/i)
+      if (incomeMatch) {
+        income = `${incomeMatch[1].replace(/[.,]/g,'')} – ${incomeMatch[2].replace(/[.,]/g,'')} triệu VNĐ/tháng`
+      } else {
+        const incomeSingle = chatSummary.match(/(?:thu\s*nhập|kiếm|lợi\s*nhuận)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(?:triệu|tr)(?:\s*(?:VN[DĐ]|đồng))?\/tháng/i)
+        if (incomeSingle) {
+          income = `${incomeSingle[1].replace(/[.,]/g,'')} triệu VNĐ/tháng`
+        }
+      }
+    }
+
+    // Try to extract timeline
+    if (!brain?.analysis?.timeline) {
+      const timelineMatch = chatSummary.match(/(\d+)\s*(?:[-–~]|tới|đến|to)\s*(\d+)\s*năm/i)
+      if (timelineMatch) {
+        timeline = `${timelineMatch[1]} – ${timelineMatch[2]} năm`
+      } else {
+        const timelineSingleMatch = chatSummary.match(/(?:trong|trong\s*vòng)?\s*(\d+)\s*năm/i)
+        if (timelineSingleMatch) {
+          timeline = `${timelineSingleMatch[1]} năm`
+        }
+      }
+    }
   
-  // Try to extract savings (prefer current over target)
+  // Try to extract savings (prefer current over target) - only if brain didn't provide it
   let savingsVnd: number | null = null
-  if (typeof collectedInfo?.current_savings === 'number' && collectedInfo.current_savings > 0) {
-    savingsVnd = collectedInfo.current_savings
-  } else {
-    const currentSavingsMatch = chatSummary.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
-    if (currentSavingsMatch) {
-      const num = parseFloat(currentSavingsMatch[1].replace(/[.,]/g, ''))
-      const unit = (currentSavingsMatch[2] || '').toLowerCase()
-      savingsVnd = unit.includes('tỷ') || unit.includes('ty') ? num * 1_000_000_000 : num * 1_000_000
+  if (!brain?.analysis?.current_savings) {
+    if (typeof collectedInfo?.current_savings === 'number' && collectedInfo.current_savings > 0) {
+      savingsVnd = collectedInfo.current_savings
     } else {
-      const targetCtx = /mục\s*tiêu[^\n]{0,80}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)/i.test(chatSummary)
-      if (!targetCtx) {
-        const generic = chatSummary.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
-        if (generic) {
-          const num2 = parseFloat(generic[1].replace(/[.,]/g, ''))
-          const unit2 = (generic[2] || '').toLowerCase()
-          savingsVnd = unit2.includes('tỷ') || unit2.includes('ty') ? num2 * 1_000_000_000 : num2 * 1_000_000
+      // Look for explicit current savings indicators
+      const currentSavingsMatch = chatSummary.match(/(?:hiện\s*tại|\bđang\s*có|hiện\s*có|số\s*dư)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)\s*(?:tiết\s*kiệm|gửi\s*ngân\s*hàng)/i)
+      if (currentSavingsMatch) {
+        const num = parseFloat(currentSavingsMatch[1].replace(/[.,]/g, ''))
+        const unit = (currentSavingsMatch[2] || '').toLowerCase()
+        savingsVnd = unit.includes('tỷ') || unit.includes('ty') ? num * 1_000_000_000 : num * 1_000_000
+      } else {
+        // Only match savings that are NOT in target context
+        const isTargetContext = /mục\s*tiêu[^\n]{0,200}(tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)\s*(\d+)/i.test(chatSummary)
+        if (!isTargetContext) {
+          const savingsOnly = chatSummary.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)\s*(?:gửi\s*ngân\s*hàng)?[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
+          if (savingsOnly) {
+            // Double check this is not in a target sentence
+            const matchIndex = chatSummary.search(savingsOnly[0])
+            const beforeMatch = chatSummary.substring(Math.max(0, matchIndex - 100), matchIndex)
+            const afterMatch = chatSummary.substring(matchIndex, matchIndex + 100)
+            const hasTargetKeywords = /mục\s*tiêu|trong\s*\d+\s*năm|có\s*\d+|muốn\s*có/i.test(beforeMatch + afterMatch)
+            
+            if (!hasTargetKeywords) {
+              const num2 = parseFloat(savingsOnly[1].replace(/[.,]/g, ''))
+              const unit2 = (savingsOnly[2] || '').toLowerCase()
+              savingsVnd = unit2.includes('tỷ') || unit2.includes('ty') ? num2 * 1_000_000_000 : num2 * 1_000_000
+            }
+          }
         }
       }
     }
@@ -824,16 +858,10 @@ export async function generateLongPlanMultiStep(
       : `${Math.round(savingsVnd / 1_000_000)} triệu VNĐ`
   }
   
-  // Extract skills if available
-  if (collectedInfo.skills) {
-    skills = Array.isArray(collectedInfo.skills) ? collectedInfo.skills : [collectedInfo.skills]
-  }
-  if (!skills || skills.length === 0) {
-    const dict = [
-      { re: /digital\s*marketing/i, val: 'digital marketing' },
-      { re: /\bmarketing\b/i, val: 'marketing' },
-      { re: /chạy\s*ads|quảng\s*cáo|\bads\b/i, val: 'chạy ads' },
-      { re: /facebook\s*ads/i, val: 'facebook ads' },
+  // Extract skills if available - only if brain didn't provide them
+  if (!brain?.analysis?.skills?.length) {
+    if (collectedInfo.skills) {
+      skills = Array.isArray(collectedInfo.skills) ? collectedInfo.skills : [collectedInfo.skills]
       { re: /google\s*ads/i, val: 'google ads' },
       { re: /tiktok/i, val: 'tiktok' },
       { re: /youtube/i, val: 'youtube' },
