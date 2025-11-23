@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
       user_id: userId,
       model_used: 'generator_v4',
       word_count: content_md.split(/\s+/).length,
-      collected_info: collectedInfo || {},
+      collected_info: { ...(collectedInfo || {}), tier },
       metadata: {
         sheets_spec: enhancedSheetsSpec, // Use enhanced spec
         onecall: {

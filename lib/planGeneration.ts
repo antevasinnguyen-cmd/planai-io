@@ -750,7 +750,6 @@ export async function generateLongPlanMultiStep(
   goal: string,
   collectedInfo: any
 ): Promise<string> {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const tier = String(collectedInfo?.tier || 'free')
   
   // Extract data with fallbacks

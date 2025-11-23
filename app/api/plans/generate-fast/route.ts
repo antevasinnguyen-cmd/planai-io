@@ -375,7 +375,7 @@ export async function POST(request: NextRequest) {
         content: content_md,
         status: 'completed',
         word_count: content_md.split(/\s+/).length,
-        collected_info: collectedInfo || {},
+        collected_info: { ...collectedInfo, tier: 'free' } || { tier: 'free' },
         metadata: JSON.stringify({
           model_used: 'generator_v4',
           generated_at: new Date().toISOString(),
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       }
 
-      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId, planId })
+      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId, planId, tier: 'free' })
       
       // Update existing plan
       const { data: inserted, error: insertError } = await ((admin as any)

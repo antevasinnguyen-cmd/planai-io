@@ -377,6 +377,7 @@ async function processJobInBackground(
           content: content_md,
           status: 'completed',
           word_count: content_md.split(/\s+/).length,
+          collected_info: { ...collectedInfo, tier },
           created_at: new Date().toISOString()
         })
         .select()
@@ -394,6 +395,7 @@ async function processJobInBackground(
           content: content_md,
           status: 'completed',
           word_count: content_md.split(/\s+/).length,
+          collected_info: { ...collectedInfo, tier },
           created_at: new Date().toISOString()
         })
         .select()
@@ -415,6 +417,7 @@ async function processJobInBackground(
             content: content_md,
             status: 'completed',
             word_count: content_md.split(/\s+/).length,
+            collected_info: { ...collectedInfo, tier },
             created_at: new Date().toISOString()
           })
           .select()
