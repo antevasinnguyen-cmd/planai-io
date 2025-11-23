@@ -817,6 +817,7 @@ export async function generateLongPlanMultiStep(
         }
       }
     }
+  }
   
   // Try to extract savings (prefer current over target) - only if brain didn't provide it
   let savingsVnd: number | null = null
@@ -862,25 +863,35 @@ export async function generateLongPlanMultiStep(
   if (!brain?.analysis?.skills?.length) {
     if (collectedInfo.skills) {
       skills = Array.isArray(collectedInfo.skills) ? collectedInfo.skills : [collectedInfo.skills]
-      { re: /google\s*ads/i, val: 'google ads' },
-      { re: /tiktok/i, val: 'tiktok' },
-      { re: /youtube/i, val: 'youtube' },
-      { re: /sáng\s*tạo\s*nội\s*dung|\bcontent\b/i, val: 'sáng tạo nội dung' },
-      { re: /làm\s*sản\s*phẩm|\bproduct\b/i, val: 'làm sản phẩm' },
-      { re: /\bseo\b/i, val: 'SEO' },
-      { re: /email\s*marketing/i, val: 'email marketing' },
-      { re: /kinh\s*doanh\s*online/i, val: 'kinh doanh online' },
-      { re: /growth/i, val: 'growth' },
-    ]
-    const set = new Set<string>()
-    for (const d of dict) {
-      if (d.re.test(chatSummary)) set.add(d.val)
     }
-    const line = /(?:kỹ\s*năng|kinh\s*nghiệm)[^:：\-]*[:：\-]?\s*([^\n]+)/i.exec(chatSummary)
-    if (line && line[1]) {
-      line[1].split(/[\,\|\/;]|\s+và\s+/i).map(s => s.trim()).filter(Boolean).forEach(s => set.add(s))
+    if (!skills || skills.length === 0) {
+      const dict = [
+        { re: /digital\s*marketing/i, val: 'digital marketing' },
+        { re: /\bmarketing\b/i, val: 'marketing' },
+        { re: /chạy\s*ads|quảng\s*cáo|\bads\b/i, val: 'chạy ads' },
+        { re: /facebook\s*ads/i, val: 'facebook ads' },
+        { re: /google\s*ads/i, val: 'google ads' },
+        { re: /tiktok/i, val: 'tiktok' },
+        { re: /youtube/i, val: 'youtube' },
+        { re: /sáng\s*tạo\s*nội\s*dung|\bcontent\b/i, val: 'sáng tạo nội dung' },
+        { re: /làm\s*sản\s*phẩm|\bproduct\b/i, val: 'làm sản phẩm' },
+        { re: /\bseo\b/i, val: 'SEO' },
+        { re: /email\s*marketing/i, val: 'email marketing' },
+        { re: /kinh\s*doanh\s*online/i, val: 'kinh doanh online' },
+        { re: /growth/i, val: 'growth' },
+      ]
+      const set = new Set<string>()
+      for (const d of dict) {
+        if (d.re.test(chatSummary)) {
+          set.add(d.val)
+        }
+      }
+      const line = /(?:kỹ\s*năng|kinh\s*nghiệm)[^:：\-]*[:：\-]?\s*([^\n]+)/i.exec(chatSummary)
+      if (line && line[1]) {
+        line[1].split(/[\,\|\/;]|\s+và\s+/i).map(s => s.trim()).filter(Boolean).forEach(s => set.add(s))
+      }
+      skills = Array.from(set).slice(0, 10)
     }
-    skills = Array.from(set).slice(0, 10)
   }
   
   // Build user context
