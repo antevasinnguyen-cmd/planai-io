@@ -17,11 +17,13 @@ import { logger } from '@/lib/logger'
 
 // --- Simple helpers to extract structured info from chat text (top-level) ---
 function extractLineAfter(label: RegExp, text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   const m = text.match(new RegExp(label.source + '[\\s:：-]*([^\\n]+)', label.flags))
-  return m ? m[1].trim() : null
+  return m && m[1] ? m[1].trim() : null
 }
 
 function extractSkills(text: string): string[] | null {
+  if (!text || typeof text !== 'string') return null
   const line = extractLineAfter(/kỹ năng|kinh nghiệm/i, text)
   let list: string[] = []
   if (line) {
@@ -52,6 +54,7 @@ function extractSkills(text: string): string[] | null {
 }
 
 function extractSavingsVnd(text: string): number | null {
+  if (!text || typeof text !== 'string') return null
   const current = text.match(/(?:hiện\s*tại|đang\s*có|hiện\s*có|số\s*dư|tài\s*khoản\s*tiết\s*kiệm|\btk\b)[^\d]{0,30}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
   if (current) {
     const num = parseFloat(current[1].replace(/[.,]/g, ''))
@@ -73,6 +76,7 @@ function extractSavingsVnd(text: string): number | null {
 }
 
 function extractIncomeRange(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   // Pattern 1: "tầm 7 - 10 triệu" hoặc "7-10 triệu/tháng"
   const m1 = text.match(/(?:tầm|khoảng|từ)?\s*(\d+[\s\.,]*\d*)\s*[-–~]\s*(\d+[\s\.,]*\d*)\s*(triệu|tr|million)/i)
   if (m1) return `${m1[1].replace(/[\s\.,]/g,'')}–${m1[2].replace(/[\s\.,]/g,'')} triệu/tháng`
@@ -89,12 +93,14 @@ function extractIncomeRange(text: string): string | null {
 }
 
 function extractTimelineRange(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   const m = text.match(/(\d+)\s*[-–]\s*(\d+)\s*(năm|years)/i)
   if (m) return `${m[1]}–${m[2]} năm`
   return null
 }
 
 function extractTimelineSingle(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   const mYear = text.match(/(\d+)\s*(năm|year)s?/i)
   if (mYear) return `${mYear[1]} năm`
   const mMonth = text.match(/(\d+)\s*(tháng|month)s?/i)
@@ -103,6 +109,7 @@ function extractTimelineSingle(text: string): string | null {
 }
 
 function extractTargetIncome(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   // Pattern 1: "thu nhập mục tiêu là 1 tỷ/tháng"
   const m1 = text.match(/thu\s*nhập\s*mục\s*tiêu[^\d]*(\d+[\d\.,]*)\s*(tỷ|ty|triệu|tr)(?:\/tháng)?/i)
   if (m1) {
@@ -123,15 +130,17 @@ function extractTargetIncome(text: string): string | null {
 }
 
 function extractProject(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   const m = text.match(/dự\s*án[^:]*[:\-]?\s*([^\n]+)/i)
-  if (m) return m[1].trim()
+  if (m && m[1]) return m[1].trim()
   if (/saas/i.test(text)) return 'webapp SaaS AI'
   return null
 }
 
 function extractLocation(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
   const m = text.match(/(?:hiện\s*đang\s*ở|đang\s*ở|ở|tại)\s+([^\n,\.]+)/i)
-  return m ? m[1].trim() : null
+  return m && m[1] ? m[1].trim() : null
 }
 
 // Helper: Create partial plan and return ID
