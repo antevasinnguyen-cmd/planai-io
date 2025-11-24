@@ -512,19 +512,37 @@ QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT K�
     - Chuyển đổi: "triệu" = 1,000,000; "tỷ" = 1,000,000,000; "tr" = 1,000,000.
     - VÍ DỤ: "8 đến 10 triệu" → min: 8000000, max: 10000000, average: 9000000.
 
-2.  **current_savings** (QUAN TRỌNG - THƯỜNG BỊ BỎ SÓT):
-    - Đọc KỸ chat để tìm "tiết kiệm", "đang có", "tài khoản", "savings", "số dư".
-    - Nhận biến thể/typo phổ biến: "tiế t kiệm", "tiet kiem", "tk", "sổ tiết kiệm", "tài khoản tiết kiệm".
-    - Nhận dạng đơn vị: "triệu", "tr", "trieu" = 1.000.000; "tỷ", "ty", "bn", "billion" = 1.000.000.000.
-    - Ví dụ: "300 triệu", "300tr", "0.3 tỷ", "300,000,000" → 300.000.000.
-    - Nếu có nhiều con số, ưu tiên con số gắn với "tiết kiệm" hoặc "đang có".
-    - Nếu KHÔNG tìm thấy, trả về 0 (KHÔNG phải null).
-    - TUYỆT ĐỐI KHÔNG bỏ qua con số này nếu người dùng đã nêu.
+2.  **current_savings** (CỰC KỲ QUAN TRỌNG - PHÂN BIỆT HIỆN TẠI VS MỤC TIÊU):
+    - ⚠️ **PHÂN BIỆT RÕ RÀNG**:
+      * "đang có X tiết kiệm", "hiện có X", "hiện tại có X tiết kiệm", "số dư X" → ĐÂY LÀ current_savings (HIỆN TẠI)
+      * "có tài khoản tiết kiệm X", "tiết kiệm X", "mục tiêu tiết kiệm X" → ĐÂY LÀ asset_goals (MỤC TIÊU), KHÔNG phải current_savings
+    
+    - **VÍ DỤ QUAN TRỌNG**:
+      * "Mục tiêu: mua nhà 3 tỷ, xe 800tr, có tài khoản tiết kiệm 10 tỷ" 
+        → current_savings: 0 (vì "có tài khoản tiết kiệm 10 tỷ" là MỤC TIÊU, không phải hiện tại)
+        → asset_goals: [{"item": "nhà", "value": 3000000000}, {"item": "xe", "value": 800000000}, {"item": "tài khoản tiết kiệm", "value": 10000000000}]
+      
+      * "Hiện tại đang có 300 triệu tiết kiệm, muốn có 10 tỷ"
+        → current_savings: 300000000 (vì "đang có 300 triệu" là HIỆN TẠI)
+        → asset_goals: [{"item": "tiết kiệm mục tiêu", "value": 10000000000}]
+    
+    - **CHỈ GHI NHẬN current_savings KHI**:
+      * Có từ khoá chỉ hiện tại: "đang có", "hiện có", "hiện tại có", "số dư hiện tại"
+      * KHÔNG có từ khoá mục tiêu: "muốn", "mục tiêu", "cần", "dự định"
+    
+    - Nhận dạng đơn vị: "triệu", "tr" = 1.000.000; "tỷ", "ty", "bn" = 1.000.000.000.
+    - Nếu KHÔNG tìm thấy tiết kiệm HIỆN TẠI, trả về 0 (không phải null).
+    - ⚠️ **LƯU Ý**: Đa số trường hợp "có tài khoản tiết kiệm X" là MỤC TIÊU, KHÔNG phải current_savings!
 
 3.  **asset_goals**: 
     - Liệt kê TẤT CẢ các mục tiêu tích lũy tài sản (nhà, xe, tiết kiệm mục tiêu).
+    - **BAO GỒM**: "có tài khoản tiết kiệm X", "tiết kiệm X", "mục tiêu tiết kiệm X" (đây là MỤC TIÊU, không phải hiện tại).
     - TÍNH TỔNG chúng vào "total_asset_goal".
-    - VÍ DỤ: "mua nhà 3 tỷ, xe 800 triệu, tiết kiệm 10 tỷ" → total_asset_goal: 13800000000.
+    - **VÍ DỤ QUAN TRỌNG**: 
+      * "Mục tiêu: mua nhà 3 tỷ, xe 800 triệu, có tài khoản tiết kiệm 10 tỷ" 
+        → asset_goals: [{"item": "nhà", "value": 3000000000}, {"item": "xe", "value": 800000000}, {"item": "tài khoản tiết kiệm", "value": 10000000000}]
+        → total_asset_goal: 13800000000
+        → current_savings: 0 (vì không có thông tin về tiết kiệm HIỆN TẠI)
 
 4.  **income_goal**: 
     - Ghi nhận mục tiêu thu nhập (vd: "kiếm 1 tỷ/tháng", "thu nhập 1 tỷ").
@@ -564,8 +582,10 @@ QUY TẮC TRÍCH XUẤT (TUÂN THỦ TUYỆT ĐỐI - KHÔNG BỎ SÓT BẤT K�
         if (first >= 0 && last > first) payload = jsonResponse.slice(first, last + 1)
       }
       const parsed = JSON.parse(payload)
-      if (parsed.analysis?.current_savings === 0 && chatContext.match(/tiết\s*kiệm.*?\d+|đang\s*có.*?\d+.*?(triệu|tỷ|tr)/i)) {
-        console.warn('⚠️ ANALYTICAL BRAIN WARNING: current_savings = 0 but chat mentions savings. Re-check extraction.')
+      // Only warn if chat mentions CURRENT savings (not goal) but extraction returned 0
+      const hasCurrentSavingsKeywords = /(đang\s*có|đã\s*có|hiện\s*có|hiện\s*tại.*?có|số\s*dư).*?(\d+).*?(triệu|tỷ|tr)/i.test(chatContext)
+      if (parsed.analysis?.current_savings === 0 && hasCurrentSavingsKeywords) {
+        console.warn('⚠️ ANALYTICAL BRAIN WARNING: current_savings = 0 but chat mentions CURRENT savings with keywords like "đang có", "hiện có". Re-check extraction.')
       }
       return parsed
     }
