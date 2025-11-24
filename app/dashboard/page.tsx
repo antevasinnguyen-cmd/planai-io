@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Brain, FileText, Download, MessageSquare, ChevronDown, Crown, Settings, LogOut, 
@@ -68,6 +68,21 @@ export default function DashboardFinal() {
       localStorage.removeItem('auth_user_email')
     }
   }, [user, authLoading, router])
+
+  // Separate effect to check for refresh flag
+  useEffect(() => {
+    if (!user) return
+    
+    const refreshFlag = sessionStorage.getItem('refresh_plans_list')
+    if (refreshFlag) {
+      sessionStorage.removeItem('refresh_plans_list')
+      console.log('=== DASHBOARD: Refresh triggered after plan creation ===')
+      // Reload plans after a short delay to ensure backend has processed
+      setTimeout(() => {
+        loadRecentPlans(user.id)
+      }, 1000)
+    }
+  }, [user])
 
   const initializeDashboard = async () => {
     if (!user) return
@@ -153,14 +168,17 @@ export default function DashboardFinal() {
     }
   }
 
-  const loadRecentPlans = async (userId: string) => {
+  const loadRecentPlans = useCallback(async (userId: string) => {
     try {
+      console.log('=== DASHBOARD: Loading recent plans for user', userId)
       const { data } = await getUserPlans(userId)
+      console.log('=== DASHBOARD: Recent plans loaded', { count: data?.length || 0 })
       setPlans(data?.slice(0, 5) || [])
     } catch (error) {
       console.error('Error loading plans:', error)
+      setPlans([])
     }
-  }
+  }, [])
 
   const loadTrialStatus = async (userId: string) => {
     try {

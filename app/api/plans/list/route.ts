@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('plans')
-      .select('id, title, goal, status, created_at, word_count')
+      .select('id, title, goal, status, created_at, word_count, collected_info')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
