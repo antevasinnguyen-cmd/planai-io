@@ -319,7 +319,7 @@ export const generateFinancialPlan = async (
       : (collectedInfo.chat_summary || '')
 
     // Build user profile summary from collected info
-    const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho người dùng Việt Nam dựa trên thông tin sau:
+    const prompt = `Tạo một kế hoạch tài chính chi tiết và cá nhân hóa cho bạn (người Việt Nam) dựa trên thông tin sau:
 
 THÔNG TIN CÁ NHÂN:
 - Mục tiêu: ${goals}
@@ -332,7 +332,7 @@ THÔNG TIN CÁ NHÂN:
 - Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
 - Tiết kiệm hiện có: ${collectedInfo.savings ? collectedInfo.savings.toLocaleString() + ' VNĐ' : 'Chưa cung cấp'}
 
-${chatContext ? `TOÀN BỘ CUỘC TRÒ CHUYỆN VỚI NGƯỜI DÙNG (để giữ bối cảnh và chi tiết):\n${chatContext}\n` : ''}
+${chatContext ? `TOÀN BỘ CUỘC TRÒ CHUYỆN VỚI bạn (để giữ bối cảnh và chi tiết):\n${chatContext}\n` : ''}
 
 ${spiritualInsights ? `PHÂN TÍCH TỬ VI/THẦN SỐ HỌC:
 ${spiritualInsights}
