@@ -69,20 +69,31 @@ export default function DashboardFinal() {
     }
   }, [user, authLoading, router])
 
-  // Separate effect to check for refresh flag
+  // Effect: Refetch subscription/usage if just upgraded (after payment)
   useEffect(() => {
-    if (!user) return
-    
-    const refreshFlag = sessionStorage.getItem('refresh_plans_list')
-    if (refreshFlag) {
-      sessionStorage.removeItem('refresh_plans_list')
-      console.log('=== DASHBOARD: Refresh triggered after plan creation ===')
-      // Reload plans after a short delay to ensure backend has processed
-      setTimeout(() => {
-        loadRecentPlans(user.id)
-      }, 1000)
+    if (!user) return;
+    const refreshSub = sessionStorage.getItem('refresh_subscription');
+    if (refreshSub) {
+      sessionStorage.removeItem('refresh_subscription');
+      console.log('=== DASHBOARD: Refresh triggered after payment/subscription upgrade ===');
+      // Force refetch subscription & usage
+      loadSubscription(user.id);
+      loadUsageStats(user.id);
     }
-  }, [user])
+  }, [user]);
+
+  // Separate effect to check for refresh flag after plan creation
+  useEffect(() => {
+    if (!user) return;
+    const refreshFlag = sessionStorage.getItem('refresh_plans_list');
+    if (refreshFlag) {
+      sessionStorage.removeItem('refresh_plans_list');
+      console.log('=== DASHBOARD: Refresh triggered after plan creation ===');
+      setTimeout(() => {
+        loadRecentPlans(user.id);
+      }, 1000);
+    }
+  }, [user]);
 
   const initializeDashboard = async () => {
     if (!user) return
