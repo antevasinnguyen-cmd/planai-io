@@ -165,62 +165,89 @@ export default function PlanViewEnhanced() {
   }
 
   const handleExport = async (format: string) => {
-    if (!plan) return
+    if (!plan) return;
+
+    if (format === 'sheets') {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+        }
+        const res = await fetch('/api/export/google-sheets', {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ planId: plan.id })
+        });
+        if (!res.ok) {
+          let errMsg = 'Export failed';
+          try { errMsg = (await res.json())?.error || errMsg; } catch {}
+          throw new Error(errMsg);
+        }
+        const json = await res.json();
+        if (json?.url) {
+          window.open(json.url, '_blank');
+          return;
+        }
+        alert(json?.message || 'Không thể xuất sang Google Sheets');
+        return;
+      } catch (err) {
+        alert('Có lỗi khi xuất sang Google Sheets');
+        return;
+      }
+    }
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const headers: any = { 'Content-Type': 'application/json' }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const headers: any = { 'Content-Type': 'application/json' };
       if (sessionData?.session?.access_token) {
-        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
       }
-
       const res = await fetch('/api/plans/export', {
         method: 'POST',
         headers,
         credentials: 'include',
         body: JSON.stringify({ planId: plan.id, format })
-      })
-
+      });
       if (res.status === 403) {
-        let msg = 'Tính năng chưa được mở khóa. Vui lòng nâng cấp gói.'
+        let msg = 'Tính năng chưa được mở khóa. Vui lòng nâng cấp gói.';
         try {
-          const data = await res.json()
-          if (data?.message) msg = data.message
+          const data = await res.json();
+          if (data?.message) msg = data.message;
         } catch {}
-        alert(msg)
-        router.push('/pricing')
-        return
+        alert(msg);
+        router.push('/pricing');
+        return;
       }
-
       if (!res.ok) {
-        let errMsg = 'Export failed'
+        let errMsg = 'Export failed';
         try {
-          const data = await res.json()
-          errMsg = data?.error || errMsg
+          const data = await res.json();
+          errMsg = data?.error || errMsg;
         } catch {}
-        throw new Error(errMsg)
+        throw new Error(errMsg);
       }
-
-      const contentType = res.headers.get('content-type') || ''
+      const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        const data = await res.json()
+        const data = await res.json();
         if (data?.url) {
-          window.open(data.url, '_blank')
+          window.open(data.url, '_blank');
         } else if (data?.message) {
-          alert(data.message)
+          alert(data.message);
         }
       } else {
-        const blob = await res.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `plan-${plan.id}.${format}`
-        a.click()
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `plan-${plan.id}.${format}`;
+        a.click();
       }
-      setShowExportMenu(false)
+      setShowExportMenu(false);
     } catch (error) {
-      console.error('Export error:', error)
-      alert('Có lỗi khi xuất file')
+      console.error('Export error:', error);
+      alert('Có lỗi khi xuất file');
     }
   }
 

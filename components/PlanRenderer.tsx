@@ -388,13 +388,13 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
                   <span>Xuất CSV</span>
                 </button>
 
-                {userTier !== 'free' && (
+                {userTier !== 'free' && planId && (
                   <button
                     onClick={() => onExport?.('sheets')}
-                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium"
+                    className="flex items-center space-x-2 px-4 py-2 border border-green-600 text-green-700 dark:border-green-400 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors text-sm font-medium"
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Google Sheets</span>
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Xuất sang Trang tính</span>
                   </button>
                 )}
               </div>

@@ -346,9 +346,13 @@ CRITICAL CONTENT REQUIREMENTS:
 - MUST reach minimum word count for their tier
 - MUST complete all sections without truncation
 - MUST ensure every table follows this exact pattern:
-  | Col1 | Col2 |
-  |---|---|
-  | v1 | v2 |
+  | Tiêu đề 1 | Tiêu đề 2 | ... |
+  |---|---|---| (dòng separator, KHÔNG được thiếu)
+  | Giá trị 1 | Giá trị 2 | ... |
+  ...
+- Mỗi bảng phải có tiêu đề rõ ràng phía trên (ví dụ: ## Bảng Kế Hoạch, ## Checklist, ## Roadmap)
+- KHÔNG được chèn text lẫn vào giữa bảng, không được thiếu dòng separator
+- KHÔNG được sinh bảng kiểu lộn xộn hoặc thiếu cột, thiếu dòng, thiếu headers
 
 CROSS-CHECK LOGIC (BEFORE FINALIZING):
 1. **Data Consistency Check**: 
