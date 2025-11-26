@@ -163,45 +163,43 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
   const mainContent = ctaContent ? fixedContent.replace(ctaRegex, '') : fixedContent
 
   // --- PHÂN TÁCH SECTION & RENDER THEO QUYỀN ---
-  const sectionRegex = /(^|\n)(##\s*Phần\s*\d+[^\n]*)/g;
+  // Regex khớp nhiều format: "## Phần 1", "## PHẦN 1:", "##1.", "## 1.", etc.
+  const sectionRegex = /(^|\n)(##\s*(?:PHẦN|Phần|phần)?\s*(\d+)[^\n]*)/gi;
   const splitSections = (text: string) => {
-    const result: { title: string, content: string, index: number }[] = [];
-    let match;
+    const result: { title: string, content: string, index: number, sectionNum: number | null }[] = [];
     let lastIndex = 0;
     let sectionIdx = 0;
     const matches = [...text.matchAll(sectionRegex)];
     if (matches.length === 0) {
       // Không có section rõ ràng, trả về nguyên content
-      return [{ title: '', content: text, index: 0 }];
+      return [{ title: '', content: text, index: 0, sectionNum: null }];
     }
     for (let i = 0; i < matches.length; i++) {
       const start = matches[i].index!;
       const title = matches[i][2];
+      const sectionNum = parseInt(matches[i][3], 10);
       const next = matches[i + 1]?.index ?? text.length;
       if (start > lastIndex) {
         // Đoạn đầu trước section đầu tiên
-        result.push({ title: '', content: text.slice(lastIndex, start), index: sectionIdx++ });
+        result.push({ title: '', content: text.slice(lastIndex, start), index: sectionIdx++, sectionNum: null });
       }
-      result.push({ title, content: text.slice(start, next), index: sectionIdx++ });
+      result.push({ title, content: text.slice(start, next), index: sectionIdx++, sectionNum });
       lastIndex = next;
     }
     if (lastIndex < text.length) {
-      result.push({ title: '', content: text.slice(lastIndex), index: sectionIdx++ });
+      result.push({ title: '', content: text.slice(lastIndex), index: sectionIdx++, sectionNum: null });
     }
     return result;
   };
 
   const sections = useMemo(() => splitSections(mainContent), [mainContent]);
 
-  // Helper: lấy số phần từ tiêu đề
-  const getSectionNumber = (title: string) => {
-    const m = title.match(/Phần\s*(\d+)/i);
-    return m ? parseInt(m[1], 10) : null;
-  };
-
   // Render từng section
-  const renderSection = (section: { title: string, content: string, index: number }) => {
-    const sn = getSectionNumber(section.title);
+  const renderSection = (section: { title: string, content: string, index: number, sectionNum: number | null }) => {
+    const sn = section.sectionNum;
+    
+    // User trả phí: xem full tất cả
+    // User Free: xem full phần 1,2,3,8,9; phần 4,5,6,7 chỉ 60% + CTA
     if (userTier !== 'free' || !sn || [1,2,3,8,9].includes(sn)) {
       // Paid hoặc các phần được xem full
       return (
@@ -236,7 +234,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       // Các section khác (không xác định): render bình thường
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content.replace('Sử dụng tính năng tử vi, thần số học cá nhân hoá', '* Sử dụng tính năng tử vi, thần số học cá nhân hoá')}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
         </div>
       );
     }
