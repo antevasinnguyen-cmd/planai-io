@@ -19,6 +19,8 @@ interface PlanRendererProps {
 }
 
 export default function PlanRenderer({ content, planId, onExport, userTier = 'free' }: PlanRendererProps) {
+  const [exportingTable, setExportingTable] = useState<string | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
   const [copiedTableId, setCopiedTableId] = useState<string | null>(null)
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
   const [showFloatingCTA, setShowFloatingCTA] = useState(true)
@@ -160,18 +162,85 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
   const ctaContent = ctaMatch ? ctaMatch[0] : null
   const mainContent = ctaContent ? fixedContent.replace(ctaRegex, '') : fixedContent
 
-  // Sanitize legacy content: remove placeholder tokens like [X%], [Y tỷ], and defaulted fabricated fields
-  const sanitizedMain = useMemo(() => {
-    let t = mainContent
-    // Replace bracket placeholders [X], [Y], [Z] with a neutral note
-    t = t.replace(/\[(?:X|Y|Z)[^\]]*\]/g, '(Không đủ dữ liệu)')
-    // Replace ': true' values
-    t = t.replace(/:\s*true\b/gi, ': Chưa cung cấp')
-    // Common defaulted phrases -> neutralize
-    t = t.replace(/Độ tuổi[^:]*:\s*25-35[^\n]*/gi, 'Độ tuổi: Chưa cung cấp')
-    t = t.replace(/Nghề nghiệp[^:]*:\s*Nhân viên văn phòng/gi, 'Nghề nghiệp: Chưa cung cấp')
-    return t
-  }, [mainContent])
+  // --- PHÂN TÁCH SECTION & RENDER THEO QUYỀN ---
+  const sectionRegex = /(^|\n)(##\s*Phần\s*\d+[^\n]*)/g;
+  const splitSections = (text: string) => {
+    const result: { title: string, content: string, index: number }[] = [];
+    let match;
+    let lastIndex = 0;
+    let sectionIdx = 0;
+    const matches = [...text.matchAll(sectionRegex)];
+    if (matches.length === 0) {
+      // Không có section rõ ràng, trả về nguyên content
+      return [{ title: '', content: text, index: 0 }];
+    }
+    for (let i = 0; i < matches.length; i++) {
+      const start = matches[i].index!;
+      const title = matches[i][2];
+      const next = matches[i + 1]?.index ?? text.length;
+      if (start > lastIndex) {
+        // Đoạn đầu trước section đầu tiên
+        result.push({ title: '', content: text.slice(lastIndex, start), index: sectionIdx++ });
+      }
+      result.push({ title, content: text.slice(start, next), index: sectionIdx++ });
+      lastIndex = next;
+    }
+    if (lastIndex < text.length) {
+      result.push({ title: '', content: text.slice(lastIndex), index: sectionIdx++ });
+    }
+    return result;
+  };
+
+  const sections = useMemo(() => splitSections(sanitizedMain), [sanitizedMain]);
+
+  // Helper: lấy số phần từ tiêu đề
+  const getSectionNumber = (title: string) => {
+    const m = title.match(/Phần\s*(\d+)/i);
+    return m ? parseInt(m[1], 10) : null;
+  };
+
+  // Render từng section
+  const renderSection = (section: { title: string, content: string, index: number }) => {
+    const sn = getSectionNumber(section.title);
+    if (userTier !== 'free' || !sn || [1,2,3,8,9].includes(sn)) {
+      // Paid hoặc các phần được xem full
+      return (
+        <div key={section.index} className="mb-8">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+        </div>
+      );
+    }
+    if ([4,5,6,7].includes(sn)) {
+      // Chỉ hiển thị 60% đầu, phần còn lại làm mờ + CTA
+      const lines = section.content.split('\n');
+      const cutoff = Math.max(1, Math.floor(lines.length * 0.6));
+      const visible = lines.slice(0, cutoff).join('\n');
+      const hidden = lines.slice(cutoff).join('\n');
+      return (
+        <div key={section.index} className="mb-8">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{visible}</ReactMarkdown>
+          {hidden && (
+            <div className="relative mt-2">
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-200/80 dark:from-gray-900/80 to-transparent pointer-events-none" style={{backdropFilter:'blur(2px)'}} />
+              <div className="blur-sm select-none text-gray-400 dark:text-gray-600 whitespace-pre-line" aria-hidden>{hidden}</div>
+              <div className="flex justify-center mt-4">
+                <a href="/pricing" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-base hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105">
+                  <span>🚀</span>
+                  <span>Nâng cấp bản trả phí ngay để xem kế hoạch chuyên sâu hoàn chỉnh</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    // Các section khác (không xác định): render bình thường
+    return (
+      <div key={section.index} className="mb-8">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full relative">
@@ -295,22 +364,30 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
           {Array.from(tables.entries()).map(([tableId, table], index) => (
             <div
               key={tableId}
-              className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden"
+              className={`rounded-2xl overflow-hidden shadow-md transition-all duration-300 ${userTier !== 'free' ? 'border-2 border-gradient-to-r from-blue-500 to-purple-500 bg-gradient-to-br from-blue-50 via-purple-50 to-white dark:from-blue-900/40 dark:via-purple-900/30 dark:to-[#191924]' : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800'}`}
+              style={userTier !== 'free' ? { animation: 'fadeInUp 0.7s' } : {}}
+              data-tooltip-id={`table-tooltip-${tableId}`}
             >
               {/* Table Header */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 px-6 py-4 flex items-center justify-between">
-                <div>
+                <div className="flex items-center gap-2">
+                  {userTier !== 'free' && (
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br ${index%2===0?'from-blue-400 to-purple-500':'from-green-400 to-blue-500'} text-white text-lg shadow-md`}>
+                      {index % 3 === 0 ? '💼' : index % 3 === 1 ? '🎯' : '📊'}
+                    </span>
+                  )}
                   <h4 className="font-semibold text-gray-900 dark:text-white">
                     Bảng {index + 1}: {table.headers.join(' • ')}
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {table.rows.length} hàng dữ liệu
-                  </p>
                 </div>
-                <button
-                  onClick={() => toggleTableExpand(tableId)}
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1" title={userTier !== 'free' ? `Bảng này thể hiện dữ liệu tài chính/phân tích cá nhân hóa cho bạn (Premium)` : undefined}>
+                  {table.rows.length} hàng dữ liệu
+                </p>
+              </div>
+              <button
+                onClick={() => toggleTableExpand(tableId)}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -390,11 +467,39 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
 
                 {userTier !== 'free' && planId && (
                   <button
-                    onClick={() => onExport?.('sheets')}
-                    className="flex items-center space-x-2 px-4 py-2 border border-green-600 text-green-700 dark:border-green-400 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors text-sm font-medium"
+                    onClick={async () => {
+                      setExportingTable(tableId);
+                      try {
+                        const res = await fetch('/api/export/google-sheets', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
+                          body: JSON.stringify({
+                            singleTable: {
+                              title: table.title,
+                              headers: table.headers,
+                              rows: table.rows
+                            }
+                          })
+                        });
+                        const json = await res.json();
+                        if (json?.url) window.open(json.url, '_blank');
+                        else alert(json?.error || 'Không thể xuất bảng này');
+                      } catch (err) {
+                        alert('Có lỗi khi xuất bảng này');
+                      } finally {
+                        setExportingTable(null);
+                      }
+                    }}
+                    className={`flex items-center space-x-2 px-4 py-2 border border-green-600 text-green-700 dark:border-green-400 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors text-sm font-medium relative ${exportingTable === tableId ? 'opacity-60 pointer-events-none' : ''}`}
+                    title="Xuất bảng này sang Google Sheets"
                   >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span>Xuất sang Trang tính</span>
+                    {exportingTable === tableId ? (
+                      <svg className="animate-spin mr-2 w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                    ) : (
+                      <FileSpreadsheet className="w-4 h-4" />
+                    )}
+                    <span>Xuất bảng này</span>
                   </button>
                 )}
               </div>
@@ -412,15 +517,38 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
                 Xuất Toàn Bộ Dữ Liệu
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Xuất tất cả {tables.size} bảng sang Google Sheets hoặc Excel
+                Xuất tất cả {tables.size} bảng sang Google Sheets (mỗi bảng 1 sheet)
               </p>
             </div>
             {userTier !== 'free' && (
               <button
-                onClick={() => onExport?.('sheets')}
-                className="flex items-center space-x-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium"
+                onClick={async () => {
+                  setExportingAll(true);
+                  try {
+                    const allTables = Array.from(tables.values()).map(t => ({ title: t.title, headers: t.headers, rows: t.rows }));
+                    const res = await fetch('/api/export/google-sheets', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({ multiTables: allTables })
+                    });
+                    const json = await res.json();
+                    if (json?.url) window.open(json.url, '_blank');
+                    else alert(json?.error || 'Không thể xuất toàn bộ bảng');
+                  } catch (err) {
+                    alert('Có lỗi khi xuất toàn bộ bảng');
+                  } finally {
+                    setExportingAll(false);
+                  }
+                }}
+                className={`flex items-center space-x-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors font-medium ${exportingAll ? 'opacity-60 pointer-events-none' : ''}`}
+                title="Xuất tất cả bảng sang Google Sheets (mỗi bảng 1 sheet)"
               >
-                <FileSpreadsheet className="w-5 h-5" />
+                {exportingAll ? (
+                  <svg className="animate-spin mr-2 w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                ) : (
+                  <FileSpreadsheet className="w-5 h-5" />
+                )}
                 <span>Xuất Tất Cả</span>
               </button>
             )}
@@ -446,7 +574,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
                 {[
                   '✅ 24 phần phân tích chi tiết',
                   '✅ Google Sheets theo dõi tự động',
-                  '✅ 3–5 mô hình kinh doanh cá nhân hóa',
+                  '✅ chuyên sâu 10 - 20 mô hình kinh doanh cá nhân hoá',
                   '✅ Dự báo và chiến lược rủi ro'
                 ].map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-2">

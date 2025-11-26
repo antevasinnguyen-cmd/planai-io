@@ -553,7 +553,10 @@ export default function PlanViewEnhanced() {
                           <div className="flex items-start space-x-2">
                             <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
                             <span className="text-sm text-gray-700 dark:text-gray-300">
-                              <strong>40+ tài liệu:</strong> Thay vì 11, bạn có 40+ tài liệu chuyên sâu
+                              <strong>40+ tài liệu:</strong> Tài liệu học tập, tài liệu kinh doanh và tất cả các tài liệu liên quan với mục tiêu duy nhất giúp bạn đạt được kế hoạch
+                            </span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300 block mt-1">
+                              <strong>Sử dụng tính năng tử vi, thần số học cá nhân hoá</strong>
                             </span>
                           </div>
                           <div className="flex items-start space-x-2">
