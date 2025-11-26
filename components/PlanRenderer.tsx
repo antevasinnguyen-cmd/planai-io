@@ -241,37 +241,13 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       </div>
     )
   }
-  if ([4,5,6,7].includes(sn)) {
-    // Chỉ hiển thị 60% đầu, phần còn lại làm mờ + CTA
-    const lines = section.content.split('\n');
-    const cutoff = Math.max(1, Math.floor(lines.length * 0.6));
-    const visible = lines.slice(0, cutoff).join('\n');
-    const hidden = lines.slice(cutoff).join('\n');
-    return (
-      <div key={section.index} className="mb-8">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{visible}</ReactMarkdown>
-        {hidden && (
-          <div className="relative mt-2">
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-200/80 dark:from-gray-900/80 to-transparent pointer-events-none" style={{backdropFilter:'blur(2px)'}} />
-            <div className="blur-sm select-none text-gray-400 dark:text-gray-600 whitespace-pre-line" aria-hidden>{hidden}</div>
-            <div className="flex justify-center mt-4">
-              <a href="/pricing" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-base hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105">
-                <span>🚀</span>
-                <span>Nâng cấp bản trả phí ngay để xem kế hoạch chuyên sâu hoàn chỉnh</span>
-              </a>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-  // Các section khác (không xác định): render bình thường
+
+  // --- RETURN CHÍNH CỦA COMPONENT ---
   return (
-    <div key={section.index} className="mb-8">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
-    </div>
-  )
-}
+    <div className="w-full relative">
+      {/* Floating CTA Button - Only for FREE tier */}
+      {userTier === 'free' && showFloatingCTA && (
+        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
           <a
             href="/pricing"
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
@@ -295,6 +271,32 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         prose-h2:text-3xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-purple-600 dark:prose-h2:text-purple-400
         prose-h3:text-2xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-gray-800 dark:prose-h3:text-gray-200
         prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:text-base prose-p:whitespace-normal prose-p:break-words prose-p:overflow-wrap-anywhere prose-p:overflow-hidden prose-p:max-w-full
+        prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-li:whitespace-normal prose-li:break-words prose-li:overflow-wrap-anywhere prose-li:overflow-hidden
+        prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-bold
+        prose-ul:list-disc prose-ul:pl-6
+        prose-ol:list-decimal prose-ol:pl-6
+        prose-blockquote:border-l-4 prose-blockquote:border-purple-500 prose-blockquote:pl-4 prose-blockquote:italic
+        prose-code:bg-purple-50 dark:prose-code:bg-purple-900/30 prose-code:text-purple-700 dark:prose-code:text-purple-300 prose-code:px-2 prose-code:py-1 prose-code:rounded
+      ">
+        {sections.map(section => renderSection(section))}
+      </div>
+
+      {/* Các phần Table Export Cards, CTA, ... giữ nguyên như cũ nếu có */}
+    </div>
+  )
+}
+
+    // Chỉ hiển thị 60% đầu, phần còn lại làm mờ + CTA
+    const lines = section.content.split('\n');
+    const cutoff = Math.max(1, Math.floor(lines.length * 0.6));
+    const visible = lines.slice(0, cutoff).join('\n');
+    const hidden = lines.slice(cutoff).join('\n');
+    return (
+      <div key={section.index} className="mb-8">
+
+  return (
+    // Return chính của component
+  )
         prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-li:whitespace-normal prose-li:break-words prose-li:overflow-wrap-anywhere prose-li:overflow-hidden
         prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-bold
         prose-ul:list-disc prose-ul:pl-6
