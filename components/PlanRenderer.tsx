@@ -263,8 +263,6 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         </div>
       )}
 
-      {/* CTA sẽ được render ở cuối component */}
-
       {/* Main Content with Ebook Style */}
       <div className="prose prose-lg dark:prose-invert max-w-none mb-8 
         prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
@@ -279,76 +277,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         prose-blockquote:border-l-4 prose-blockquote:border-purple-500 prose-blockquote:pl-4 prose-blockquote:italic
         prose-code:bg-purple-50 dark:prose-code:bg-purple-900/30 prose-code:text-purple-700 dark:prose-code:text-purple-300 prose-code:px-2 prose-code:py-1 prose-code:rounded
       ">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-600 dark:text-primary-400 hover:underline"
-              >
-                {children}
-              </a>
-            ),
-            table: ({ children }) => (
-              <div className="my-6 overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-                <table className="w-full text-sm">
-                  {children}
-                </table>
-              </div>
-            ),
-            thead: ({ children }) => (
-              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                {children}
-              </thead>
-            ),
-            tbody: ({ children }) => (
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {children}
-              </tbody>
-            ),
-            th: ({ children }) => {
-              const text = String(Array.isArray(children) ? children.join('') : children).trim()
-              const isPlaceholder = /^(-{3,}|\.{3}|…)$/.test(text)
-              return (
-                <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                  {isPlaceholder ? '' : children}
-                </th>
-              )
-            },
-            td: ({ children }) => {
-              const text = String(Array.isArray(children) ? children.join('') : children).trim()
-              const isPlaceholder = /^(-{3,}|\.{3}|…)$/.test(text)
-              return (
-                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                  {isPlaceholder ? '' : children}
-                </td>
-              )
-            },
-            code: ({ node, inline, className, children, ...props }: any) => {
-              const match = /language-(\w+)/.exec(className || '')
-              const lang = match ? match[1] : ''
-              
-              // Render mermaid diagrams
-              if (lang === 'mermaid' && !inline) {
-                return (
-                  <MermaidDiagram code={String(children).replace(/\n$/, '')} />
-                )
-              }
-              
-              // Default code block
-              return (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              )
-            },
-          }}
-        >
-          {sanitizedMain}
-        </ReactMarkdown>
+        {sections.map(section => renderSection(section))}
       </div>
 
       {/* Table Export Cards */}
