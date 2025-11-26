@@ -435,6 +435,76 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
     location: '',
     readiness: '',
     description: '',
+    chat_history: messages,
+    goals: [], // NEW: mảng mục tiêu nhỏ
+    goals_total_value: 0 // NEW: tổng giá trị mục tiêu
+  }
+
+  // Combine all user messages into one text for better extraction
+  const allUserMessages = messages
+    .filter(m => m.role === 'user')
+    .map(m => m.content)
+    .join(' ');
+
+  const contentLower = allUserMessages.toLowerCase();
+
+  // Extract all financial goals (multi-goal)
+  const goalRegexes = [
+    /mua\s*(?:1|một)?\s*căn\s*nhà[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    /mua\s*(?:1|một)?\s*ô\s*tô[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    /tài khoản ngân hàng[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    /tiết kiệm[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    /thu nhập mục tiêu[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    /đạt thu nhập[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi
+  ];
+  let goalsArr: any[] = [];
+  let goalsTotal = 0;
+  for (const regex of goalRegexes) {
+    let m;
+    while ((m = regex.exec(allUserMessages)) !== null) {
+      let label = m[0].replace(/\d+[.,]?\d*\s*(tỷ|triệu|tr|ty|bn)?/, '').trim();
+      let value = m[1] ? parseFloat(m[1].replace(',', '.')) : null;
+      let unit = m[2] ? m[2].toLowerCase() : '';
+      let vnd = 0;
+      if (value) {
+        if (unit.includes('tỷ') || unit.includes('ty') || unit.includes('bn')) vnd = value * 1_000_000_000;
+        else if (unit.includes('triệu') || unit.includes('tr')) vnd = value * 1_000_000;
+      }
+      if (label && vnd > 0) {
+        goalsArr.push({ label, value: vnd });
+        goalsTotal += vnd;
+      }
+    }
+  }
+  // Nếu có nhiều mục tiêu, lưu vào userProfile.goals và tổng
+  if (goalsArr.length > 0) {
+    userProfile.goals = goalsArr;
+    userProfile.goals_total_value = goalsTotal;
+    userProfile.financial_goal = goalsArr.map(g => `${g.label}: ${g.value.toLocaleString('vi-VN')} VNĐ`).join(' | ');
+  }
+
+  // Extract financial goal (fallback)
+  if (!userProfile.financial_goal) {
+    const goalMatches = allUserMessages.match(/(?:mục tiêu|muốn|cần|mong muốn)[^.!?]*/gi);
+    if (goalMatches) {
+      userProfile.financial_goal = goalMatches[0].trim();
+    }
+  }
+
+  // (Các phần còn lại giữ nguyên như cũ)
+  const userProfile: any = {
+    full_name: '',
+    age: null,
+    occupation: '',
+    current_income: null,
+    financial_goal: '',
+    timeline: '',
+    risk_tolerance: 'medium',
+    birth_date: null,
+    savings: null,
+    location: '',
+    readiness: '',
+    description: '',
     chat_history: messages // CRITICAL: Include full chat history for context
   }
   
