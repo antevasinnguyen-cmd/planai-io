@@ -236,7 +236,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       // Các section khác (không xác định): render bình thường
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content.replace('Sử dụng tính năng tử vi, thần số học cá nhân hoá', '* Sử dụng tính năng tử vi, thần số học cá nhân hoá')}</ReactMarkdown>
         </div>
       );
     }
