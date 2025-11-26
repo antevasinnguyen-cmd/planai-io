@@ -33,6 +33,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createClientComponentClient(), [])
 
   useEffect(() => {
+    // Tự động refresh session khi tab quay lại
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+          } else {
+            setUser(null);
+            setSession(null);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login?expired=1';
+            }
+          }
+        } catch (e) {
+          setUser(null);
+          setSession(null);
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login?expired=1';
+          }
+        }
+      }
+    };
+    window.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
     console.log('=== AUTHCONTEXT: Khởi tạo ===')
 
     // Lấy phiên hiện tại
