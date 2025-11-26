@@ -491,36 +491,6 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
     }
   }
 
-  // (Các phần còn lại giữ nguyên như cũ)
-  const userProfile: any = {
-    full_name: '',
-    age: null,
-    occupation: '',
-    current_income: null,
-    financial_goal: '',
-    timeline: '',
-    risk_tolerance: 'medium',
-    birth_date: null,
-    savings: null,
-    location: '',
-    readiness: '',
-    description: '',
-    chat_history: messages // CRITICAL: Include full chat history for context
-  }
-  
-  // Combine all user messages into one text for better extraction
-  const allUserMessages = messages
-    .filter(m => m.role === 'user')
-    .map(m => m.content)
-    .join(' ')
-  
-  const contentLower = allUserMessages.toLowerCase()
-  
-  // Extract financial goal (IMPROVED)
-  const goalMatches = allUserMessages.match(/(?:mục tiêu|muốn|cần|mong muốn)[^.!?]*/gi)
-  if (goalMatches) {
-    userProfile.financial_goal = goalMatches[0].trim()
-  }
   
   // Extract income (IMPROVED - handle multiple formats)
   const incomeMatches = allUserMessages.match(/(\d+(?:[.,]\d+)?)\s*(?:triệu|tr|trieu|vnd|đ|đồng)\/tháng/gi)
