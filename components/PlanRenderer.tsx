@@ -191,7 +191,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     return result;
   };
 
-  const sections = useMemo(() => splitSections(sanitizedMain), [sanitizedMain]);
+  const sections = useMemo(() => splitSections(mainContent), [mainContent]);
 
   // Helper: lấy số phần từ tiêu đề
   const getSectionNumber = (title: string) => {
