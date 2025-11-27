@@ -448,39 +448,79 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
 
   const contentLower = allUserMessages.toLowerCase();
 
-  // Extract all financial goals (multi-goal)
+  // Extract all financial goals (multi-goal) - CRITICAL: Phân biệt GOALS vs CURRENT STATE
   const goalRegexes = [
-    /mua\s*(?:1|một)?\s*căn\s*nhà[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
-    /mua\s*(?:1|một)?\s*ô\s*tô[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
-    /tài khoản ngân hàng[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
-    /tiết kiệm[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
-    /thu nhập mục tiêu[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
-    /đạt thu nhập[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi
+    // Mua nhà (GOAL)
+    /(?:mua|sở hữu|có)\s*(?:1|một)?\s*(?:căn)?\s*nhà[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    // Mua xe (GOAL)
+    /(?:mua|sở hữu|có)\s*(?:1|một)?\s*(?:chiếc)?\s*(?:ô\s*tô|xe)[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    // Tài khoản tiết kiệm MỤC TIÊU (GOAL) - "có tài khoản tiết kiệm X" = GOAL
+    /(?:có|sở hữu|đạt)\s*(?:1|một)?\s*tài\s*khoản\s*(?:ngân\s*hàng)?\s*(?:tiết\s*kiệm)?[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    // Thu nhập mục tiêu (GOAL)
+    /(?:thu\s*nhập|kiếm|đạt|có\s*thu\s*nhập)[^.!?\d]*(?:mục\s*tiêu)?[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?(?:\/tháng)?/gi,
   ];
   let goalsArr: any[] = [];
   let goalsTotal = 0;
+  
+  // Track seen goals to avoid duplicates
+  const seenGoals = new Set<string>();
+  
   for (const regex of goalRegexes) {
     let m;
     while ((m = regex.exec(allUserMessages)) !== null) {
-      let label = m[0].replace(/\d+[.,]?\d*\s*(tỷ|triệu|tr|ty|bn)?/, '').trim();
+      // Extract label, value, unit
+      let fullMatch = m[0];
       let value = m[1] ? parseFloat(m[1].replace(',', '.')) : null;
       let unit = m[2] ? m[2].toLowerCase() : '';
+      
+      // Skip if this is CURRENT STATE (not GOAL)
+      // "hiện có X tiết kiệm" = CURRENT STATE (skip)
+      // "có tài khoản tiết kiệm X" = GOAL (keep)
+      const isCurrentState = /(?:hiện\s*(?:có|tại)|đang\s*có|đã\s*có|số\s*dư)/.test(fullMatch.slice(0, 30));
+      if (isCurrentState) continue; // Skip current state, only keep goals
+      
+      // Calculate VND value
       let vnd = 0;
       if (value) {
         if (unit.includes('tỷ') || unit.includes('ty') || unit.includes('bn')) vnd = value * 1_000_000_000;
         else if (unit.includes('triệu') || unit.includes('tr')) vnd = value * 1_000_000;
       }
-      if (label && vnd > 0) {
-        goalsArr.push({ label, value: vnd });
-        goalsTotal += vnd;
+      
+      // Extract clean label
+      let label = fullMatch.replace(/\d+[.,]?\d*\s*(tỷ|triệu|tr|ty|bn)?/g, '').trim();
+      label = label.replace(/^(?:mua|sở hữu|có|đạt)\s*/i, '').trim(); // Remove prefixes
+      
+      // Categorize by type
+      if (label.includes('nhà')) label = 'Mua nhà';
+      else if (label.includes('xe') || label.includes('ô tô')) label = 'Mua xe ô tô';
+      else if (label.includes('tài khoản') || label.includes('tiết kiệm')) label = 'Tài khoản tiết kiệm';
+      else if (label.includes('thu nhập') || label.includes('kiếm')) label = 'Thu nhập mục tiêu';
+      
+      // Only add if has valid value and not duplicate
+      if (vnd > 0 && label) {
+        const key = `${label}:${vnd}`;
+        if (!seenGoals.has(key)) {
+          seenGoals.add(key);
+          goalsArr.push({ label, value: vnd });
+          // Only add to total if it's an ASSET goal (not income goal)
+          if (!label.includes('Thu nhập')) {
+            goalsTotal += vnd;
+          }
+        }
       }
     }
   }
+  
   // Nếu có nhiều mục tiêu, lưu vào userProfile.goals và tổng
   if (goalsArr.length > 0) {
     userProfile.goals = goalsArr;
     userProfile.goals_total_value = goalsTotal;
-    userProfile.financial_goal = goalsArr.map(g => `${g.label}: ${g.value.toLocaleString('vi-VN')} VNĐ`).join(' | ');
+    userProfile.financial_goal = goalsArr.map(g => {
+      const amount = g.value >= 1_000_000_000 
+        ? `${(g.value / 1_000_000_000).toFixed(1)} tỷ`
+        : `${Math.round(g.value / 1_000_000)} triệu`;
+      return `${g.label}: ${amount} VNĐ`;
+    }).join(' | ');
   }
 
   // Extract financial goal (fallback)
@@ -529,13 +569,20 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
     userProfile.birth_date = birthDateMatches[0]
   }
   
-  // Extract savings (NEW)
-  const savingsMatches = allUserMessages.match(/(?:tiết kiệm|có|đã tiết kiệm|hiện có)[^.!?]*?(\d+(?:[.,]\d+)?)\s*(?:triệu|tr|trieu|vnd|đ|đồng)/gi)
-  if (savingsMatches) {
-    const savingsNumMatch = savingsMatches[0].match(/(\d+(?:[.,]\d+)?)/)
-    if (savingsNumMatch) {
-      const savingsStr = savingsNumMatch[1].replace(/[.,]/g, '')
-      userProfile.savings = parseInt(savingsStr) * 1000000
+  // Extract current savings (CRITICAL: Only "hiện có X tiết kiệm", NOT "có tài khoản tiết kiệm X")
+  // "hiện có 280tr tiết kiệm" = CURRENT SAVINGS ✅
+  // "có tài khoản tiết kiệm 10 tỷ" = GOAL (already in goals array) ❌
+  const currentSavingsRegex = /(?:hiện\s*(?:có|tại)|đang\s*có|đã\s*có|số\s*dư)[^.!?]*?(\d+[.,]?\d*)\s*(tỷ|triệu|tr|ty|bn)?[^.!?]*?(?:tiết\s*kiệm)?/gi;
+  const savingsMatch = currentSavingsRegex.exec(allUserMessages);
+  if (savingsMatch) {
+    const value = parseFloat(savingsMatch[1].replace(',', '.'));
+    const unit = (savingsMatch[2] || '').toLowerCase();
+    if (unit.includes('tỷ') || unit.includes('ty') || unit.includes('bn')) {
+      userProfile.savings = value * 1_000_000_000;
+    } else if (unit.includes('triệu') || unit.includes('tr')) {
+      userProfile.savings = value * 1_000_000;
+    } else {
+      userProfile.savings = value * 1_000_000; // Default to triệu
     }
   }
   

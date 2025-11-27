@@ -217,16 +217,24 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         <div key={section.index} className="mb-8">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{visible}</ReactMarkdown>
           {hidden && (
-            <div className="relative mt-2">
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-200/80 dark:from-gray-900/80 to-transparent pointer-events-none" style={{backdropFilter:'blur(2px)'}} />
-              <div className="blur-sm select-none text-gray-400 dark:text-gray-600 whitespace-pre-line" aria-hidden>{hidden}</div>
-              <div className="flex justify-center mt-4">
-                <a href="/pricing" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-base hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105">
+            <>
+              {/* Phần nội dung bị làm mờ */}
+              <div className="relative mt-2 mb-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-200/80 dark:from-gray-900/80 to-transparent pointer-events-none" style={{backdropFilter:'blur(2px)'}} />
+                <div className="blur-sm select-none text-gray-400 dark:text-gray-600 whitespace-pre-line" aria-hidden>{hidden}</div>
+              </div>
+              
+              {/* Nút CTA - TÁCH RIÊNG, KHÔNG BỊ BLUR */}
+              <div className="flex justify-center mt-6 mb-8">
+                <a 
+                  href="/pricing" 
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-base hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105 relative z-10"
+                >
                   <span>🚀</span>
-                  <span>Nâng cấp bản trả phí ngay để xem kế hoạch chuyên sâu hoàn chỉnh</span>
+                  <span>Nâng cấp Premium ngay để xem kế hoạch chuyên sâu hoàn chỉnh</span>
                 </a>
               </div>
-            </div>
+            </>
           )}
         </div>
       );
