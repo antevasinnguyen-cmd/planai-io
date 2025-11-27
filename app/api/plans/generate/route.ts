@@ -190,9 +190,7 @@ export async function POST(request: NextRequest) {
           maxWords: tierLimits.words
         }
         const goalsText = userProfile.financial_goal || (userProfile.description || 'Mục tiêu tài chính cá nhân')
-        const planTitle = userProfile.financial_goal
-          ? `Kế hoạch: ${userProfile.financial_goal}`
-          : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+        const planTitle = "Kế hoạch chi tiết cho mục tiêu của bạn"
         // Multi-step long generation for all tiers to avoid truncation and hit tier-specific word targets
         planContent = await generateLongPlanMultiStep(
           planTitle,
