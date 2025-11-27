@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate cache key for this plan request (bump version to avoid stale cached layout and legacy prompts)
-    const CACHE_VERSION = 'v4_clean_rewrite';
+    const CACHE_VERSION = 'v5_template_based_section1';
     const cacheKey = `plan_${CACHE_VERSION}_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`
     
     // Check if we have a cached plan
