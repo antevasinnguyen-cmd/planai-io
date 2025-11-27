@@ -270,15 +270,60 @@ MANDATORY OUTPUT FORMAT (in this exact order):
 
 ---
 
-1. # KẾ HOẠCH TÀI CHÍNH CÁ NHÂN HÓA: [Mục tiêu user]
-2. ## Phân Tích SWOT Cá Nhân
+# Kế hoạch chi tiết cho mục tiêu của bạn
+
+## 1. Tóm tắt tình hình tài chính của bạn
+
+Dựa trên thông tin bạn đã chia sẻ trong cuộc trò chuyện, dưới đây là tóm tắt tình hình tài chính hiện tại và mục tiêu của bạn:
+
+**TÌNH HÌNH HIỆN TẠI:**
+- **Thu nhập hàng tháng:** [extract from CURRENT STATE - e.g., "8 - 10 triệu VNĐ"]
+- **Tài khoản tiết kiệm hiện tại:** [extract from CURRENT STATE - e.g., "280 triệu VNĐ"]
+- **Tài sản hiện có:** [extract from CURRENT STATE or "Chưa có"]
+- **Kỹ năng:** [extract from CURRENT STATE - e.g., "kinh doanh online"]
+
+**MỤC TIÊU TÀI CHÍNH:**
+[List ALL goals from GOALS section with amounts]
+• **Mục tiêu 1:** [Goal 1 name] - [amount] VNĐ [explain if needed, e.g., "Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2-3 tỷ VNĐ"]
+• **Mục tiêu 2:** [Goal 2 name] - [amount] VNĐ
+• **Mục tiêu 3:** [Goal 3 name] - [amount] VNĐ
+
+**TÍNH TOÁN TỔNG MỤC TIÊU:**
+
+Giả sử:
+• [Goal 1]: [assumed amount] VNĐ
+• [Goal 2]: [assumed amount] VNĐ  
+• [Goal 3]: [assumed amount] VNĐ
+
+**Tổng mục tiêu:** [total] VNĐ
+
+**TÌNH HÌNH TÀI CHÍNH:**
+• **Tiết kiệm hiện tại:** [current savings] VNĐ
+• **Cần đạt thêm:** [gap = total - current] VNĐ
+
+**KẾ HOẠCH TIẾT KIỆM:**
+
+Nếu bạn muốn đạt được mục tiêu này trong vòng [timeline - e.g., "3 năm (36 tháng)"], bạn cần tiết kiệm khoảng:
+• **[gap] VNĐ / [months] tháng ≈ [monthly savings needed] VNĐ/tháng**
+
+[Add realistic assessment - e.g., "Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với [mention their projects/skills], nếu thành công, có thể tạo ra thu nhập lớn hơn."]
+
+**MỘT SỐ GỢI Ý:**
+1. **Tăng thu nhập:** [specific suggestions based on their skills/situation]
+2. **Tối ưu hóa dự án:** [specific to their projects mentioned in chat]
+3. **Xem xét đầu tư:** [relevant investment options]
+
+[Add encouraging closing - e.g., "Đây là một kế hoạch đầy tham vọng nhưng hoàn toàn khả thi nếu bạn có chiến lược đúng đắn. Hãy cùng xây dựng lộ trình cụ thể để biến mục tiêu thành hiện thực."]
+
+## 2. Phân Tích SWOT Cá Nhân
    | Yếu tố | Nội dung |
    |---|---|
    | Điểm mạnh | ... |
    | Điểm yếu | ... |
    | Cơ hội | ... |
    | Thách thức | ... |
-3. ## Mindmap Lộ Trình (Mermaid)
+
+## 3. Mindmap Lộ Trình (Mermaid)
    \`\`\`mermaid
    mindmap
      root(([Mục tiêu]))
@@ -288,27 +333,34 @@ MANDATORY OUTPUT FORMAT (in this exact order):
              Tuần 1
        Năm 2
    \`\`\`
-4. ## Roadmap Chi Tiết (kiểu roadmap.sh)
+
+## 4. Roadmap Chi Tiết (kiểu roadmap.sh)
    - Tổ chức theo: Năm → Quý → Tháng → Tuần
    - Mỗi node: [Hành động] | [Chỉ số đo lường] | [Tài nguyên]
    - Thêm 1 bảng Markdown: | Cấp | Tên | Bắt đầu | Kết thúc | Milestone | KPI | Trạng thái |
-5. ## Checklist Hành Động
+
+## 5. Checklist Hành Động
    - BẮT BUỘC bảng Markdown hợp lệ: | Ngày/Tháng | Hành động | Trạng thái | Ghi chú |
    - Ngay sau header phải có dòng phân cách: |---|---|---|---|
    - Tối thiểu 12 hàng (bao trùm 12 tuần đầu)
-6. ## Google Sheets Template
+
+## 6. Google Sheets Template
    - Ghi rõ link template (từ JSON embed)
-7. ## Tài Liệu Học Tập
+
+## 7. Tài Liệu Học Tập
    - Bắt buộc bảng Markdown hợp lệ: | Kỹ năng | Nguồn (tên + link đầy đủ) | Thời lượng | Cách học tối ưu |
    - Mỗi hàng phải là một nguồn cụ thể, có tên rõ ràng và URL đầy đủ (https://...). Tuyệt đối không ghi chung chung "YouTube" hoặc "Sách"; thay bằng ví dụ: "Kênh YouTube KTCV (Link)", "Coursera: Personal Finance (Link)", "Sách: Tâm lý học tiền bạc (Link)".
    - Ưu tiên nguồn tiếng Việt/miễn phí phù hợp (YouTube VN, Coursera có phụ đề VN, khóa VN cụ thể)
-8. ## 3-Kịch bản Dự báo
+
+## 8. 3-Kịch bản Dự báo
    - Tóm tắt 3 kịch bản: Tốt nhất, Trung bình, Tồi tệ
    - Mô tả chi tiết từng kịch bản
    - Ưu và nhược điểm của từng kịch bản
-9. ## Add-on Spiritual (nếu bật)
+
+## 9. Add-on Spiritual (nếu bật)
    - Tách riêng section, không ảnh hưởng nội dung chính
-10. ## Kết luận và Hành động Tiếp theo
+
+## 10. Kết luận và Hành động Tiếp theo
     - Tóm tắt kế hoạch
     - Các bước hành động ngay lập tức
     - Công cụ hỗ trợ theo dõi
