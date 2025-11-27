@@ -6,7 +6,7 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { selectModel, TaskType } from './modelSelection'
-import { getMicroTasksSystemPrompt } from './prompts'
+import { getMicroTasksSystemPrompt, getFinancialPlanSystemPrompt } from './prompts'
 
 // Small utility: clamp a number between [lo, hi]
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
@@ -934,17 +934,8 @@ ${debtsVndVal ? `- Nợ hiện có: ${fmtVND(debtsVndVal)}` : ''}
 ${assetsValueVndVal ? `- Tổng tài sản: ${fmtVND(assetsValueVndVal)}` : ''}
 ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.join(', ')}` : ''}`
   
-  // System prompt (strict guardrails + self-check)
-  const systemPrompt = `Bạn là chuyên gia tư vấn tài chính (Việt Nam). Viết kế hoạch chi tiết, chính xác và cá nhân hoá dựa trên thông tin người dùng.
-
-Yêu cầu:
-1. Chỉ dùng thông tin đã cung cấp; không bịa số liệu.
-2. KHÔNG viết "VALIDATION", "Kiểm tra", "Giả định".
-3. KHÔNG dùng placeholder hoặc link giả (ví dụ: example.com). Nếu thiếu link, chỉ đưa từ khoá tìm kiếm.
-4. KHÔNG dùng bảng Markdown, KHÔNG dùng Mermaid/sơ đồ, KHÔNG phần "Xuất Dữ Liệu Bảng".
-5. Viết tiếng Việt, giọng chuyên gia, cụ thể, có hành động rõ ràng.
-
-Tự kiểm tra trước khi trả kết quả: nếu thấy bảng/Mermaid/placeholder hoặc các từ bị cấm → loại bỏ và sửa lại bằng văn bản thông thường.`
+  // Use FINANCIAL_PLAN prompt from prompts.ts (includes MANDATORY OUTPUT INSTRUCTION)
+  const systemPrompt = getFinancialPlanSystemPrompt()
 
   // Define sections (Free: 9 mục, Paid: >=24 mục chuyên sâu)
   const baseSections = [

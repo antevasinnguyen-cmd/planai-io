@@ -6,7 +6,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 import { MODELS } from '@/lib/modelSelection'
 import { processFinancialPlanWithRAG } from '@/lib/rag'
-import { generateLongPlanMultiStep } from '@/lib/planGeneration'
+import { generatePlanWithTemplate } from '@/lib/planGenerationV2'
 import { logger } from '@/lib/logger'
 
 function extractSkillsFromText(text: string): string[] | null {
@@ -191,8 +191,7 @@ export async function POST(request: NextRequest) {
         }
         const goalsText = userProfile.financial_goal || (userProfile.description || 'Mục tiêu tài chính cá nhân')
         const planTitle = "Kế hoạch chi tiết cho mục tiêu của bạn"
-        // Multi-step long generation for all tiers to avoid truncation and hit tier-specific word targets
-        planContent = await generateLongPlanMultiStep(
+        planContent = await generatePlanWithTemplate(
           planTitle,
           goalsText,
           enrichedCollectedInfo
