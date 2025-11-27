@@ -351,6 +351,11 @@ Nếu bạn muốn đạt được mục tiêu này trong vòng [timeline - e.g.
    - Bắt buộc bảng Markdown hợp lệ: | Kỹ năng | Nguồn (tên + link đầy đủ) | Thời lượng | Cách học tối ưu |
    - Mỗi hàng phải là một nguồn cụ thể, có tên rõ ràng và URL đầy đủ (https://...). Tuyệt đối không ghi chung chung "YouTube" hoặc "Sách"; thay bằng ví dụ: "Kênh YouTube KTCV (Link)", "Coursera: Personal Finance (Link)", "Sách: Tâm lý học tiền bạc (Link)".
    - Ưu tiên nguồn tiếng Việt/miễn phí phù hợp (YouTube VN, Coursera có phụ đề VN, khóa VN cụ thể)
+   - ⚠️ CRITICAL: If user input contains keywords/search terms, CLEAN them before using:
+     * Remove special characters, extra spaces, abbreviations
+     * Convert to proper Vietnamese text
+     * Example: "how to mc tiu mua nh 3 t xe t 4 ch 800 triu tit kim 10 t" → "Cách mua nhà 3 tỷ, xe 4 chiếc 800 triệu, tiết kiệm 10 tỷ"
+     * NEVER output garbled or abbreviated keywords in the table
 
 ## 8. 3-Kịch bản Dự báo
    - Tóm tắt 3 kịch bản: Tốt nhất, Trung bình, Tồi tệ
