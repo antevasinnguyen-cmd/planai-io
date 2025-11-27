@@ -270,50 +270,78 @@ MANDATORY OUTPUT FORMAT (in this exact order):
 
 ---
 
+🚨 MANDATORY OUTPUT INSTRUCTION - YOU MUST FOLLOW THIS EXACTLY:
+
+1. **TITLE (FIXED - DO NOT CHANGE):**
+   - MUST be: # Kế hoạch chi tiết cho mục tiêu của bạn
+   - NEVER use dynamic title from user input
+   - NEVER use last message from chat
+   - ALWAYS use this exact fixed title
+
+2. **NO OPENING PARAGRAPH:**
+   - NEVER add any introduction/opening text after title
+   - Go DIRECTLY to Section 1 (## 1. Tóm tắt...)
+   - NO text between title and Section 1
+
+3. **SECTION 1 - MUST MATCH AI CHAT RESPONSE FORMAT EXACTLY:**
+   - Start with: "Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt..."
+   - Include ALL sections from AI chat response:
+     * TÌNH HÌNH HIỆN TẠI (current income, current savings)
+     * MỤC TIÊU TÀI CHÍNH (list all goals)
+     * TÍNH TOÁN TỔNG MỤC TIÊU (assumptions + total)
+     * TÌNH HÌNH TÀI CHÍNH (current vs gap)
+     * KẾ HOẠCH TIếT KIỆM (monthly savings)
+     * MỘT SỐ GỢI Ý (suggestions)
+   - Format EXACTLY like AI chat response (use bullet points, numbers, etc.)
+   - DO NOT use [brackets] for placeholders - fill with REAL data from chat
+
+---
+
 # Kế hoạch chi tiết cho mục tiêu của bạn
 
 ## 1. Tóm tắt tình hình tài chính của bạn
 
-Dựa trên thông tin bạn đã chia sẻ trong cuộc trò chuyện, dưới đây là tóm tắt tình hình tài chính hiện tại và mục tiêu của bạn:
+Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt các mục tiêu tài chính và tình hình hiện tại của bạn:
 
-**TÌNH HÌNH HIỆN TẠI:**
-- **Thu nhập hàng tháng:** [extract from CURRENT STATE - e.g., "8 - 10 triệu VNĐ"]
-- **Tài khoản tiết kiệm hiện tại:** [extract from CURRENT STATE - e.g., "280 triệu VNĐ"]
-- **Tài sản hiện có:** [extract from CURRENT STATE or "Chưa có"]
-- **Kỹ năng:** [extract from CURRENT STATE - e.g., "kinh doanh online"]
+**Tình Hình Hiện Tại**
+• Thu nhập hàng tháng: [EXTRACT FROM CHAT - e.g., "8 - 10 triệu VNĐ"]
+• Tài khoản tiết kiệm hiện tại: [EXTRACT FROM CHAT - e.g., "280 triệu VNĐ"]
 
-**MỤC TIÊU TÀI CHÍNH:**
-[List ALL goals from GOALS section with amounts]
-• **Mục tiêu 1:** [Goal 1 name] - [amount] VNĐ [explain if needed, e.g., "Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2-3 tỷ VNĐ"]
-• **Mục tiêu 2:** [Goal 2 name] - [amount] VNĐ
-• **Mục tiêu 3:** [Goal 3 name] - [amount] VNĐ
+**Mục Tiêu Tài Chính**
+• Mua nhà: [EXTRACT FROM CHAT - e.g., "Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2 - 3 tỷ VNĐ (cần xác nhận từ bạn)."]
+• Mua ô tô: [EXTRACT FROM CHAT - e.g., "Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 700 triệu VNĐ - 1 tỷ VNĐ (cần xác nhận từ bạn)."]
+• Tài khoản ngân hàng: [EXTRACT FROM CHAT - e.g., "10 tỷ VNĐ để nghỉ hưu sớm."]
 
-**TÍNH TOÁN TỔNG MỤC TIÊU:**
+**Tổng Mục Tiêu**
+• Để có thể tính toán tổng mục tiêu, tôi cần biết chính xác số tiền bạn dự định dành cho việc mua nhà và ô tô.
 
 Giả sử:
-• [Goal 1]: [assumed amount] VNĐ
-• [Goal 2]: [assumed amount] VNĐ  
-• [Goal 3]: [assumed amount] VNĐ
+• Mua nhà: [ASSUMED AMOUNT - e.g., "2 tỷ VNĐ"]
+• Mua ô tô: [ASSUMED AMOUNT - e.g., "700 triệu VNĐ"]
 
-**Tổng mục tiêu:** [total] VNĐ
+**Tính Toán Tổng Mục Tiêu**
+• Tổng mục tiêu:
+- Mua nhà: [AMOUNT] VNĐ
+- Mua ô tô: [AMOUNT] VNĐ
+- Tài khoản ngân hàng: [AMOUNT] VNĐ
+Tổng mục tiêu: [TOTAL] VNĐ
 
-**TÌNH HÌNH TÀI CHÍNH:**
-• **Tiết kiệm hiện tại:** [current savings] VNĐ
-• **Cần đạt thêm:** [gap = total - current] VNĐ
+**Tình Hình Tài Chính**
+• Tiết kiệm hiện tại: [CURRENT SAVINGS] VNĐ
+• Cần đạt thêm: [GAP] VNĐ
 
-**KẾ HOẠCH TIẾT KIỆM:**
+**Kế Hoạch Tiết Kiệm**
+Nếu bạn muốn đạt được mục tiêu này trong vòng [TIMELINE - e.g., "3 năm (36 tháng)"], bạn cần tiết kiệm khoảng:
+• [GAP] VNĐ / [MONTHS] tháng ≈ [MONTHLY SAVINGS] VNĐ/tháng
 
-Nếu bạn muốn đạt được mục tiêu này trong vòng [timeline - e.g., "3 năm (36 tháng)"], bạn cần tiết kiệm khoảng:
-• **[gap] VNĐ / [months] tháng ≈ [monthly savings needed] VNĐ/tháng**
+Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với [MENTION THEIR PROJECTS/SKILLS - e.g., "dự án webapp saas AI"], nếu thành công, có thể tạo ra thu nhập lớn hơn.
 
-[Add realistic assessment - e.g., "Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với [mention their projects/skills], nếu thành công, có thể tạo ra thu nhập lớn hơn."]
+**Một Số Gợi Ý**
+1. [SPECIFIC SUGGESTION 1 - e.g., "Tăng thu nhập từ kinh doanh online: Hãy xem xét các kênh tiếp thị mới hoặc sản phẩm mới để gia tăng doanh thu."]
+2. [SPECIFIC SUGGESTION 2 - e.g., "Theo dõi tiến trình dự án webapp saas AI: Nếu có thể, hãy tìm kiếm các nhà đầu tư hoặc hợp tác để đẩy nhanh quá trình phát triển."]
+3. [SPECIFIC SUGGESTION 3 - e.g., "Xem xét các khoản đầu tư: Nghiên cứu các hình thức đầu tư an toàn để gia tăng tài sản hiện có."]
 
-**MỘT SỐ GỢI Ý:**
-1. **Tăng thu nhập:** [specific suggestions based on their skills/situation]
-2. **Tối ưu hóa dự án:** [specific to their projects mentioned in chat]
-3. **Xem xét đầu tư:** [relevant investment options]
-
-[Add encouraging closing - e.g., "Đây là một kế hoạch đầy tham vọng nhưng hoàn toàn khả thi nếu bạn có chiến lược đúng đắn. Hãy cùng xây dựng lộ trình cụ thể để biến mục tiêu thành hiện thực."]
+---
 
 ## 2. Phân Tích SWOT Cá Nhân
    | Yếu tố | Nội dung |
