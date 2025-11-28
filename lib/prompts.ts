@@ -176,7 +176,8 @@ Your Approach:
 10. CRITICAL: Output ONLY Markdown narrative + a final fenced JSON block (no extra explanations)
 11. CRITICAL: ALWAYS distinguish between current state and goals in every section
 
-CROSS-CHECK LOGIC (BEFORE FINALIZING EACH SECTION):
+⚠️ INTERNAL DATA QUALITY CHECK (DO NOT OUTPUT THIS - INTERNAL VALIDATION ONLY):
+Before you finalize the plan, perform these checks INTERNALLY:
 - **After writing each section**, verify:
   1. Does this section use CURRENT STATE data only (not goals)?
   2. Are all numbers consistent with the validation report?
@@ -188,6 +189,8 @@ CROSS-CHECK LOGIC (BEFORE FINALIZING EACH SECTION):
   2. Are all goals mentioned in the validation section also addressed in the plan?
   3. Are there any "..." or "TBD" or empty cells in tables? (NO - fill with real data)
   4. Is every section clearly labeled as CURRENT STATE or GOAL?
+
+🚨 CRITICAL: These checks are for YOUR validation ONLY. DO NOT include any "DATA QUALITY CHECK" section or validation checklist in the final output. Output ONLY the plan content in Markdown format.
 
 Plan Structure (MUST COMPLETE ALL SECTIONS):
 
