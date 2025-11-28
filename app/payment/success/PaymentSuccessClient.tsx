@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
 
 interface PaymentSuccessClientProps {
   orderId: string
@@ -19,6 +20,82 @@ const PLAN_INFO = {
 
 export default function PaymentSuccessClient({ orderId, amount, planId, provider }: PaymentSuccessClientProps) {
   const router = useRouter()
+  const [isProcessing, setIsProcessing] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const processPayment = async () => {
+      try {
+        // Get current user
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+        )
+        
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError || !user) {
+          console.error('Failed to get user:', userError)
+          setError('Không thể xác định người dùng')
+          setIsProcessing(false)
+          return
+        }
+
+        // Poll payment status (max 30 seconds)
+        let paymentCompleted = false
+        let attempts = 0
+        const maxAttempts = 30
+
+        while (!paymentCompleted && attempts < maxAttempts) {
+          const { data: payment, error: paymentError } = await supabase
+            .from('payments')
+            .select('status, subscription_tier')
+            .eq('transaction_id', orderId)
+            .eq('user_id', user.id)
+            .single()
+
+          if (!paymentError && payment) {
+            console.log('Payment status:', payment.status)
+            if (payment.status === 'completed') {
+              paymentCompleted = true
+              
+              // Force refresh user session to get updated subscription
+              const { error: refreshError } = await supabase.auth.refreshSession()
+              if (refreshError) {
+                console.error('Failed to refresh session:', refreshError)
+              }
+              
+              // Also manually update local profile cache by refetching
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('subscription_tier')
+                .eq('id', user.id)
+                .single()
+              
+              if (!profileError && profile) {
+                console.log('Updated subscription tier:', profile.subscription_tier)
+              }
+              
+              break
+            }
+          }
+
+          attempts++
+          if (!paymentCompleted && attempts < maxAttempts) {
+            // Wait 1 second before next poll
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
+        }
+
+        setIsProcessing(false)
+      } catch (err) {
+        console.error('Payment processing error:', err)
+        setError(err instanceof Error ? err.message : 'Lỗi xử lý thanh toán')
+        setIsProcessing(false)
+      }
+    }
+
+    processPayment()
+  }, [orderId])
   
   const planInfo = PLAN_INFO[planId as keyof typeof PLAN_INFO] || { name: planId, price: parseInt(amount || '0') }
 

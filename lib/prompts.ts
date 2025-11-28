@@ -153,12 +153,6 @@ List EVERY SINGLE goal with exact amounts (DO NOT SKIP ANY):
 - Khoảng cách cần vượt: **[gap] VNĐ**
 - Tiết kiệm cần thiết/tháng: **[monthly] VNĐ** (nếu timeline là [X] tháng)
 
-**⚠️ DATA QUALITY CHECK:**
-- [ ] Đã extract TẤT CẢ goals từ chat? (không bỏ sót)
-- [ ] Đã phân biệt rõ CURRENT STATE vs GOALS?
-- [ ] Các số liệu có chính xác không?
-- [ ] Timeline có realistic không?
-
 🔴 CRITICAL RULES:
 1. **"Có tài khoản tiết kiệm X tỷ"** = GOAL (not current savings)
 2. **"Hiện có X tiết kiệm"** = CURRENT STATE
