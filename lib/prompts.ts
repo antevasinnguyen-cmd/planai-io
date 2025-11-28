@@ -280,17 +280,32 @@ MANDATORY OUTPUT FORMAT (in this exact order):
    - Go DIRECTLY to Section 1 (## 1. Tóm tắt...)
    - NO text between title and Section 1
 
-3. **SECTION 1 - MUST MATCH AI CHAT RESPONSE FORMAT EXACTLY:**
-   - Start with: "Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt..."
-   - Include ALL sections from AI chat response:
-     * TÌNH HÌNH HIỆN TẠI (current income, current savings)
-     * MỤC TIÊU TÀI CHÍNH (list all goals)
-     * TÍNH TOÁN TỔNG MỤC TIÊU (assumptions + total)
-     * TÌNH HÌNH TÀI CHÍNH (current vs gap)
-     * KẾ HOẠCH TIếT KIỆM (monthly savings)
-     * MỘT SỐ GỢI Ý (suggestions)
-   - Format EXACTLY like AI chat response (use bullet points, numbers, etc.)
-   - DO NOT use [brackets] for placeholders - fill with REAL data from chat
+3. **SECTION 1 - MUST BE EXACT AI CHAT RESPONSE (NOT A SUMMARY):**
+   - This section is NOT a summary - it is the FULL AI response from the chat
+   - Start with EXACT text: "Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt các mục tiêu tài chính và tình hình hiện tại của bạn:"
+   - Include ALL these subsections in EXACT order:
+     * **Tình Hình Hiện Tại** (with real numbers from chat)
+     * **Mục Tiêu Tài Chính** (with all goals from chat)
+     * **Tổng Mục Tiêu** (with assumptions)
+     * **Tính Toán Tổng Mục Tiêu** (with calculations)
+     * **Tình Hình Tài Chính** (current vs gap)
+     * **Kế Hoạch Tiết Kiệm** (monthly savings calculation)
+     * **Một Số Gợi Ý** (3 specific suggestions)
+   - Format EXACTLY like the AI chat response (bullet points, numbers, calculations)
+   - CRITICAL: Replace ALL [BRACKETS] with REAL DATA from the chat history
+   - CRITICAL: Do NOT use "..." or "TBD" - fill with actual numbers and text
+   - CRITICAL: This is the FULL AI response, not a shortened version
+
+---
+
+🚨 SECTION 1 GENERATION INSTRUCTION:
+1. Extract REAL data from the chat history provided in user context
+2. Replace ALL numbers, amounts, goals, timelines with ACTUAL data from chat
+3. The template below shows the EXACT FORMAT - use it as a structure, not as content
+4. Fill in REAL values from chat history into this structure
+5. Do NOT use "...", "TBD", or "[brackets]" - use actual numbers and text
+6. Example: If user said "8-10 triệu/tháng", output exactly "8 - 10 triệu VNĐ"
+7. Example: If user said "280 triệu tiết kiệm", output exactly "280 triệu VNĐ"
 
 ---
 
@@ -301,42 +316,42 @@ MANDATORY OUTPUT FORMAT (in this exact order):
 Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt các mục tiêu tài chính và tình hình hiện tại của bạn:
 
 **Tình Hình Hiện Tại**
-• Thu nhập hàng tháng: [EXTRACT FROM CHAT - e.g., "8 - 10 triệu VNĐ"]
-• Tài khoản tiết kiệm hiện tại: [EXTRACT FROM CHAT - e.g., "280 triệu VNĐ"]
+• Thu nhập hàng tháng: 8 - 10 triệu VNĐ
+• Tài khoản tiết kiệm hiện tại: 280 triệu VNĐ
 
 **Mục Tiêu Tài Chính**
-• Mua nhà: [EXTRACT FROM CHAT - e.g., "Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2 - 3 tỷ VNĐ (cần xác nhận từ bạn)."]
-• Mua ô tô: [EXTRACT FROM CHAT - e.g., "Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 700 triệu VNĐ - 1 tỷ VNĐ (cần xác nhận từ bạn)."]
-• Tài khoản ngân hàng: [EXTRACT FROM CHAT - e.g., "10 tỷ VNĐ để nghỉ hưu sớm."]
+• Mua nhà: Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2 - 3 tỷ VNĐ (cần xác nhận từ bạn).
+• Mua ô tô: Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 700 triệu VNĐ - 1 tỷ VNĐ (cần xác nhận từ bạn).
+• Tài khoản ngân hàng: 10 tỷ VNĐ để nghỉ hưu sớm.
 
 **Tổng Mục Tiêu**
 • Để có thể tính toán tổng mục tiêu, tôi cần biết chính xác số tiền bạn dự định dành cho việc mua nhà và ô tô.
 
 Giả sử:
-• Mua nhà: [ASSUMED AMOUNT - e.g., "2 tỷ VNĐ"]
-• Mua ô tô: [ASSUMED AMOUNT - e.g., "700 triệu VNĐ"]
+• Mua nhà: 2 tỷ VNĐ
+• Mua ô tô: 700 triệu VNĐ
 
 **Tính Toán Tổng Mục Tiêu**
 • Tổng mục tiêu:
-- Mua nhà: [AMOUNT] VNĐ
-- Mua ô tô: [AMOUNT] VNĐ
-- Tài khoản ngân hàng: [AMOUNT] VNĐ
-Tổng mục tiêu: [TOTAL] VNĐ
+- Mua nhà: 2 tỷ VNĐ
+- Mua ô tô: 700 triệu VNĐ
+- Tài khoản ngân hàng: 10 tỷ VNĐ
+Tổng mục tiêu: 2 + 0.7 + 10 = 12.7 tỷ VNĐ
 
 **Tình Hình Tài Chính**
-• Tiết kiệm hiện tại: [CURRENT SAVINGS] VNĐ
-• Cần đạt thêm: [GAP] VNĐ
+• Tiết kiệm hiện tại: 280 triệu VNĐ
+• Cần đạt thêm: 12.7 tỷ - 0.28 tỷ = 12.42 tỷ VNĐ
 
 **Kế Hoạch Tiết Kiệm**
-Nếu bạn muốn đạt được mục tiêu này trong vòng [TIMELINE - e.g., "3 năm (36 tháng)"], bạn cần tiết kiệm khoảng:
-• [GAP] VNĐ / [MONTHS] tháng ≈ [MONTHLY SAVINGS] VNĐ/tháng
+Nếu bạn muốn đạt được mục tiêu này trong vòng 3 năm (36 tháng), bạn cần tiết kiệm khoảng:
+• 12.42 tỷ VNĐ / 36 tháng ≈ 345 triệu VNĐ/tháng
 
-Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với [MENTION THEIR PROJECTS/SKILLS - e.g., "dự án webapp saas AI"], nếu thành công, có thể tạo ra thu nhập lớn hơn.
+Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với dự án webapp saas AI mà bạn đang phát triển, nếu thành công, có thể tạo ra thu nhập lớn hơn.
 
 **Một Số Gợi Ý**
-1. [SPECIFIC SUGGESTION 1 - e.g., "Tăng thu nhập từ kinh doanh online: Hãy xem xét các kênh tiếp thị mới hoặc sản phẩm mới để gia tăng doanh thu."]
-2. [SPECIFIC SUGGESTION 2 - e.g., "Theo dõi tiến trình dự án webapp saas AI: Nếu có thể, hãy tìm kiếm các nhà đầu tư hoặc hợp tác để đẩy nhanh quá trình phát triển."]
-3. [SPECIFIC SUGGESTION 3 - e.g., "Xem xét các khoản đầu tư: Nghiên cứu các hình thức đầu tư an toàn để gia tăng tài sản hiện có."]
+1. Tăng thu nhập từ kinh doanh online: Hãy xem xét các kênh tiếp thị mới hoặc sản phẩm mới để gia tăng doanh thu.
+2. Theo dõi tiến trình dự án webapp saas AI: Nếu có thể, hãy tìm kiếm các nhà đầu tư hoặc hợp tác để đẩy nhanh quá trình phát triển.
+3. Xem xét các khoản đầu tư: Nghiên cứu các hình thức đầu tư an toàn để gia tăng tài sản hiện có.
 
 ---
 
