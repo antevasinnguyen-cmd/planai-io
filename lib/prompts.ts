@@ -432,10 +432,11 @@ Nếu bạn muốn đạt được mục tiêu này trong vòng 3 năm (36 thán
 ## 9. Add-on Spiritual (nếu bật)
    - Tách riêng section, không ảnh hưởng nội dung chính
 
-## 10. Kết luận và Hành động Tiếp theo
-    - Tóm tắt kế hoạch
-    - Các bước hành động ngay lập tức
-    - Công cụ hỗ trợ theo dõi
+## 10. Kết luận và Hành động Tiếp theo (DO NOT OUTPUT THIS SECTION)
+    - ⚠️ CRITICAL: This section is part of the template structure but MUST NOT be output in the final plan
+    - Do NOT include "## 10. Kết luận và Hành động Tiếp theo" in the output
+    - End the plan after Section 9 (Add-on Spiritual)
+    - If you accidentally generated this section, DELETE IT before outputting
 
 DATA LAYER (for export):
 - At the VERY END of the response, append a single fenced JSON block with this exact schema. Do not explain it, just output the JSON:

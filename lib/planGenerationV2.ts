@@ -226,6 +226,17 @@ NOW GENERATE THE COMPLETE FINANCIAL PLAN FOLLOWING ALL INSTRUCTIONS ABOVE.
     }
   }
   
+  // 6. Check for unwanted section 10
+  if (plan.includes('## 10. Kết luận và hành động tiếp theo') || 
+      plan.includes('## 10. Kết luận và Hành động Tiếp theo')) {
+    validationErrors.push('❌ Found unwanted section 10 - removing it')
+    // Remove section 10 and everything after it
+    const section10Index = plan.indexOf('## 10.')
+    if (section10Index !== -1) {
+      plan = plan.substring(0, section10Index).trim()
+    }
+  }
+  
   // If validation fails, log errors but still return plan (AI tried its best)
   if (validationErrors.length > 0) {
     console.warn('⚠️ PLAN VALIDATION WARNINGS:', validationErrors)
