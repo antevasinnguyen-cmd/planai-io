@@ -80,54 +80,60 @@ ${chatSummary}
    After the title, go DIRECTLY to "## 1. Tóm tắt tình hình tài chính của bạn"
    NO introduction text between title and Section 1.
 
-3. **SECTION 1 FORMAT (CRITICAL - MUST MATCH EXACTLY):**
+3. **SECTION 1 FORMAT (CRITICAL - MUST BE EXACT AI CHAT RESPONSE, NOT SUMMARY):**
+   
+   This section is NOT a summary - it is the FULL AI response from the chat.
    
    Start with this EXACT opening:
    "Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt các mục tiêu tài chính và tình hình hiện tại của bạn:"
    
-   Then include ALL these subsections in this EXACT order:
+   Then include ALL these subsections in this EXACT order with REAL DATA from chat:
    
    **Tình Hình Hiện Tại**
-   • Thu nhập hàng tháng: [extract from chat - e.g., "8 - 10 triệu VNĐ"]
-   • Tài khoản tiết kiệm hiện tại: [extract from chat - e.g., "280 triệu VNĐ"]
+   • Thu nhập hàng tháng: 8 - 10 triệu VNĐ
+   • Tài khoản tiết kiệm hiện tại: 280 triệu VNĐ
    
    **Mục Tiêu Tài Chính**
-   • [List each goal from chat with amounts/details]
+   • Mua nhà: Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2 - 3 tỷ VNĐ (cần xác nhận từ bạn).
+   • Mua ô tô: Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 700 triệu VNĐ - 1 tỷ VNĐ (cần xác nhận từ bạn).
+   • Tài khoản ngân hàng: 10 tỷ VNĐ để nghỉ hưu sớm.
    
    **Tổng Mục Tiêu**
-   • Để có thể tính toán tổng mục tiêu, tôi cần biết chính xác số tiền bạn dự định dành cho việc [goals].
+   • Để có thể tính toán tổng mục tiêu, tôi cần biết chính xác số tiền bạn dự định dành cho việc mua nhà và ô tô.
    
    Giả sử:
-   • [Goal 1]: [assumed amount] VNĐ
-   • [Goal 2]: [assumed amount] VNĐ
+   • Mua nhà: 2 tỷ VNĐ
+   • Mua ô tô: 700 triệu VNĐ
    
    **Tính Toán Tổng Mục Tiêu**
    • Tổng mục tiêu:
-   - [Goal 1]: [amount] VNĐ
-   - [Goal 2]: [amount] VNĐ
-   - [Goal 3]: [amount] VNĐ
-   Tổng mục tiêu: [calculation] = [total] VNĐ
+   - Mua nhà: 2 tỷ VNĐ
+   - Mua ô tô: 700 triệu VNĐ
+   - Tài khoản ngân hàng: 10 tỷ VNĐ
+   Tổng mục tiêu: 2 + 0.7 + 10 = 12.7 tỷ VNĐ
    
    **Tình Hình Tài Chính**
-   • Tiết kiệm hiện tại: [current] VNĐ
-   • Cần đạt thêm: [total] - [current] = [gap] VNĐ
+   • Tiết kiệm hiện tại: 280 triệu VNĐ
+   • Cần đạt thêm: 12.7 tỷ - 0.28 tỷ = 12.42 tỷ VNĐ
    
    **Kế Hoạch Tiết Kiệm**
-   Nếu bạn muốn đạt được mục tiêu này trong vòng [timeline from chat], bạn cần tiết kiệm khoảng:
-   • [gap] VNĐ / [months] tháng ≈ [monthly] VNĐ/tháng
+   Nếu bạn muốn đạt được mục tiêu này trong vòng 3 năm (36 tháng), bạn cần tiết kiệm khoảng:
+   • 12.42 tỷ VNĐ / 36 tháng ≈ 345 triệu VNĐ/tháng
    
-   Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với [mention their projects/skills from chat], nếu thành công, có thể tạo ra thu nhập lớn hơn.
+   Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với dự án webapp saas AI mà bạn đang phát triển, nếu thành công, có thể tạo ra thu nhập lớn hơn.
    
    **Một Số Gợi Ý**
-   1. [Specific suggestion based on their situation]
-   2. [Specific suggestion based on their projects]
-   3. [Specific suggestion based on their goals]
+   1. Tăng thu nhập từ kinh doanh online: Hãy xem xét các kênh tiếp thị mới hoặc sản phẩm mới để gia tăng doanh thu.
+   2. Theo dõi tiến trình dự án webapp saas AI: Nếu có thể, hãy tìm kiếm các nhà đầu tư hoặc hợp tác để đẩy nhanh quá trình phát triển.
+   3. Xem xét các khoản đầu tư: Nghiên cứu các hình thức đầu tư an toàn để gia tăng tài sản hiện có.
 
-4. **DATA EXTRACTION:**
+4. **DATA EXTRACTION INSTRUCTION:**
    - Extract ALL data from the chat history above
+   - Replace ALL numbers, amounts, goals, timelines with ACTUAL data from chat
    - Use REAL numbers, NOT placeholders like [AMOUNT]
    - If data is missing, make reasonable assumptions based on Vietnam context
    - Format numbers in Vietnamese style (e.g., "280 triệu VNĐ", "2 tỷ VNĐ")
+   - CRITICAL: This is the FULL AI response, not a shortened version
 
 5. **REMAINING SECTIONS:**
    After Section 1, continue with other sections from the template in system prompt.
