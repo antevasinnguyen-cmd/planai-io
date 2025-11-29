@@ -96,48 +96,67 @@ ${fullChatHistory}
    
    This section is NOT a summary - it is the FULL AI response from the chat.
    
+   ⚠️ CRITICAL: Use REAL DATA from the chat history above, NOT the example data shown below!
+   
+   STEP 1: Extract REAL data from chat history:
+   - Scan the chat history for ALL numbers, amounts, goals, timelines
+   - Example: If chat says "8-10 triệu/tháng", use "8 - 10 triệu VNĐ" (NOT "8 - 10 triệu VNĐ" from example)
+   - Example: If chat says "280 triệu tiết kiệm", use "280 triệu VNĐ" (NOT from example)
+   - Example: If chat says "mua nhà 2 tỷ", use "2 tỷ VNĐ" (NOT from example)
+   
+   STEP 2: Map chat data to Section 1 fields:
+   - Thu nhập hàng tháng: [Extract from chat - user's income]
+   - Tài khoản tiết kiệm: [Extract from chat - current savings]
+   - Mục tiêu: [Extract from chat - all goals mentioned]
+   - Timeline: [Extract from chat - when they want to achieve]
+   
+   STEP 3: Generate Section 1 with REAL data (not example):
+   
    Start with this EXACT opening:
    "Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt các mục tiêu tài chính và tình hình hiện tại của bạn:"
    
-   Then include ALL these subsections in this EXACT order with REAL DATA from chat:
+   Then include ALL these subsections in this EXACT order with REAL DATA from chat (NOT example data):
+   
+   ⚠️⚠️⚠️ EXAMPLE FORMAT BELOW - DO NOT COPY NUMBERS, ONLY USE AS FORMAT REFERENCE ⚠️⚠️⚠️
+   Replace all numbers and text with REAL data from chat history above!
    
    **Tình Hình Hiện Tại**
-   • Thu nhập hàng tháng: 8 - 10 triệu VNĐ
-   • Tài khoản tiết kiệm hiện tại: 280 triệu VNĐ
+   • Thu nhập hàng tháng: [REAL income from chat, e.g., "8 - 10 triệu VNĐ"]
+   • Tài khoản tiết kiệm hiện tại: [REAL savings from chat, e.g., "280 triệu VNĐ"]
    
    **Mục Tiêu Tài Chính**
-   • Mua nhà: Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 2 - 3 tỷ VNĐ (cần xác nhận từ bạn).
-   • Mua ô tô: Số tiền chưa xác định cụ thể nhưng thường nằm trong khoảng 700 triệu VNĐ - 1 tỷ VNĐ (cần xác nhận từ bạn).
-   • Tài khoản ngân hàng: 10 tỷ VNĐ để nghỉ hưu sớm.
+   • [REAL goal 1 from chat, e.g., "Mua nhà: Số tiền chưa xác định..."]
+   • [REAL goal 2 from chat, e.g., "Mua ô tô: Số tiền chưa xác định..."]
+   • [REAL goal 3 from chat, e.g., "Tài khoản ngân hàng: 10 tỷ VNĐ..."]
    
    **Tổng Mục Tiêu**
-   • Để có thể tính toán tổng mục tiêu, tôi cần biết chính xác số tiền bạn dự định dành cho việc mua nhà và ô tô.
+   • [REAL summary from chat]
    
    Giả sử:
-   • Mua nhà: 2 tỷ VNĐ
-   • Mua ô tô: 700 triệu VNĐ
+   • [REAL assumption 1 from chat]
+   • [REAL assumption 2 from chat]
    
    **Tính Toán Tổng Mục Tiêu**
    • Tổng mục tiêu:
-   - Mua nhà: 2 tỷ VNĐ
-   - Mua ô tô: 700 triệu VNĐ
-   - Tài khoản ngân hàng: 10 tỷ VNĐ
-   Tổng mục tiêu: 2 + 0.7 + 10 = 12.7 tỷ VNĐ
+   - [REAL goal 1 with amount]
+   - [REAL goal 2 with amount]
+   - [REAL goal 3 with amount]
+   Tổng mục tiêu: [REAL calculation from chat]
    
    **Tình Hình Tài Chính**
-   • Tiết kiệm hiện tại: 280 triệu VNĐ
-   • Cần đạt thêm: 12.7 tỷ - 0.28 tỷ = 12.42 tỷ VNĐ
+   • Tiết kiệm hiện tại: [REAL current savings from chat]
+   • Cần đạt thêm: [REAL gap calculation from chat]
    
    **Kế Hoạch Tiết Kiệm**
-   Nếu bạn muốn đạt được mục tiêu này trong vòng 3 năm (36 tháng), bạn cần tiết kiệm khoảng:
-   • 12.42 tỷ VNĐ / 36 tháng ≈ 345 triệu VNĐ/tháng
+   Nếu bạn muốn đạt được mục tiêu này trong vòng [REAL timeline from chat], bạn cần tiết kiệm khoảng:
+   • [REAL monthly savings calculation from chat]
    
-   Điều này có vẻ khá thách thức với thu nhập hiện tại của bạn. Tuy nhiên, với dự án webapp saas AI mà bạn đang phát triển, nếu thành công, có thể tạo ra thu nhập lớn hơn.
+   [REAL context from chat about their situation and projects]
    
    **Một Số Gợi Ý**
-   1. Tăng thu nhập từ kinh doanh online: Hãy xem xét các kênh tiếp thị mới hoặc sản phẩm mới để gia tăng doanh thu.
-   2. Theo dõi tiến trình dự án webapp saas AI: Nếu có thể, hãy tìm kiếm các nhà đầu tư hoặc hợp tác để đẩy nhanh quá trình phát triển.
-   3. Xem xét các khoản đầu tư: Nghiên cứu các hình thức đầu tư an toàn để gia tăng tài sản hiện có.
+   1. [REAL suggestion 1 based on their situation from chat]
+   2. [REAL suggestion 2 based on their projects from chat]
+   3. [REAL suggestion 3 based on their goals from chat]
 
 4. **DATA EXTRACTION INSTRUCTION:**
    - Extract ALL data from the chat history above
