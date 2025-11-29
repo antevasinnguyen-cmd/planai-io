@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate cache key for this plan request (bump version to avoid stale cached layout and legacy prompts)
-    const CACHE_VERSION = 'v6_exact_ai_response_section1';
+    const CACHE_VERSION = 'v7_full_chat_history_context';
     const cacheKey = `plan_${CACHE_VERSION}_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`
     
     // Check if we have a cached plan
@@ -156,8 +156,15 @@ export async function POST(request: NextRequest) {
         // CRITICAL: Pass full userProfile with chat history
         logger.info('PLAN_GENERATE_CALL_OPENAI', { goal: userProfile.financial_goal, income: userProfile.current_income, messagesCount: messages.length })
         // Derive planName/goals + enrich collected info with chat summary
+        // CRITICAL: Include BOTH user messages AND AI responses to capture full context
         const chatSummary = Array.isArray(messages)
-          ? messages.filter((m: any) => m.role === 'user').map((m: any) => m.content).join('\n').slice(0, 4000)
+          ? messages
+              .map((m: any) => {
+                const role = m.role === 'user' ? '👤 User' : '🤖 AI'
+                return `${role}: ${m.content || m.message || ''}`
+              })
+              .join('\n\n')
+              .slice(0, 8000)  // Increased from 4000 to capture more context
           : ''
         // Resolve tier + words for deeper personalization limits
         const { data: subscription } = await getUserSubscription(user.id)
@@ -187,7 +194,9 @@ export async function POST(request: NextRequest) {
           // Context & tier limits
           chat_summary: chatSummary,
           tier: resolvedTier,
-          maxWords: tierLimits.words
+          maxWords: tierLimits.words,
+          // CRITICAL: Pass full messages array so V2 can access entire conversation (user + AI)
+          messages: messages
         }
         const goalsText = userProfile.financial_goal || (userProfile.description || 'Mục tiêu tài chính cá nhân')
         const planTitle = "Kế hoạch chi tiết cho mục tiêu của bạn"

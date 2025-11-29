@@ -58,15 +58,27 @@ export async function generatePlanWithTemplate(
   collectedInfo: any
 ): Promise<string> {
   const tier = String(collectedInfo?.tier || 'free')
-  const chatSummary = String(collectedInfo?.chat_summary || '')
+  
+  // CRITICAL: Build FULL chat history from messages array (user + AI)
+  // This ensures AI sees the entire conversation context, not just user messages
+  const messages = Array.isArray(collectedInfo?.messages) ? collectedInfo.messages : []
+  const fullChatHistory = messages.length > 0
+    ? messages
+        .map((m: any) => {
+          const role = m.role === 'user' ? '👤 User' : '🤖 AI'
+          return `${role}: ${m.content || m.message || ''}`
+        })
+        .join('\n\n')
+        .slice(0, 10000)  // Increased limit to capture full context
+    : String(collectedInfo?.chat_summary || '')
   
   // Build user context with FULL chat history
   const userContext = `
 🎯 NHIỆM VỤ:
 Tạo kế hoạch tài chính chi tiết dựa trên cuộc trò chuyện dưới đây.
 
-📋 LỊCH SỬ TRÒ CHUYỆN ĐẦY ĐỦ:
-${chatSummary}
+📋 LỊCH SỬ TRÒ CHUYỆN ĐẦY ĐỦ (User + AI responses):
+${fullChatHistory}
 
 ---
 
