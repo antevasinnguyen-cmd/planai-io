@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate cache key for this plan request (bump version to avoid stale cached layout and legacy prompts)
-    const CACHE_VERSION = 'v7_full_chat_history_context';
+    const CACHE_VERSION = 'v8_mandatory_validation_checks';
     const cacheKey = `plan_${CACHE_VERSION}_${user.id}_${JSON.stringify(userProfile).slice(0, 100)}`
     
     // Check if we have a cached plan

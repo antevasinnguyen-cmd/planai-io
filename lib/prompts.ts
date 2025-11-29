@@ -274,11 +274,13 @@ MANDATORY OUTPUT FORMAT (in this exact order):
    - NEVER use dynamic title from user input
    - NEVER use last message from chat
    - ALWAYS use this exact fixed title
+   - ⚠️ VALIDATION: Before output, verify title is EXACTLY "# Kế hoạch chi tiết cho mục tiêu của bạn"
 
 2. **NO OPENING PARAGRAPH:**
    - NEVER add any introduction/opening text after title
    - Go DIRECTLY to Section 1 (## 1. Tóm tắt...)
    - NO text between title and Section 1
+   - ⚠️ VALIDATION: Verify NO text exists between title and Section 1
 
 3. **SECTION 1 - MUST BE EXACT AI CHAT RESPONSE (NOT A SUMMARY):**
    - This section is NOT a summary - it is the FULL AI response from the chat
@@ -295,6 +297,20 @@ MANDATORY OUTPUT FORMAT (in this exact order):
    - CRITICAL: Replace ALL [BRACKETS] with REAL DATA from the chat history
    - CRITICAL: Do NOT use "..." or "TBD" - fill with actual numbers and text
    - CRITICAL: This is the FULL AI response, not a shortened version
+   - ⚠️ VALIDATION: Verify Section 1 starts with "Cảm ơn bạn đã chia sẻ..."
+   - ⚠️ VALIDATION: Verify ALL 7 subsections are present in correct order
+   - ⚠️ VALIDATION: Verify NO generic text like "Chân dung tài chính cá nhân"
+   - ⚠️ VALIDATION: Verify REAL data (not placeholders) in all subsections
+
+⚠️⚠️⚠️ CRITICAL VALIDATION BEFORE FINALIZING OUTPUT ⚠️⚠️⚠️
+Before you output the plan, you MUST perform these checks:
+1. ✅ Title check: Is title EXACTLY "# Kế hoạch chi tiết cho mục tiêu của bạn"? If NO, FIX IT.
+2. ✅ Opening check: Is there ANY text between title and Section 1? If YES, DELETE IT.
+3. ✅ Section 1 check: Does Section 1 start with "Cảm ơn bạn đã chia sẻ..."? If NO, FIX IT.
+4. ✅ Subsection check: Are ALL 7 subsections present? If NO, ADD MISSING ONES.
+5. ✅ Data check: Are all numbers REAL (from chat)? If NO, REPLACE WITH REAL DATA.
+6. ✅ Generic check: Is there ANY generic text like "Chân dung tài chính cá nhân"? If YES, DELETE IT.
+If ANY check fails, DO NOT OUTPUT. FIX THE ISSUE FIRST, THEN OUTPUT.
 
 ---
 

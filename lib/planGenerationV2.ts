@@ -160,7 +160,57 @@ NOW GENERATE THE COMPLETE FINANCIAL PLAN FOLLOWING ALL INSTRUCTIONS ABOVE.
   
   // Generate plan
   const maxTokens = tier === 'free' ? 8000 : 16000
-  const plan = await callAI(systemPrompt, userContext, maxTokens, 0.7)
+  let plan = await callAI(systemPrompt, userContext, maxTokens, 0.7)
+  
+  // CRITICAL: Validate plan meets all requirements
+  const validationErrors: string[] = []
+  
+  // 1. Title check
+  if (!plan.includes('# Kế hoạch chi tiết cho mục tiêu của bạn')) {
+    validationErrors.push('❌ Title is not fixed "# Kế hoạch chi tiết cho mục tiêu của bạn"')
+  }
+  
+  // 2. Opening paragraph check
+  const titleIndex = plan.indexOf('# Kế hoạch chi tiết cho mục tiêu của bạn')
+  const section1Index = plan.indexOf('## 1. Tóm tắt tình hình tài chính của bạn')
+  if (titleIndex !== -1 && section1Index !== -1) {
+    const textBetween = plan.substring(titleIndex + 50, section1Index).trim()
+    if (textBetween.length > 0 && !textBetween.startsWith('##')) {
+      validationErrors.push(`❌ Found opening paragraph between title and Section 1: "${textBetween.substring(0, 50)}..."`)
+    }
+  }
+  
+  // 3. Section 1 opening check
+  if (!plan.includes('Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình')) {
+    validationErrors.push('❌ Section 1 does not start with required opening text')
+  }
+  
+  // 4. Check for generic text
+  if (plan.includes('Chân dung tài chính cá nhân')) {
+    validationErrors.push('❌ Found generic text "Chân dung tài chính cá nhân" - should be exact AI response')
+  }
+  
+  // 5. Check for all 7 subsections
+  const requiredSubsections = [
+    'Tình Hình Hiện Tại',
+    'Mục Tiêu Tài Chính',
+    'Tổng Mục Tiêu',
+    'Tính Toán Tổng Mục Tiêu',
+    'Tình Hình Tài Chính',
+    'Kế Hoạch Tiết Kiệm',
+    'Một Số Gợi Ý'
+  ]
+  
+  for (const subsection of requiredSubsections) {
+    if (!plan.includes(`**${subsection}**`)) {
+      validationErrors.push(`❌ Missing subsection: **${subsection}**`)
+    }
+  }
+  
+  // If validation fails, log errors but still return plan (AI tried its best)
+  if (validationErrors.length > 0) {
+    console.warn('⚠️ PLAN VALIDATION WARNINGS:', validationErrors)
+  }
   
   return plan
 }
