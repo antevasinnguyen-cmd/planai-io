@@ -456,14 +456,14 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
 
   // Extract all financial goals (multi-goal) - CRITICAL: Phân biệt GOALS vs CURRENT STATE
   const goalRegexes = [
-    // Mua nhà (GOAL)
-    /(?:mua|sở hữu|có)\s*(?:1|một)?\s*(?:căn)?\s*nhà[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
-    // Mua xe (GOAL)
-    /(?:mua|sở hữu|có)\s*(?:1|một)?\s*(?:chiếc)?\s*(?:ô\s*tô|xe)[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    // Mua nhà (GOAL) - linh hoạt hơn, cho phép từ như "tầm", "khoảng", "vào khoảng"
+    /(?:mua|sở hữu|có)\s*(?:1|một)?\s*(?:căn)?\s*nhà[^.!?]*?(\d+[.,]?\d*)\s*(tỷ|triệu|tr|ty|bn)/gi,
+    // Mua xe (GOAL) - linh hoạt hơn
+    /(?:mua|sở hữu|có)\s*(?:1|một)?\s*(?:chiếc)?\s*(?:ô\s*tô|xe)[^.!?]*?(\d+[.,]?\d*)\s*(tỷ|triệu|tr|ty|bn)/gi,
     // Tài khoản tiết kiệm MỤC TIÊU (GOAL) - "có tài khoản tiết kiệm X" = GOAL
-    /(?:có|sở hữu|đạt)\s*(?:1|một)?\s*tài\s*khoản\s*(?:ngân\s*hàng)?\s*(?:tiết\s*kiệm)?[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?/gi,
+    /(?:có|sở hữu|đạt)\s*(?:1|một)?\s*tài\s*khoản\s*(?:ngân\s*hàng)?\s*(?:tiết\s*kiệm)?[^.!?]*?(\d+[.,]?\d*)\s*(tỷ|triệu|tr|ty|bn)/gi,
     // Thu nhập mục tiêu (GOAL)
-    /(?:thu\s*nhập|kiếm|đạt|có\s*thu\s*nhập)[^.!?\d]*(?:mục\s*tiêu)?[^.!?\d]*(\d+[.,]?\d*)?\s*(tỷ|triệu|tr|ty|bn)?(?:\/tháng)?/gi,
+    /(?:thu\s*nhập|kiếm|đạt|có\s*thu\s*nhập)[^.!?]*?(?:mục\s*tiêu)?[^.!?]*?(\d+[.,]?\d*)\s*(tỷ|triệu|tr|ty|bn)(?:\/tháng)?/gi,
   ];
   let goalsArr: any[] = [];
   let goalsTotal = 0;

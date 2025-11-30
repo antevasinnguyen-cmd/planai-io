@@ -1138,6 +1138,9 @@ Tận dụng thu nhập hiện tại: ${income}.`,
   // Combine plan
   let plan = `# ${planName}\n\n${parts.join('\n\n')}`
   
+  // Remove duplicate plan title if it appears in content
+  plan = plan.replace(new RegExp(`^#{1,3}\\s*${planName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'gim'), '')
+  
   // Final cleanup
   plan = cleanContent(plan)
 
