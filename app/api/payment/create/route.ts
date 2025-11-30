@@ -481,20 +481,28 @@ export async function POST(request: NextRequest) {
         paymentData: JSON.stringify(paymentData)
       })
 
+      console.log('=== PAYMENT API: About to insert payment record ===', {
+        transactionId,
+        userId: paymentData.user_id,
+        subscriptionTier: paymentData.subscription_tier,
+        amount: paymentData.amount
+      });
+
       const { data: paymentRecord, error } = await adminSupabase
         .from('payments')
         .insert([paymentData])
         .select()
 
       if (error) {
-        console.error('=== PAYMENT API: Database error ===', {
+        console.error('=== PAYMENT API: CRITICAL - Database error inserting payment ===', {
           code: error.code,
           message: error.message,
           details: error.details,
           hint: error.hint,
           fullError: JSON.stringify(error),
           paymentData,
-          transactionId
+          transactionId,
+          timestamp: new Date().toISOString()
         });
         // FALLBACK: Webhook sẽ tạo payment record nếu không tìm thấy
         console.warn('=== PAYMENT API: Database insert failed - webhook fallback will handle ===', {
