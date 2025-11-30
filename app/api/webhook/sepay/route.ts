@@ -362,15 +362,27 @@ export async function POST(request: NextRequest) {
           endDate.setDate(endDate.getDate() + 30);
           
           if (existingSub) {
+            // Prepare update data
+            const subUpdateData: any = {
+              tier: payment.subscription_tier,
+              plan_limit: finalLimits.plan_limit,
+              chat_limit: finalLimits.chat_limit,
+              current_period_end: endDate.toISOString(),
+              updated_at: now
+            };
+            
+            // If Free->Paid upgrade, reset current_period_start to now
+            if (isFreeToPaid) {
+              subUpdateData.current_period_start = now;
+              console.log('=== SEPAY WEBHOOK: Resetting current_period_start for Free->Paid ===', {
+                userId: payment.user_id,
+                newPeriodStart: now
+              });
+            }
+            
             const { error: subUpdateError } = await supabase
               .from('subscriptions')
-              .update({
-                tier: payment.subscription_tier,
-                plan_limit: finalLimits.plan_limit,
-                chat_limit: finalLimits.chat_limit,
-                current_period_end: endDate.toISOString(),
-                updated_at: now
-              })
+              .update(subUpdateData)
               .eq('id', existingSub.id);
             
             if (subUpdateError) {
