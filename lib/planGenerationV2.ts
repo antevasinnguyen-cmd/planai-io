@@ -195,6 +195,15 @@ NOW GENERATE THE COMPLETE FINANCIAL PLAN FOLLOWING ALL INSTRUCTIONS ABOVE.
   const maxTokens = tier === 'free' ? 8000 : 16000
   let plan = await callAI(systemPrompt, userContext, maxTokens, 0.7)
   
+  // CRITICAL: Force fix dynamic title to fixed title
+  // If AI generated dynamic title like "Kế hoạch: Mục tiêu: trong 3 năm...", replace it
+  const fixedTitle = '# Kế hoạch chi tiết cho mục tiêu của bạn'
+  const titleRegex = /^#\s+[^\n]+/m  // Match any markdown title
+  if (!plan.includes(fixedTitle)) {
+    // Replace any dynamic title with fixed title
+    plan = plan.replace(titleRegex, fixedTitle)
+  }
+  
   // CRITICAL: Validate plan meets all requirements
   const validationErrors: string[] = []
   
