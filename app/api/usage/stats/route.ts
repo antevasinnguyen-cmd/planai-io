@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     // Get user's subscription to determine usage period
     const { data: subscriptions } = await rh
       .from('subscriptions')
-      .select('created_at, tier')
+      .select('current_period_start, created_at, tier')
       .eq('user_id', user.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -40,16 +40,27 @@ export async function GET(request: NextRequest) {
     const currentTier = subscription?.tier || profile?.subscription_tier || 'free'
 
     // Determine usage start date:
-    // - If user has active subscription (paid tier), count from subscription creation
+    // - If user has active subscription (paid tier), count from current_period_start (or created_at as fallback)
     // - Otherwise, count from start of month (free tier)
     let usageStartDate: Date
     if (currentTier && currentTier !== 'free') {
-      // Paid tier: count from when subscription was created (when they upgraded)
-      usageStartDate = new Date(subscription?.created_at || new Date())
-      logger.info('API_USAGE_STATS: Using subscription start date for paid tier', {
+      // Paid tier: count from when current period started (when they upgraded or renewed)
+      // CRITICAL: Use current_period_start if available, as it marks the exact moment of upgrade
+      const periodStart = subscription?.current_period_start || subscription?.created_at
+      usageStartDate = new Date(periodStart || new Date())
+      
+      // Ensure we're using a valid date - if periodStart is in the future or invalid, use now
+      if (usageStartDate > new Date()) {
+        usageStartDate = new Date()
+      }
+      
+      logger.info('API_USAGE_STATS: Using subscription period start date for paid tier', {
         userId: user.id,
         tier: currentTier,
-        startDate: usageStartDate.toISOString()
+        startDate: usageStartDate.toISOString(),
+        currentPeriodStart: subscription?.current_period_start,
+        createdAt: subscription?.created_at,
+        now: new Date().toISOString()
       })
     } else {
       // Free tier: count from start of month

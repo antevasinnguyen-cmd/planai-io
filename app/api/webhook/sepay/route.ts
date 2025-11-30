@@ -349,6 +349,10 @@ export async function POST(request: NextRequest) {
             });
           }
 
+          // Calculate period end (30 days from now)
+          const endDate = new Date(now);
+          endDate.setDate(endDate.getDate() + 30);
+          
           if (existingSub) {
             const { error: subUpdateError } = await supabase
               .from('subscriptions')
@@ -356,6 +360,7 @@ export async function POST(request: NextRequest) {
                 tier: payment.subscription_tier,
                 plan_limit: finalLimits.plan_limit,
                 chat_limit: finalLimits.chat_limit,
+                current_period_end: endDate.toISOString(),
                 updated_at: now
               })
               .eq('id', existingSub.id);
@@ -376,6 +381,8 @@ export async function POST(request: NextRequest) {
                 status: 'active',
                 plan_limit: finalLimits.plan_limit,
                 chat_limit: finalLimits.chat_limit,
+                current_period_start: now,
+                current_period_end: endDate.toISOString(),
                 created_at: now
               });
             
