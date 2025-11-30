@@ -232,7 +232,15 @@ export default function DashboardFinal() {
   }
 
   const tier = subscription?.tier || 'free'
-  const limits = getSubscriptionLimits(tier)
+  // Use limits from subscription table if available (accounts for accumulated limits)
+  // Otherwise use default limits for tier
+  const limits = subscription?.plan_limit && subscription?.chat_limit
+    ? {
+        plans: subscription.plan_limit,
+        chats: subscription.chat_limit,
+        words: subscription.word_limit || getSubscriptionLimits(tier).words
+      }
+    : getSubscriptionLimits(tier)
 
   const DAY_MS = 24 * 60 * 60 * 1000
   const normalizeDate = (input?: string | null) => {
