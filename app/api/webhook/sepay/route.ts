@@ -145,6 +145,11 @@ export async function POST(request: NextRequest) {
     let payment = null;
     let lastError = null;
     
+    console.log('=== SEPAY WEBHOOK: Looking for payment ===', {
+      orderId,
+      searchingFor: 'transaction_id = ' + orderId
+    });
+    
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         const { data, error } = await supabase
@@ -161,10 +166,20 @@ export async function POST(request: NextRequest) {
             status: data.status,
             subscriptionTier: data.subscription_tier,
             amount: data.amount,
-            transactionId: data.transaction_id
+            transactionId: data.transaction_id,
+            matchesOrderId: data.transaction_id === orderId
           });
           break;
         }
+        
+        if (error) {
+          console.log(`=== SEPAY WEBHOOK: Payment lookup attempt ${attempt} - no match ===`, {
+            orderId,
+            error: error.message,
+            code: error.code
+          });
+        }
+        
         lastError = error;
         
         if (attempt < MAX_RETRIES) {
