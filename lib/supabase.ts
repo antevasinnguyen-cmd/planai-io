@@ -411,8 +411,8 @@ export const getUserSubscription = async (userId: string) => {
       })
       
       const now = new Date().toISOString()
-      const { getSubscriptionLimits } = await import('@/lib/supabase')
-      const limits = getSubscriptionLimits(profileData.subscription_tier)
+      const { getSubscriptionLimits: getSubLimits } = await import('@/lib/supabase')
+      const limits = getSubLimits(profileData.subscription_tier)
       
       try {
         const endDate = new Date(now);
@@ -436,17 +436,27 @@ export const getUserSubscription = async (userId: string) => {
         if (!insertError && newSub) {
           console.log(`=== getUserSubscription: Successfully created subscription record ===`, { userId, tier: newSub.tier })
           return { data: newSub, error: null }
+        } else if (insertError) {
+          console.error(`=== getUserSubscription: Failed to create subscription record ===`, insertError)
         }
       } catch (e) {
-        console.error(`Failed to create subscription record:`, e)
+        console.error(`=== getUserSubscription: Exception creating subscription record ===`, e)
       }
       
       // Return profile data as fallback if subscription creation fails
+      console.log(`=== getUserSubscription: Returning profile data as fallback ===`, {
+        userId,
+        tier: profileData.subscription_tier,
+        chatCount: profileData.chat_count,
+        planCount: profileData.plan_count
+      })
       return { 
         data: {
           user_id: userId,
           tier: profileData.subscription_tier,
           status: 'active',
+          plan_limit: limits.plans,
+          chat_limit: limits.chats,
           chat_count: profileData.chat_count,
           plan_count: profileData.plan_count,
           updated_at: profileData.updated_at
@@ -455,7 +465,8 @@ export const getUserSubscription = async (userId: string) => {
       }
     }
     
-    console.log(`No active subscription found for user ${userId}, using defaults`)
+    // User has free tier in profiles
+    console.log(`=== getUserSubscription: User has FREE tier in profiles ===`, { userId })
     return { data: null, error: null }
   } catch (err) {
     console.error('Error getting subscription:', err)
