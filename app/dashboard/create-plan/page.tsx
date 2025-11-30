@@ -522,9 +522,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
       (lastUserContent || '').slice(0, 80)
     ).trim()
     
-    const computedPlanName = mainGoal
-      ? `Kế hoạch: ${mainGoal}`
-      : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
+    const computedPlanName = 'Kế hoạch chi tiết cho mục tiêu của bạn'
     
     const computedGoals = mainGoal || (profile.description || 'Mục tiêu tài chính cá nhân')
 

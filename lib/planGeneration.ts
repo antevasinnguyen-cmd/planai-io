@@ -939,7 +939,7 @@ ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.j
 
   // Define sections (Free: 9 mục, Paid: >=24 mục chuyên sâu)
   const baseSections = [
-    { key: 'profile', title: '1. Chân dung tài chính cá nhân', weight: 3 },
+    { key: 'profile', title: '1. Tóm tắt tình hình tài chính của bạn', weight: 3 },
     { key: 'goals', title: '2. Mục tiêu tài chính & động lực', weight: 2 },
     { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 3 },
     { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3 },
@@ -972,14 +972,16 @@ ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.j
   // Generate section content (multi-step, continues until targetWords reached)
   const generateSectionContent = async (section: any, targetWords: number): Promise<string> => {
     const prompts: any = {
-      profile: `Tạo phần Chân dung tài chính cá nhân.
-Bắt đầu bằng bullet list:
+      profile: `Tạo phần Tóm tắt tình hình tài chính của bạn.
+Bắt đầu bằng bullet list ĐẦY ĐỦ:
 • Mục tiêu tài chính: ${goal}
 • Thu nhập hiện tại: ${income}
+• Tiết kiệm hiện có: ${savings}
 • Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
+• Thời gian thực hiện: ${timeline}
 • Mong muốn: Đạt mục tiêu trong ${timeline}
 
-Sau đó phân tích chi tiết. KHÔNG hiển thị 'Nơi sinh sống' hoặc 'Nghề nghiệp'.`,
+Sau đó phân tích chi tiết. KHÔNG hiển thị 'Nơi sinh sống' hoặc 'Nghề nghiệp'. PHẢI đầy đủ và chi tiết như AI trả lời trong chat.`,
       goals: `Phân tích mục tiêu: ${goal}.
 Động lực, lý do, tiêu chí SMART, khoảng cách so với hiện tại.`,
       current: `Phân tích hiện trạng:
@@ -1111,10 +1113,6 @@ Tận dụng thu nhập hiện tại: ${income}.`,
     // Remove conditional phrases
     cleaned = cleaned.replace(/Nếu timeline[^\n]*/gi, '')
     cleaned = cleaned.replace(/Nếu thời gian[^\n]*/gi, '')
-    
-    // Remove redundant section headings like "1. Chân dung tài chính cá nhân"
-    cleaned = cleaned.replace(/^#+\s*\d+\.\s*Chân dung tài chính cá nhân\s*$/gim, '')
-    cleaned = cleaned.replace(/^1\.\s*Chân dung tài chính cá nhân\s*$/gim, '')
     
     // Remove empty lines
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
