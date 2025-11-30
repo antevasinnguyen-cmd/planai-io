@@ -104,11 +104,25 @@ ${fullChatHistory}
    - Example: If chat says "280 triệu tiết kiệm", use "280 triệu VNĐ" (NOT from example)
    - Example: If chat says "mua nhà 2 tỷ", use "2 tỷ VNĐ" (NOT from example)
    
-   STEP 2: Map chat data to Section 1 fields:
-   - Thu nhập hàng tháng: [Extract from chat - user's income]
-   - Tài khoản tiết kiệm: [Extract from chat - current savings]
-   - Mục tiêu: [Extract from chat - all goals mentioned]
-   - Timeline: [Extract from chat - when they want to achieve]
+   STEP 2: Map chat data to Section 1 fields - CRITICAL DISTINCTION:
+   
+   **Tình Hình Hiện Tại** = WHAT USER HAS NOW (current state):
+   - Thu nhập hàng tháng: [Extract from chat - user's CURRENT income, e.g., "8-10 triệu/tháng"]
+   - Tài khoản tiết kiệm: [Extract from chat - user's CURRENT savings, e.g., "280 triệu VNĐ"]
+   - ⚠️ DO NOT put goals here! Only current state!
+   
+   **Mục Tiêu Tài Chính** = WHAT USER WANTS TO ACHIEVE (goals/dreams):
+   - Mua nhà: [Extract from chat - goal amount, e.g., "2-3 tỷ VNĐ"]
+   - Mua ô tô: [Extract from chat - goal amount, e.g., "700 triệu VNĐ"]
+   - Tài khoản tiết kiệm: [Extract from chat - goal amount, e.g., "10 tỷ VNĐ"]
+   - ⚠️ DO NOT put current state here! Only future goals!
+   
+   **CRITICAL EXAMPLE:**
+   - User says: "Hiện tại tôi có 280 triệu tiết kiệm"
+     → Goes in "Tình Hình Hiện Tại" (current state)
+   - User says: "Tôi muốn có tài khoản tiết kiệm 10 tỷ"
+     → Goes in "Mục Tiêu Tài Chính" (goal)
+   - DO NOT mix them up!
    
    STEP 3: Generate Section 1 with REAL data (not example):
    
@@ -239,6 +253,19 @@ NOW GENERATE THE COMPLETE FINANCIAL PLAN FOLLOWING ALL INSTRUCTIONS ABOVE.
     const removeIndex = section9Index !== -1 ? section9Index : section10Index
     if (removeIndex !== -1) {
       plan = plan.substring(0, removeIndex).trim()
+    }
+  }
+  
+  // 7. Check for mixed current state with goals (critical data accuracy check)
+  const currentStateSection = plan.match(/\*\*Tình Hình Hiện Tại\*\*([\s\S]*?)\*\*Mục Tiêu Tài Chính\*\*/)?.[1] || ''
+  if (currentStateSection) {
+    // Check if goals keywords appear in current state section
+    if (currentStateSection.includes('muốn') || 
+        currentStateSection.includes('mục tiêu') ||
+        currentStateSection.includes('dự định') ||
+        currentStateSection.includes('trong 3 năm') ||
+        currentStateSection.includes('trong vòng')) {
+      validationErrors.push('⚠️ WARNING: Found goal keywords in "Tình Hình Hiện Tại" section - data may be mixed up')
     }
   }
   
