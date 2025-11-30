@@ -204,6 +204,22 @@ NOW GENERATE THE COMPLETE FINANCIAL PLAN FOLLOWING ALL INSTRUCTIONS ABOVE.
     plan = plan.replace(titleRegex, fixedTitle)
   }
   
+  // CRITICAL: Remove opening paragraph between title and section 1
+  // Pattern: title -> blank lines -> opening text -> section 1
+  const titleAndSection1Regex = /(# Kế hoạch chi tiết cho mục tiêu của bạn)\s*\n+([^\n]*\n)*?(## 1\. Tóm tắt)/
+  plan = plan.replace(titleAndSection1Regex, '$1\n\n$3')
+  
+  // Also handle case where there's text between title and section 1
+  const titleIdxPost = plan.indexOf('# Kế hoạch chi tiết cho mục tiêu của bạn')
+  const section1IdxPost = plan.indexOf('## 1. Tóm tắt')
+  if (titleIdxPost !== -1 && section1IdxPost !== -1 && titleIdxPost < section1IdxPost) {
+    const textBetweenPost = plan.substring(titleIdxPost + 50, section1IdxPost).trim()
+    if (textBetweenPost.length > 0 && !textBetweenPost.startsWith('##')) {
+      // Remove the opening paragraph
+      plan = plan.substring(0, titleIdxPost + 50) + '\n\n' + plan.substring(section1IdxPost)
+    }
+  }
+  
   // CRITICAL: Validate plan meets all requirements
   const validationErrors: string[] = []
   
