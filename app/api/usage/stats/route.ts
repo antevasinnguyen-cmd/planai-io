@@ -96,6 +96,11 @@ export async function GET(request: NextRequest) {
       .gte('created_at', usageStartDate.toISOString())
 
     const words = (wordsRows || []).reduce((sum: number, r: any) => sum + (r?.word_count || 0), 0)
+    
+    // Ensure counts are integers
+    const finalPlanCount = Math.max(0, Math.floor(planCount || 0))
+    const finalChatCount = Math.max(0, Math.floor(chatCount || 0))
+    const finalWords = Math.max(0, Math.floor(words || 0))
 
     if (plansError || chatsError || wordsError) {
       logger.warn('API_USAGE_STATS_PARTIAL', {
@@ -108,9 +113,9 @@ export async function GET(request: NextRequest) {
     logger.info('API_USAGE_STATS_SUCCESS', {
       userId: user.id,
       tier: currentTier,
-      plans: planCount,
-      chats: chatCount,
-      words,
+      plans: finalPlanCount,
+      chats: finalChatCount,
+      words: finalWords,
       usageStartDate: usageStartDate.toISOString(),
       profileTier: profile?.subscription_tier,
       subscriptionTier: subscription?.tier
@@ -118,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      usage: { plans: planCount, chats: chatCount, words }
+      usage: { plans: finalPlanCount, chats: finalChatCount, words: finalWords }
     })
   } catch (error) {
     logger.error('API_USAGE_STATS_ERROR', {
