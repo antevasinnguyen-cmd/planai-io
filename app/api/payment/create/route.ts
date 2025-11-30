@@ -119,9 +119,26 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== PAYMENT API: Received payment request ===', { requestId })
     const { planId, amount, userId, paymentMethod } = await request.json()
+    
+    // Map planId (number or string) to tier name
+    const planIdToTier: Record<string | number, string> = {
+      '1': 'basic',
+      '2': 'pro',
+      '3': 'pro_max',
+      1: 'basic',
+      2: 'pro',
+      3: 'pro_max',
+      'basic': 'basic',
+      'pro': 'pro',
+      'pro_max': 'pro_max'
+    }
+    
+    const tierName = planIdToTier[planId] || 'basic' // Default to basic if not found
+    
     console.log('=== PAYMENT API: Payment details ===', { 
       requestId,
-      planId, 
+      planId,
+      tierName,
       amount, 
       userId, 
       paymentMethod 
@@ -364,14 +381,16 @@ export async function POST(request: NextRequest) {
       // Không gửi created_at vì Supabase sẽ tự động tạo
       const paymentData: any = {
         user_id: safeUserId,
-        subscription_tier: planId,
+        subscription_tier: tierName,
         amount: amount,
         currency: 'VND',
         status: 'pending',
         payment_method: paymentMethod,
         transaction_id: transactionId,
         metadata: {
-          provider: paymentMethod === 'sepay' ? 'sepay' : 'payos'
+          provider: paymentMethod === 'sepay' ? 'sepay' : 'payos',
+          planId: planId,
+          tierName: tierName
         }
       }
 
