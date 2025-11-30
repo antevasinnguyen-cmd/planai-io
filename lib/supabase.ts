@@ -400,6 +400,14 @@ export const getUserSubscription = async (userId: string) => {
       return { data: null, error: null }
     }
     
+    console.log(`=== getUserSubscription: Profile data retrieved ===`, {
+      userId,
+      tier: profileData?.subscription_tier,
+      chatCount: profileData?.chat_count,
+      planCount: profileData?.plan_count,
+      hasData: !!profileData
+    });
+    
     if (profileData?.subscription_tier && profileData.subscription_tier !== 'free') {
       // User has a paid tier in profiles but no subscription record
       // Create a subscription record to sync the data
