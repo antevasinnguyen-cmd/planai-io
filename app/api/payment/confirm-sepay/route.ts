@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
 
     if (existingSub) {
       // Cập nhật subscription hiện tại
-      await supabase
+      const { error: subUpdateError } = await supabase
         .from('subscriptions')
         .update({
           tier: payment.subscription_tier,
@@ -295,9 +295,13 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
         .eq('id', existingSub.id)
+      
+      if (subUpdateError) {
+        console.error('=== CONFIRM SEPAY: Error updating subscription ===', subUpdateError)
+      }
     } else {
       // Tạo subscription mới
-      await supabase
+      const { error: subInsertError } = await supabase
         .from('subscriptions')
         .insert({
           user_id: payment.user_id,
@@ -309,6 +313,10 @@ export async function POST(request: NextRequest) {
           current_period_end: endDate.toISOString(),
           created_at: now.toISOString()
         })
+      
+      if (subInsertError) {
+        console.error('=== CONFIRM SEPAY: Error creating subscription ===', subInsertError)
+      }
     }
 
     // Determine if this is Free->Paid (reset) or Paid->Paid (accumulate)

@@ -375,12 +375,74 @@ export const getUserSubscription = async (userId: string) => {
       .limit(1)
     // PostgREST returns array here; pick first row if exists
     const row = Array.isArray(data) ? (data[0] || null) : (data as any)
-    if (!row) {
-      console.log(`No subscription found for user ${userId}, using defaults`)
+    if (row) {
+      console.log(`=== getUserSubscription: Found subscription ===`, { userId, tier: row.tier, status: row.status })
+      return { data: row, error }
+    }
+    
+    // FALLBACK: If no subscription record, try to get tier from profiles table
+    console.log(`No subscription found for user ${userId}, checking profiles table...`)
+    const { data: profileData, error: profileError } = await client
+      .from('profiles')
+      .select('subscription_tier, chat_count, plan_count, updated_at')
+      .eq('id', userId)
+      .single()
+    
+    if (profileError) {
+      console.log(`No profile found for user ${userId}, using defaults`)
       return { data: null, error: null }
     }
-    console.log(`=== getUserSubscription: Found subscription ===`, { userId, tier: row.tier, status: row.status })
-    return { data: row, error }
+    
+    if (profileData?.subscription_tier && profileData.subscription_tier !== 'free') {
+      // User has a paid tier in profiles but no subscription record
+      // Create a subscription record to sync the data
+      console.log(`=== getUserSubscription: Found paid tier in profiles, creating subscription record ===`, { 
+        userId, 
+        tier: profileData.subscription_tier 
+      })
+      
+      const now = new Date().toISOString()
+      const { getSubscriptionLimits } = await import('@/lib/supabase')
+      const limits = getSubscriptionLimits(profileData.subscription_tier)
+      
+      try {
+        const { data: newSub, error: insertError } = await client
+          .from('subscriptions')
+          .insert({
+            user_id: userId,
+            tier: profileData.subscription_tier,
+            status: 'active',
+            plan_limit: limits.plans,
+            chat_limit: limits.chats,
+            created_at: now
+          })
+          .select()
+          .single()
+        
+        if (!insertError && newSub) {
+          console.log(`=== getUserSubscription: Successfully created subscription record ===`, { userId, tier: newSub.tier })
+          return { data: newSub, error: null }
+        }
+      } catch (e) {
+        console.error(`Failed to create subscription record:`, e)
+      }
+      
+      // Return profile data as fallback if subscription creation fails
+      return { 
+        data: {
+          user_id: userId,
+          tier: profileData.subscription_tier,
+          status: 'active',
+          chat_count: profileData.chat_count,
+          plan_count: profileData.plan_count,
+          updated_at: profileData.updated_at
+        }, 
+        error: null 
+      }
+    }
+    
+    console.log(`No active subscription found for user ${userId}, using defaults`)
+    return { data: null, error: null }
   } catch (err) {
     console.error('Error getting subscription:', err)
     return { data: null, error: err }
