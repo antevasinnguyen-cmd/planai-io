@@ -132,9 +132,12 @@ export default function DashboardFinal() {
         userId,
         tier: data?.tier,
         status: data?.status,
+        planLimit: data?.plan_limit,
+        chatLimit: data?.chat_limit,
         hasData: !!data
       })
       if (!data) {
+        console.warn('=== DASHBOARD: No subscription data returned, data is null ===', { userId })
         // Initialize free trial via secure API route (service role)
         try {
           const res = await fetch('/api/subscriptions/init', { method: 'POST' })
