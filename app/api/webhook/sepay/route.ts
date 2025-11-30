@@ -180,10 +180,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!payment) {
-      console.error(`=== SEPAY WEBHOOK: Payment not found in database ===`, { 
+      console.error(`=== SEPAY WEBHOOK: CRITICAL - Payment not found in database ===`, { 
         orderId,
         reason: 'Transaction ID does not match any payment in database',
-        hint: 'User may have entered wrong transfer content or payment was not created via /api/payment/create'
+        hint: 'User may have entered wrong transfer content or payment was not created via /api/payment/create',
+        timestamp: new Date().toISOString()
       });
       
       // Return success to acknowledge webhook, but don't create payment
@@ -192,7 +193,8 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Webhook received but payment not found in database',
         orderId,
-        note: 'Payment must be created via /api/payment/create before webhook processing'
+        note: 'Payment must be created via /api/payment/create before webhook processing',
+        timestamp: new Date().toISOString()
       }, { status: 200 });
     }
 
