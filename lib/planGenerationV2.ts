@@ -226,14 +226,19 @@ NOW GENERATE THE COMPLETE FINANCIAL PLAN FOLLOWING ALL INSTRUCTIONS ABOVE.
     }
   }
   
-  // 6. Check for unwanted section 10
-  if (plan.includes('## 10. Kết luận và hành động tiếp theo') || 
+  // 6. Check for unwanted section 9 or 10
+  if (plan.includes('## 9. Kết luận') || 
+      plan.includes('## 9. Kết luận & hành động ngay') ||
+      plan.includes('## 9. Kết luận và hành động tiếp theo') ||
+      plan.includes('## 10. Kết luận và hành động tiếp theo') || 
       plan.includes('## 10. Kết luận và Hành động Tiếp theo')) {
-    validationErrors.push('❌ Found unwanted section 10 - removing it')
-    // Remove section 10 and everything after it
+    validationErrors.push('❌ Found unwanted section 9 or 10 - removing it')
+    // Remove section 9 or 10 and everything after it
+    const section9Index = plan.indexOf('## 9.')
     const section10Index = plan.indexOf('## 10.')
-    if (section10Index !== -1) {
-      plan = plan.substring(0, section10Index).trim()
+    const removeIndex = section9Index !== -1 ? section9Index : section10Index
+    if (removeIndex !== -1) {
+      plan = plan.substring(0, removeIndex).trim()
     }
   }
   

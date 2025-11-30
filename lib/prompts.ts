@@ -310,7 +310,22 @@ Before you output the plan, you MUST perform these checks:
 4. ✅ Subsection check: Are ALL 7 subsections present? If NO, ADD MISSING ONES.
 5. ✅ Data check: Are all numbers REAL (from chat)? If NO, REPLACE WITH REAL DATA.
 6. ✅ Generic check: Is there ANY generic text like "Chân dung tài chính cá nhân"? If YES, DELETE IT.
+7. ✅ Section 9 check: Is there ANY section 9 or 10? If YES, DELETE IT.
 If ANY check fails, DO NOT OUTPUT. FIX THE ISSUE FIRST, THEN OUTPUT.
+
+🚨🚨🚨 BEFORE YOU OUTPUT - MANDATORY FORMAT CHECK 🚨🚨🚨
+Your output MUST start with EXACTLY this:
+
+# Kế hoạch chi tiết cho mục tiêu của bạn
+
+## 1. Tóm tắt tình hình tài chính của bạn
+
+Cảm ơn bạn đã chia sẻ thông tin chi tiết về tình hình tài chính của mình. Dưới đây là tóm tắt các mục tiêu tài chính và tình hình hiện tại của bạn:
+
+**Tình Hình Hiện Tại**
+• [REAL data from chat]
+
+DO NOT output anything else before this. NO dynamic title. NO opening paragraph. ONLY this exact format.
 
 ---
 
@@ -429,13 +444,17 @@ Nếu bạn muốn đạt được mục tiêu này trong vòng 3 năm (36 thán
    - Mô tả chi tiết từng kịch bản
    - Ưu và nhược điểm của từng kịch bản
 
-## 9. Add-on Spiritual (nếu bật)
-   - Tách riêng section, không ảnh hưởng nội dung chính
+## 9. Add-on Spiritual (nếu bật) - DO NOT OUTPUT
+   - ⚠️ CRITICAL: Section 9 is part of the template structure but MUST NOT be output in the final plan
+   - Do NOT include "## 9. Add-on Spiritual" or any section 9 in the output
+   - END THE PLAN AFTER SECTION 8 (3-Kịch bản Dự báo)
+   - If you accidentally generated section 9, DELETE IT before outputting
+   - This includes: "## 9. Kết luận", "## 9. Kết luận & hành động ngay", "## 9. Kết luận và hành động tiếp theo"
 
 ## 10. Kết luận và Hành động Tiếp theo (DO NOT OUTPUT THIS SECTION)
     - ⚠️ CRITICAL: This section is part of the template structure but MUST NOT be output in the final plan
     - Do NOT include "## 10. Kết luận và Hành động Tiếp theo" in the output
-    - End the plan after Section 9 (Add-on Spiritual)
+    - End the plan after Section 8
     - If you accidentally generated this section, DELETE IT before outputting
 
 DATA LAYER (for export):
