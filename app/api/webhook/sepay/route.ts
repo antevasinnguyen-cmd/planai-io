@@ -40,6 +40,11 @@ const MAX_RETRIES = 3;
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function POST(request: NextRequest) {
+  console.log('=== SEPAY WEBHOOK: POST request received ===', {
+    timestamp: new Date().toISOString(),
+    url: request.url
+  });
+  
   // Log request ban đầu
   const requestClone = request.clone();
   const body = await requestClone.json();
@@ -307,18 +312,36 @@ export async function POST(request: NextRequest) {
             updateData.plan_count = 0;
           }
           
+          console.log('=== SEPAY WEBHOOK: Updating profiles table ===', {
+            userId: payment.user_id,
+            updateData,
+            attempt
+          });
+
           const { error: profileError } = await supabase
             .from('profiles')
             .update(updateData)
             .eq('id', payment.user_id);
 
           if (profileError) {
+            console.error('=== SEPAY WEBHOOK: Error updating profiles ===', {
+              userId: payment.user_id,
+              error: profileError,
+              attempt
+            });
             lastUpgradeError = profileError;
             if (attempt < MAX_RETRIES) {
               await wait(1000 * attempt);
             }
             continue;
           }
+          
+          console.log('=== SEPAY WEBHOOK: Successfully updated profiles ===', {
+            userId: payment.user_id,
+            tier: updateData.subscription_tier,
+            chatCount: updateData.chat_count,
+            planCount: updateData.plan_count
+          });
 
           // 2. Tạo hoặc cập nhật subscription với logic cộng dồn limits
           const { data: existingSub } = await supabase

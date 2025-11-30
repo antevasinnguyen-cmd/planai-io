@@ -121,19 +121,15 @@ export async function POST(request: NextRequest) {
     const { planId, amount, userId, paymentMethod } = await request.json()
     
     // Map planId (number or string) to tier name
-    const planIdToTier: Record<string | number, string> = {
-      '1': 'basic',
-      '2': 'pro',
-      '3': 'pro_max',
-      1: 'basic',
-      2: 'pro',
-      3: 'pro_max',
-      'basic': 'basic',
-      'pro': 'pro',
-      'pro_max': 'pro_max'
+    const mapPlanIdToTier = (id: any): string => {
+      const idStr = String(id).toLowerCase();
+      if (idStr === '1' || idStr === 'basic') return 'basic';
+      if (idStr === '2' || idStr === 'pro') return 'pro';
+      if (idStr === '3' || idStr === 'pro_max') return 'pro_max';
+      return 'basic'; // Default to basic if not found
     }
     
-    const tierName = planIdToTier[planId] || 'basic' // Default to basic if not found
+    const tierName = mapPlanIdToTier(planId)
     
     console.log('=== PAYMENT API: Payment details ===', { 
       requestId,
@@ -478,7 +474,10 @@ export async function POST(request: NextRequest) {
         userId: paymentData.user_id,
         amount: paymentData.amount,
         status: paymentData.status,
-        provider: paymentData.provider,
+        subscriptionTier: paymentData.subscription_tier,
+        planId: planId,
+        tierName: tierName,
+        provider: paymentData.metadata?.provider,
         paymentData: JSON.stringify(paymentData)
       })
 
