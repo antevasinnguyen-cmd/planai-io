@@ -1112,6 +1112,10 @@ Tận dụng thu nhập hiện tại: ${income}.`,
     cleaned = cleaned.replace(/Nếu timeline[^\n]*/gi, '')
     cleaned = cleaned.replace(/Nếu thời gian[^\n]*/gi, '')
     
+    // Remove redundant section headings like "1. Chân dung tài chính cá nhân"
+    cleaned = cleaned.replace(/^#+\s*\d+\.\s*Chân dung tài chính cá nhân\s*$/gim, '')
+    cleaned = cleaned.replace(/^1\.\s*Chân dung tài chính cá nhân\s*$/gim, '')
+    
     // Remove empty lines
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
     

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     // Fallback: derive plan name and goals if missing from chat_summary
     const chatSummary: string = String(collectedInfo?.chat_summary || '')
     const derivedGoal = (goals && String(goals).trim()) || chatSummary.slice(0, 80).trim() || 'Mục tiêu tài chính cá nhân'
-    const finalPlanName = (planName && String(planName).trim()) || (derivedGoal ? `Kế hoạch: ${derivedGoal}` : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`)
+    const finalPlanName = (planName && String(planName).trim()) || 'Kế hoạch chi tiết cho mục tiêu của bạn'
     const finalGoals = derivedGoal
 
     if (!finalPlanName || !finalGoals) {

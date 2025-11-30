@@ -265,7 +265,7 @@ export default function GeneratePlanPage() {
       const lastUser = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].content : ''
       const derivedGoal = (data?.goals && String(data.goals).trim()) || (lastUser || '').slice(0, 80).trim()
       const derivedPlanName = (data?.planName && String(data.planName).trim())
-        || (derivedGoal ? `Kế hoạch: ${derivedGoal}` : `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`)
+        || 'Kế hoạch chi tiết cho mục tiêu của bạn'
 
       const finalPlanName = derivedPlanName || 'Kế hoạch tài chính cá nhân'
       const finalGoals = derivedGoal || 'Mục tiêu tài chính cá nhân'
