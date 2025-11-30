@@ -150,6 +150,14 @@ export async function POST(request: NextRequest) {
 
         if (!error && data) {
           payment = data;
+          console.log('=== SEPAY WEBHOOK: Payment found ===', {
+            paymentId: data.id,
+            userId: data.user_id,
+            status: data.status,
+            subscriptionTier: data.subscription_tier,
+            amount: data.amount,
+            transactionId: data.transaction_id
+          });
           break;
         }
         lastError = error;
@@ -366,14 +374,21 @@ export async function POST(request: NextRequest) {
               .eq('id', existingSub.id);
             
             if (subUpdateError) {
+              console.error('=== SEPAY WEBHOOK: Error updating subscription ===', subUpdateError);
               lastUpgradeError = subUpdateError;
               if (attempt < MAX_RETRIES) {
                 await wait(1000 * attempt);
               }
               continue;
             }
+            console.log('=== SEPAY WEBHOOK: Successfully updated subscription ===', {
+              userId: payment.user_id,
+              tier: payment.subscription_tier,
+              planLimit: finalLimits.plan_limit,
+              chatLimit: finalLimits.chat_limit
+            });
           } else {
-            const { error: subInsertError } = await supabase
+            const { error: subInsertError, data: insertedSub } = await supabase
               .from('subscriptions')
               .insert({
                 user_id: payment.user_id,
@@ -384,15 +399,24 @@ export async function POST(request: NextRequest) {
                 current_period_start: now,
                 current_period_end: endDate.toISOString(),
                 created_at: now
-              });
+              })
+              .select();
             
             if (subInsertError) {
+              console.error('=== SEPAY WEBHOOK: Error creating subscription ===', subInsertError);
               lastUpgradeError = subInsertError;
               if (attempt < MAX_RETRIES) {
                 await wait(1000 * attempt);
               }
               continue;
             }
+            console.log('=== SEPAY WEBHOOK: Successfully created subscription ===', {
+              userId: payment.user_id,
+              tier: payment.subscription_tier,
+              planLimit: finalLimits.plan_limit,
+              chatLimit: finalLimits.chat_limit,
+              insertedData: insertedSub
+            });
           }
 
           upgradeSuccess = true;

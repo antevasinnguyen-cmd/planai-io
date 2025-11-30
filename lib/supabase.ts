@@ -376,12 +376,19 @@ export const getUserSubscription = async (userId: string) => {
     // PostgREST returns array here; pick first row if exists
     const row = Array.isArray(data) ? (data[0] || null) : (data as any)
     if (row) {
-      console.log(`=== getUserSubscription: Found subscription ===`, { userId, tier: row.tier, status: row.status })
+      console.log(`=== getUserSubscription: Found subscription ===`, { 
+        userId, 
+        tier: row.tier, 
+        status: row.status,
+        planLimit: row.plan_limit,
+        chatLimit: row.chat_limit,
+        createdAt: row.created_at
+      })
       return { data: row, error }
     }
     
     // FALLBACK: If no subscription record, try to get tier from profiles table
-    console.log(`No subscription found for user ${userId}, checking profiles table...`)
+    console.log(`=== getUserSubscription: No subscription record found, checking profiles table...`, { userId })
     const { data: profileData, error: profileError } = await client
       .from('profiles')
       .select('subscription_tier, chat_count, plan_count, updated_at')
@@ -396,9 +403,11 @@ export const getUserSubscription = async (userId: string) => {
     if (profileData?.subscription_tier && profileData.subscription_tier !== 'free') {
       // User has a paid tier in profiles but no subscription record
       // Create a subscription record to sync the data
-      console.log(`=== getUserSubscription: Found paid tier in profiles, creating subscription record ===`, { 
+      console.log(`=== getUserSubscription: Found PAID tier in profiles, creating subscription record ===`, { 
         userId, 
-        tier: profileData.subscription_tier 
+        tier: profileData.subscription_tier,
+        chatCount: profileData.chat_count,
+        planCount: profileData.plan_count
       })
       
       const now = new Date().toISOString()
@@ -406,6 +415,9 @@ export const getUserSubscription = async (userId: string) => {
       const limits = getSubscriptionLimits(profileData.subscription_tier)
       
       try {
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + 30);
+        
         const { data: newSub, error: insertError } = await client
           .from('subscriptions')
           .insert({
@@ -414,6 +426,8 @@ export const getUserSubscription = async (userId: string) => {
             status: 'active',
             plan_limit: limits.plans,
             chat_limit: limits.chats,
+            current_period_start: now,
+            current_period_end: endDate.toISOString(),
             created_at: now
           })
           .select()
