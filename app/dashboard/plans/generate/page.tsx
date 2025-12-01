@@ -304,8 +304,16 @@ export default function GeneratePlanPage() {
       let useBackgroundJob = false
       
       try {
-        const userSub = await supabase.from('profiles').select('subscription_tier').eq('id', user?.id).single()
-        tier = userSub?.data?.subscription_tier || 'free'
+        // Query subscriptions table (not profiles) for accurate tier
+        const userSub = await supabase
+          .from('subscriptions')
+          .select('tier')
+          .eq('user_id', user?.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        tier = userSub?.data?.tier || 'free'
         console.log('=== GENERATE: Tier check success ===', { tier, hasData: !!userSub?.data })
       } catch (tierError) {
         console.warn('=== GENERATE: Tier check failed, defaulting to free ===', { error: tierError })

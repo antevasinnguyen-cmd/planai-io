@@ -294,14 +294,9 @@ export async function POST(request: NextRequest) {
       limits = getSubscriptionLimits('free')
     }
 
-    // Only for Free tier
-    if (tier !== 'free') {
-      logger.error('FAST_GENERATE_WRONG_TIER', { tier })
-      return NextResponse.json(
-        { error: 'Fast route only for Free tier' },
-        { status: 400 }
-      )
-    }
+    // Allow all tiers to use this route (basic, pro, etc. can also use fast generation)
+    // Previously restricted to free tier only, but this caused issues for paid users
+    logger.info('FAST_GENERATE_TIER_OK', { tier })
 
     // Build context (enrich with chat summary + lightweight extraction)
     const messages = Array.isArray(body?.messages) ? body.messages : []
