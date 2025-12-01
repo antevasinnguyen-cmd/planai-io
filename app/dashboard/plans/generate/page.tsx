@@ -313,22 +313,40 @@ export default function GeneratePlanPage() {
           .order('created_at', { ascending: false })
           .limit(1)
         
+        console.log('=== GENERATE: Tier query result ===', { 
+          hasError: !!subError, 
+          error: subError,
+          dataLength: Array.isArray(subData) ? subData.length : 'not-array',
+          data: subData
+        })
+        
         if (subError) {
           console.warn('=== GENERATE: Tier query error ===', { error: subError })
-          tier = 'free'
+          // Don't default to free - keep trying other methods
+          tier = undefined
         } else if (Array.isArray(subData) && subData.length > 0) {
           tier = subData[0]?.tier || 'free'
-          console.log('=== GENERATE: Tier check success ===', { tier })
+          console.log('=== GENERATE: Tier check success ===', { tier, subscription: subData[0] })
         } else {
-          console.warn('=== GENERATE: No subscription found ===')
-          tier = 'free'
+          console.warn('=== GENERATE: No subscription found ===', { subData })
+          tier = undefined
         }
       } catch (tierError) {
         console.warn('=== GENERATE: Tier check exception ===', { error: tierError })
-        tier = 'free'
+        tier = undefined
       }
       
-      useBackgroundJob = tier !== 'free'
+      // If tier query failed, try to get from API response or assume basic for paid users
+      // This is a fallback - the API will verify the actual tier
+      if (!tier) {
+        console.warn('=== GENERATE: Tier query failed, will let API determine tier ===')
+        // Default to background job (paid route) - API will validate
+        // If user is actually free tier, API will handle it
+        useBackgroundJob = true
+      } else {
+        useBackgroundJob = tier !== 'free'
+      }
+      
       const apiRoute = useBackgroundJob ? '/api/plans/generate-background' : '/api/plans/generate-fast'
 
       setStatus(useBackgroundJob ? 'Hệ thống AI đang xử lý (có thể mất tới 5 phút)...' : 'Hệ thống AI đang xử lý...')
