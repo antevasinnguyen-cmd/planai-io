@@ -316,7 +316,12 @@ export async function POST(request: NextRequest) {
       current_savings: collectedInfo?.current_savings || extractSavingsVnd(fullChatSummary) || undefined
     }
 
-    const enrichedCollectedInfo = { ...collectedInfo, chat_summary: fullChatSummary, ...extracted }
+    const enrichedCollectedInfo = { 
+      ...collectedInfo, 
+      chat_summary: fullChatSummary, 
+      tier,
+      ...extracted 
+    }
 
     // Log extracted data for debugging
     logger.info('FAST_GENERATE_EXTRACTED_DATA', {
@@ -371,7 +376,14 @@ export async function POST(request: NextRequest) {
     await updatePartialPlan(admin, planId, 10)
     const safeTitle = planName || `Kế hoạch tài chính - ${new Date().toLocaleDateString('vi-VN')}`
     const safeGoals = goals || 'Kế hoạch tài chính'
-    let content_md = await generateLongPlanMultiStep(safeTitle, safeGoals, enrichedCollectedInfo)
+    let content_md = ''
+    try {
+      content_md = await generateLongPlanMultiStep(safeTitle, safeGoals, enrichedCollectedInfo)
+      logger.info('FAST_GENERATE_CONTENT_SUCCESS', { contentLength: content_md.length })
+    } catch (genError) {
+      logger.error('FAST_GENERATE_CONTENT_ERROR', { error: String(genError) })
+      throw genError
+    }
     await updatePartialPlan(admin, planId, 90)
     const title = safeTitle
 
@@ -391,7 +403,7 @@ export async function POST(request: NextRequest) {
         content: content_md,
         status: 'completed',
         word_count: content_md.split(/\s+/).length,
-        collected_info: { ...collectedInfo, tier: 'free' } || { tier: 'free' },
+        collected_info: { ...collectedInfo, tier },
         metadata: JSON.stringify({
           model_used: 'generator_v4',
           generated_at: new Date().toISOString(),
@@ -401,7 +413,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       }
 
-      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId, planId, tier: 'free' })
+      logger.info('FAST_GENERATE_SAVE_START', { title, contentLength: content_md.length, userId, planId, tier })
       
       // Update existing plan
       const { data: inserted, error: insertError } = await ((admin as any)

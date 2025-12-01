@@ -305,18 +305,26 @@ export default function GeneratePlanPage() {
       
       try {
         // Query subscriptions table (not profiles) for accurate tier
-        const userSub = await supabase
+        const { data: subData, error: subError } = await supabase
           .from('subscriptions')
           .select('tier')
           .eq('user_id', user?.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
-          .single()
-        tier = userSub?.data?.tier || 'free'
-        console.log('=== GENERATE: Tier check success ===', { tier, hasData: !!userSub?.data })
+        
+        if (subError) {
+          console.warn('=== GENERATE: Tier query error ===', { error: subError })
+          tier = 'free'
+        } else if (Array.isArray(subData) && subData.length > 0) {
+          tier = subData[0]?.tier || 'free'
+          console.log('=== GENERATE: Tier check success ===', { tier })
+        } else {
+          console.warn('=== GENERATE: No subscription found ===')
+          tier = 'free'
+        }
       } catch (tierError) {
-        console.warn('=== GENERATE: Tier check failed, defaulting to free ===', { error: tierError })
+        console.warn('=== GENERATE: Tier check exception ===', { error: tierError })
         tier = 'free'
       }
       
