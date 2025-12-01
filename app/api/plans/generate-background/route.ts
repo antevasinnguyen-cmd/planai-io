@@ -121,14 +121,24 @@ export async function POST(request: NextRequest) {
     const tier = subData?.tier || 'free'
     const tierLimits = getSubscriptionLimits(tier)
     
-    // Build full chat summary from messages array (not just collectedInfo.chat_summary)
+    // Build full chat summary from messages array - INCLUDE BOTH USER AND AI MESSAGES
+    // Increased limit to 12000 chars to capture more context for paid tiers
+    const chatLimit = tier === 'free' ? 4000 : 12000
     const fullChatSummary = Array.isArray(messages)
       ? messages
-          .filter((m: any) => m && m.role === 'user')
-          .map((m: any) => m.content || m.message)
-          .join('\n')
-          .slice(0, 4000)
-      : chatSummary.slice(0, 4000)
+          .map((m: any) => {
+            const role = m.role === 'user' ? '👤 User' : '🤖 AI'
+            return `${role}: ${m.content || m.message || ''}`
+          })
+          .join('\n\n')
+          .slice(0, chatLimit)
+      : chatSummary.slice(0, chatLimit)
+    
+    logger.info('BG_GENERATE_CHAT_CONTEXT', { 
+      messagesCount: Array.isArray(messages) ? messages.length : 0,
+      chatSummaryLength: fullChatSummary.length,
+      tier
+    })
     
     const enrichedCollectedInfo = { 
       ...(collectedInfo || {}), 

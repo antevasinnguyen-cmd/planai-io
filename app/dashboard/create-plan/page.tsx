@@ -526,12 +526,23 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     
     const computedGoals = mainGoal || (profile.description || 'Mục tiêu tài chính cá nhân')
 
-    // Build a light chat summary to help downstream generation remember context
+    // Build full chat summary to help downstream generation remember context
+    // INCLUDE BOTH USER AND AI MESSAGES to capture full context
+    // Increased limit for paid tiers to ensure no information is lost
+    const chatLimit = (subscription?.tier === 'free' || !subscription?.tier) ? 4000 : 12000
     const chatSummary = currentMessages
-      .filter((m) => m.role === 'user')
-      .map((m) => m.content)
-      .join('\n')
-      .slice(0, 4000)
+      .map((m) => {
+        const role = m.role === 'user' ? '👤 User' : '🤖 AI'
+        return `${role}: ${m.content}`
+      })
+      .join('\n\n')
+      .slice(0, chatLimit)
+    
+    console.log('Chat context for plan generation:', {
+      totalMessages: currentMessages.length,
+      chatSummaryLength: chatSummary.length,
+      tier: subscription?.tier || 'free'
+    })
     
     const enrichedCollectedInfo = {
       ...currentCollectedInfo,

@@ -299,12 +299,22 @@ export async function POST(request: NextRequest) {
     logger.info('FAST_GENERATE_TIER_OK', { tier })
 
     // Build context (enrich with chat summary + lightweight extraction)
+    // INCLUDE BOTH USER AND AI MESSAGES to capture full context
     const messages = Array.isArray(body?.messages) ? body.messages : []
+    const chatLimit = tier === 'free' ? 4000 : 12000
     const fullChatSummary = messages
-      .filter((m: any) => m && m.role === 'user')
-      .map((m: any) => m.content || m.message)
-      .join('\n')
-      .slice(0, 4000)
+      .map((m: any) => {
+        const role = m.role === 'user' ? '👤 User' : '🤖 AI'
+        return `${role}: ${m.content || m.message || ''}`
+      })
+      .join('\n\n')
+      .slice(0, chatLimit)
+    
+    logger.info('FAST_GENERATE_CHAT_CONTEXT', { 
+      messagesCount: messages.length,
+      chatSummaryLength: fullChatSummary.length,
+      tier
+    })
 
     const extracted = {
       skills: extractSkills(fullChatSummary) || collectedInfo?.skills,
