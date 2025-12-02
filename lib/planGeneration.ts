@@ -774,21 +774,6 @@ export async function generateLongPlanMultiStep(
   
   // Extract data with fallbacks
   const chatSummary = String(collectedInfo?.chat_summary || '')
-  
-  // CRITICAL: Extract ONLY user messages to avoid AI response duplication
-  // chatSummary format: "👤 User: ...\n\n🤖 AI: ..."
-  const userOnlyMessages = chatSummary
-    .split(/🤖\s*AI:/gi)
-    .map(part => {
-      // Extract only the user part
-      const userMatch = part.match(/👤\s*User:\s*([\s\S]*?)$/i)
-      return userMatch ? userMatch[1].trim() : ''
-    })
-    .filter(Boolean)
-    .join('\n\n')
-  
-  // Use userOnlyMessages for prompts to avoid duplication
-  const userContext = userOnlyMessages || chatSummary.slice(0, 2000)
   let income = '7 – 10 triệu VNĐ/tháng'
   let savings = '0'
   let timeline = '2 – 3 năm'
