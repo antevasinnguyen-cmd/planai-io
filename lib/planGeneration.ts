@@ -880,9 +880,10 @@ export async function generateLongPlanMultiStep(
           const savingsOnly = chatSummary.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)\s*(?:gửi\s*ngân\s*hàng)?[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr)/i)
           if (savingsOnly) {
             // Double check this is not in a target sentence
-            const matchIndex = chatSummary.search(savingsOnly[0])
-            const beforeMatch = chatSummary.substring(Math.max(0, matchIndex - 100), matchIndex)
-            const afterMatch = chatSummary.substring(matchIndex, matchIndex + 100)
+            // Use indexOf to avoid implicitly constructing a RegExp from arbitrary text
+            const matchIndex = chatSummary.indexOf(savingsOnly[0])
+            const beforeMatch = matchIndex >= 0 ? chatSummary.substring(Math.max(0, matchIndex - 100), matchIndex) : ''
+            const afterMatch = matchIndex >= 0 ? chatSummary.substring(matchIndex, matchIndex + 100) : ''
             const hasTargetKeywords = /mục\s*tiêu|trong\s*\d+\s*năm|có\s*\d+|muốn\s*có/i.test(beforeMatch + afterMatch)
             
             if (!hasTargetKeywords) {

@@ -71,9 +71,10 @@ function extractSavingsVnd(text: string): number | null {
     const savingsOnly = text.match(/(?:tiết\s*kiệm|tài\s*khoản\s*tiết\s*kiệm)\s*(?:gửi\s*ngân\s*hàng)?[^\d]{0,20}(\d+(?:[.,]\d+)?)\s*(tỷ|ty|triệu|tr|bn|billion|t)/i)
     if (savingsOnly) {
       // Double check this is not in a target sentence
-      const matchIndex = text.search(savingsOnly[0])
-      const beforeMatch = text.substring(Math.max(0, matchIndex - 100), matchIndex)
-      const afterMatch = text.substring(matchIndex, matchIndex + 100)
+      // Use indexOf to avoid implicitly constructing a RegExp from arbitrary text
+      const matchIndex = text.indexOf(savingsOnly[0])
+      const beforeMatch = matchIndex >= 0 ? text.substring(Math.max(0, matchIndex - 100), matchIndex) : ''
+      const afterMatch = matchIndex >= 0 ? text.substring(matchIndex, matchIndex + 100) : ''
       const hasTargetKeywords = /mục\s*tiêu|trong\s*\d+\s*năm|có\s*\d+|muốn\s*có/i.test(beforeMatch + afterMatch)
       
       if (!hasTargetKeywords) {
