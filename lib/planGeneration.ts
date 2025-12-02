@@ -969,7 +969,7 @@ ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.j
     { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 3 },
     { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 4 },
     { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 2 },
-    { key: 'mindset', title: '8. Psychology & Mindset', weight: 2 },
+    { key: 'mindset', title: '8. Tâm lý & Tư duy thành công', weight: 2 },
     { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1 }
   ]
   const paidSections = [
@@ -1092,11 +1092,44 @@ Tận dụng thu nhập hiện tại: ${income}.`,
 
     // Helpers
     const wc = (s: string) => (s ? s.trim().split(/\s+/).length : 0)
+    // CRITICAL: Remove ALL section headings that don't belong to current section
+    const allSectionTitles = [
+      '1. Tóm tắt tình hình tài chính của bạn',
+      '2. Mục tiêu tài chính & động lực',
+      '3. Hiện trạng & khoảng cách mục tiêu',
+      '4. Mô hình tăng thu nhập phù hợp',
+      '5. Kế hoạch tiết kiệm & đầu tư',
+      '6. Kế hoạch hành động & timeline',
+      '7. Tài liệu học tập & nguồn lực',
+      '8. Tâm lý & Tư duy thành công',
+      '8. Psychology & Mindset',
+      '9. Kết luận & hành động ngay'
+    ]
+    
     const stripRedundantHeadings = (s: string) => {
-      const titleRe = new RegExp(`^(?:#{1,3}\\s*)?${section.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, 'im')
-      return s
-        .replace(titleRe, '')
-        .replace(/^#+\s*(Kết luận|Conclusion)\s*$/gim, '')
+      let cleaned = s
+      
+      // Remove current section title if AI repeats it
+      const titleRe = new RegExp(`^(?:#{1,3}\\s*)?${section.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, 'gim')
+      cleaned = cleaned.replace(titleRe, '')
+      
+      // Remove ALL other section titles that AI might have incorrectly included
+      for (const otherTitle of allSectionTitles) {
+        if (otherTitle === section.title) continue // Skip current section
+        const otherRe = new RegExp(`^(?:#{1,3}\\s*)?${otherTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, 'gim')
+        cleaned = cleaned.replace(otherRe, '')
+      }
+      
+      // Remove generic conclusion/summary headings
+      cleaned = cleaned.replace(/^#+\s*(Kết luận|Conclusion|Tổng kết|Summary)\s*$/gim, '')
+      
+      // Remove "Cảm ơn bạn đã chia sẻ" phrases
+      cleaned = cleaned.replace(/Cảm ơn bạn đã chia sẻ[^.]*\./gi, '')
+      
+      // Remove duplicate numbered headings like "1. Tóm tắt..." appearing in middle of content
+      cleaned = cleaned.replace(/^\d+\.\s*(Tóm tắt|Mục tiêu|Hiện trạng|Mô hình|Kế hoạch|Tài liệu|Tâm lý|Psychology|Kết luận)[^\n]*$/gim, '')
+      
+      return cleaned
     }
 
     const PASS_WORDS = tier === 'free' ? 500 : 1200
@@ -1108,8 +1141,8 @@ Tận dụng thu nhập hiện tại: ${income}.`,
       const remaining = targetWords - wc(aggregated)
       const chunkTarget = clamp(remaining, 300, PASS_WORDS)
       const userPrompt = pass === 1
-        ? `${userContext}\n\nViết phần: ${section.title}\n\n${basePrompt}\n\nĐộ dài: khoảng ${chunkTarget} từ.`
-        : `${userContext}\n\nTIẾP TỤC mở rộng phần: ${section.title}\n\nYÊU CẦU QUAN TRỌNG:\n- Không lặp lại nội dung đã viết.\n- Không mở đầu lại, không kết luận lại, không tóm tắt lại.\n- Không nhắc lại tiêu đề.\n- Bổ sung luận điểm mới, ví dụ mới, hướng dẫn chi tiết hơn.\n\nĐộ dài: khoảng ${chunkTarget} từ.`
+        ? `${userContext}\n\nViết phần: ${section.title}\n\n${basePrompt}\n\nQUY TẮC BẮT BUỘC:\n- CHỈ viết nội dung cho phần "${section.title}" này.\n- TUYỆT ĐỐI KHÔNG viết lại các phần khác (1, 2, 3, 4, 5, 6, 7, 8, 9).\n- KHÔNG viết tiêu đề section.\n- KHÔNG viết "Cảm ơn bạn đã chia sẻ".\n\nĐộ dài: khoảng ${chunkTarget} từ.`
+        : `${userContext}\n\nTIẾP TỤC mở rộng phần: ${section.title}\n\nQUY TẮC BẮT BUỘC:\n- CHỈ bổ sung nội dung cho phần "${section.title}" này.\n- TUYỆT ĐỐI KHÔNG viết lại các phần khác.\n- Không lặp lại nội dung đã viết.\n- Không mở đầu lại, không kết luận lại.\n- Không nhắc lại tiêu đề.\n- Bổ sung luận điểm mới, ví dụ mới.\n\nĐộ dài: khoảng ${chunkTarget} từ.`
 
       try {
         const raw = await aiTextWithFallback(
@@ -1120,11 +1153,25 @@ Tận dụng thu nhập hiện tại: ${income}.`,
         )
         let chunk = raw || ''
         chunk = cleanContent(stripRedundantHeadings(chunk))
+        
+        // CRITICAL: If AI starts writing another section, cut off at that point
+        // Look for patterns like "1. Tóm tắt", "2. Mục tiêu", etc. that indicate AI is repeating sections
+        const sectionStartPattern = /\n\s*(?:#{1,3}\s*)?\d+\.\s*(?:Tóm tắt|Mục tiêu|Hiện trạng|Mô hình|Kế hoạch|Tài liệu|Tâm lý|Psychology|Kết luận)/i
+        const sectionMatch = chunk.match(sectionStartPattern)
+        if (sectionMatch && sectionMatch.index !== undefined && sectionMatch.index > 100) {
+          // Cut off content before the repeated section starts
+          chunk = chunk.substring(0, sectionMatch.index).trim()
+        }
+        
         // Avoid accidental duplication by trimming overlapping last paragraph
         if (aggregated && chunk && aggregated.endsWith(chunk.slice(0, 50))) {
           chunk = chunk.slice(50)
         }
-        aggregated += (aggregated ? '\n\n' : '') + chunk
+        
+        // Only add if chunk has meaningful content
+        if (chunk && chunk.length > 20) {
+          aggregated += (aggregated ? '\n\n' : '') + chunk
+        }
       } catch (e) {
         console.error(`Error generating ${section.key} (pass ${pass}):`, e)
         if (!aggregated) {
@@ -1189,6 +1236,27 @@ Tận dụng thu nhập hiện tại: ${income}.`,
   
   // Remove duplicate plan title if it appears in content
   plan = plan.replace(new RegExp(`^#{1,3}\\s*${planName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'gim'), '')
+  
+  // CRITICAL: Remove any duplicate section headings that appear multiple times
+  // This handles cases where AI incorrectly repeats section titles in the middle of content
+  const sectionHeadingPattern = /^##\s*\d+\.\s*[^\n]+$/gm
+  const headings = plan.match(sectionHeadingPattern) || []
+  const seenHeadings = new Set<string>()
+  for (const heading of headings) {
+    const normalized = heading.trim().toLowerCase()
+    if (seenHeadings.has(normalized)) {
+      // Remove duplicate heading (keep first occurrence)
+      plan = plan.replace(heading, '')
+    } else {
+      seenHeadings.add(normalized)
+    }
+  }
+  
+  // Remove any orphaned section content that starts with numbered headings without ##
+  plan = plan.replace(/^\d+\.\s*(Tóm tắt|Mục tiêu|Hiện trạng|Mô hình|Kế hoạch|Tài liệu|Tâm lý|Psychology|Kết luận)[^\n]*\n/gim, '')
+  
+  // Remove "Cảm ơn bạn đã chia sẻ" anywhere in the plan
+  plan = plan.replace(/Cảm ơn bạn đã chia sẻ[^.]*\./gi, '')
   
   // Final cleanup
   plan = cleanContent(plan)
