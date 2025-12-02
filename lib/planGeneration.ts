@@ -774,6 +774,21 @@ export async function generateLongPlanMultiStep(
   
   // Extract data with fallbacks
   const chatSummary = String(collectedInfo?.chat_summary || '')
+  
+  // CRITICAL: Extract ONLY user messages to avoid AI response duplication
+  // chatSummary format: "👤 User: ...\n\n🤖 AI: ..."
+  const userOnlyMessages = chatSummary
+    .split(/🤖\s*AI:/gi)
+    .map(part => {
+      // Extract only the user part
+      const userMatch = part.match(/👤\s*User:\s*([\s\S]*?)$/i)
+      return userMatch ? userMatch[1].trim() : ''
+    })
+    .filter(Boolean)
+    .join('\n\n')
+  
+  // Use userOnlyMessages for prompts to avoid duplication
+  const userContext = userOnlyMessages || chatSummary.slice(0, 2000)
   let income = '7 – 10 triệu VNĐ/tháng'
   let savings = '0'
   let timeline = '2 – 3 năm'
@@ -997,38 +1012,45 @@ ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.j
     const displayGoal = fullGoalDescription || goal
     
     const prompts: any = {
-      profile: `Tạo phần Tóm tắt tình hình tài chính của bạn.
+      profile: `Viết phần "Tình Hình Hiện Tại" với format sau:
 
-⚠️ QUAN TRỌNG: Đọc kỹ TOÀN BỘ thông tin chat dưới đây và trích xuất CHÍNH XÁC:
-
-THÔNG TIN TỪ CHAT:
-${chatSummary}
-
-Bắt đầu bằng bullet list ĐẦY ĐỦ VÀ CHÍNH XÁC:
-• Mục tiêu tài chính: ${displayGoal}
+**Tình Hình Hiện Tại:**
 • Thu nhập hiện tại: ${income}
 • Tiết kiệm hiện có: ${savings}
 • Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
 • Thời gian thực hiện: ${timeline}
-• Mong muốn: Đạt mục tiêu trong ${timeline}
 
-PHẢI liệt kê TẤT CẢ các mục tiêu (mua nhà, mua xe, tiết kiệm, v.v.) với số tiền CHÍNH XÁC như trong chat.
-KHÔNG được bỏ sót bất kỳ mục tiêu nào.
-Sau đó phân tích chi tiết.`,
-      goals: `Phân tích mục tiêu: ${displayGoal}.
+**Mục Tiêu Tài Chính:**
+${displayGoal}
 
-THÔNG TIN TỪ CHAT:
-${chatSummary}
+**Khoảng Cách Cần Vượt Qua:**
+Tính toán số tiền cần đạt thêm và số tiền cần tiết kiệm mỗi tháng.
 
-Liệt kê TẤT CẢ các mục tiêu với số tiền cụ thể. Phân tích động lực, lý do, tiêu chí SMART, khoảng cách so với hiện tại.`,
-      current: `Phân tích hiện trạng:
+KHÔNG lặp lại tiêu đề section. KHÔNG viết "Cảm ơn bạn đã chia sẻ". Đi thẳng vào nội dung.`,
+      goals: `Viết phần "Phân Tích Mục Tiêu" cho: ${displayGoal}
+
+Nội dung cần có:
+1. Liệt kê từng mục tiêu với số tiền cụ thể
+2. Phân tích động lực và lý do
+3. Đánh giá theo tiêu chí SMART
+4. Tính khoảng cách so với hiện tại (tiết kiệm: ${savings})
+
+KHÔNG lặp lại phần "Tình Hình Hiện Tại" đã viết ở section trước. Chỉ tập trung vào phân tích mục tiêu.`,
+      current: `Viết phần "Phân Tích Hiện Trạng & Khoảng Cách":
+
+Thông tin hiện tại:
 - Thu nhập: ${income}
 - Tiết kiệm: ${savings}
 
-THÔNG TIN TỪ CHAT:
-${chatSummary}
+Mục tiêu: ${displayGoal}
 
-So sánh với mục tiêu ${displayGoal} và tính khoảng cách cần vượt qua.`,
+Nội dung cần có:
+1. Đánh giá khả năng tài chính hiện tại
+2. So sánh với mục tiêu
+3. Tính khoảng cách cần vượt qua
+4. Đề xuất lộ trình 3-6-12 tháng
+
+KHÔNG lặp lại nội dung từ section 1 và 2. Tập trung vào phân tích GAP và lộ trình.`,
       models: `Đề xuất mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${displayGoal}.`,
       saving: `Lập kế hoạch tiết kiệm và đầu tư để đạt ${displayGoal} trong ${timeline}.`,
       plan: `Tạo kế hoạch hành động chi tiết cho ${timeline}. Chia theo năm, quý, tháng.`,
