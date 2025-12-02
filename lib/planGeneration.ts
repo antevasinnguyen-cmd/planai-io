@@ -793,6 +793,9 @@ export async function generateLongPlanMultiStep(
   } catch {}
 
   // Use brain data if available, otherwise fallback to manual extraction
+  // CRITICAL: Extract FULL goals from brain analysis
+  let fullGoalDescription = goal // Start with passed goal
+  
   if (brain?.analysis) {
     if (typeof brain.analysis.current_savings === 'number' && brain.analysis.current_savings > 0) {
       const brainSavings = brain.analysis.current_savings
@@ -808,6 +811,25 @@ export async function generateLongPlanMultiStep(
     }
     if (brain.analysis.timeline) {
       timeline = brain.analysis.timeline
+    }
+    
+    // CRITICAL: Build full goal description from asset_goals
+    if (brain.analysis.asset_goals?.length > 0) {
+      const goalsList = brain.analysis.asset_goals.map((g: any) => {
+        const value = g.value >= 1_000_000_000 
+          ? `${(g.value / 1_000_000_000).toFixed(1)} tỷ VNĐ`
+          : `${Math.round(g.value / 1_000_000)} triệu VNĐ`
+        return `${g.item}: ${value}`
+      })
+      fullGoalDescription = goalsList.join(', ')
+      
+      // Add total
+      if (brain.analysis.total_asset_goal) {
+        const total = brain.analysis.total_asset_goal >= 1_000_000_000
+          ? `${(brain.analysis.total_asset_goal / 1_000_000_000).toFixed(1)} tỷ VNĐ`
+          : `${Math.round(brain.analysis.total_asset_goal / 1_000_000)} triệu VNĐ`
+        fullGoalDescription += ` (Tổng: ${total})`
+      }
     }
   } else {
     // Try to extract income (range or single) — fallback if brain missing
@@ -971,25 +993,44 @@ ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.j
   
   // Generate section content (multi-step, continues until targetWords reached)
   const generateSectionContent = async (section: any, targetWords: number): Promise<string> => {
+    // Use fullGoalDescription for accurate goal display
+    const displayGoal = fullGoalDescription || goal
+    
     const prompts: any = {
       profile: `Tạo phần Tóm tắt tình hình tài chính của bạn.
-Bắt đầu bằng bullet list ĐẦY ĐỦ:
-• Mục tiêu tài chính: ${goal}
+
+⚠️ QUAN TRỌNG: Đọc kỹ TOÀN BỘ thông tin chat dưới đây và trích xuất CHÍNH XÁC:
+
+THÔNG TIN TỪ CHAT:
+${chatSummary}
+
+Bắt đầu bằng bullet list ĐẦY ĐỦ VÀ CHÍNH XÁC:
+• Mục tiêu tài chính: ${displayGoal}
 • Thu nhập hiện tại: ${income}
 • Tiết kiệm hiện có: ${savings}
 • Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
 • Thời gian thực hiện: ${timeline}
 • Mong muốn: Đạt mục tiêu trong ${timeline}
 
-Sau đó phân tích chi tiết. KHÔNG hiển thị 'Nơi sinh sống' hoặc 'Nghề nghiệp'. PHẢI đầy đủ và chi tiết như AI trả lời trong chat.`,
-      goals: `Phân tích mục tiêu: ${goal}.
-Động lực, lý do, tiêu chí SMART, khoảng cách so với hiện tại.`,
+PHẢI liệt kê TẤT CẢ các mục tiêu (mua nhà, mua xe, tiết kiệm, v.v.) với số tiền CHÍNH XÁC như trong chat.
+KHÔNG được bỏ sót bất kỳ mục tiêu nào.
+Sau đó phân tích chi tiết.`,
+      goals: `Phân tích mục tiêu: ${displayGoal}.
+
+THÔNG TIN TỪ CHAT:
+${chatSummary}
+
+Liệt kê TẤT CẢ các mục tiêu với số tiền cụ thể. Phân tích động lực, lý do, tiêu chí SMART, khoảng cách so với hiện tại.`,
       current: `Phân tích hiện trạng:
 - Thu nhập: ${income}
 - Tiết kiệm: ${savings}
-So sánh với mục tiêu và tính khoảng cách cần vượt qua.`,
-      models: `Đề xuất mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${goal}.`,
-      saving: `Lập kế hoạch tiết kiệm và đầu tư để đạt ${goal} trong ${timeline}.`,
+
+THÔNG TIN TỪ CHAT:
+${chatSummary}
+
+So sánh với mục tiêu ${displayGoal} và tính khoảng cách cần vượt qua.`,
+      models: `Đề xuất mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${displayGoal}.`,
+      saving: `Lập kế hoạch tiết kiệm và đầu tư để đạt ${displayGoal} trong ${timeline}.`,
       plan: `Tạo kế hoạch hành động chi tiết cho ${timeline}. Chia theo năm, quý, tháng.`,
       learning: `Liệt kê tài liệu học tập. KHÔNG dùng link. Chỉ cung cấp từ khoá tìm kiếm:
 

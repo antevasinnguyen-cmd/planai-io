@@ -60,6 +60,7 @@ export default function GeneratePlanPage() {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(0)
   const eventSourceRef = useRef<EventSource | null>(null)
+  const generationStartedRef = useRef<boolean>(false) // CRITICAL: Lock to prevent duplicate generation
 
   const cancelCurrentJob = async (id: string | null) => {
     try {
@@ -236,6 +237,13 @@ export default function GeneratePlanPage() {
   }, [jobStatus, error])
 
   const startPlanGeneration = async () => {
+    // CRITICAL: Prevent duplicate generation
+    if (generationStartedRef.current) {
+      console.log('=== GENERATE: Already started, skipping duplicate call ===')
+      return
+    }
+    generationStartedRef.current = true
+    
     console.log('=== GENERATE: Function called ===', { user: user?.id })
     const userId = user?.id || 'anonymous'
     const planData = localStorage.getItem(`pending_plan_${userId}`) || localStorage.getItem('pending_plan_latest')
@@ -261,14 +269,47 @@ export default function GeneratePlanPage() {
       })
       
       // Validate required fields (with robust fallback from messages)
+      // CRITICAL: Extract goals from FIRST user message (contains main goals), not last message
       const userMsgs = Array.isArray(data?.messages) ? data.messages.filter((m: any) => m.role === 'user') : []
-      const lastUser = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].content : ''
-      const derivedGoal = (data?.goals && String(data.goals).trim()) || (lastUser || '').slice(0, 80).trim()
+      
+      // Try to extract main goals from the FIRST user message (usually contains "Mục tiêu: ...")
+      let extractedGoals = ''
+      if (userMsgs.length > 0) {
+        // Combine all user messages to find goals
+        const allUserContent = userMsgs.map((m: any) => m.content || '').join('\n')
+        
+        // Look for goal patterns in order of priority
+        const goalPatterns = [
+          /mục\s*tiêu[:\s]*([^\n]+)/i,
+          /(?:mua\s*nhà|mua\s*xe|tiết\s*kiệm)[^.]*(?:\d+\s*(?:tỷ|triệu))[^.]*/gi,
+        ]
+        
+        for (const pattern of goalPatterns) {
+          const match = allUserContent.match(pattern)
+          if (match) {
+            extractedGoals = Array.isArray(match) ? match.join(', ') : match[1] || match[0]
+            break
+          }
+        }
+        
+        // Fallback: use first user message (usually contains main goals)
+        if (!extractedGoals && userMsgs[0]?.content) {
+          extractedGoals = userMsgs[0].content.slice(0, 200)
+        }
+      }
+      
+      const derivedGoal = (data?.goals && String(data.goals).trim()) || extractedGoals || 'Mục tiêu tài chính cá nhân'
       const derivedPlanName = (data?.planName && String(data.planName).trim())
         || 'Kế hoạch chi tiết cho mục tiêu của bạn'
 
       const finalPlanName = derivedPlanName || 'Kế hoạch tài chính cá nhân'
       const finalGoals = derivedGoal || 'Mục tiêu tài chính cá nhân'
+      
+      console.log('=== GENERATE: Extracted goals ===', { 
+        extractedGoals, 
+        finalGoals,
+        userMsgsCount: userMsgs.length 
+      })
 
       data.planName = finalPlanName
       data.goals = finalGoals
