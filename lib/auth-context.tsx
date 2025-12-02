@@ -34,45 +34,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Tự động refresh session khi tab quay lại
+    // CRITICAL: Không redirect ngay nếu session tạm thời không available
     const handleVisibility = async () => {
       if (document.visibilityState === 'visible') {
         try {
-          console.log('=== AUTHCONTEXT: Tab quay lại, kiểm tra session ===')
-          const { data: { session }, error } = await supabase.auth.getSession();
+          const { data: { session: newSession }, error } = await supabase.auth.getSession();
           
           if (error) {
-            console.warn('=== AUTHCONTEXT: Lỗi khi lấy session (tạm thời) ===', error.message)
-            // Lỗi tạm thời (network, Supabase down) - không redirect
-            // User vẫn có thể tiếp tục sử dụng, session sẽ được kiểm tra lại lần sau
-            return
+            console.warn('=== AUTHCONTEXT: Lỗi khi refresh session ===', error.message);
+            // Không redirect ngay - có thể là lỗi tạm thời
+            return;
           }
           
-          if (session) {
-            console.log('=== AUTHCONTEXT: Session vẫn còn, cập nhật ===')
-            setSession(session);
-            setUser(session.user);
+          if (newSession) {
+            setSession(newSession);
+            setUser(newSession.user);
+            console.log('=== AUTHCONTEXT: Session refreshed thành công ===');
           } else {
-            // Session null có thể là:
-            // 1. Session thực sự expired
-            // 2. User chưa đăng nhập
-            // 3. Lỗi tạm thời
-            // Chỉ redirect nếu user đã đăng nhập trước đó (session state không null)
-            if (session === null && user !== null) {
-              console.warn('=== AUTHCONTEXT: Session đã hết hạn (user trước đó có session) ===')
-              setUser(null);
-              setSession(null);
-              if (typeof window !== 'undefined') {
-                window.location.href = '/login?expired=1';
-              }
-            } else {
-              console.log('=== AUTHCONTEXT: Không có session (user chưa đăng nhập hoặc lỗi tạm thời) ===')
-              // Không redirect - để user tiếp tục
-            }
+            // Session null - nhưng KHÔNG redirect ngay
+            // Chỉ clear state, để các trang protected tự xử lý redirect
+            console.log('=== AUTHCONTEXT: Session null khi quay lại tab ===');
+            setUser(null);
+            setSession(null);
+            // KHÔNG redirect về /login?expired=1 từ đây
+            // Các trang protected sẽ tự redirect nếu cần
           }
         } catch (e) {
-          console.error('=== AUTHCONTEXT: Lỗi khi kiểm tra session ===', e)
-          // Lỗi tạm thời - không redirect, chỉ log
-          // Để user tiếp tục sử dụng, session sẽ được kiểm tra lại lần sau
+          console.warn('=== AUTHCONTEXT: Exception khi refresh session ===', e);
+          // Không redirect - có thể là lỗi network tạm thời
         }
       }
     };
