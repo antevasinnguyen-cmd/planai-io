@@ -333,6 +333,15 @@ export async function POST(request: NextRequest) {
       ...extracted 
     }
 
+    // CRITICAL: Log tier info for debugging Free vs Paid issue
+    logger.info('FAST_GENERATE_TIER_INFO', {
+      tier,
+      expectedWordRange: tier === 'free' ? '3000-5000' : '20000-50000',
+      expectedSections: tier === 'free' ? 9 : 24,
+      userId: auth.user.id,
+      route: 'generate-fast'
+    })
+
     // Log extracted data for debugging
     logger.info('FAST_GENERATE_EXTRACTED_DATA', {
       income: extracted.income,

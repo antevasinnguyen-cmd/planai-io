@@ -336,18 +336,27 @@ export default function GeneratePlanPage() {
         tier = undefined
       }
       
-      // If tier query failed, try to get from API response or assume basic for paid users
-      // This is a fallback - the API will verify the actual tier
+      // CRITICAL: If tier query failed, DEFAULT TO FREE TIER (not paid!)
+      // This prevents Free users from accidentally using paid tier format
       if (!tier) {
-        console.warn('=== GENERATE: Tier query failed, will let API determine tier ===')
-        // Default to background job (paid route) - API will validate
-        // If user is actually free tier, API will handle it
-        useBackgroundJob = true
+        console.warn('=== GENERATE: Tier query failed, defaulting to FREE tier ===')
+        tier = 'free'
+        useBackgroundJob = false
       } else {
         useBackgroundJob = tier !== 'free'
       }
       
-      const apiRoute = useBackgroundJob ? '/api/plans/generate-background' : '/api/plans/generate-fast'
+      // Double-check: Free tier MUST use generate-fast route
+      const apiRoute = (tier === 'free' || !useBackgroundJob) 
+        ? '/api/plans/generate-fast' 
+        : '/api/plans/generate-background'
+      
+      console.log('=== GENERATE: Route selection ===', { 
+        tier, 
+        useBackgroundJob, 
+        apiRoute,
+        reason: tier === 'free' ? 'FREE_TIER_FAST_ROUTE' : 'PAID_TIER_BACKGROUND_ROUTE'
+      })
 
       setStatus(useBackgroundJob ? 'Hệ thống AI đang xử lý (có thể mất tới 5 phút)...' : 'Hệ thống AI đang xử lý...')
       setProgress(useBackgroundJob ? 10 : 5)

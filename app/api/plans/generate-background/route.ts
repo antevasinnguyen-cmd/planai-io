@@ -140,6 +140,15 @@ export async function POST(request: NextRequest) {
       tier
     })
     
+    // CRITICAL: Log tier info for debugging Free vs Paid issue
+    logger.info('BG_GENERATE_TIER_INFO', {
+      tier,
+      expectedWordRange: tier === 'free' ? '3000-5000' : '20000-50000',
+      expectedSections: tier === 'free' ? 9 : 24,
+      userId: user.id,
+      route: 'generate-background'
+    })
+    
     const enrichedCollectedInfo = { 
       ...(collectedInfo || {}), 
       maxWords: tierLimits.words, 
