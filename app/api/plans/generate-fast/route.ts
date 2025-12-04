@@ -247,6 +247,8 @@ async function updatePartialPlan(admin: any, planId: string, progress: number, c
 }
 
 export async function POST(request: NextRequest) {
+  let admin: any = null
+  let planId: string = ''
   try {
     logger.info('FAST_GENERATE_START', {})
     
@@ -354,7 +356,6 @@ export async function POST(request: NextRequest) {
     // Legacy prompts removed. Use unified generator below.
 
     // Create partial plan first to avoid timeout issues
-    let admin
     try {
       admin = getAdminClient()
       if (!admin) {
@@ -376,7 +377,6 @@ export async function POST(request: NextRequest) {
     // Use userId directly for plan creation (simpler approach)
     const userId = auth.user.id
     const profileIdForPlan = userId
-    let planId: string
     try {
       logger.info('FAST_GENERATE_CREATE_PARTIAL_START', { userId, planName, goals })
       planId = await createPartialPlan(admin, profileIdForPlan, planName, goals, collectedInfo)
@@ -491,6 +491,22 @@ export async function POST(request: NextRequest) {
       name: error?.name,
       code: error?.code
     })
+
+    // Cleanup partial plan if generation failed after it was created
+    if (admin && planId) {
+      try {
+        await (admin as any)
+          .from('plans')
+          .delete()
+          .eq('id', planId)
+      } catch (cleanupError: any) {
+        logger.error('FAST_GENERATE_CLEANUP_ERROR', {
+          error: String(cleanupError?.message || cleanupError),
+          planId
+        })
+      }
+    }
+
     return NextResponse.json(
       { 
         error: 'Generation failed', 

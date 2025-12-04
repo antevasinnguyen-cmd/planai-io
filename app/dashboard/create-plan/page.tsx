@@ -546,7 +546,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     
     const enrichedCollectedInfo = {
       ...currentCollectedInfo,
-      chat_summary: chatSummary
+      chat_summary: chatSummary,
+      tier: subscription?.tier || 'free'
     }
 
     const planData = {
