@@ -132,6 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Lưu thông báo thành công và email người dùng
           localStorage.setItem('auth_success', 'true')
           localStorage.setItem('auth_user_email', session.user.email || '')
+          
+          // CRITICAL: Set flag để track rằng user đã từng login thành công
+          // Điều này giúp phân biệt user đã login vs chưa từng login
+          localStorage.setItem('auth_was_logged_in', 'true')
 
           // CRITICAL FIX: Không redirect từ AuthContext
           // Middleware sẽ xử lý redirect logic
@@ -139,10 +143,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!isEmailVerified(session.user)) {
             console.log('=== AUTHCONTEXT: SIGNED_IN - Email chưa xác thực ===')
           }
+        // CRITICAL FIX: Chỉ redirect về trang chủ khi thực sự đã đăng nhập trước đó
+        // Không redirect khi user đang ở trang login (chưa từng login)
         } else if (event === 'SIGNED_OUT') {
           console.log('=== AUTHCONTEXT: SIGNED_OUT event ===')
-          if (typeof window !== 'undefined') {
-            window.location.href = '/'
+          
+          // Chỉ redirect về trang chủ nếu user đã từng login trước đó
+          // Không redirect nếu user đang ở trang login/signup (chưa từng login)
+          const wasLoggedIn = localStorage.getItem('auth_was_logged_in')
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+          
+          if (wasLoggedIn === 'true' && currentPath !== '/login' && currentPath !== '/signup') {
+            console.log('=== AUTHCONTEXT: Redirect về trang chủ do đã login trước đó ===')
+            if (typeof window !== 'undefined') {
+              window.location.href = '/'
+            }
+          } else {
+            console.log('=== AUTHCONTEXT: Không redirect - user chưa từng login hoặc đang ở trang auth ===')
+            // Xóa flag để tránh redirect không mong muốn
+            localStorage.removeItem('auth_was_logged_in')
           }
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('=== AUTHCONTEXT: TOKEN_REFRESHED event ===')
@@ -165,6 +184,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(`pending_plan_${userId}`)
         console.log(`=== AUTHCONTEXT: Đã xóa dữ liệu của user ${userId} ===`)
       }
+      
+      // Xóa flag đăng nhập để reset trạng thái
+      localStorage.removeItem('auth_was_logged_in')
       
       await supabase.auth.signOut()
       setUser(null)
