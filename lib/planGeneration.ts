@@ -943,6 +943,22 @@ export async function generateLongPlanMultiStep(
     if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)} tỷ VNĐ`
     return `${Math.round(v / 1_000_000)} triệu VNĐ`
   }
+  
+  // CRITICAL: Extract the last AI response from chat for accurate data
+  const lastAIResponse = (() => {
+    const aiMarker = '🤖 AI:'
+    const parts = chatSummary.split(aiMarker)
+    if (parts.length > 1) {
+      // Get the last AI response
+      const lastPart = parts[parts.length - 1]
+      // Cut at next user message if exists
+      const userMarker = '👤 User:'
+      const userIdx = lastPart.indexOf(userMarker)
+      return userIdx > 0 ? lastPart.substring(0, userIdx).trim() : lastPart.trim()
+    }
+    return ''
+  })()
+  
   const userContext = `Thông tin người dùng:
 - Mục tiêu: ${goal}
 - Thu nhập hiện tại: ${income}
@@ -955,7 +971,12 @@ ${riskToleranceVal ? `- Mức chịu rủi ro: ${riskToleranceVal}` : ''}
 ${typeof freeHoursPerWeekVal === 'number' ? `- Giờ rảnh/tuần: ${freeHoursPerWeekVal}` : ''}
 ${debtsVndVal ? `- Nợ hiện có: ${fmtVND(debtsVndVal)}` : ''}
 ${assetsValueVndVal ? `- Tổng tài sản: ${fmtVND(assetsValueVndVal)}` : ''}
-${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.join(', ')}` : ''}`
+${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.join(', ')}` : ''}
+
+---
+🚨 LỊCH SỬ CHAT (NGUỒN DỮ LIỆU CHÍNH XÁC - KHÔNG ĐƯỢC BỊA ĐẶT):
+${chatSummary.slice(0, 8000)}
+---`
   
   // Use FINANCIAL_PLAN prompt from prompts.ts (includes MANDATORY OUTPUT INSTRUCTION)
   const systemPrompt = getFinancialPlanSystemPrompt()
@@ -998,27 +1019,58 @@ ${assetsCategoriesVal.length ? `- Danh mục tài sản: ${assetsCategoriesVal.j
     const displayGoal = fullGoalDescription || goal
     
     const prompts: any = {
-      profile: `Viết phần "Tình Hình Hiện Tại" với format sau:
+      profile: `🚨 QUAN TRỌNG: Phần này PHẢI sử dụng CHÍNH XÁC thông tin từ lịch sử chat. TUYỆT ĐỐI KHÔNG được bịa đặt, giả định, hoặc thêm thông tin mà user KHÔNG cung cấp.
 
-**Tình Hình Hiện Tại:**
-• Thu nhập hiện tại: ${income}
-• Tiết kiệm hiện có: ${savings}
-• Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
-• Thời gian thực hiện: ${timeline}
+⚠️ QUY TẮC BẮT BUỘC:
+1. CHỈ sử dụng thông tin user ĐÃ NÓI trong chat
+2. KHÔNG được tự thêm mục tiêu (như mua nhà, mua xe) nếu user KHÔNG đề cập
+3. KHÔNG được giả định số tiền nếu user KHÔNG nói rõ
+4. Nếu thiếu thông tin, ghi rõ "chưa được cung cấp" thay vì bịa
+5. Mục tiêu tài chính = CHÍNH XÁC những gì user nói (ví dụ: "thu nhập 1 tỷ/tháng" thì ghi đúng như vậy)
 
-**Mục Tiêu Tài Chính:**
-${displayGoal}
+📋 TRÍCH XUẤT TỪ CHAT:
+- Thu nhập hiện tại: ${income}
+- Tiết kiệm hiện có: ${savings}
+- Kỹ năng: ${skills.join(', ') || 'Đang phát triển'}
+- Thời gian mục tiêu: ${timeline}
+- Mục tiêu tài chính (CHÍNH XÁC từ user): ${displayGoal}
 
-**Khoảng Cách Cần Vượt Qua:**
-Tính toán số tiền cần đạt thêm và số tiền cần tiết kiệm mỗi tháng.
+📝 FORMAT YÊU CẦU:
+
+**Tình Hình Hiện Tại**
+• Thu nhập hiện tại: [số liệu CHÍNH XÁC từ chat]
+• Tiết kiệm hiện có: [số liệu CHÍNH XÁC từ chat]
+• Nghề nghiệp/Kỹ năng: [thông tin CHÍNH XÁC từ chat]
+
+**Mục Tiêu Tài Chính**
+• Thu nhập mục tiêu: [CHÍNH XÁC từ chat - ví dụ: 1 tỷ VNĐ/tháng]
+• Thời gian hoàn thành: [CHÍNH XÁC từ chat - ví dụ: 2-3 năm]
+
+**Tổng hợp tài chính:**
+• Tiết kiệm hiện tại: [số liệu]
+• Mục tiêu thu nhập: [phân tích ngắn gọn về tính khả thi]
+
+**Cần đạt thêm:**
+[Phân tích khoảng cách và chiến lược cần thiết - DỰA TRÊN thông tin user cung cấp]
+
+**Một số chiến lược để đạt được mục tiêu:**
+[Liệt kê 3-4 chiến lược CỤ THỂ dựa trên kỹ năng và hoàn cảnh của user]
 
 KHÔNG lặp lại tiêu đề section. KHÔNG viết "Cảm ơn bạn đã chia sẻ". Đi thẳng vào nội dung.`,
-      goals: `Viết phần "Phân Tích Mục Tiêu" cho: ${displayGoal}
+      goals: `🚨 QUAN TRỌNG: CHỈ phân tích mục tiêu mà user ĐÃ NÓI trong chat. TUYỆT ĐỐI KHÔNG được bịa thêm mục tiêu.
+
+⚠️ QUY TẮC BẮT BUỘC:
+1. CHỈ liệt kê mục tiêu user ĐÃ ĐỀ CẬP (ví dụ: "thu nhập 1 tỷ/tháng trong 2-3 năm")
+2. KHÔNG được tự thêm mục tiêu như "mua nhà", "mua xe", "tiết kiệm X tỷ" nếu user KHÔNG nói
+3. Nếu user chỉ nói 1 mục tiêu, chỉ phân tích 1 mục tiêu đó
+4. KHÔNG giả định động lực - chỉ dùng thông tin user cung cấp
+
+📋 MỤC TIÊU TỪ CHAT: ${displayGoal}
 
 Nội dung cần có:
-1. Liệt kê từng mục tiêu với số tiền cụ thể
-2. Phân tích động lực và lý do
-3. Đánh giá theo tiêu chí SMART
+1. Liệt kê CHÍNH XÁC mục tiêu user đã nói (KHÔNG thêm bớt)
+2. Phân tích tính khả thi dựa trên thu nhập hiện tại: ${income}
+3. Đánh giá timeline: ${timeline}
 4. Tính khoảng cách so với hiện tại (tiết kiệm: ${savings})
 
 KHÔNG lặp lại phần "Tình Hình Hiện Tại" đã viết ở section trước. Chỉ tập trung vào phân tích mục tiêu.`,
