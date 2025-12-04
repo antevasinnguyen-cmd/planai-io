@@ -988,8 +988,8 @@ ${chatSummary.slice(0, 8000)}
     { key: 'current', title: '3. Hiện trạng & khoảng cách mục tiêu', weight: 3 },
     { key: 'models', title: '4. Mô hình tăng thu nhập phù hợp', weight: 3 },
     { key: 'saving', title: '5. Kế hoạch tiết kiệm & đầu tư', weight: 3 },
-    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 4 },
-    { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 2 },
+    { key: 'plan', title: '6. Kế hoạch hành động & timeline', weight: 5 },
+    { key: 'learning', title: '7. Tài liệu học tập & nguồn lực', weight: 3 },
     { key: 'mindset', title: '8. Tâm lý & Tư duy thành công', weight: 2 },
     { key: 'conclusion', title: '9. Kết luận & hành động ngay', weight: 1 }
   ]
@@ -1091,29 +1091,53 @@ Nội dung cần có:
 KHÔNG lặp lại nội dung từ section 1 và 2. Tập trung vào phân tích GAP và lộ trình.`,
       models: `Đề xuất mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${displayGoal}.`,
       saving: `Lập kế hoạch tiết kiệm và đầu tư để đạt ${displayGoal} trong ${timeline}.`,
-      plan: `Tạo kế hoạch hành động chi tiết cho ${timeline}. Chia theo năm, quý, tháng.`,
-      learning: `Liệt kê tài liệu học tập. KHÔNG dùng link. Chỉ cung cấp từ khoá tìm kiếm:
+      plan: `Viết phần "Kế hoạch hành động & timeline" CHI TIẾT cho ${timeline} để đạt mục tiêu: ${displayGoal}.
 
-★ YouTube:
-- "${skills[0] || 'digital marketing'} for beginners"
-- "how to ${goal.toLowerCase().replace(/[^a-z0-9 ]/g, '')}"
-- "passive income strategies Vietnam"
+QUY TẮC:
+- Tập trung vào hành động thực tế, không nói lý thuyết chung chung.
+- Luôn gắn hành động với hoàn cảnh thu nhập ${income}, tiết kiệm ${savings} và kỹ năng ${skills.join(', ') || 'đang phát triển'}.
+- Chia rõ theo mốc thời gian: 0-3 tháng, 3-6 tháng, 6-12 tháng (và xa hơn nếu phù hợp).
 
-★ Coursera:
-- "financial planning fundamentals"
-- "${skills[0] || 'marketing'} specialization"
+CẤU TRÚC BẮT BUỘC:
+1. Đoạn mở đầu 2–3 câu tóm tắt chiến lược tổng thể.
+2. Mục "**Lộ trình theo mốc thời gian**" gồm ít nhất:
+   - Hành động 1–3 cho 0–3 tháng (rất cụ thể, dễ bắt đầu).
+   - Hành động 4–6 cho 3–6 tháng.
+   - Hành động 7–8 (hoặc nhiều hơn) cho 6–12 tháng.
+3. Mỗi hành động viết theo format:
+   - Hành động X: [mô tả cụ thể]
+   - Mục tiêu: [...]
+   - KPI: [...]
+   - Deadline: [...]
+4. Kết thúc bằng 1 đoạn ngắn giải thích: "Nếu chỉ có 2–3 giờ/tuần" thì nên ưu tiên hành động nào.
 
-★ LinkedIn Learning:
-- "business growth strategies"
-- "personal finance mastery"
+KHÔNG viết tiêu đề section, KHÔNG nhắc lại các heading 1–5,7–9. Đi thẳng vào nội dung.`,
+      learning: `Viết phần "Tài liệu học tập & nguồn lực" dành cho người dùng gói Free muốn nghiêm túc đạt mục tiêu: ${displayGoal}.
 
-★ Google Digital Garage:
-- "digital marketing basics"
-- "grow your business online"
+MỤC TIÊU:
+- Giúp người đọc biết RÕ nên học gì, trên nền tảng nào, để tiến gần hơn tới mục tiêu.
+- Nội dung phải thực tế, có thể tự tìm kiếm được.
 
-★ Brandcamp.asia:
-- "marketing căn bản"
-- "xây dựng thương hiệu cá nhân"`,
+YÊU CẦU BẮT BUỘC:
+- KHÔNG dùng link cụ thể (URL). CHỈ ghi tên tài liệu và TỪ KHOÁ TÌM KIẾM.
+- Tối thiểu 5 gợi ý (Gợi ý 1, Gợi ý 2, ..., Gợi ý 5), tối đa khoảng 10 gợi ý.
+- Mỗi gợi ý gắn với 1 kỹ năng hoặc mục tiêu cụ thể (ưu tiên các kỹ năng trong: ${skills.join(', ') || 'digital marketing, kinh doanh online'}).
+- Ưu tiên các loại nguồn: Khoá học online, sách, YouTube channel, podcast, công cụ/website thực hành.
+
+FORMAT BẮT BUỘC (Markdown, dạng danh sách gạch đầu dòng, giữ đúng cấu trúc):
+- Gợi ý 1: [Loại nguồn: Khoá học/Sách/YouTube/Podcast/Công cụ]
+  - Tên: [Tên tài liệu cụ thể]
+  - Từ khoá tìm kiếm: [câu tiếng Anh hoặc tiếng Việt có thể copy dán vào ô tìm kiếm]
+  - Lý do nên học: [giải thích ngắn gọn]
+  - Cách áp dụng vào mục tiêu: [liên hệ với mục tiêu ${displayGoal}]
+- Gợi ý 2: [...]
+- Gợi ý 3: [...]
+- Gợi ý 4: [...]
+- Gợi ý 5: [...]
+
+Nếu còn dung lượng, có thể thêm Gợi ý 6–7–8, nhưng KHÔNG được ít hơn 5 gợi ý.
+
+KHÔNG viết link URL. CHỈ viết tên + từ khoá tìm kiếm dễ hiểu.`,
       mindset: `Tư vấn tâm lý để đạt ${goal}. Cách vượt khó khăn và duy trì động lực.`,
       conclusion: `Tóm tắt kế hoạch và 3 hành động cần làm ngay để bắt đầu.`,
       // Paid-tier specialized prompts (24+)
