@@ -208,9 +208,10 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
         </div>
       );
     } else if ([4,5,6,7].includes(sn)) {
-      // Chỉ hiển thị 60% đầu, phần còn lại làm mờ + CTA
+      // Chỉ hiển thị một phần đầu, phần còn lại làm mờ + CTA
       const lines = section.content.split('\n');
-      const cutoff = Math.max(1, Math.floor(lines.length * 0.6));
+      const ratio = sn === 7 ? 0.7 : 0.6;
+      const cutoff = Math.max(2, Math.floor(lines.length * ratio));
       const visible = lines.slice(0, cutoff).join('\n');
       const hidden = lines.slice(cutoff).join('\n');
       return (

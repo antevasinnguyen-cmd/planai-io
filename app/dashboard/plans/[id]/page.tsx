@@ -36,19 +36,21 @@ export default function PlanViewEnhanced() {
   const [subscription, setSubscription] = useState<any>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeReason, setUpgradeReason] = useState<'spiritual' | 'export' | null>(null)
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
   const planId = params.id as string
 
   useEffect(() => {
+    if (authLoading) {
+      return
+    }
     if (!user) {
-      router.push('/login')
       return
     }
     loadPlan()
     loadSubscription()
-  }, [user, planId, router])
+  }, [user, planId, router, authLoading])
 
   const loadSubscription = async () => {
     try {
