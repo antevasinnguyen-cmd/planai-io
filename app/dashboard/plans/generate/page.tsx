@@ -62,29 +62,6 @@ export default function GeneratePlanPage() {
   const eventSourceRef = useRef<EventSource | null>(null)
   const generationStartedRef = useRef<boolean>(false) // CRITICAL: Lock to prevent duplicate generation
 
-  const cancelCurrentJob = async (id: string | null) => {
-    try {
-      if (!id) return
-      if (jobStatus === 'completed') return
-      const userId = user?.id || 'anonymous'
-      const payload = JSON.stringify({ job_id: id })
-      if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
-        const blob = new Blob([payload], { type: 'application/json' })
-        navigator.sendBeacon('/api/plans/cancel', blob)
-      } else {
-        await fetch('/api/plans/cancel', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: payload,
-        })
-      }
-      // local cleanup
-      sessionStorage.removeItem(`plan_job_${userId}`)
-      clearJobMeta(userId)
-    } catch {}
-  }
-
   const startSSE = (id: string) => {
     try {
       if (eventSourceRef.current) {
@@ -244,31 +221,9 @@ export default function GeneratePlanPage() {
     }
   }, [user, router])
 
-  // Cancel when tab/window is ACTUALLY closed (not just blurred)
-  // Only cancel on beforeunload if user is closing browser/tab, not switching tabs
-  useEffect(() => {
-    let isClosing = false
-    
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only cancel if job is still processing
-      if (jobStatus === 'processing' || jobStatus === 'pending') {
-        isClosing = true
-        // Try to cancel, but don't wait for response
-        try {
-          const payload = JSON.stringify({ job_id: jobId })
-          if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
-            const blob = new Blob([payload], { type: 'application/json' })
-            navigator.sendBeacon('/api/plans/cancel', blob)
-          }
-        } catch {}
-      }
-    }
-    
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
-    }
-  }, [jobId, jobStatus])
+  // CRITICAL: Do NOT cancel job on beforeunload
+  // Background job must continue even if user closes tab/browser
+  // Job will complete in background and be available when user returns to dashboard
 
   // Timer to update elapsed seconds
   useEffect(() => {
@@ -794,10 +749,9 @@ export default function GeneratePlanPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f0f] flex items-center justify-center p-6">
       <div className="max-w-md w-full">
-        {/* Back button */}
+        {/* Back button - do NOT cancel job, let it continue in background */}
         <Link 
           href="/dashboard/create-plan" 
-          onClick={() => { if (jobStatus !== 'completed') cancelCurrentJob(jobId) }}
           className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
