@@ -271,8 +271,31 @@ async function processJobInBackground(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
   const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
   
+  // Set timeout for entire job processing (10 minutes for free tier, 25 minutes for paid)
+  const tier = String(collectedInfo?.tier || 'free')
+  const timeoutMs = tier === 'free' ? 10 * 60 * 1000 : 25 * 60 * 1000
+  let timeoutHandle: NodeJS.Timeout | null = null
+  
   try {
-    logger.info('BG_PROCESS_START', { jobId, userId })
+    logger.info('BG_PROCESS_START', { jobId, userId, tier, timeoutMs })
+    
+    // Set timeout to auto-fail job if it takes too long
+    timeoutHandle = setTimeout(async () => {
+      logger.error('BG_JOB_TIMEOUT', { jobId, userId, tier, timeoutMs })
+      try {
+        const client = admin || supabase
+        await client
+          .from('plan_jobs')
+          .update({ 
+            status: 'failed', 
+            error_message: `Job timeout after ${timeoutMs / 1000}s`, 
+            completed_at: new Date().toISOString() 
+          })
+          .eq('id', jobId)
+      } catch (e) {
+        logger.error('BG_TIMEOUT_UPDATE_FAIL', { jobId, error: String(e) })
+      }
+    }, timeoutMs)
 
     const getJobStatus = async (): Promise<string | null> => {
       try {
@@ -365,7 +388,6 @@ async function processJobInBackground(
 
     // Generate plan using unified clean generator (no legacy prompts)
     logger.info('BG_GENERATOR_V4_START', { jobId })
-    const tier = String(collectedInfo?.tier || 'free')
     const limits = getSubscriptionLimits(tier)
     const safeTitle = planName || 'Kế hoạch tài chính'
     const safeGoals = goals || collectedInfo?.goal || 'Kế hoạch tài chính'
@@ -479,6 +501,11 @@ async function processJobInBackground(
         .from('plan_jobs')
         .update({ status: 'failed', error_message: errMsg, completed_at: new Date().toISOString() })
         .eq('id', jobId)
+    }
+  } finally {
+    // Clear timeout to prevent memory leak
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle)
     }
   }
 }
