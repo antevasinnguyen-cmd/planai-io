@@ -787,26 +787,6 @@ export default function DashboardFinal() {
             </div>
           )}
 
-          {/* Empty State */}
-          {plans.length === 0 && (
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center mb-8">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Chưa có kế hoạch nào</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Bắt đầu tạo kế hoạch tài chính đầu tiên của bạn với AI
-              </p>
-              <Link
-                href="/dashboard/create-plan"
-                className="inline-flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-              >
-                <Target className="w-5 h-5" />
-                <span>Tạo Plan ngay</span>
-              </Link>
-            </div>
-          )}
-
           {/* Hướng dẫn sử dụng - Ở dưới cùng */}
           <h2 className="text-2xl font-bold mb-6">Hướng dẫn sử dụng</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
