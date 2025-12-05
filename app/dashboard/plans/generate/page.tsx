@@ -175,6 +175,43 @@ export default function GeneratePlanPage() {
     if (existingJobId) {
       console.log('Found existing job, resuming:', existingJobId)
       setJobId(existingJobId)
+      
+      // Always check job status from backend first (in case it was cancelled/failed)
+      const checkJobStatus = async () => {
+        try {
+          const { supabase } = await import('@/lib/supabase')
+          const { data: sessionData } = await supabase.auth.getSession()
+          
+          const headers: any = {}
+          if (sessionData?.session?.access_token) {
+            headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+          }
+          
+          const res = await fetch(`/api/plans/job-status?job_id=${existingJobId}`, {
+            credentials: 'include',
+            headers
+          })
+          
+          if (res.ok) {
+            const jobData = await res.json()
+            console.log('Job status from backend:', jobData.status)
+            
+            // If job was cancelled/failed, show error
+            if (jobData.status === 'cancelled' || jobData.status === 'failed') {
+              setJobStatus(jobData.status)
+              setError(jobData.error_message || 'Tạo kế hoạch bị hủy hoặc thất bại')
+              sessionStorage.removeItem(`plan_job_${userId}`)
+              clearJobMeta(userId)
+              return
+            }
+          }
+        } catch (err) {
+          console.error('Error checking job status on resume:', err)
+        }
+      }
+      
+      checkJobStatus()
+      
       const restoredStatus = storedMeta?.status || 'processing'
       setJobStatus(restoredStatus)
 
@@ -197,23 +234,40 @@ export default function GeneratePlanPage() {
       startPlanGeneration()
     }
 
-    // Cleanup on unmount: cancel job if leaving before completion
+    // Cleanup on unmount: DO NOT cancel job, just close connections
+    // Job should continue processing in background even if user navigates away
+    // Only cancel on explicit user action or beforeunload
     return () => {
       if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current) }
       if (eventSourceRef.current) { try { eventSourceRef.current.close() } catch {} ; eventSourceRef.current = null }
-      if (jobStatus !== 'completed') { cancelCurrentJob(jobId) }
+      // DO NOT call cancelCurrentJob here - let background job continue
     }
   }, [user, router])
 
-  // Cancel when tab/window is closed or navigated away
+  // Cancel when tab/window is ACTUALLY closed (not just blurred)
+  // Only cancel on beforeunload if user is closing browser/tab, not switching tabs
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (jobStatus !== 'completed') {
-        cancelCurrentJob(jobId)
+    let isClosing = false
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only cancel if job is still processing
+      if (jobStatus === 'processing' || jobStatus === 'pending') {
+        isClosing = true
+        // Try to cancel, but don't wait for response
+        try {
+          const payload = JSON.stringify({ job_id: jobId })
+          if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
+            const blob = new Blob([payload], { type: 'application/json' })
+            navigator.sendBeacon('/api/plans/cancel', blob)
+          }
+        } catch {}
       }
     }
+    
     window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
   }, [jobId, jobStatus])
 
   // Timer to update elapsed seconds
