@@ -12,14 +12,46 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Use createRouteHandlerClient directly for better auth handling
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    // Try to get user from Authorization header first (for fetch requests)
+    let user = null
+    const authHeader = request.headers.get('Authorization')
     
-    // Get user from session
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (!user || authError) {
-      logger.warn('JOB_STATUS_UNAUTHORIZED', { authError: authError?.message })
+    logger.info('JOB_STATUS_AUTH_ATTEMPT', { hasAuthHeader: !!authHeader })
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      // Use admin client with token
+      const token = authHeader.slice(7)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      
+      if (supabaseUrl && supabaseKey) {
+        const { createClient } = await import('@supabase/supabase-js')
+        const admin = createClient(supabaseUrl, supabaseKey)
+        const { data: { user: tokenUser }, error: tokenError } = await admin.auth.getUser(token)
+        if (tokenUser && !tokenError) {
+          user = tokenUser
+          logger.info('JOB_STATUS_AUTH_TOKEN_SUCCESS', { userId: user.id })
+        } else {
+          logger.warn('JOB_STATUS_AUTH_TOKEN_FAILED', { error: tokenError?.message })
+        }
+      }
+    }
+    
+    // Fallback to session cookies
+    if (!user) {
+      const cookieStore = cookies()
+      const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+      const { data: { user: sessionUser }, error: authError } = await supabase.auth.getUser()
+      if (sessionUser && !authError) {
+        user = sessionUser
+        logger.info('JOB_STATUS_AUTH_COOKIE_SUCCESS', { userId: user.id })
+      } else {
+        logger.warn('JOB_STATUS_AUTH_COOKIE_FAILED', { error: authError?.message })
+      }
+    }
+    
+    if (!user) {
+      logger.warn('JOB_STATUS_UNAUTHORIZED', { hasAuthHeader: !!authHeader })
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -36,6 +68,10 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Create supabase client for database query
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Get job status
     const { data: job, error } = await supabase
