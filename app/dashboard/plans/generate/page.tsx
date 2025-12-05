@@ -363,40 +363,31 @@ export default function GeneratePlanPage() {
         
         if (subError) {
           console.warn('=== GENERATE: Tier query error ===', { error: subError })
-          // Don't default to free - keep trying other methods
-          tier = undefined
+          tier = 'free'
         } else if (Array.isArray(subData) && subData.length > 0) {
           tier = subData[0]?.tier || 'free'
           console.log('=== GENERATE: Tier check success ===', { tier, subscription: subData[0] })
         } else {
           console.warn('=== GENERATE: No subscription found ===', { subData })
-          tier = undefined
+          tier = 'free'
         }
       } catch (tierError) {
         console.warn('=== GENERATE: Tier check exception ===', { error: tierError })
-        tier = undefined
-      }
-      
-      // CRITICAL: If tier query failed, DEFAULT TO FREE TIER (not paid!)
-      // This prevents Free users from accidentally using paid tier format
-      if (!tier) {
-        console.warn('=== GENERATE: Tier query failed, defaulting to FREE tier ===')
         tier = 'free'
-        useBackgroundJob = false
-      } else {
-        useBackgroundJob = tier !== 'free'
       }
       
-      // Double-check: Free tier MUST use generate-fast route
-      const apiRoute = (tier === 'free' || !useBackgroundJob) 
-        ? '/api/plans/generate-fast' 
-        : '/api/plans/generate-background'
+      // CRITICAL: All tiers now use background job to avoid Vercel 60s timeout
+      useBackgroundJob = true
+      
+      // CRITICAL: Use background job for ALL tiers to avoid Vercel 60s timeout
+      // Free tier also uses background job now (returns immediately with job_id)
+      const apiRoute = '/api/plans/generate-background'
       
       console.log('=== GENERATE: Route selection ===', { 
         tier, 
         useBackgroundJob, 
         apiRoute,
-        reason: tier === 'free' ? 'FREE_TIER_FAST_ROUTE' : 'PAID_TIER_BACKGROUND_ROUTE'
+        reason: 'ALL_TIERS_USE_BACKGROUND_JOB_TO_AVOID_TIMEOUT'
       })
 
       setStatus(useBackgroundJob ? 'Hệ thống AI đang xử lý (có thể mất tới 5 phút)...' : 'Hệ thống AI đang xử lý...')
