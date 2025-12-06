@@ -429,7 +429,8 @@ export default function GeneratePlanPage() {
         console.log('=== GENERATE: API response received ===', { 
           status: res.status, 
           statusText: res.statusText,
-          ok: res.ok
+          ok: res.ok,
+          contentType: res.headers.get('content-type')
         })
       } catch (fetchError) {
         console.error('=== GENERATE: Network/Fetch Error ===', { 
@@ -471,6 +472,103 @@ export default function GeneratePlanPage() {
         return
       }
 
+      // Check if response is streaming (SSE) or JSON
+      const contentType = res.headers.get('content-type') || ''
+      
+      if (contentType.includes('text/event-stream')) {
+        // Handle streaming response - process SSE events
+        console.log('=== GENERATE: Processing streaming response ===')
+        setProgress(15)
+        setStatus('Đang tạo kế hoạch... (có thể mất 2-5 phút)')
+        
+        const reader = res.body?.getReader()
+        if (!reader) {
+          setError('Không thể đọc response từ server')
+          return
+        }
+        
+        const decoder = new TextDecoder()
+        let buffer = ''
+        
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n\n')
+            buffer = lines.pop() || '' // Keep incomplete line in buffer
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const eventData = JSON.parse(line.slice(6))
+                  console.log('=== GENERATE: SSE Event ===', eventData)
+                  
+                  if (eventData.type === 'started') {
+                    const newJobId = eventData.job_id
+                    setJobId(newJobId)
+                    setJobStatus('processing')
+                    setProgress(20)
+                    setStatus('Hệ thống AI đang xử lý...')
+                    
+                    // Save job metadata
+                    sessionStorage.setItem(`plan_job_${userId}`, newJobId)
+                    saveJobMeta(userId, {
+                      jobId: newJobId,
+                      startedAt: Date.now(),
+                      progress: 20,
+                      status: 'processing',
+                      statusText: 'Hệ thống AI đang xử lý...',
+                      elapsedSeconds: 0
+                    })
+                  } else if (eventData.type === 'completed') {
+                    setProgress(100)
+                    setStatus('Hoàn thành!')
+                    setJobStatus('completed')
+                    
+                    // Clear storage
+                    sessionStorage.removeItem(`plan_job_${userId}`)
+                    clearJobMeta(userId)
+                    localStorage.removeItem(`pending_plan_${userId}`)
+                    try { localStorage.removeItem('pending_plan_latest') } catch {}
+                    
+                    // Redirect to plan
+                    if (eventData.plan_id) {
+                      setTimeout(() => {
+                        router.push(`/dashboard/plans/${eventData.plan_id}`)
+                      }, 1200)
+                    }
+                    return
+                  } else if (eventData.type === 'error') {
+                    setError(eventData.error || 'Có lỗi xảy ra khi tạo kế hoạch')
+                    setJobStatus('failed')
+                    return
+                  }
+                } catch (parseError) {
+                  console.warn('Failed to parse SSE event:', line)
+                }
+              }
+            }
+            
+            // Update progress while waiting
+            setProgress(prev => Math.min(prev + 1, 90))
+          }
+        } catch (streamError) {
+          console.error('Stream reading error:', streamError)
+          // Don't show error immediately - job might still be running
+          // Check job status via polling
+          const savedJobId = sessionStorage.getItem(`plan_job_${userId}`)
+          if (savedJobId) {
+            pollJobStatus(savedJobId)
+          } else {
+            setError('Mất kết nối với server. Vui lòng kiểm tra lại sau.')
+          }
+        }
+        return
+      }
+      
+      // Handle JSON response (fallback for non-streaming)
       const result = await res.json()
 
       // For fast route: result contains plan directly

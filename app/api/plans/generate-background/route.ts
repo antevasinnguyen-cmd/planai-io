@@ -247,18 +247,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Start background processing (don't await)
-    processJobInBackground(jobId, user.id, finalPlanName, finalGoals, enrichedCollectedInfo, authHeader)
-      .catch(error => logger.error('BG_JOB_ASYNC_FAIL', { jobId, error: String(error) }))
-
-    // Return immediately with job_id
-    return NextResponse.json(
-      { 
-        job_id: jobId,
-        message: 'Plan generation started. You can close this tab or continue browsing.'
-      },
-      { status: 202 } // 202 Accepted
-    )
+    // IMPORTANT: Vercel serverless functions terminate after response is sent
+    // We must use streaming to keep the connection alive while processing
+    // OR await the processing and return the result directly
+    
+    // Use streaming response to keep connection alive
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send initial response
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'started', job_id: jobId })}\n\n`))
+          
+          // Process the job (this will take time)
+          const result = await processJobInBackground(jobId, user.id, finalPlanName, finalGoals, enrichedCollectedInfo, authHeader)
+          
+          // Send completion
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'completed', job_id: jobId, plan_id: result?.planId })}\n\n`))
+          controller.close()
+        } catch (error: any) {
+          // Send error
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', job_id: jobId, error: error?.message || 'Unknown error' })}\n\n`))
+          controller.close()
+        }
+      }
+    })
+    
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      }
+    })
 
   } catch (error) {
     logger.error('BG_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
@@ -279,7 +301,7 @@ async function processJobInBackground(
   goals: string,
   collectedInfo: any,
   authHeader: string
-) {
+): Promise<{ planId: string } | null> {
   // Create an authenticated Supabase client using the passed token for RLS-compliant operations
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
@@ -333,7 +355,7 @@ async function processJobInBackground(
     const initialStatus = await getJobStatus()
     if (initialStatus === 'cancelled') {
       logger.info('BG_JOB_CANCELLED_EARLY', { jobId })
-      return
+      return null
     }
 
     // Update status to processing (prefer admin client to avoid RLS/token issues)
@@ -511,7 +533,7 @@ async function processJobInBackground(
       throw new Error(`Failed to update job status: ${statusUpdateError.message}`)
     }
     logger.info('BG_JOB_COMPLETED', { jobId, planId: planData.id })
-    return
+    return { planId: planData.id }
 
   } catch (error: any) {
     logger.error('BG_JOB_FAILED', { jobId, error: error?.message || String(error) })
@@ -529,6 +551,7 @@ async function processJobInBackground(
         .update({ status: 'failed', error_message: errMsg, completed_at: new Date().toISOString() })
         .eq('id', jobId)
     }
+    throw error // Re-throw to be caught by streaming handler
   } finally {
     // Clear timeout to prevent memory leak
     if (timeoutHandle) {
