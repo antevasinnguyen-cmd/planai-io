@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       
       // If payment successful, update user subscription
       if (status === 'completed') {
+        // 1. Update profiles table
         const { error: subscriptionError } = await supabase
           .from('profiles')
           .update({
@@ -83,6 +84,52 @@ export async function POST(request: NextRequest) {
         if (subscriptionError) {
           console.error('Subscription update error:', subscriptionError);
           return NextResponse.json({ error: 'Subscription update failed' }, { status: 500 });
+        }
+
+        // 2. Create or update subscription record
+        const now = new Date();
+        const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        
+        // Get subscription limits
+        const { getSubscriptionLimits } = await import('@/lib/supabase');
+        const limits = getSubscriptionLimits(payment.subscription_tier);
+        
+        // Check if subscription already exists
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', payment.user_id)
+          .eq('status', 'active')
+          .single();
+        
+        if (existingSub) {
+          // Update existing subscription
+          await supabase
+            .from('subscriptions')
+            .update({
+              tier: payment.subscription_tier,
+              plan_limit: limits.plans,
+              chat_limit: limits.chats,
+              current_period_end: endDate.toISOString(),
+              updated_at: now.toISOString()
+            })
+            .eq('id', existingSub.id);
+          console.log('Updated existing subscription:', { userId: payment.user_id, tier: payment.subscription_tier });
+        } else {
+          // Create new subscription
+          await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: payment.user_id,
+              tier: payment.subscription_tier,
+              status: 'active',
+              plan_limit: limits.plans,
+              chat_limit: limits.chats,
+              current_period_start: now.toISOString(),
+              current_period_end: endDate.toISOString(),
+              created_at: now.toISOString()
+            });
+          console.log('Created new subscription:', { userId: payment.user_id, tier: payment.subscription_tier });
         }
       }
       
@@ -114,7 +161,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
         }
 
-        // Update user subscription in profiles table
+        // 1. Update user subscription in profiles table
         const { error: subscriptionError } = await supabase
           .from('profiles')
           .update({
@@ -128,6 +175,52 @@ export async function POST(request: NextRequest) {
         if (subscriptionError) {
           console.error('Subscription update error:', subscriptionError);
           return NextResponse.json({ error: 'Subscription update failed' }, { status: 500 });
+        }
+
+        // 2. Create or update subscription record
+        const now = new Date();
+        const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        
+        // Get subscription limits
+        const { getSubscriptionLimits } = await import('@/lib/supabase');
+        const limits = getSubscriptionLimits(payment.subscription_tier);
+        
+        // Check if subscription already exists
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', payment.user_id)
+          .eq('status', 'active')
+          .single();
+        
+        if (existingSub) {
+          // Update existing subscription
+          await supabase
+            .from('subscriptions')
+            .update({
+              tier: payment.subscription_tier,
+              plan_limit: limits.plans,
+              chat_limit: limits.chats,
+              current_period_end: endDate.toISOString(),
+              updated_at: now.toISOString()
+            })
+            .eq('id', existingSub.id);
+          console.log('Updated existing subscription (SePay):', { userId: payment.user_id, tier: payment.subscription_tier });
+        } else {
+          // Create new subscription
+          await supabase
+            .from('subscriptions')
+            .insert({
+              user_id: payment.user_id,
+              tier: payment.subscription_tier,
+              status: 'active',
+              plan_limit: limits.plans,
+              chat_limit: limits.chats,
+              current_period_start: now.toISOString(),
+              current_period_end: endDate.toISOString(),
+              created_at: now.toISOString()
+            });
+          console.log('Created new subscription (SePay):', { userId: payment.user_id, tier: payment.subscription_tier });
         }
 
         return NextResponse.json({ success: true, message: 'Payment processed successfully' });
