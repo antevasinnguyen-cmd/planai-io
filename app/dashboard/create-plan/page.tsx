@@ -880,6 +880,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-xs text-gray-500 dark:text-gray-500">
+                    Bước 1: Trò chuyện với AI về mục tiêu, ước mơ và tình hình tài chính của bạn. Càng chia sẻ chi tiết, kế hoạch tạo ra càng chính xác.
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
                     Nhấn Enter để xuống dòng, Ctrl+Enter để gửi tin nhắn
                   </p>
                   {!canChat() && (
