@@ -17,8 +17,10 @@ export default function PremiumGate({ slug, title }: Props) {
   useEffect(() => {
     const run = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        console.log('[PremiumGate] User check:', { user: user?.id, error: userError })
         if (!user) {
+          console.log('[PremiumGate] No user, locking')
           setStatus('locked')
           return
         }
@@ -27,25 +29,40 @@ export default function PremiumGate({ slug, title }: Props) {
           .select('subscription_tier')
           .eq('id', user.id)
           .single()
+        console.log('[PremiumGate] Profile check:', { tier: profile?.subscription_tier, error })
         if (error) {
+          console.log('[PremiumGate] Profile error, setting error status')
           setStatus('error')
           return
         }
         const tier = (profile?.subscription_tier || 'free') as string
         const allowed = ['basic', 'pro'].includes(tier)
+        console.log('[PremiumGate] Tier check:', { tier, allowed })
         if (!allowed) {
+          console.log('[PremiumGate] Tier not allowed, locking')
           setStatus('locked')
           return
         }
-        const res = await fetch(`/api/premium/${slug}`)
+        // Get session for auth header
+        const { data: { session } } = await supabase.auth.getSession()
+        const headers: any = {}
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`
+        }
+        console.log('[PremiumGate] Fetching content with auth:', { slug, hasAuth: !!session?.access_token })
+        const res = await fetch(`/api/premium/${slug}`, { headers, credentials: 'include' })
+        console.log('[PremiumGate] Fetch response:', { status: res.status, ok: res.ok })
         if (!res.ok) {
+          console.log('[PremiumGate] Fetch failed, setting error status')
           setStatus('error')
           return
         }
         const text = await res.text()
+        console.log('[PremiumGate] Content loaded, unlocking')
         setContent(text)
         setStatus('unlocked')
       } catch (e) {
+        console.error('[PremiumGate] Error:', e)
         setStatus('error')
       }
     }
