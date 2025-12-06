@@ -33,7 +33,7 @@ const pricingTiers = [
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     features: [
       '40 Chat với AI lập kế hoạch',
-      'Tối đa 2 kế hoạch hoàn chỉnh mỗi chu kỳ 30 ngày',
+      'Tối đa 2 kế hoạch hoàn chỉnh',
       '1 Ebook plan cá nhân hóa độc quyền',
       'Phân tích đầy đủ + Lộ trình',
       'Đề xuất hành động để đạt được mục tiêu',
@@ -55,7 +55,7 @@ const pricingTiers = [
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
       '100 Chat với AI lập kế hoạch',
-      'Tối đa 4 kế hoạch hoàn chỉnh mỗi chu kỳ 30 ngày',
+      'Tối đa 4 kế hoạch hoàn chỉnh',
       '2 Ebook plan cá nhân hóa độc quyền',
       'Phân tích đầy đủ + Lộ trình',
       'Đề xuất hành động để đạt được mục tiêu',
@@ -196,7 +196,7 @@ export default function PricingPage() {
                         <div className="space-y-1">
                           <div className="flex items-baseline justify-center">
                             <span className="text-4xl font-bold text-gray-900">{tier.price.toLocaleString()}</span>
-                            <span className="text-gray-600 ml-2">VNĐ/tháng</span>
+                            <span className="text-gray-600 ml-2">VNĐ</span>
                           </div>
                         </div>
                       )}

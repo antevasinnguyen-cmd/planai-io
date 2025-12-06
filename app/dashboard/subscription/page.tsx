@@ -36,7 +36,7 @@ const pricingTiers = [
     id: 'basic',
     name: 'Gói 1',
     price: 249000,
-    duration: '30 ngày',
+    duration: 'Không hạn chế thời gian',
     features: {
       plans: 2,
       chats: 40,
@@ -47,7 +47,7 @@ const pricingTiers = [
     popular: false,
     detailedFeatures: [
       '40 Chat với AI lập kế hoạch',
-      'Tối đa 2 kế hoạch hoàn chỉnh mỗi chu kỳ 30 ngày',
+      'Tối đa 2 kế hoạch hoàn chỉnh',
       '1 Ebook plan cá nhân hóa độc quyền',
       'Phân tích đầy đủ + Lộ trình',
       'Đề xuất hành động để đạt được mục tiêu',
@@ -62,7 +62,7 @@ const pricingTiers = [
     id: 'pro',
     name: 'Gói 2 - Pro',
     price: 479000,
-    duration: '30 ngày',
+    duration: 'Không hạn chế thời gian',
     features: {
       plans: 4,
       chats: 100,
@@ -73,7 +73,7 @@ const pricingTiers = [
     popular: true,
     detailedFeatures: [
       '100 Chat với AI lập kế hoạch',
-      'Tối đa 4 kế hoạch hoàn chỉnh mỗi chu kỳ 30 ngày',
+      'Tối đa 4 kế hoạch hoàn chỉnh',
       '2 Ebook plan cá nhân hóa độc quyền',
       'Phân tích đầy đủ + Lộ trình',
       'Đề xuất hành động để đạt được mục tiêu',
