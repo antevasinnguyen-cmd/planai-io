@@ -32,7 +32,7 @@ export default function PremiumGate({ slug, title }: Props) {
           return
         }
         const tier = (profile?.subscription_tier || 'free') as string
-        const allowed = ['basic', 'pro', 'pro_max'].includes(tier)
+        const allowed = ['basic', 'pro'].includes(tier)
         if (!allowed) {
           setStatus('locked')
           return
@@ -70,7 +70,7 @@ export default function PremiumGate({ slug, title }: Props) {
         </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-2">Bài viết trả phí</h3>
         <p className="text-gray-600 mb-6">
-          Nội dung này chỉ dành cho người dùng đã đăng ký gói trả phí của PlanAI (Gói 1, Gói 2, hoặc Gói 3).
+          Nội dung này chỉ dành cho người dùng đã đăng ký gói trả phí của PlanAI (Gói 1 hoặc Gói 2).
         </p>
         <div className="flex items-center justify-center gap-3">
           <Link href="/login" className="px-5 py-3 rounded-xl bg-white border text-gray-700 hover:bg-gray-50">Đăng nhập</Link>

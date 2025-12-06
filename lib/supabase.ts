@@ -484,14 +484,13 @@ export const getUserSubscription = async (userId: string) => {
 
 export const getSubscriptionLimits = (tier: string) => {
   // Default limits (fallback if database doesn't have subscription)
-  // Updated per user requirements (Nov 13, 2025):
+  // Updated per user requirements (Dec 6, 2025):
   // Free: 4000 từ (giảm từ 5000 để tối ưu cost)
-  // Gói 1, 2, 3: Tối đa 50.000 từ mỗi bản kế hoạch
+  // Gói 1, 2: Tối đa 50.000 từ mỗi bản kế hoạch
   const defaultLimits = {
     'free': { plans: 1, chats: 5, words: 4000, allowSheets: false, allowNotion: false },        // Free tier: up to 4000 words (cost optimization)
     'basic': { plans: 2, chats: 40, words: 50000, allowSheets: true, allowNotion: true },       // Gói 1: 2 plans, Up to 50k words per plan
-    'pro': { plans: 4, chats: 100, words: 50000, allowSheets: true, allowNotion: true },        // Gói 2: 4 plans, Up to 50k words per plan
-    'pro_max': { plans: 5, chats: 270, words: 50000, allowSheets: true, allowNotion: true }     // Gói 3: Up to 50k words per plan
+    'pro': { plans: 4, chats: 100, words: 50000, allowSheets: true, allowNotion: true }         // Gói 2: 4 plans, Up to 50k words per plan
   }
   return defaultLimits[tier as keyof typeof defaultLimits] || defaultLimits.free
 }
@@ -505,8 +504,6 @@ export const getTierName = (tier: string) => {
       return 'Gói 1'
     case 'pro':
       return 'Gói 2'
-    case 'pro_max':
-      return 'Gói 3'
     default:
       return 'Free'
   }

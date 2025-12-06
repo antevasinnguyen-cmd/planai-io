@@ -30,7 +30,7 @@ export async function GET(
     }
 
     const tier = (profile?.subscription_tier || 'free') as string
-    const allowed = ['basic', 'pro', 'pro_max'].includes(tier)
+    const allowed = ['basic', 'pro'].includes(tier)
     if (!allowed) {
       return new NextResponse('Payment Required', { status: 402 })
     }
