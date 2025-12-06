@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Lock, CheckCircle2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 type Props = {
   slug: string
@@ -13,6 +13,9 @@ type Props = {
 export default function PremiumGate({ slug, title }: Props) {
   const [status, setStatus] = useState<'loading' | 'locked' | 'unlocked' | 'error'>('loading')
   const [content, setContent] = useState<string>('')
+  
+  // Use createClientComponentClient for proper session handling in Next.js App Router
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
     const run = async () => {
@@ -84,6 +87,7 @@ export default function PremiumGate({ slug, title }: Props) {
       }
     }
     run()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
   if (status === 'loading') {
