@@ -537,6 +537,7 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
   let plansError: any = null
   let wordsError: any = null
   let totalWords = 0
+  let usageStartDate: Date = new Date()
 
   // Prefer route-handler client (RLS via cookies) when in API context
   try {
@@ -594,80 +595,80 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
         .gte('created_at', usageStartDate.toISOString())
 
       totalWords = (wordsRes.data || []).reduce((sum: number, p: any) => sum + (p?.word_count || 0), 0)
+      
+      // If any query failed due to RLS, fall through to admin client
+      if (plansError || chatsRes.error || wordsRes.error) {
+        throw new Error('RLS query failed, using admin client fallback')
+      }
+      
       return {
         plans: planCount,
         chats: chatCount,
         words: totalWords,
-        error: plansError || chatsRes.error || wordsRes.error
+        error: null
       }
     }
   } catch (e) {
-    // Fall through to anon client path
+    console.log('RLS query failed, falling back to admin client:', e)
   }
 
-  // Fallback: Get subscription and determine usage period
-  const { data: subscriptions } = await supabase
-    .from('subscriptions')
-    .select('created_at, tier')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-  const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
-
-  // Determine usage start date (same logic as above)
-  let usageStartDate: Date
-  if (subscription?.tier && subscription.tier !== 'free') {
-    usageStartDate = new Date(subscription.created_at)
-  } else {
-    usageStartDate = new Date()
-    usageStartDate.setDate(1)
-    usageStartDate.setHours(0, 0, 0, 0)
-  }
-
-  // Count chat messages from usage start date (user messages only)
+  // Fallback: Use admin client to bypass RLS
   try {
-    const res = await supabase
+    const admin = getAdminClient()
+    const client = admin || supabase
+    
+    // Get subscription and determine usage period
+    const { data: subscriptions } = await client
+      .from('subscriptions')
+      .select('created_at, tier')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
+
+    // Determine usage start date (same logic as above)
+    let usageStartDate: Date
+    if (subscription?.tier && subscription.tier !== 'free') {
+      usageStartDate = new Date(subscription.created_at)
+    } else {
+      usageStartDate = new Date()
+      usageStartDate.setDate(1)
+      usageStartDate.setHours(0, 0, 0, 0)
+    }
+
+    // Count plans from usage start date
+    const plansCountRes = await client
+      .from('plans')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('created_at', usageStartDate.toISOString())
+    planCount = plansCountRes.count || 0
+    plansError = plansCountRes.error
+
+    // Count chat messages from usage start date (user messages only)
+    const chatsCountRes = await client
       .from('chat_messages')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('type', 'user')
       .gte('created_at', usageStartDate.toISOString())
+    chatCount = chatsCountRes.count || 0
+    chatsError = chatsCountRes.error
 
-    chatsError = res.error
-    if (chatsError) {
-      console.warn('getUserUsageStats: chat query error', chatsError)
-      // Fallback: try without type filter and count manually
-      const fallbackRes = await supabase
-        .from('chat_messages')
-        .select('id', { count: 'exact', head: false })
-        .eq('user_id', userId)
-        .gte('created_at', usageStartDate.toISOString())
+    // Sum word count from plans within usage period
+    const { data: wordsData, error: wordsErrorLocal } = await client
+      .from('plans')
+      .select('word_count')
+      .eq('user_id', userId)
+      .gte('created_at', usageStartDate.toISOString())
 
-      if (!fallbackRes.error) {
-        chatCount = fallbackRes.data?.filter((_, i) => i % 2 === 0).length || 0
-        chatsError = null
-      } else {
-        chatCount = fallbackRes.count || 0
-      }
-    } else {
-      chatCount = res.count || 0
-    }
+    totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
+    wordsError = wordsErrorLocal
   } catch (e) {
-    console.error('getUserUsageStats: chat query exception', e)
-    chatsError = e
+    console.error('Admin client fallback failed:', e)
   }
-
-  // Sum word count from plans within usage period
-  const { data: wordsData, error: wordsErrorLocal } = await supabase
-    .from('plans')
-    .select('word_count')
-    .eq('user_id', userId)
-    .gte('created_at', usageStartDate.toISOString())
-
-  totalWords = wordsData?.reduce((sum, plan) => sum + (plan.word_count || 0), 0) || 0
-  wordsError = wordsErrorLocal
 
   console.log('=== USER USAGE STATS ===', {
     userId,
