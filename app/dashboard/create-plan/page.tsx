@@ -399,19 +399,29 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   }
 
   const canCreatePlan = () => {
-    // CRITICAL: Default to FALSE if subscription not loaded (prevent bypass)
+    // CRITICAL: Default to FALSE if subscription or usage not loaded (prevent bypass)
     if (!subscription || !usage) return false
     
     const tier = subscription.tier || 'free'
     const planLimit = getPlanLimit(tier)
     const planCount = usage.plans || 0  // Use real-time usage instead of subscription.plan_count
-    
-    const canCreate = planCount < planLimit
+
+    // Quota-based permission
+    const canCreateByQuota = planCount < planLimit
+
+    // Require that user has actually chatted with AI (at least one user message)
+    const userMessageCount = messages.filter((m) => m && m.role === 'user').length
+    const hasUserConversation = userMessageCount > 0
+
+    const canCreate = canCreateByQuota && hasUserConversation
     
     console.log('=== CAN CREATE PLAN ===', {
       tier,
       planLimit,
       planCount,
+      canCreateByQuota,
+      hasUserConversation,
+      userMessageCount,
       canCreate,
       usage
     })
@@ -882,8 +892,17 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
             </div>
 
             {/* Create Plan Button - ALWAYS VISIBLE */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl blur-xl opacity-50 animate-pulse"></div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-center text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                <Info className="w-4 h-4 mr-1" />
+                <span>
+                  Bước 2: Sau khi bạn đã trò chuyện với AI và cảm thấy thông tin đã đủ rõ, hãy nhấn
+                  {' '}"Tạo Kế Hoạch Hoàn Chỉnh" để hệ thống tạo bản kế hoạch chi tiết.
+                </span>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-purple-600 rounded-xl blur-xl opacity-50 animate-pulse"></div>
               <button
                 onClick={handleCreatePlan}
                 disabled={!canCreatePlan()}
@@ -897,6 +916,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                 <span>Tạo Kế Hoạch Hoàn Chỉnh</span>
                 <Sparkles className="w-6 h-6" />
               </button>
+              </div>
             </div>
 
             {!canCreatePlan() && (
