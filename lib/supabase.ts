@@ -725,7 +725,7 @@ export const checkUsageLimits = async (userId: string, action: 'chat' | 'plan', 
     } catch {}
   }
 
-  // Get current usage
+  // Get current usage - pass request to use route-handler client with RLS
   const usage = await getUserUsageStats(userId, request)
 
   // If subscription window expired, block further actions

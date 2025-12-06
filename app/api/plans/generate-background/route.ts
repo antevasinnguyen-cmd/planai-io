@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enforce tier-based plan creation limits
-    const planUsage = await checkUsageLimits(user.id, 'plan')
+    const planUsage = await checkUsageLimits(user.id, 'plan', request)
     if (!planUsage.allowed) {
       const tier = planUsage.tier || 'free'
       const limits = getSubscriptionLimits(tier)
