@@ -106,7 +106,7 @@ export default function PremiumGate({ slug, title }: Props) {
 
   // Unlocked: render markdown with a light converter (match article spacing)
   const toHtml = (markdown: string) => {
-    let escaped = markdown.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    let escaped = markdown.replace(/&/g, '&amp;').replace(/</g, '&lt;')
     escaped = escaped
       .replace(/^###\s+(.*)$/gm, '<h3 class="text-xl font-semibold text-gray-900">$1<\/h3>')
       .replace(/^##\s+(.*)$/gm, '<h2 class="text-2xl font-bold text-gray-900">$1<\/h2>')

@@ -48,19 +48,51 @@ export async function GET(
       .from('profiles')
       .select('subscription_tier')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
-      console.log('[premium] Profile error:', error)
-      return new NextResponse('Unauthorized', { status: 401 })
-    }
-
-    const tier = (profile?.subscription_tier || 'free') as string
-    console.log('[premium] Tier check:', { userId: user.id, tier })
-    const allowed = ['basic', 'pro'].includes(tier)
-    if (!allowed) {
-      console.log('[premium] Tier not allowed:', { tier })
-      return new NextResponse('Payment Required', { status: 402 })
+      console.log('[premium] Profile query error:', error)
+      // If RLS blocks the query, try with admin client as fallback
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+        if (supabaseUrl && serviceKey) {
+          const adminClient = createClient(supabaseUrl, serviceKey)
+          const { data: adminProfile, error: adminError } = await adminClient
+            .from('profiles')
+            .select('subscription_tier')
+            .eq('id', user.id)
+            .maybeSingle()
+          
+          if (!adminError && adminProfile) {
+            const tier = adminProfile.subscription_tier || 'free'
+            console.log('[premium] Tier from admin client:', { userId: user.id, tier })
+            const allowed = ['basic', 'pro'].includes(tier)
+            if (!allowed) {
+              console.log('[premium] Tier not allowed:', { tier })
+              return new NextResponse('Payment Required', { status: 402 })
+            }
+            // Continue to serve content
+          } else {
+            console.log('[premium] Admin client also failed, denying access')
+            return new NextResponse('Unauthorized', { status: 401 })
+          }
+        } else {
+          console.log('[premium] Admin client not configured, denying access')
+          return new NextResponse('Unauthorized', { status: 401 })
+        }
+      } catch (adminErr) {
+        console.error('[premium] Admin client exception:', adminErr)
+        return new NextResponse('Unauthorized', { status: 401 })
+      }
+    } else {
+      const tier = (profile?.subscription_tier || 'free') as string
+      console.log('[premium] Tier check:', { userId: user.id, tier })
+      const allowed = ['basic', 'pro'].includes(tier)
+      if (!allowed) {
+        console.log('[premium] Tier not allowed:', { tier })
+        return new NextResponse('Payment Required', { status: 402 })
+      }
     }
 
     const mdPath = path.join(process.cwd(), 'content', 'premium', `${params.id}.md`)
