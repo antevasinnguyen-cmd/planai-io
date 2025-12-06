@@ -405,11 +405,20 @@ async function processJobInBackground(
     }
 
     // Generate plan using unified clean generator (no legacy prompts)
-    logger.info('BG_GENERATOR_V4_START', { jobId })
+    logger.info('BG_GENERATOR_V4_START', { jobId, tier })
     const limits = getSubscriptionLimits(tier)
     const safeTitle = planName || 'Kế hoạch tài chính'
     const safeGoals = goals || collectedInfo?.goal || 'Kế hoạch tài chính'
-    let content_md = await generateLongPlanMultiStep(safeTitle, safeGoals, { ...collectedInfo, maxWords: limits.words, tier })
+    
+    let content_md
+    try {
+      logger.info('BG_GENERATOR_CALLING', { jobId, safeTitle, safeGoalsLength: safeGoals.length })
+      content_md = await generateLongPlanMultiStep(safeTitle, safeGoals, { ...collectedInfo, maxWords: limits.words, tier })
+      logger.info('BG_GENERATOR_SUCCESS', { jobId, contentLength: content_md.length })
+    } catch (genError) {
+      logger.error('BG_GENERATOR_ERROR', { jobId, error: String(genError) })
+      throw genError
+    }
     const title = safeTitle
 
     content_md = content_md
