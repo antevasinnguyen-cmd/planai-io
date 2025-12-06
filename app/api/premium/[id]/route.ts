@@ -50,8 +50,11 @@ export async function GET(
       .eq('id', user.id)
       .maybeSingle()
 
+    let tier = profile?.subscription_tier || 'free'
+    let tierCheckPassed = false
+    
     if (error) {
-      console.log('[premium] Profile query error:', error)
+      console.log('[premium] Profile query error via RLS:', error)
       // If RLS blocks the query, try with admin client as fallback
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
@@ -65,16 +68,11 @@ export async function GET(
             .maybeSingle()
           
           if (!adminError && adminProfile) {
-            const tier = adminProfile.subscription_tier || 'free'
+            tier = adminProfile.subscription_tier || 'free'
             console.log('[premium] Tier from admin client:', { userId: user.id, tier })
-            const allowed = ['basic', 'pro'].includes(tier)
-            if (!allowed) {
-              console.log('[premium] Tier not allowed:', { tier })
-              return new NextResponse('Payment Required', { status: 402 })
-            }
-            // Continue to serve content
+            tierCheckPassed = true
           } else {
-            console.log('[premium] Admin client also failed, denying access')
+            console.log('[premium] Admin client also failed:', adminError)
             return new NextResponse('Unauthorized', { status: 401 })
           }
         } else {
@@ -86,9 +84,14 @@ export async function GET(
         return new NextResponse('Unauthorized', { status: 401 })
       }
     } else {
-      const tier = (profile?.subscription_tier || 'free') as string
-      console.log('[premium] Tier check:', { userId: user.id, tier })
+      console.log('[premium] Tier from RLS query:', { userId: user.id, tier })
+      tierCheckPassed = true
+    }
+    
+    // Check if tier is allowed
+    if (tierCheckPassed) {
       const allowed = ['basic', 'pro'].includes(tier)
+      console.log('[premium] Tier check:', { userId: user.id, tier, allowed })
       if (!allowed) {
         console.log('[premium] Tier not allowed:', { tier })
         return new NextResponse('Payment Required', { status: 402 })

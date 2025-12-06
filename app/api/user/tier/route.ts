@@ -46,7 +46,30 @@ export async function GET(req: Request) {
       .maybeSingle()
 
     if (error) {
-      console.log('[user/tier] Profile query error:', error)
+      console.log('[user/tier] Profile query error via RLS:', error)
+      // Try admin client as fallback
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+        if (supabaseUrl && serviceKey) {
+          const adminClient = createClient(supabaseUrl, serviceKey)
+          const { data: adminProfile, error: adminError } = await adminClient
+            .from('profiles')
+            .select('subscription_tier')
+            .eq('id', user.id)
+            .maybeSingle()
+          
+          if (!adminError && adminProfile) {
+            const tier = adminProfile.subscription_tier || 'free'
+            console.log('[user/tier] Tier from admin client:', { userId: user.id, tier })
+            return NextResponse.json({ tier }, { status: 200 })
+          } else {
+            console.log('[user/tier] Admin client also failed:', adminError)
+          }
+        }
+      } catch (adminErr) {
+        console.error('[user/tier] Admin client exception:', adminErr)
+      }
       // Return free tier as fallback
       return NextResponse.json({ tier: 'free' }, { status: 200 })
     }

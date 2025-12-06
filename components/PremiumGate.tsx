@@ -24,18 +24,35 @@ export default function PremiumGate({ slug, title }: Props) {
           setStatus('locked')
           return
         }
+        // Try to fetch profile with maybeSingle() to handle missing profiles gracefully
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('subscription_tier')
           .eq('id', user.id)
-          .single()
-        console.log('[PremiumGate] Profile check:', { tier: profile?.subscription_tier, error })
-        if (error) {
-          console.log('[PremiumGate] Profile error, setting error status')
-          setStatus('error')
-          return
+          .maybeSingle()
+        
+        console.log('[PremiumGate] Profile check:', { tier: profile?.subscription_tier, error, hasProfile: !!profile })
+        
+        // If there's an error (e.g., RLS), try to fetch via API endpoint instead
+        let tier = profile?.subscription_tier || 'free'
+        if (error && !profile) {
+          console.log('[PremiumGate] Profile query failed, trying API endpoint:', error)
+          try {
+            const tierRes = await fetch('/api/user/tier', { credentials: 'include' })
+            if (tierRes.ok) {
+              const tierData = await tierRes.json()
+              tier = tierData.tier || 'free'
+              console.log('[PremiumGate] Got tier from API:', { tier })
+            } else {
+              console.log('[PremiumGate] API endpoint also failed, assuming free tier')
+              tier = 'free'
+            }
+          } catch (apiErr) {
+            console.log('[PremiumGate] API fetch exception, assuming free tier:', apiErr)
+            tier = 'free'
+          }
         }
-        const tier = (profile?.subscription_tier || 'free') as string
+        
         const allowed = ['basic', 'pro'].includes(tier)
         console.log('[PremiumGate] Tier check:', { tier, allowed })
         if (!allowed) {
