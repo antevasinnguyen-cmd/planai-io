@@ -29,60 +29,69 @@ async function aiTextWithFallback(
   maxTokens: number,
   temperature: number
 ): Promise<string> {
-  const OPENAI_ATTEMPTS = 2
-  for (let i = 0; i < OPENAI_ATTEMPTS; i++) {
-    try {
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      const messages: any[] = system
-        ? [
-            { role: 'system', content: system },
+  // Add timeout wrapper for AI calls (30 seconds max)
+  const timeoutPromise = new Promise<string>((_, reject) => {
+    setTimeout(() => reject(new Error('AI call timeout after 30s')), 30000)
+  })
+
+  const aiPromise = (async () => {
+    const OPENAI_ATTEMPTS = 2
+    for (let i = 0; i < OPENAI_ATTEMPTS; i++) {
+      try {
+        const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+        const messages: any[] = system
+          ? [
+              { role: 'system', content: system },
+              { role: 'user', content: user }
+            ]
+          : [{ role: 'user', content: user }]
+        const c = await client.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages,
+          temperature,
+          max_tokens: Math.min(maxTokens, 2000)
+        })
+        const text = c.choices?.[0]?.message?.content || ''
+        if (text && text.trim().length > 0) return text
+      } catch (err) {
+        if (i < OPENAI_ATTEMPTS - 1 && shouldRetry(err)) {
+          await sleep(500 * (i + 1))
+          continue
+        }
+        break
+      }
+    }
+
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key missing')
+    const CLAUDE_ATTEMPTS = 2
+    for (let j = 0; j < CLAUDE_ATTEMPTS; j++) {
+      try {
+        const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+        const resp = await claude.messages.create({
+          model: 'claude-3-5-haiku-20241022',
+          system: system || undefined,
+          max_tokens: Math.min(maxTokens, 2000),
+          temperature,
+          messages: [
             { role: 'user', content: user }
           ]
-        : [{ role: 'user', content: user }]
-      const c = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages,
-        temperature,
-        max_tokens: Math.min(maxTokens, 2000)
-      })
-      const text = c.choices?.[0]?.message?.content || ''
-      if (text && text.trim().length > 0) return text
-    } catch (err) {
-      if (i < OPENAI_ATTEMPTS - 1 && shouldRetry(err)) {
-        await sleep(500 * (i + 1))
-        continue
+        })
+        const c0: any = resp.content?.[0]
+        const text = c0 && c0.type === 'text' ? String(c0.text || '') : ''
+        if (text && text.trim().length > 0) return text
+        throw new Error('Empty Claude response')
+      } catch (err) {
+        if (j < CLAUDE_ATTEMPTS - 1 && shouldRetry(err)) {
+          await sleep(500 * (j + 1))
+          continue
+        }
+        throw err
       }
-      break
     }
-  }
+    throw new Error('All model providers failed')
+  })()
 
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error('Anthropic API key missing')
-  const CLAUDE_ATTEMPTS = 2
-  for (let j = 0; j < CLAUDE_ATTEMPTS; j++) {
-    try {
-      const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-      const resp = await claude.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        system: system || undefined,
-        max_tokens: Math.min(maxTokens, 2000),
-        temperature,
-        messages: [
-          { role: 'user', content: user }
-        ]
-      })
-      const c0: any = resp.content?.[0]
-      const text = c0 && c0.type === 'text' ? String(c0.text || '') : ''
-      if (text && text.trim().length > 0) return text
-      throw new Error('Empty Claude response')
-    } catch (err) {
-      if (j < CLAUDE_ATTEMPTS - 1 && shouldRetry(err)) {
-        await sleep(500 * (j + 1))
-        continue
-      }
-      throw err
-    }
-  }
-  throw new Error('All model providers failed')
+  return Promise.race([aiPromise, timeoutPromise])
 }
 
 export interface MicroTask {
