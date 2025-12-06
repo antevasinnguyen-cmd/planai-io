@@ -97,7 +97,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Enforce tier-based plan creation limits
-    const planUsage = await checkUsageLimits(user.id, 'plan', request)
+    let planUsage
+    try {
+      planUsage = await checkUsageLimits(user.id, 'plan', request)
+      logger.info('BG_USAGE_CHECK_SUCCESS', { 
+        userId: user.id, 
+        allowed: planUsage.allowed,
+        current: planUsage.current,
+        limit: planUsage.limit,
+        tier: planUsage.tier
+      })
+    } catch (usageError) {
+      logger.error('BG_USAGE_CHECK_ERROR', { 
+        userId: user.id,
+        error: String(usageError)
+      })
+      // Continue anyway - don't block plan generation due to usage check failure
+      planUsage = { allowed: true, current: 0, limit: 1, tier: 'free' }
+    }
+    
     if (!planUsage.allowed) {
       const tier = planUsage.tier || 'free'
       const limits = getSubscriptionLimits(tier)

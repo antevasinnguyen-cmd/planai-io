@@ -617,14 +617,20 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
     const admin = getAdminClient()
     const client = admin || supabase
     
+    console.log('getUserUsageStats: Using admin client fallback', { userId, hasAdmin: !!admin })
+    
     // Get subscription and determine usage period
-    const { data: subscriptions } = await client
+    const { data: subscriptions, error: subError } = await client
       .from('subscriptions')
       .select('created_at, tier')
       .eq('user_id', userId)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
+
+    if (subError) {
+      console.error('getUserUsageStats: Subscription query error', { userId, error: subError })
+    }
 
     const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
 
