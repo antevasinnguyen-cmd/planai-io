@@ -38,7 +38,7 @@ const pricingTiers = [
     price: 249000,
     duration: '30 ngày',
     features: {
-      plans: 1,
+      plans: 2,
       chats: 40,
       words: 100000
     },
@@ -63,7 +63,7 @@ const pricingTiers = [
     price: 479000,
     duration: '30 ngày',
     features: {
-      plans: 2,
+      plans: 4,
       chats: 100,
       words: 100000
     },

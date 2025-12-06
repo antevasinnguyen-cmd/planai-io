@@ -170,8 +170,8 @@ export default function CreatePlanPage() {
   const getSubscriptionLimits = (tier: string) => {
     const limits = {
       'free': { plans: 1, chats: 5, words: 1000 },
-      'basic': { plans: 1, chats: 20, words: 2000 },
-      'pro': { plans: 3, chats: 50, words: 5000 },
+      'basic': { plans: 2, chats: 20, words: 2000 },   // Gói 1: 2 plans
+      'pro': { plans: 4, chats: 50, words: 5000 },     // Gói 2: 4 plans
       'pro_max': { plans: 6, chats: 999999, words: 10000 }
     }
     return limits[tier as keyof typeof limits] || limits.free

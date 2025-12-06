@@ -472,8 +472,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
   const getPlanLimit = (tier: string) => {
     switch (tier) {
       case 'free': return 1
-      case 'basic': return 1
-      case 'pro': return 3
+      case 'basic': return 2  // Gói 1: 2 plans
+      case 'pro': return 4    // Gói 2: 4 plans
       case 'pro_max': return 6
       default: return 1
     }
