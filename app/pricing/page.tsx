@@ -33,6 +33,7 @@ const pricingTiers = [
     description: 'Phù hợp cho người mới bắt đầu lập kế hoạch tài chính',
     features: [
       '40 Chat với AI lập kế hoạch',
+      'Tối đa 2 kế hoạch hoàn chỉnh mỗi chu kỳ 30 ngày',
       '1 Ebook plan cá nhân hóa độc quyền',
       'Phân tích đầy đủ + Lộ trình',
       'Đề xuất hành động để đạt được mục tiêu',
@@ -54,6 +55,7 @@ const pricingTiers = [
     description: 'Dành cho người muốn có nhiều kế hoạch và tính năng nâng cao',
     features: [
       '100 Chat với AI lập kế hoạch',
+      'Tối đa 4 kế hoạch hoàn chỉnh mỗi chu kỳ 30 ngày',
       '2 Ebook plan cá nhân hóa độc quyền',
       'Phân tích đầy đủ + Lộ trình',
       'Đề xuất hành động để đạt được mục tiêu',
