@@ -16,10 +16,42 @@ import { generatePlanSection } from '@/lib/planGenerationChunked'
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+
+    if (!supabaseUrl) {
+      logger.error('CONTINUE_GEN_CONFIG_ERROR', { reason: 'Missing NEXT_PUBLIC_SUPABASE_URL' })
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+    }
+
     const cookieStore = cookies()
     const rhSupabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: authData } = await rhSupabase.auth.getUser()
-    const user = authData?.user
+    let user = authData?.user || null
+
+    const authHeader = request.headers.get('Authorization')
+    if (!user && authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      if (!anonKey) {
+        logger.warn('CONTINUE_GEN_AUTH_HEADER_NO_ANON', {})
+      } else if (token) {
+        try {
+          const anonClient = createClient(supabaseUrl, anonKey, {
+            auth: { persistSession: false, autoRefreshToken: false }
+          })
+          const { data: tokenData, error: tokenError } = await anonClient.auth.getUser(token)
+          if (tokenData?.user && !tokenError) {
+            user = tokenData.user
+            logger.info('CONTINUE_GEN_AUTH_HEADER_SUCCESS', { userId: user.id })
+          } else {
+            logger.warn('CONTINUE_GEN_AUTH_HEADER_FAILED', { message: tokenError?.message })
+          }
+        } catch (headerError) {
+          logger.error('CONTINUE_GEN_AUTH_HEADER_EXCEPTION', { error: String(headerError) })
+        }
+      }
+    }
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -33,8 +65,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Get admin client for reliable DB operations
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
     const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
 
     if (!admin) {
