@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
-// Vercel Pro allows up to 900s (15 min), Enterprise up to 3600s (60 min)
-// Set to maximum allowed by plan - adjust based on your Vercel plan
-export const maxDuration = 900 // 15 minutes - increase if on Enterprise plan
+// Vercel Free = 60s, Pro = 900s (15 min), Enterprise = 3600s (60 min)
+// For Vercel Free, we use chunked generation with database checkpointing
+export const maxDuration = 60 // 60 seconds - Vercel Free limit
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
@@ -249,11 +249,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // IMPORTANT: Vercel serverless functions terminate after response is sent
-    // We must use streaming to keep the connection alive while processing
-    // OR await the processing and return the result directly
+    // CHUNKED GENERATION: For Vercel Free (60s limit)
+    // Instead of generating entire plan in one request, we:
+    // 1. Start the job and generate first 1-2 sections
+    // 2. Save progress to database
+    // 3. Frontend polls and calls /api/plans/continue-generation to continue
     
-    // Use streaming response to keep connection alive
+    // Update job status to processing with metadata
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+    const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
+    
+    if (admin) {
+      await admin
+        .from('plan_jobs')
+        .update({
+          status: 'processing',
+          started_at: new Date().toISOString(),
+          metadata: {
+            currentSectionIndex: 0,
+            generatedSections: [],
+            collectedInfo: enrichedCollectedInfo,
+            tier
+          }
+        })
+        .eq('id', jobId)
+    }
+    
+    // Generate first batch of sections (within 60s limit)
+    const { generatePlanSection } = await import('@/lib/planGenerationChunked')
+    
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
@@ -261,14 +286,106 @@ export async function POST(request: NextRequest) {
           // Send initial response
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'started', job_id: jobId })}\n\n`))
           
-          // Process the job (this will take time)
-          const result = await processJobInBackground(jobId, user.id, finalPlanName, finalGoals, enrichedCollectedInfo, authHeader)
+          // Generate first sections
+          const result = await generatePlanSection(
+            finalPlanName,
+            finalGoals,
+            enrichedCollectedInfo,
+            0, // Start from section 0
+            [] // No previous sections
+          )
           
-          // Send completion
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'completed', job_id: jobId, plan_id: result?.planId })}\n\n`))
+          if (result.error) {
+            // Update job with error
+            if (admin) {
+              await admin
+                .from('plan_jobs')
+                .update({
+                  status: 'failed',
+                  error_message: result.error,
+                  completed_at: new Date().toISOString()
+                })
+                .eq('id', jobId)
+            }
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', job_id: jobId, error: result.error })}\n\n`))
+            controller.close()
+            return
+          }
+          
+          if (result.isComplete) {
+            // All sections generated in first batch (unlikely but possible for very short plans)
+            const planContent = result.fullPlanContent || ''
+            
+            // Save plan
+            const { data: planData, error: planError } = await (admin || rhSupabase)
+              .from('plans')
+              .insert({
+                user_id: user.id,
+                title: finalPlanName,
+                goal: finalGoals,
+                content: planContent,
+                status: 'completed',
+                word_count: planContent.split(/\s+/).length,
+                collected_info: enrichedCollectedInfo,
+                created_at: new Date().toISOString()
+              })
+              .select()
+              .single()
+            
+            if (planError) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', job_id: jobId, error: 'Failed to save plan' })}\n\n`))
+              controller.close()
+              return
+            }
+            
+            // Update job as completed
+            if (admin) {
+              await admin
+                .from('plan_jobs')
+                .update({
+                  status: 'completed',
+                  plan_id: planData.id,
+                  completed_at: new Date().toISOString()
+                })
+                .eq('id', jobId)
+            }
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'completed', job_id: jobId, plan_id: planData.id })}\n\n`))
+            controller.close()
+            return
+          }
+          
+          // Save progress - more sections to generate
+          if (admin) {
+            await admin
+              .from('plan_jobs')
+              .update({
+                status: 'processing',
+                metadata: {
+                  currentSectionIndex: result.nextSectionIndex,
+                  generatedSections: result.generatedSections,
+                  collectedInfo: enrichedCollectedInfo,
+                  totalSections: result.totalSections,
+                  tier
+                }
+              })
+              .eq('id', jobId)
+          }
+          
+          // Send progress update - frontend will call continue-generation
+          const progress = Math.round((result.nextSectionIndex / result.totalSections) * 90) + 5
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+            type: 'progress', 
+            job_id: jobId, 
+            progress,
+            currentSection: result.nextSectionIndex,
+            totalSections: result.totalSections,
+            needsContinue: true
+          })}\n\n`))
           controller.close()
+          
         } catch (error: any) {
-          // Send error
+          logger.error('BG_STREAM_ERROR', { jobId, error: error?.message })
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', job_id: jobId, error: error?.message || 'Unknown error' })}\n\n`))
           controller.close()
         }

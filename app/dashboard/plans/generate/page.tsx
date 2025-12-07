@@ -540,6 +540,28 @@ export default function GeneratePlanPage() {
                       }, 1200)
                     }
                     return
+                  } else if (eventData.type === 'progress' && eventData.needsContinue) {
+                    // Chunked generation - need to call continue-generation
+                    const newJobId = eventData.job_id
+                    setJobId(newJobId)
+                    setJobStatus('processing')
+                    setProgress(eventData.progress || 20)
+                    setStatus(`Đang tạo phần ${eventData.currentSection}/${eventData.totalSections}...`)
+                    
+                    // Save job metadata
+                    sessionStorage.setItem(`plan_job_${userId}`, newJobId)
+                    saveJobMeta(userId, {
+                      jobId: newJobId,
+                      startedAt: Date.now(),
+                      progress: eventData.progress || 20,
+                      status: 'processing',
+                      statusText: `Đang tạo phần ${eventData.currentSection}/${eventData.totalSections}...`,
+                      elapsedSeconds: 0
+                    })
+                    
+                    // Start continue-generation loop
+                    continueGeneration(newJobId)
+                    return
                   } else if (eventData.type === 'error') {
                     setError(eventData.error || 'Có lỗi xảy ra khi tạo kế hoạch')
                     setJobStatus('failed')
@@ -734,6 +756,103 @@ export default function GeneratePlanPage() {
     }
     
     checkProgress()
+  }
+
+  // Continue generation for chunked plan generation (Vercel Free 60s limit)
+  const continueGeneration = async (jobId: string) => {
+    const userId = user?.id || 'anonymous'
+    const maxContinueCalls = 30 // Max 30 continue calls (should be enough for 24 sections)
+    let continueCalls = 0
+
+    const callContinue = async () => {
+      try {
+        console.log(`=== CONTINUE GENERATION: Call ${continueCalls + 1} ===`)
+        
+        const { supabase } = await import('@/lib/supabase')
+        const { data: sessionData } = await supabase.auth.getSession()
+        
+        const headers: any = { 'Content-Type': 'application/json' }
+        if (sessionData?.session?.access_token) {
+          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+        }
+
+        const res = await fetch('/api/plans/continue-generation', {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ jobId })
+        })
+
+        if (!res.ok) {
+          console.error('Continue generation failed:', res.status)
+          // Fall back to polling
+          pollJobStatus(jobId)
+          return
+        }
+
+        const result = await res.json()
+        console.log('=== CONTINUE GENERATION: Result ===', result)
+
+        if (result.status === 'completed') {
+          setProgress(100)
+          setStatus('Hoàn thành!')
+          setJobStatus('completed')
+          
+          // Clear storage
+          sessionStorage.removeItem(`plan_job_${userId}`)
+          clearJobMeta(userId)
+          localStorage.removeItem(`pending_plan_${userId}`)
+          try { localStorage.removeItem('pending_plan_latest') } catch {}
+          
+          // Redirect to plan
+          if (result.plan_id) {
+            setTimeout(() => {
+              router.push(`/dashboard/plans/${result.plan_id}`)
+            }, 1200)
+          }
+          return
+        }
+
+        if (result.status === 'failed') {
+          setError(result.error_message || 'Tạo kế hoạch thất bại')
+          setJobStatus('failed')
+          sessionStorage.removeItem(`plan_job_${userId}`)
+          clearJobMeta(userId)
+          return
+        }
+
+        if (result.status === 'processing') {
+          // Update progress
+          setProgress(result.progress || 50)
+          setStatus(`Đang tạo phần ${result.currentSection}/${result.totalSections}...`)
+          saveJobMeta(userId, {
+            jobId,
+            progress: result.progress || 50,
+            status: 'processing',
+            statusText: `Đang tạo phần ${result.currentSection}/${result.totalSections}...`,
+            elapsedSeconds: 0
+          })
+
+          // Continue with next batch
+          continueCalls++
+          if (continueCalls < maxContinueCalls) {
+            // Small delay before next call
+            setTimeout(callContinue, 1000)
+          } else {
+            console.error('Max continue calls reached')
+            setError('Quá trình tạo kế hoạch mất quá lâu. Vui lòng thử lại.')
+            setJobStatus('failed')
+          }
+        }
+
+      } catch (error) {
+        console.error('Continue generation error:', error)
+        // Fall back to polling
+        pollJobStatus(jobId)
+      }
+    }
+
+    callContinue()
   }
 
   const pollJobStatus = async (id: string) => {
