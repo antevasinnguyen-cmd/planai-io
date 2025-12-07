@@ -1,5 +1,7 @@
 export const runtime = 'nodejs'
-export const maxDuration = 300
+// Vercel Pro allows up to 900s (15 min), Enterprise up to 3600s (60 min)
+// Set to maximum allowed by plan - adjust based on your Vercel plan
+export const maxDuration = 900 // 15 minutes - increase if on Enterprise plan
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'
@@ -311,10 +313,13 @@ async function processJobInBackground(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
   const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
   
-  // Set timeout for entire job processing
-  // IMPORTANT: Vercel maxDuration is 300s (5 min), so we set timeout to 4.5 min to ensure cleanup
+  // Set timeout for entire job processing based on tier
+  // Free tier: 10 minutes, Paid tiers (basic, pro): 30 minutes
+  // Note: Vercel maxDuration must be set high enough (900s for Pro, 3600s for Enterprise)
   const tier = String(collectedInfo?.tier || 'free')
-  const timeoutMs = 4.5 * 60 * 1000 // 4.5 minutes for all tiers (within Vercel's 5 min limit)
+  const timeoutMs = tier === 'free' 
+    ? 10 * 60 * 1000  // 10 minutes for free tier
+    : 30 * 60 * 1000  // 30 minutes for paid tiers (basic, pro)
   let timeoutHandle: NodeJS.Timeout | null = null
   
   try {

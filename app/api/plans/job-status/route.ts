@@ -140,15 +140,40 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    // AUTO-FAIL: If job is stuck in processing for too long (>6 minutes), mark as failed
+    // AUTO-FAIL: If job is stuck in processing for too long, mark as failed
+    // Timeout based on tier: Free = 12 min, Paid = 35 min (with buffer)
     // This handles cases where Vercel killed the function before completion
     if (job.status === 'processing' && job.started_at) {
       const startedAt = new Date(job.started_at)
       const now = new Date()
       const elapsedMinutes = (now.getTime() - startedAt.getTime()) / (1000 * 60)
       
-      if (elapsedMinutes > 6) {
-        logger.warn('JOB_STATUS_AUTO_FAIL_STUCK', { jobId, elapsedMinutes })
+      // Get tier from job's collected_info or default to free
+      // We need to query the job's full data to get tier info
+      let jobTier = 'free'
+      if (admin) {
+        const { data: fullJob } = await admin
+          .from('plan_jobs')
+          .select('goals')
+          .eq('id', jobId)
+          .single()
+        // Try to extract tier from goals or assume based on user's profile
+        if (fullJob) {
+          // Check user's subscription tier
+          const { data: profile } = await admin
+            .from('profiles')
+            .select('subscription_tier')
+            .eq('id', user.id)
+            .single()
+          jobTier = profile?.subscription_tier || 'free'
+        }
+      }
+      
+      // Timeout: Free = 12 min (10 + 2 buffer), Paid = 35 min (30 + 5 buffer)
+      const maxMinutes = jobTier === 'free' ? 12 : 35
+      
+      if (elapsedMinutes > maxMinutes) {
+        logger.warn('JOB_STATUS_AUTO_FAIL_STUCK', { jobId, elapsedMinutes, maxMinutes, tier: jobTier })
         
         // Update job to failed using admin client
         if (admin) {
@@ -156,7 +181,7 @@ export async function GET(request: NextRequest) {
             .from('plan_jobs')
             .update({
               status: 'failed',
-              error_message: 'Tạo kế hoạch bị gián đoạn do timeout. Vui lòng thử lại.',
+              error_message: `Tạo kế hoạch bị gián đoạn do timeout (>${maxMinutes} phút). Vui lòng thử lại.`,
               completed_at: now.toISOString()
             })
             .eq('id', jobId)
@@ -166,7 +191,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           job_id: job.id,
           status: 'failed',
-          error_message: 'Tạo kế hoạch bị gián đoạn do timeout. Vui lòng thử lại.',
+          error_message: `Tạo kế hoạch bị gián đoạn do timeout (>${maxMinutes} phút). Vui lòng thử lại.`,
           plan_id: null,
           elapsed_seconds: Math.floor(elapsedMinutes * 60),
           created_at: job.created_at,
