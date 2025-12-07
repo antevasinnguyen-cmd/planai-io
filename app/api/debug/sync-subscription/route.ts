@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     if (existingSub) {
       // Update existing - ALWAYS sync tier and limits from profile
+      // IMPORTANT: Reset current_period_start to reset usage quota
       const { error: updateError } = await admin
         .from('subscriptions')
         .update({
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
           status: 'active',
           plan_limit: limits.plans,
           chat_limit: limits.chats,
+          current_period_start: now.toISOString(), // Reset period start to reset usage count
           current_period_end: periodEnd.toISOString(),
           updated_at: now.toISOString()
         })
@@ -81,13 +83,14 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({
-        message: 'Updated existing subscription',
+        message: 'Updated existing subscription with period reset',
         userId,
         tier,
         oldLimits: { plans: existingSub.plan_limit, chats: existingSub.chat_limit },
         newLimits: { plans: limits.plans, chats: limits.chats },
+        periodStart: now.toISOString(),
         periodEnd: periodEnd.toISOString(),
-        action: 'updated'
+        action: 'updated_with_reset'
       }, { status: 200 })
     } else {
       // Create new

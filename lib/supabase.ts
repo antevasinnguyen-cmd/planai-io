@@ -607,7 +607,7 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
       // Get user's subscription to determine usage period
       const { data: subscriptions } = await rh
         .from('subscriptions')
-        .select('created_at, tier')
+        .select('created_at, tier, current_period_start')
         .eq('user_id', userId)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -616,12 +616,12 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
       const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
 
       // Determine usage start date:
-      // - If user has active subscription (paid tier), count from subscription creation
+      // - If user has active subscription (paid tier), count from current_period_start (reset on upgrade)
       // - Otherwise, count from start of month (free tier)
       let usageStartDate: Date
       if (subscription?.tier && subscription.tier !== 'free') {
-        // Paid tier: count from when subscription was created (when they upgraded)
-        usageStartDate = new Date(subscription.created_at)
+        // Paid tier: count from current_period_start (resets when user upgrades/renews)
+        usageStartDate = new Date(subscription.current_period_start || subscription.created_at)
       } else {
         // Free tier: count from start of month
         usageStartDate = new Date()
@@ -679,7 +679,7 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
     // Get subscription and determine usage period
     const { data: subscriptions, error: subError } = await client
       .from('subscriptions')
-      .select('created_at, tier')
+      .select('created_at, tier, current_period_start')
       .eq('user_id', userId)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -692,9 +692,10 @@ export const getUserUsageStats = async (userId: string, request?: Request) => {
     const subscription = Array.isArray(subscriptions) ? subscriptions[0] : subscriptions
 
     // Determine usage start date (same logic as above)
+    // Use current_period_start which resets when user upgrades/renews
     let usageStartDate: Date
     if (subscription?.tier && subscription.tier !== 'free') {
-      usageStartDate = new Date(subscription.created_at)
+      usageStartDate = new Date(subscription.current_period_start || subscription.created_at)
     } else {
       usageStartDate = new Date()
       usageStartDate.setDate(1)

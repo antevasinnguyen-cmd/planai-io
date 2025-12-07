@@ -103,18 +103,19 @@ export async function POST(request: NextRequest) {
           .single();
         
         if (existingSub) {
-          // Update existing subscription
+          // Update existing subscription - IMPORTANT: Reset current_period_start to reset usage quota
           await supabase
             .from('subscriptions')
             .update({
               tier: payment.subscription_tier,
               plan_limit: limits.plans,
               chat_limit: limits.chats,
+              current_period_start: now.toISOString(), // Reset period start to reset usage count
               current_period_end: endDate.toISOString(),
               updated_at: now.toISOString()
             })
             .eq('id', existingSub.id);
-          console.log('Updated existing subscription:', { userId: payment.user_id, tier: payment.subscription_tier });
+          console.log('Updated existing subscription with period reset:', { userId: payment.user_id, tier: payment.subscription_tier });
         } else {
           // Create new subscription
           await supabase
@@ -194,18 +195,19 @@ export async function POST(request: NextRequest) {
           .single();
         
         if (existingSub) {
-          // Update existing subscription
+          // Update existing subscription - IMPORTANT: Reset current_period_start to reset usage quota
           await supabase
             .from('subscriptions')
             .update({
               tier: payment.subscription_tier,
               plan_limit: limits.plans,
               chat_limit: limits.chats,
+              current_period_start: now.toISOString(), // Reset period start to reset usage count
               current_period_end: endDate.toISOString(),
               updated_at: now.toISOString()
             })
             .eq('id', existingSub.id);
-          console.log('Updated existing subscription (SePay):', { userId: payment.user_id, tier: payment.subscription_tier });
+          console.log('Updated existing subscription with period reset (SePay):', { userId: payment.user_id, tier: payment.subscription_tier });
         } else {
           // Create new subscription
           await supabase
