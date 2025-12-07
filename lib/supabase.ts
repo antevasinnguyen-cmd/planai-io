@@ -384,6 +384,66 @@ export const getUserSubscription = async (userId: string) => {
         chatLimit: row.chat_limit,
         createdAt: row.created_at
       })
+      
+      // CRITICAL: Check if subscription tier matches profile tier
+      // This handles cases where user upgraded but subscription record wasn't updated
+      const { data: profileData } = await client
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', userId)
+        .single()
+      
+      const profileTier = profileData?.subscription_tier || 'free'
+      const subscriptionTier = row.tier
+      
+      // Use the HIGHER tier between profile and subscription (in case of upgrade)
+      const tierPriority: Record<string, number> = { 'free': 0, 'basic': 1, 'pro': 2 }
+      const effectiveTier = tierPriority[profileTier] >= tierPriority[subscriptionTier] ? profileTier : subscriptionTier
+      
+      // AUTO-SYNC: Check if subscription tier/limits need to be updated
+      const expectedLimits = getSubscriptionLimits(effectiveTier)
+      const needsSync = row.tier !== effectiveTier || 
+                        row.plan_limit !== expectedLimits.plans || 
+                        row.chat_limit !== expectedLimits.chats
+      
+      if (needsSync) {
+        console.log(`=== getUserSubscription: Sync needed, updating subscription ===`, {
+          userId,
+          profileTier,
+          subscriptionTier,
+          effectiveTier,
+          currentLimits: { plans: row.plan_limit, chats: row.chat_limit },
+          expectedLimits: { plans: expectedLimits.plans, chats: expectedLimits.chats }
+        })
+        
+        // Update subscription with correct tier and limits
+        const { error: updateError } = await client
+          .from('subscriptions')
+          .update({
+            tier: effectiveTier,
+            plan_limit: expectedLimits.plans,
+            chat_limit: expectedLimits.chats,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', row.id)
+        
+        if (!updateError) {
+          console.log(`=== getUserSubscription: Auto-sync successful ===`, { userId, effectiveTier })
+          // Return updated data
+          return { 
+            data: { 
+              ...row, 
+              tier: effectiveTier,
+              plan_limit: expectedLimits.plans, 
+              chat_limit: expectedLimits.chats 
+            }, 
+            error: null 
+          }
+        } else {
+          console.error(`=== getUserSubscription: Auto-sync failed ===`, updateError)
+        }
+      }
+      
       return { data: row, error }
     }
     

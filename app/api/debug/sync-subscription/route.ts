@@ -35,30 +35,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'User has free tier, no subscription needed' }, { status: 200 })
     }
 
-    // Check if subscription exists
+    // Check if subscription exists (any status, not just active)
     const { data: existingSub } = await admin
       .from('subscriptions')
-      .select('id')
+      .select('id, tier, plan_limit, chat_limit, current_period_end')
       .eq('user_id', userId)
-      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single()
 
-    const now = new Date()
-    const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-
-    // Get subscription limits
+    // Get subscription limits based on profile tier
     const { getSubscriptionLimits } = await import('@/lib/supabase')
     const limits = getSubscriptionLimits(tier)
 
+    // Calculate period end - keep existing if still valid, otherwise extend 30 days
+    const now = new Date()
+    let periodEnd: Date
+    if (existingSub?.current_period_end) {
+      const existingEnd = new Date(existingSub.current_period_end)
+      if (existingEnd > now) {
+        periodEnd = existingEnd // Keep existing valid period
+      } else {
+        periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // Extend 30 days
+      }
+    } else {
+      periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    }
+
     if (existingSub) {
-      // Update existing
+      // Update existing - ALWAYS sync tier and limits from profile
       const { error: updateError } = await admin
         .from('subscriptions')
         .update({
           tier,
+          status: 'active',
           plan_limit: limits.plans,
           chat_limit: limits.chats,
-          current_period_end: endDate.toISOString(),
+          current_period_end: periodEnd.toISOString(),
           updated_at: now.toISOString()
         })
         .eq('id', existingSub.id)
@@ -71,6 +84,9 @@ export async function POST(req: NextRequest) {
         message: 'Updated existing subscription',
         userId,
         tier,
+        oldLimits: { plans: existingSub.plan_limit, chats: existingSub.chat_limit },
+        newLimits: { plans: limits.plans, chats: limits.chats },
+        periodEnd: periodEnd.toISOString(),
         action: 'updated'
       }, { status: 200 })
     } else {
@@ -84,7 +100,7 @@ export async function POST(req: NextRequest) {
           plan_limit: limits.plans,
           chat_limit: limits.chats,
           current_period_start: now.toISOString(),
-          current_period_end: endDate.toISOString(),
+          current_period_end: periodEnd.toISOString(),
           created_at: now.toISOString()
         })
 
@@ -96,11 +112,36 @@ export async function POST(req: NextRequest) {
         message: 'Created new subscription',
         userId,
         tier,
+        limits: { plans: limits.plans, chats: limits.chats },
+        periodEnd: periodEnd.toISOString(),
         action: 'created'
       }, { status: 200 })
     }
   } catch (e) {
     console.error('[debug/sync-subscription] Error:', e)
+    return NextResponse.json({ error: String(e) }, { status: 500 })
+  }
+}
+
+// GET endpoint to sync subscription for current user (auto-fix on page load)
+export async function GET(req: NextRequest) {
+  try {
+    const userId = req.nextUrl.searchParams.get('userId')
+    
+    if (!userId) {
+      return NextResponse.json({ error: 'userId required' }, { status: 400 })
+    }
+
+    // Call POST with the userId
+    const response = await POST(new NextRequest(req.url, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+      headers: { 'Content-Type': 'application/json' }
+    }))
+    
+    return response
+  } catch (e) {
+    console.error('[debug/sync-subscription GET] Error:', e)
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }
