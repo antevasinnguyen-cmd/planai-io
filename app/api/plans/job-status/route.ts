@@ -169,8 +169,8 @@ export async function GET(request: NextRequest) {
         }
       }
       
-      // Timeout: Free = 12 min (10 + 2 buffer), Paid = 35 min (30 + 5 buffer)
-      const maxMinutes = jobTier === 'free' ? 12 : 35
+      // Timeout: Free = 15 min, Paid = 60 min (24 sections need more time)
+      const maxMinutes = jobTier === 'free' ? 15 : 60
       
       if (elapsedMinutes > maxMinutes) {
         logger.warn('JOB_STATUS_AUTO_FAIL_STUCK', { jobId, elapsedMinutes, maxMinutes, tier: jobTier })

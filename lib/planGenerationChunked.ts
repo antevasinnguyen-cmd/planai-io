@@ -272,31 +272,31 @@ function buildSectionPrompt(
   targetWords: number
 ): string {
   const prompts: Record<string, string> = {
-    profile: `Viết phần "Tóm tắt tình hình tài chính" dựa trên thông tin user. Bao gồm: thu nhập hiện tại (${income}), tiết kiệm (${savings}), kỹ năng (${skills.join(', ')}), và mục tiêu (${goal}).`,
-    goals: `Phân tích mục tiêu tài chính: ${goal}. Đánh giá tính khả thi với thu nhập ${income} trong ${timeline}.`,
-    current: `Phân tích hiện trạng và khoảng cách mục tiêu. So sánh thu nhập ${income}, tiết kiệm ${savings} với mục tiêu ${goal}.`,
-    models: `Đề xuất mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${goal}.`,
-    saving: `Lập kế hoạch tiết kiệm và đầu tư để đạt ${goal} trong ${timeline}.`,
-    plan: `Viết kế hoạch hành động chi tiết theo timeline ${timeline} để đạt mục tiêu ${goal}. Chia theo mốc: 0-3 tháng, 3-6 tháng, 6-12 tháng.`,
-    learning: `Đề xuất tài liệu học tập và nguồn lực phù hợp với kỹ năng ${skills.join(', ')} để đạt ${goal}.`,
-    mindset: `Tư vấn tâm lý và tư duy để đạt ${goal}. Cách vượt khó khăn và duy trì động lực.`,
-    conclusion: `Tóm tắt kế hoạch và 3 hành động cần làm ngay để bắt đầu đạt ${goal}.`,
+    profile: `Viết phần "Tóm tắt tình hình tài chính" dựa trên thông tin user. Bao gồm: thu nhập hiện tại (${income}), tiết kiệm (${savings}), kỹ năng (${skills.join(', ')}), và mục tiêu (${goal}). Trình bày dạng bullet points rõ ràng.`,
+    goals: `Phân tích mục tiêu tài chính: ${goal}. Đánh giá tính khả thi với thu nhập ${income} trong ${timeline}. Giải thích lý do và động lực.`,
+    current: `Phân tích hiện trạng và khoảng cách mục tiêu. So sánh thu nhập ${income}, tiết kiệm ${savings} với mục tiêu ${goal}. Tính toán cụ thể số tiền cần đạt thêm.`,
+    models: `Đề xuất 3-5 mô hình tăng thu nhập phù hợp với kỹ năng ${skills.join(', ')} và mục tiêu ${goal}. Mỗi mô hình giải thích cách thực hiện và thu nhập dự kiến.`,
+    saving: `Lập kế hoạch tiết kiệm và đầu tư cụ thể để đạt ${goal} trong ${timeline}. Đề xuất tỷ lệ tiết kiệm, kênh đầu tư phù hợp.`,
+    plan: `Viết kế hoạch hành động chi tiết theo timeline ${timeline}. Chia theo mốc: Tháng 1-3, Tháng 4-6, Tháng 7-12, Năm 2-3. Mỗi mốc liệt kê các việc cần làm cụ thể.`,
+    learning: `Đề xuất TỐI THIỂU 20 tài liệu học tập và nguồn lực phù hợp với kỹ năng ${skills.join(', ')} để đạt ${goal}. Bao gồm: sách (5+), khóa học online (5+), kênh YouTube (5+), podcast (3+), website/blog (2+). Mỗi tài liệu ghi rõ tên, tác giả/nguồn, và lý do nên học.`,
+    mindset: `Tư vấn tâm lý và tư duy để đạt ${goal}. Đề xuất 5-7 nguyên tắc tư duy, cách vượt qua khó khăn phổ biến, và phương pháp duy trì động lực dài hạn.`,
+    conclusion: `Tóm tắt ngắn gọn 3-5 điểm chính của kế hoạch và liệt kê 5 hành động cần làm NGAY trong tuần đầu tiên.`,
     // Paid tier sections
-    budget: `Xây dựng ngân sách cá nhân theo quy tắc 50/30/20 với thu nhập ${income}.`,
-    expenses: `Phân tích chi phí cố định và biến đổi, đề xuất cắt giảm 10-20%.`,
-    cashflow: `Mô tả dòng tiền vào/ra, đề xuất cơ chế "pay-yourself-first".`,
-    income_streams: `Đề xuất đa nguồn thu phù hợp kỹ năng ${skills.join(', ')}.`,
-    pricing_strategy: `Chiến lược định giá dịch vụ/sản phẩm nếu có.`,
-    client_acquisition: `Xây kênh tìm kiếm và chuyển đổi khách hàng.`,
-    risk_mgmt: `Lập danh mục rủi ro và cách phòng ngừa.`,
-    emergency_fund: `Thiết kế quỹ dự phòng 3-6 tháng chi phí.`,
-    debt_strategy: `Chiến lược xử lý nợ nếu có.`,
-    asset_allocation: `Phân bổ tài sản theo mức rủi ro.`,
-    tax_planning: `Tổng quan thuế cơ bản cá nhân/kinh doanh nhỏ.`,
-    performance_kpis: `Đặt KPIs cho thu nhập, tiết kiệm, hiệu suất.`,
-    review_cadence: `Thiết lập chu kỳ rà soát tuần/tháng/quý.`,
-    contingency_plans: `Kế hoạch dự phòng khi biến động.`,
-    investment_roadmap: `Lộ trình đầu tư theo giai đoạn.`
+    budget: `Xây dựng ngân sách cá nhân chi tiết với thu nhập ${income}. Phân bổ theo danh mục: chi phí cố định, chi phí sinh hoạt, tiết kiệm, đầu tư, giải trí.`,
+    expenses: `Phân tích chi phí cố định và biến đổi điển hình. Đề xuất cụ thể cách cắt giảm 10-20% chi phí không cần thiết.`,
+    cashflow: `Mô tả dòng tiền vào/ra hàng tháng. Đề xuất cơ chế "pay-yourself-first" và cách tự động hóa tiết kiệm.`,
+    income_streams: `Đề xuất 5-7 nguồn thu nhập thụ động và chủ động phù hợp kỹ năng ${skills.join(', ')}. Mỗi nguồn giải thích cách bắt đầu và thu nhập tiềm năng.`,
+    pricing_strategy: `Chiến lược định giá dịch vụ/sản phẩm. Đề xuất các mức giá, gói dịch vụ, và cách tăng giá theo thời gian.`,
+    client_acquisition: `Xây dựng kênh tìm kiếm và chuyển đổi khách hàng. Đề xuất 5-7 kênh marketing phù hợp và cách đo lường hiệu quả.`,
+    risk_mgmt: `Lập danh mục 5-7 rủi ro tài chính phổ biến và cách phòng ngừa cho từng loại.`,
+    emergency_fund: `Thiết kế quỹ dự phòng 3-6 tháng chi phí. Tính toán số tiền cần có và cách tích lũy.`,
+    debt_strategy: `Chiến lược xử lý nợ (nếu có). Phương pháp snowball vs avalanche, cách ưu tiên trả nợ.`,
+    asset_allocation: `Phân bổ tài sản theo mức rủi ro phù hợp với mục tiêu ${goal}. Đề xuất tỷ lệ cổ phiếu/trái phiếu/tiền mặt/bất động sản.`,
+    tax_planning: `Tổng quan thuế cơ bản cho cá nhân/kinh doanh nhỏ tại Việt Nam. Các khoản được khấu trừ và cách tối ưu thuế hợp pháp.`,
+    performance_kpis: `Đặt 5-7 KPIs cụ thể cho thu nhập, tiết kiệm, đầu tư. Mỗi KPI có mục tiêu số và thời hạn rõ ràng.`,
+    review_cadence: `Thiết lập chu kỳ rà soát: hàng tuần (15 phút), hàng tháng (1 giờ), hàng quý (nửa ngày). Checklist cần kiểm tra mỗi lần.`,
+    contingency_plans: `Kế hoạch dự phòng cho 3-5 tình huống biến động: mất việc, bệnh tật, suy thoái kinh tế, chi phí đột xuất.`,
+    investment_roadmap: `Lộ trình đầu tư theo 3 giai đoạn: Giai đoạn 1 (0-6 tháng), Giai đoạn 2 (6-18 tháng), Giai đoạn 3 (18-36 tháng). Mỗi giai đoạn có mục tiêu và hành động cụ thể.`
   }
 
   const basePrompt = prompts[section.key] || `Phân tích chi tiết về ${section.title}`
@@ -307,10 +307,15 @@ Viết phần: ${section.title}
 
 ${basePrompt}
 
-QUY TẮC:
-- CHỈ viết nội dung cho phần "${section.title}" này.
-- KHÔNG viết tiêu đề section.
-- KHÔNG viết "Cảm ơn bạn đã chia sẻ".
+QUY TẮC BẮT BUỘC:
+- CHỈ viết nội dung cho phần này, KHÔNG lặp lại thông tin từ các phần khác.
+- KHÔNG viết tiêu đề section (đã có sẵn).
+- KHÔNG viết "Kết luận" ở cuối phần - nội dung phải liền mạch để nối với phần tiếp theo.
+- KHÔNG viết "Cảm ơn bạn đã chia sẻ" hay lời chào.
+- KHÔNG lặp lại mục tiêu/tóm tắt tình hình tài chính (đã có ở phần 1).
+- KHÔNG đánh số lại từ 1, 2, 3 bên trong phần - dùng bullet points (•) hoặc gạch đầu dòng (-).
+- KHÔNG xuất JSON, code, hoặc dữ liệu raw.
+- Viết văn xuôi mạch lạc, dễ đọc, có tính ứng dụng cao.
 - Độ dài: khoảng ${targetWords} từ.`
 }
 
@@ -328,9 +333,30 @@ function cleanSectionContent(text: string, sectionTitle: string): string {
   cleaned = cleaned.replace(/VALIDATION[^\n]*/gi, '')
   cleaned = cleaned.replace(/Kiểm tra lần[^\n]*/gi, '')
 
-  // Remove Mermaid blocks and tables
+  // Remove Mermaid blocks and code blocks
   cleaned = cleaned.replace(/```mermaid[\s\S]*?```/gi, '')
+  cleaned = cleaned.replace(/```json[\s\S]*?```/gi, '')
+  cleaned = cleaned.replace(/```[\s\S]*?```/gi, '')
+  
+  // Remove raw JSON objects
+  cleaned = cleaned.replace(/\{[\s\S]*?"roadmap"[\s\S]*?\}/gi, '')
+  cleaned = cleaned.replace(/\{[\s\S]*?"actions"[\s\S]*?\}/gi, '')
+  cleaned = cleaned.replace(/\[\s*\{[\s\S]*?\}\s*\]/gi, '')
+  
+  // Remove markdown tables
   cleaned = cleaned.replace(/^\|.*$/gm, '')
+  cleaned = cleaned.replace(/^[-|:]+$/gm, '')
+
+  // Remove "Kết luận" sections at end of each part
+  cleaned = cleaned.replace(/\n+(?:#{1,4}\s*)?Kết luận\s*\n[\s\S]*$/gi, '')
+  cleaned = cleaned.replace(/\n+\*\*Kết luận\*\*[\s\S]*$/gi, '')
+  
+  // Remove repeated plan title/summary
+  cleaned = cleaned.replace(/Kế hoạch chi tiết cho mục tiêu của bạn[\s\S]*?(?=\n\n|$)/gi, '')
+  
+  // Remove numbered lists that restart from 1 (keep bullet points)
+  // This is tricky - we'll convert "1. " to "• " to avoid confusion with section numbers
+  cleaned = cleaned.replace(/^(\d+)\.\s+/gm, '• ')
 
   // Remove empty lines
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
