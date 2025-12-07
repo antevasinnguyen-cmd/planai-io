@@ -61,6 +61,7 @@ export default function GeneratePlanPage() {
   const startTimeRef = useRef<number>(0)
   const eventSourceRef = useRef<EventSource | null>(null)
   const generationStartedRef = useRef<boolean>(false) // CRITICAL: Lock to prevent duplicate generation
+  const continueInProgressRef = useRef<boolean>(false) // Prevent duplicate continue-generation calls
 
   const startSSE = (id: string) => {
     try {
@@ -822,6 +823,7 @@ export default function GeneratePlanPage() {
         setProgress(100)
         setStatus('Hoàn thành!')
         setJobStatus('completed')
+        continueInProgressRef.current = false
 
         sessionStorage.removeItem(`plan_job_${userId}`)
         clearJobMeta(userId)
@@ -839,6 +841,7 @@ export default function GeneratePlanPage() {
       if (result.status === 'failed') {
         setError(result.error_message || 'Tạo kế hoạch thất bại')
         setJobStatus('failed')
+        continueInProgressRef.current = false
         sessionStorage.removeItem(`plan_job_${userId}`)
         clearJobMeta(userId)
         return
@@ -866,6 +869,7 @@ export default function GeneratePlanPage() {
     console.error('Max continue calls reached')
     setError('Quá trình tạo kế hoạch mất quá lâu. Vui lòng thử lại.')
     setJobStatus('failed')
+    continueInProgressRef.current = false
   }
 
   const pollJobStatus = async (id: string) => {
@@ -952,6 +956,17 @@ export default function GeneratePlanPage() {
             statusText: 'Đang xử lý...',
             elapsedSeconds: elapsed
           })
+          
+          // AUTO-CONTINUE: If job is stuck in processing for >30 seconds, try to continue it
+          // This handles cases where SSE stream closed before frontend received progress event
+          if (elapsed > 30 && !continueInProgressRef.current) {
+            console.log('=== AUTO-CONTINUE: Job stuck in processing, attempting to continue ===')
+            continueInProgressRef.current = true
+            if (pollIntervalRef.current) {
+              clearInterval(pollIntervalRef.current)
+            }
+            continueGeneration(id)
+          }
         }
 
       } catch (error) {
