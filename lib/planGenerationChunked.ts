@@ -28,9 +28,10 @@ async function aiTextWithFallback(
   maxTokens: number,
   temperature: number
 ): Promise<string> {
-  // Timeout wrapper (25 seconds max per AI call to leave room for other operations)
+  // Timeout wrapper (55 seconds max per AI call - fits within Vercel's 60s limit)
+  // Increased from 25s because plan sections need more time to generate
   const timeoutPromise = new Promise<string>((_, reject) => {
-    setTimeout(() => reject(new Error('AI call timeout after 25s')), 25000)
+    setTimeout(() => reject(new Error('AI call timeout after 55s')), 55000)
   })
 
   const aiPromise = (async () => {
@@ -195,12 +196,32 @@ ${chatSummary.slice(0, 4000)}
 
       console.log(`[CHUNKED] Generating section ${i + 1}/${totalSections}: ${section.title}`)
 
-      const content = await aiTextWithFallback(
-        systemPrompt,
-        prompt,
-        Math.min(2000, targetWords * 2),
-        0.7
-      )
+      // Retry logic for section generation (up to 3 attempts)
+      let content = ''
+      let lastError: any = null
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          content = await aiTextWithFallback(
+            systemPrompt,
+            prompt,
+            Math.min(2000, targetWords * 2),
+            0.7
+          )
+          if (content && content.trim().length > 50) {
+            break // Success
+          }
+        } catch (err: any) {
+          lastError = err
+          console.warn(`[CHUNKED] Attempt ${attempt + 1}/3 failed for section ${i + 1}: ${err?.message}`)
+          if (attempt < 2) {
+            await sleep(1000 * (attempt + 1)) // Wait 1s, 2s before retry
+          }
+        }
+      }
+
+      if (!content || content.trim().length < 50) {
+        throw lastError || new Error(`Failed to generate section ${section.title} after 3 attempts`)
+      }
 
       const cleanedContent = cleanSectionContent(content, section.title)
       const sectionMarkdown = `## ${section.title}\n\n${cleanedContent}`
