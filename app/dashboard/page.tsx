@@ -490,19 +490,7 @@ export default function DashboardFinal() {
                   <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                     {getTierName(tier)}
                   </p>
-                  {typeof daysLeft === 'number' && (
-                    daysLeft <= 7
-                      ? (
-                        <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                          {daysLeft >= 0 ? `Còn ${daysLeft} ngày` : 'Đã hết hạn'}
-                        </span>
-                      )
-                      : (
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
-                          Còn {daysLeft} ngày
-                        </span>
-                      )
-                  )}
+                  {/* Only show days remaining for free tier trial */}
                   {tier === 'free' && trialStatus?.isActive && typeof trialStatus?.daysRemaining === 'number' && (
                     trialStatus.daysRemaining <= 7 ? (
                       <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
@@ -514,18 +502,26 @@ export default function DashboardFinal() {
                       </span>
                     )
                   )}
+                  {/* Paid tiers have lifetime access */}
+                  {(tier === 'basic' || tier === 'pro') && (
+                    <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                      Trọn đời
+                    </span>
+                  )}
                 </div>
                 
-                {/* Hiển thị thời gian hết hạn */}
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {planEndDate && (
-                  <span>Hết hạn: {planEndDate.toLocaleDateString('vi-VN')}{endDateSuffix}</span>
-                )}
-              </div>
+                {/* Hiển thị thời gian hết hạn - chỉ cho free tier */}
+              {tier === 'free' && (
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {planEndDate && (
+                    <span>Hết hạn: {planEndDate.toLocaleDateString('vi-VN')}{endDateSuffix}</span>
+                  )}
+                </div>
+              )}
               </div>
               
-              {/* Cảnh báo khi gói sắp hết hạn */}
-              {(typeof daysLeft === 'number' && daysLeft <= 7) && (
+              {/* Cảnh báo khi gói sắp hết hạn - chỉ cho free tier */}
+              {tier === 'free' && (typeof daysLeft === 'number' && daysLeft <= 7) && (
                 <div className="mb-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md flex items-center space-x-2">
                   <div className="w-5 h-5 rounded-full bg-orange-100 dark:bg-orange-800 flex items-center justify-center flex-shrink-0">
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white">Còn {daysLeft} ngày</span>
