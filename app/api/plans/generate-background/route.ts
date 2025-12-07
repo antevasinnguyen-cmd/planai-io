@@ -256,34 +256,46 @@ export async function POST(request: NextRequest) {
     // 2. Save progress to database
     // 3. Frontend polls and calls /api/plans/continue-generation to continue
     
-    // Update job status to processing with metadata
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
-    const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
-    
-    if (admin) {
-      await admin
-        .from('plan_jobs')
-        .update({
-          status: 'processing',
-          started_at: new Date().toISOString(),
-          metadata: {
-            currentSectionIndex: 0,
-            generatedSections: [],
-            collectedInfo: enrichedCollectedInfo,
-            tier
-          }
-        })
-        .eq('id', jobId)
-    }
-    
     // Generate first batch of sections (within 60s limit)
     const { generatePlanSection } = await import('@/lib/planGenerationChunked')
     
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       async start(controller) {
+        // Create admin client INSIDE stream callback to ensure it's available
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+        const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
+        
+        if (!admin) {
+          logger.error('BG_NO_ADMIN_CLIENT', { jobId })
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'error', job_id: jobId, error: 'Server configuration error' })}\n\n`))
+          controller.close()
+          return
+        }
+        
         try {
+          // Update job status to processing FIRST - with error checking
+          const { error: updateError } = await admin
+            .from('plan_jobs')
+            .update({
+              status: 'processing',
+              started_at: new Date().toISOString(),
+              metadata: {
+                currentSectionIndex: 0,
+                generatedSections: [],
+                collectedInfo: enrichedCollectedInfo,
+                tier
+              }
+            })
+            .eq('id', jobId)
+          
+          if (updateError) {
+            logger.error('BG_UPDATE_PROCESSING_FAILED', { jobId, error: updateError.message })
+          } else {
+            logger.info('BG_UPDATE_PROCESSING_OK', { jobId })
+          }
+          
           // Send initial response
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'started', job_id: jobId })}\n\n`))
           
@@ -356,21 +368,29 @@ export async function POST(request: NextRequest) {
             return
           }
           
-          // Save progress - more sections to generate
-          if (admin) {
-            await admin
-              .from('plan_jobs')
-              .update({
-                status: 'processing',
-                metadata: {
-                  currentSectionIndex: result.nextSectionIndex,
-                  generatedSections: result.generatedSections,
-                  collectedInfo: enrichedCollectedInfo,
-                  totalSections: result.totalSections,
-                  tier
-                }
-              })
-              .eq('id', jobId)
+          // Save progress - more sections to generate - WITH ERROR CHECKING
+          const metadataToSave = {
+            currentSectionIndex: result.nextSectionIndex,
+            generatedSections: result.generatedSections,
+            collectedInfo: enrichedCollectedInfo,
+            totalSections: result.totalSections,
+            tier,
+            lastUpdated: new Date().toISOString()
+          }
+          
+          const { error: metaError } = await admin
+            .from('plan_jobs')
+            .update({
+              status: 'processing',
+              metadata: metadataToSave
+            })
+            .eq('id', jobId)
+          
+          if (metaError) {
+            logger.error('BG_SAVE_METADATA_FAILED', { jobId, error: metaError.message, nextSectionIndex: result.nextSectionIndex })
+            // Still send progress to frontend, but log the error
+          } else {
+            logger.info('BG_SAVE_METADATA_OK', { jobId, nextSectionIndex: result.nextSectionIndex, totalSections: result.totalSections })
           }
           
           // Send progress update - frontend will call continue-generation

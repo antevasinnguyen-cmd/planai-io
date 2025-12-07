@@ -206,14 +206,20 @@ export async function POST(request: NextRequest) {
         message: 'Plan generation completed'
       })
     } else {
-      // Still in progress - update metadata
-      await admin
+      // Still in progress - update metadata WITH ERROR CHECKING
+      const { error: updateError } = await admin
         .from('plan_jobs')
         .update({
           status: 'processing',
           metadata: newMetadata
         })
         .eq('id', jobId)
+
+      if (updateError) {
+        logger.error('CONTINUE_GEN_UPDATE_FAILED', { jobId, error: updateError.message, nextSectionIndex: result.nextSectionIndex })
+      } else {
+        logger.info('CONTINUE_GEN_UPDATE_OK', { jobId, nextSectionIndex: result.nextSectionIndex })
+      }
 
       // Calculate progress percentage
       const totalSections = result.totalSections || 9
