@@ -72,9 +72,21 @@ export async function GET(request: NextRequest) {
     // Create supabase client for database query
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    // Also create admin client for fallback
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    let admin = null
+    if (supabaseUrl && serviceKey) {
+      const { createClient } = await import('@supabase/supabase-js')
+      admin = createClient(supabaseUrl, serviceKey)
+    }
 
-    // Get job status
-    const { data: job, error } = await supabase
+    // Get job status - try RLS client first, fallback to admin
+    let job = null
+    let error = null
+    
+    const { data: rlsJob, error: rlsError } = await supabase
       .from('plan_jobs')
       .select(`
         id,
@@ -89,13 +101,80 @@ export async function GET(request: NextRequest) {
       .eq('id', jobId)
       .eq('user_id', user.id)
       .single()
+    
+    if (rlsJob && !rlsError) {
+      job = rlsJob
+    } else if (admin) {
+      // Fallback to admin client
+      logger.info('JOB_STATUS_ADMIN_FALLBACK', { jobId, rlsError: rlsError?.message })
+      const { data: adminJob, error: adminError } = await admin
+        .from('plan_jobs')
+        .select(`
+          id,
+          status,
+          error_message,
+          plan_id,
+          created_at,
+          started_at,
+          completed_at,
+          plans(id, title)
+        `)
+        .eq('id', jobId)
+        .eq('user_id', user.id)
+        .single()
+      
+      if (adminJob && !adminError) {
+        job = adminJob
+      } else {
+        error = adminError
+      }
+    } else {
+      error = rlsError
+    }
 
-    if (error) {
+    if (error || !job) {
       logger.error('JOB_STATUS_DB_ERROR', { error: String(error), jobId })
       return NextResponse.json(
         { error: 'Job not found' },
         { status: 404 }
       )
+    }
+    
+    // AUTO-FAIL: If job is stuck in processing for too long (>6 minutes), mark as failed
+    // This handles cases where Vercel killed the function before completion
+    if (job.status === 'processing' && job.started_at) {
+      const startedAt = new Date(job.started_at)
+      const now = new Date()
+      const elapsedMinutes = (now.getTime() - startedAt.getTime()) / (1000 * 60)
+      
+      if (elapsedMinutes > 6) {
+        logger.warn('JOB_STATUS_AUTO_FAIL_STUCK', { jobId, elapsedMinutes })
+        
+        // Update job to failed using admin client
+        if (admin) {
+          await admin
+            .from('plan_jobs')
+            .update({
+              status: 'failed',
+              error_message: 'Tạo kế hoạch bị gián đoạn do timeout. Vui lòng thử lại.',
+              completed_at: now.toISOString()
+            })
+            .eq('id', jobId)
+        }
+        
+        // Return failed status
+        return NextResponse.json({
+          job_id: job.id,
+          status: 'failed',
+          error_message: 'Tạo kế hoạch bị gián đoạn do timeout. Vui lòng thử lại.',
+          plan_id: null,
+          elapsed_seconds: Math.floor(elapsedMinutes * 60),
+          created_at: job.created_at,
+          started_at: job.started_at,
+          completed_at: now.toISOString(),
+          plan: null
+        })
+      }
     }
 
     if (!job) {

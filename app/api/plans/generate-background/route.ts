@@ -311,9 +311,10 @@ async function processJobInBackground(
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined
   const admin = serviceKey ? createClient(supabaseUrl, serviceKey) : null
   
-  // Set timeout for entire job processing (10 minutes for free tier, 25 minutes for paid)
+  // Set timeout for entire job processing
+  // IMPORTANT: Vercel maxDuration is 300s (5 min), so we set timeout to 4.5 min to ensure cleanup
   const tier = String(collectedInfo?.tier || 'free')
-  const timeoutMs = tier === 'free' ? 10 * 60 * 1000 : 25 * 60 * 1000
+  const timeoutMs = 4.5 * 60 * 1000 // 4.5 minutes for all tiers (within Vercel's 5 min limit)
   let timeoutHandle: NodeJS.Timeout | null = null
   
   try {
