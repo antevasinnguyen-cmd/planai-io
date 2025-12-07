@@ -397,15 +397,15 @@ export default function SubscriptionPage() {
                 Mua nhiều gói để tăng quota
               </h3>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Bạn có thể mua thêm nhiều gói khác nhau để cộng dồn quota. Ví dụ: <strong>Gói 1 + Gói 2</strong> sẽ cho bạn:
+                Bạn có thể mua thêm nhiều gói khác nhau để cộng dồn quota. Ví dụ: <strong>Gói 1 + Gói 2</strong> sẽ cho bạn: <strong>2 + 4 kế hoạch</strong>.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <span className="font-semibold text-gray-900 dark:text-white">3 kế hoạch</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">6 kế hoạch</span>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">1 + 2 = 3 plans</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">2 + 4 = 6 plans</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-2">
