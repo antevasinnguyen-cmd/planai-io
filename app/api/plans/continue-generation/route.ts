@@ -1,5 +1,6 @@
 export const runtime = 'nodejs'
-export const maxDuration = 60 // 60 seconds - Vercel Free limit
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // 300 seconds - Vercel Free max limit
 
 import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'

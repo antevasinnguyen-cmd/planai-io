@@ -1,7 +1,8 @@
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 // Vercel Free = 60s, Pro = 900s (15 min), Enterprise = 3600s (60 min)
 // For Vercel Free, we use chunked generation with database checkpointing
-export const maxDuration = 60 // 60 seconds - Vercel Free limit
+export const maxDuration = 300 // 300 seconds - Vercel Free max limit (5 minutes)
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getCurrentUser, getUserSubscription, checkUsageLimits, getSubscriptionLimits, getTierName, getServerCapsByTier } from '@/lib/supabase'

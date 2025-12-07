@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export async function GET(req: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get('userId')
+    const userId = request.nextUrl.searchParams.get('userId')
     
     if (!userId) {
       return NextResponse.json({ error: 'userId required' }, { status: 400 })

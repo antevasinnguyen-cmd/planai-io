@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 
-export async function GET(req: Request) {
+// Mark this route as dynamic (uses request.headers and searchParams)
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
   try {
     let user = null
     
     // Try Authorization header first (Bearer token)
-    const authHeader = req.headers.get('Authorization')
+    const authHeader = request.headers.get('Authorization')
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7)
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
