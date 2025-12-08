@@ -112,9 +112,91 @@ export async function POST(request: NextRequest) {
           const title = String(plan.title || 'Kế hoạch tài chính')
           const content = String(plan.content || '')
 
-          doc.fontSize(20).text(title, { align: 'left' })
-          doc.moveDown()
-          doc.fontSize(12).text(content, { align: 'left' })
+          // Title
+          doc.fontSize(24).font('Helvetica-Bold').text(title, { align: 'center' })
+          doc.moveDown(0.5)
+          doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`Ngày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}`, { align: 'center' })
+          doc.moveDown(1.5)
+          doc.fillColor('#000000')
+
+          // Parse and render markdown content
+          const lines = content.split('\n')
+          for (const line of lines) {
+            const trimmed = line.trim()
+            
+            // Skip empty lines
+            if (!trimmed) {
+              doc.moveDown(0.3)
+              continue
+            }
+
+            // H1: # Title
+            if (trimmed.startsWith('# ')) {
+              doc.moveDown(0.5)
+              doc.fontSize(20).font('Helvetica-Bold').fillColor('#1a1a1a').text(trimmed.slice(2))
+              doc.moveDown(0.3)
+              continue
+            }
+
+            // H2: ## Section
+            if (trimmed.startsWith('## ')) {
+              doc.moveDown(0.5)
+              doc.fontSize(16).font('Helvetica-Bold').fillColor('#4a4a4a').text(trimmed.slice(3))
+              doc.moveDown(0.3)
+              continue
+            }
+
+            // H3: ### Subsection
+            if (trimmed.startsWith('### ')) {
+              doc.moveDown(0.3)
+              doc.fontSize(14).font('Helvetica-Bold').fillColor('#5a5a5a').text(trimmed.slice(4))
+              doc.moveDown(0.2)
+              continue
+            }
+
+            // H4: #### Sub-subsection
+            if (trimmed.startsWith('#### ')) {
+              doc.fontSize(12).font('Helvetica-Bold').text(trimmed.slice(5))
+              doc.moveDown(0.2)
+              continue
+            }
+
+            // Bullet points: - or • or *
+            if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
+              const bulletText = trimmed.slice(2)
+              // Handle bold text within bullet
+              const parts = bulletText.split(/\*\*([^*]+)\*\*/g)
+              doc.fontSize(11).font('Helvetica').fillColor('#000000')
+              doc.text('  • ', { continued: true })
+              for (let i = 0; i < parts.length; i++) {
+                if (i % 2 === 1) {
+                  doc.font('Helvetica-Bold').text(parts[i], { continued: i < parts.length - 1 })
+                } else if (parts[i]) {
+                  doc.font('Helvetica').text(parts[i], { continued: i < parts.length - 1 })
+                }
+              }
+              doc.text('') // End line
+              continue
+            }
+
+            // Regular paragraph - handle bold text
+            const parts = trimmed.split(/\*\*([^*]+)\*\*/g)
+            doc.fontSize(11).font('Helvetica').fillColor('#000000')
+            for (let i = 0; i < parts.length; i++) {
+              if (i % 2 === 1) {
+                doc.font('Helvetica-Bold').text(parts[i], { continued: i < parts.length - 1 })
+              } else if (parts[i]) {
+                doc.font('Helvetica').text(parts[i], { continued: i < parts.length - 1 })
+              }
+            }
+            doc.text('') // End line
+          }
+
+          // Footer
+          doc.moveDown(2)
+          doc.fontSize(9).font('Helvetica').fillColor('#888888')
+          doc.text('Được tạo bởi PlanAI.io.vn - Trợ lý tài chính AI thông minh', { align: 'center' })
+
           doc.end()
         })
 
