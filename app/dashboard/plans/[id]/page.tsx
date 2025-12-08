@@ -296,6 +296,10 @@ export default function PlanViewEnhanced() {
     }
   }
 
+  const [showBirthDateModal, setShowBirthDateModal] = useState(false)
+  const [birthDateInput, setBirthDateInput] = useState('')
+  const [spiritualLoading, setSpiritualLoading] = useState(false)
+
   const toggleSpiritual = async () => {
     if (!plan) return
 
@@ -309,43 +313,105 @@ export default function PlanViewEnhanced() {
 
     const newValue = !spiritualEnabled
 
+    // If disabling, just toggle off
+    if (!newValue) {
+      try {
+        await supabase
+          .from('plans')
+          .update({ spiritual_enabled: false })
+          .eq('id', planId)
+        setPlan({ ...plan, spiritual_enabled: false })
+        setSpiritualEnabled(false)
+      } catch (error) {
+        console.error('Error toggling spiritual:', error)
+      }
+      return
+    }
+
+    // If enabling and already have data, just toggle on
+    if (plan.spiritual_data) {
+      try {
+        await supabase
+          .from('plans')
+          .update({ spiritual_enabled: true })
+          .eq('id', planId)
+        setPlan({ ...plan, spiritual_enabled: true })
+        setSpiritualEnabled(true)
+      } catch (error) {
+        console.error('Error toggling spiritual:', error)
+      }
+      return
+    }
+
+    // Need to generate - check if we have birth date
+    const existingBirthDate = plan.collected_info?.birth_date || plan.collected_info?.birthDate
+    if (!existingBirthDate) {
+      // Show modal to input birth date
+      setShowBirthDateModal(true)
+      return
+    }
+
+    // Generate spiritual analysis
+    await generateSpiritualAnalysis(existingBirthDate)
+  }
+
+  const generateSpiritualAnalysis = async (birthDate: string) => {
+    if (!plan) return
+    
+    setSpiritualLoading(true)
     try {
-      // If enabling, generate spiritual analysis
-      if (newValue && !plan.spiritual_data) {
-        const res = await fetch('/api/spiritual/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            planId: plan.id,
-            birthDate: plan.collected_info?.birth_date
-          })
+      const res = await fetch('/api/spiritual/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          birthDate: birthDate
         })
+      })
 
-        const data = await res.json()
-        
-        await supabase
-          .from('plans')
-          .update({
-            spiritual_enabled: newValue,
-            spiritual_data: data.analysis
-          })
-          .eq('id', planId)
-
-        setPlan({ ...plan, spiritual_enabled: newValue, spiritual_data: data.analysis })
-      } else {
-        await supabase
-          .from('plans')
-          .update({ spiritual_enabled: newValue })
-          .eq('id', planId)
-
-        setPlan({ ...plan, spiritual_enabled: newValue })
+      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to analyze')
       }
 
-      setSpiritualEnabled(newValue)
+      // Save birth date to collected_info and spiritual data
+      const updatedCollectedInfo = {
+        ...plan.collected_info,
+        birth_date: birthDate
+      }
+      
+      await supabase
+        .from('plans')
+        .update({
+          spiritual_enabled: true,
+          spiritual_data: data.analysis,
+          collected_info: updatedCollectedInfo
+        })
+        .eq('id', planId)
+
+      setPlan({ 
+        ...plan, 
+        spiritual_enabled: true, 
+        spiritual_data: data.analysis,
+        collected_info: updatedCollectedInfo
+      })
+      setSpiritualEnabled(true)
+      setShowBirthDateModal(false)
     } catch (error) {
-      console.error('Error toggling spiritual:', error)
-      alert('Có lỗi xảy ra')
+      console.error('Error generating spiritual analysis:', error)
+      alert('Có lỗi khi phân tích tử vi. Vui lòng thử lại.')
+    } finally {
+      setSpiritualLoading(false)
     }
+  }
+
+  const handleBirthDateSubmit = () => {
+    if (!birthDateInput) {
+      alert('Vui lòng nhập ngày sinh')
+      return
+    }
+    generateSpiritualAnalysis(birthDateInput)
   }
 
   if (loading) {
@@ -804,6 +870,64 @@ export default function PlanViewEnhanced() {
                 className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Birth Date Modal for Spiritual Analysis */}
+      {showBirthDateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-8 max-w-md mx-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-500/20 mx-auto mb-4">
+              <Star className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">
+              Nhập ngày sinh để phân tích tử vi
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+              Chúng tôi cần ngày sinh của bạn để phân tích cung hoàng đạo, số mệnh và đưa ra lời khuyên tài chính phù hợp.
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Ngày sinh (DD/MM/YYYY)
+              </label>
+              <input
+                type="text"
+                value={birthDateInput}
+                onChange={(e) => setBirthDateInput(e.target.value)}
+                placeholder="VD: 15/08/1990"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={handleBirthDateSubmit}
+                disabled={spiritualLoading}
+                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {spiritualLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Đang phân tích...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    <span>Phân tích tử vi</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowBirthDateModal(false)
+                  setBirthDateInput('')
+                }}
+                disabled={spiritualLoading}
+                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                Huỷ
               </button>
             </div>
           </div>
