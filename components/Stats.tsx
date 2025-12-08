@@ -90,7 +90,7 @@ export default function Stats() {
               <div className="text-3xl font-bold text-blue-600">23-38 tuổi</div>
               <div className="text-gray-900 font-semibold">Độ tuổi mục tiêu</div>
               <p className="text-gray-600 text-sm">
-                Phù hợp với những ai mong muốn xây dựng kế hoạch tài chính lâu dài
+                Phù hợp với những ai mong muốn xây dựng kế hoạch lâu dài
               </p>
             </div>
           </div>
