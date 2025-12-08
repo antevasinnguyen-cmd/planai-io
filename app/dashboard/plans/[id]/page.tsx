@@ -298,7 +298,10 @@ export default function PlanViewEnhanced() {
 
   const [showBirthDateModal, setShowBirthDateModal] = useState(false)
   const [birthDateInput, setBirthDateInput] = useState('')
+  const [birthTimeInput, setBirthTimeInput] = useState('')
+  const [spiritualNameInput, setSpiritualNameInput] = useState('')
   const [spiritualLoading, setSpiritualLoading] = useState(false)
+  const [showSpiritualPopup, setShowSpiritualPopup] = useState(false)
 
   const toggleSpiritual = async () => {
     if (!plan) return
@@ -328,18 +331,10 @@ export default function PlanViewEnhanced() {
       return
     }
 
-    // If enabling and already have data, just toggle on
+    // If enabling and already have data, show popup
     if (plan.spiritual_data) {
-      try {
-        await supabase
-          .from('plans')
-          .update({ spiritual_enabled: true })
-          .eq('id', planId)
-        setPlan({ ...plan, spiritual_enabled: true })
-        setSpiritualEnabled(true)
-      } catch (error) {
-        console.error('Error toggling spiritual:', error)
-      }
+      setShowSpiritualPopup(true)
+      setSpiritualEnabled(true)
       return
     }
 
@@ -360,12 +355,19 @@ export default function PlanViewEnhanced() {
     
     setSpiritualLoading(true)
     try {
+      // Build full birth info string for better analysis
+      const birthInfo = birthTimeInput 
+        ? `${birthDate} lúc ${birthTimeInput}` 
+        : birthDate
+
       const res = await fetch('/api/spiritual/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
-          birthDate: birthDate
+          birthDate: birthInfo,
+          birthTime: birthTimeInput,
+          fullName: spiritualNameInput
         })
       })
 
@@ -375,10 +377,12 @@ export default function PlanViewEnhanced() {
         throw new Error(data.error || 'Failed to analyze')
       }
 
-      // Save birth date to collected_info and spiritual data
+      // Save all info to collected_info and spiritual data
       const updatedCollectedInfo = {
         ...plan.collected_info,
-        birth_date: birthDate
+        birth_date: birthDate,
+        birth_time: birthTimeInput,
+        spiritual_name: spiritualNameInput || plan.collected_info?.full_name
       }
       
       await supabase
@@ -398,6 +402,7 @@ export default function PlanViewEnhanced() {
       })
       setSpiritualEnabled(true)
       setShowBirthDateModal(false)
+      setShowSpiritualPopup(true) // Show result popup
     } catch (error) {
       console.error('Error generating spiritual analysis:', error)
       alert('Có lỗi khi phân tích tử vi. Vui lòng thử lại.')
@@ -876,46 +881,77 @@ export default function PlanViewEnhanced() {
         </div>
       )}
 
-      {/* Birth Date Modal for Spiritual Analysis */}
+      {/* Birth Date Modal for Spiritual Analysis - Full Info Input */}
       {showBirthDateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-8 max-w-md mx-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-500/20 mx-auto mb-4">
-              <Star className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl p-8 max-w-lg mx-4 border-2 border-transparent bg-clip-padding" style={{backgroundImage: 'linear-gradient(white, white), linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box'}}>
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 mx-auto mb-4">
+              <Star className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">
-              Nhập ngày sinh để phân tích tử vi
+            <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+              ✨ Phân tích Tử vi & Thần số học
             </h3>
             <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-              Chúng tôi cần ngày sinh của bạn để phân tích cung hoàng đạo, số mệnh và đưa ra lời khuyên tài chính phù hợp.
+              Nhập thông tin để nhận phân tích chuyên sâu về cung mệnh, số chủ đạo và lời khuyên tài chính cá nhân hoá.
             </p>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Ngày sinh (DD/MM/YYYY)
-              </label>
-              <input
-                type="text"
-                value={birthDateInput}
-                onChange={(e) => setBirthDateInput(e.target.value)}
-                placeholder="VD: 15/08/1990"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
+            
+            <div className="space-y-4 mb-6">
+              {/* Họ và tên */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Họ và tên <span className="text-gray-400">(tuỳ chọn)</span>
+                </label>
+                <input
+                  type="text"
+                  value={spiritualNameInput}
+                  onChange={(e) => setSpiritualNameInput(e.target.value)}
+                  placeholder="VD: Nguyễn Văn A"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Ngày tháng năm sinh */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Ngày sinh <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={birthDateInput}
+                  onChange={(e) => setBirthDateInput(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              
+              {/* Giờ sinh */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Giờ sinh <span className="text-gray-400">(tuỳ chọn - để phân tích chính xác hơn)</span>
+                </label>
+                <input
+                  type="time"
+                  value={birthTimeInput}
+                  onChange={(e) => setBirthTimeInput(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
             </div>
+            
             <div className="space-y-3">
               <button
                 onClick={handleBirthDateSubmit}
-                disabled={spiritualLoading}
-                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={spiritualLoading || !birthDateInput}
+                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 text-white rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-purple-500/30"
               >
                 {spiritualLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Đang phân tích...</span>
+                    <span>Đang phân tích tử vi...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5" />
-                    <span>Phân tích tử vi</span>
+                    <span>Xem phân tích tử vi</span>
                   </>
                 )}
               </button>
@@ -923,12 +959,123 @@ export default function PlanViewEnhanced() {
                 onClick={() => {
                   setShowBirthDateModal(false)
                   setBirthDateInput('')
+                  setBirthTimeInput('')
+                  setSpiritualNameInput('')
                 }}
                 disabled={spiritualLoading}
                 className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 Huỷ
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spiritual Analysis Result Popup - Gradient Border */}
+      {showSpiritualPopup && plan?.spiritual_data && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowSpiritualPopup(false)}>
+          <div 
+            className="bg-white dark:bg-[#1a1a1a] rounded-2xl p-1 max-w-2xl mx-4 max-h-[85vh] overflow-hidden"
+            style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #667eea 100%)'}}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6 overflow-y-auto max-h-[calc(85vh-8px)]">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Star className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Phân tích Tử vi & Thần số học</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {plan.collected_info?.spiritual_name || plan.collected_info?.full_name || 'Người dùng'} • {plan.collected_info?.birth_date}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSpiritualPopup(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                >
+                  <span className="text-gray-500">✕</span>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="space-y-6">
+                {/* Cung hoàng đạo */}
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+                  <h4 className="font-bold text-purple-800 dark:text-purple-300 mb-2 flex items-center gap-2">
+                    <span>🌟</span> Cung hoàng đạo
+                  </h4>
+                  <p className="text-gray-700 dark:text-gray-300">{plan.spiritual_data.zodiac || 'Đang phân tích...'}</p>
+                </div>
+
+                {/* Số mệnh */}
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl">
+                  <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                    <span>🔢</span> Số chủ đạo (Life Path)
+                  </h4>
+                  <p className="text-gray-700 dark:text-gray-300">{plan.spiritual_data.lifePath || 'Đang phân tích...'}</p>
+                </div>
+
+                {/* Lời khuyên */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
+                  <h4 className="font-bold text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+                    <span>💡</span> Lời khuyên tài chính & sự nghiệp
+                  </h4>
+                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{plan.spiritual_data.advice || 'Đang phân tích...'}</p>
+                </div>
+
+                {/* Số & màu may mắn */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                    <h4 className="font-bold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
+                      <span>🍀</span> Số may mắn
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {Array.isArray(plan.spiritual_data.luckyNumbers) 
+                        ? plan.spiritual_data.luckyNumbers.join(', ') 
+                        : plan.spiritual_data.luckyNumbers || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl">
+                    <h4 className="font-bold text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-2">
+                      <span>🎨</span> Màu may mắn
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {Array.isArray(plan.spiritual_data.luckyColors) 
+                        ? plan.spiritual_data.luckyColors.join(', ') 
+                        : plan.spiritual_data.luckyColors || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Thời điểm thuận lợi */}
+                {plan.spiritual_data.favorablePeriods && (
+                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 rounded-xl">
+                    <h4 className="font-bold text-indigo-800 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                      <span>📅</span> Thời điểm thuận lợi
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {Array.isArray(plan.spiritual_data.favorablePeriods) 
+                        ? plan.spiritual_data.favorablePeriods.join(', ') 
+                        : plan.spiritual_data.favorablePeriods}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowSpiritualPopup(false)}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-bold transition-all"
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         </div>

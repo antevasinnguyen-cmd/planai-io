@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import { Copy, Download, Table2, FileSpreadsheet, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
+
+// Lazy load RoadmapDiagram to avoid SSR issues with ReactFlow
+const RoadmapDiagram = lazy(() => import('./RoadmapDiagram'))
+import { parseRoadmapContent } from './RoadmapDiagram'
 
 interface TableData {
   headers: string[]
@@ -209,6 +213,36 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
   // Render từng section
   const renderSection = (section: { title: string, content: string, index: number, sectionNum: number | null }) => {
     const sn = section.sectionNum;
+    
+    // Special handling for Section 5 (Roadmap) - Show interactive diagram for paid users
+    if (sn === 5 && userTier !== 'free') {
+      const roadmapData = parseRoadmapContent(section.content);
+      return (
+        <div key={section.index} className="mb-8">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          
+          {/* Interactive Roadmap Diagram */}
+          {roadmapData.length > 0 && (
+            <div className="mt-6">
+              <Suspense fallback={
+                <div className="w-full h-[400px] bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-gray-500 dark:text-gray-400">Đang tải sơ đồ...</p>
+                  </div>
+                </div>
+              }>
+                <RoadmapDiagram 
+                  data={roadmapData} 
+                  title="Sơ đồ lộ trình đến mục tiêu"
+                  direction="TB"
+                />
+              </Suspense>
+            </div>
+          )}
+        </div>
+      );
+    }
     
     // Special handling for Section 15 (Google Sheets Tracking) - Add export button
     if (sn === 15 && userTier !== 'free') {

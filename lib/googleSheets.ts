@@ -39,11 +39,11 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
       throw new Error('Failed to create spreadsheet from template')
     }
 
-    // Make the spreadsheet accessible to anyone with the link
+    // Make the spreadsheet accessible to anyone with the link (can edit)
     await drive.permissions.create({
       fileId: response.data.id,
       requestBody: {
-        role: 'reader',
+        role: 'writer',  // Changed from 'reader' to allow editing without login
         type: 'anyone',
       },
     })
