@@ -71,26 +71,26 @@ export default function Stats() {
         <div className="mt-16 bg-white rounded-3xl p-8 md:p-12 shadow-xl">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="space-y-4">
-              <div className="text-3xl font-bold text-primary-600">169K - 499K</div>
+              <div className="text-3xl font-bold text-primary-600">249K - 479K</div>
               <div className="text-gray-900 font-semibold">Giá cả phải chăng</div>
               <p className="text-gray-600 text-sm">
-                Chỉ từ 169,000đ để có kế hoạch tài chính chuyên nghiệp
+                Chỉ từ 249,000đ để có kế hoạch tài chính chuyên nghiệp
               </p>
             </div>
             
             <div className="space-y-4">
-              <div className="text-3xl font-bold text-green-600">5-20K từ</div>
+              <div className="text-3xl font-bold text-green-600">5-50K từ</div>
               <div className="text-gray-900 font-semibold">Kế hoạch chi tiết</div>
               <p className="text-gray-600 text-sm">
-                Từ 5,000 đến 20,000 từ như một cuốn Ebook hoàn chỉnh
+                Từ 5,000 đến 50,000 từ như một cuốn Ebook hoàn chỉnh
               </p>
             </div>
             
             <div className="space-y-4">
-              <div className="text-3xl font-bold text-blue-600">23-35 tuổi</div>
+              <div className="text-3xl font-bold text-blue-600">23-38 tuổi</div>
               <div className="text-gray-900 font-semibold">Độ tuổi mục tiêu</div>
               <p className="text-gray-600 text-sm">
-                Phù hợp với Gen Y/Z có thu nhập ổn định từ 5 triệu+
+                Phù hợp với những ai mong muốn xây dựng kế hoạch tài chính lâu dài
               </p>
             </div>
           </div>
