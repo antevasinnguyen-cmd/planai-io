@@ -159,13 +159,13 @@ export async function GET(request: NextRequest) {
     // Nếu provider là PayOS, kiểm tra với PayOS API
     if (provider === 'payos' && payment && PAYOS_API_KEY && PAYOS_CLIENT_ID) {
       try {
-        // PayOS API cần orderCode (số nguyên) - lấy từ payos_payment_id hoặc transaction_id
-        // payos_payment_id thường là orderCode đã được lưu khi tạo payment
-        const orderCode = payment.payos_payment_id || payment.transaction_id?.replace(/[^0-9]/g, '').slice(0, 9)
+        // PayOS API cần orderCode (số nguyên) - lấy từ metadata.payos_order_code hoặc transaction_id
+        // KHÔNG dùng payos_payment_id vì cột này không tồn tại trong DB
+        const orderCode = payment.metadata?.payos_order_code || payment.transaction_id?.replace(/[^0-9]/g, '').slice(0, 9)
         console.log('=== PAYOS API CHECK ===', {
           orderId,
           orderCode,
-          payos_payment_id: payment.payos_payment_id,
+          metadata_payos_order_code: payment.metadata?.payos_order_code,
           transaction_id: payment.transaction_id
         })
 

@@ -393,11 +393,13 @@ export async function POST(request: NextRequest) {
       }
 
       // Thêm thông tin PayOS nếu có
+      // QUAN TRỌNG: KHÔNG dùng payos_payment_id vì cột này không tồn tại trong DB
+      // Lưu payos_order_code vào metadata thay thế
       if (paymentMethod === 'payos') {
         const urlParams = new URL(paymentUrl).searchParams
         const payosOrderCode = urlParams.get('payosOrderCode')
         if (payosOrderCode) {
-          paymentData.payos_payment_id = payosOrderCode
+          // KHÔNG thêm payos_payment_id - cột không tồn tại trong DB!
           paymentData.metadata = {
             ...paymentData.metadata,
             payos_order_code: payosOrderCode,

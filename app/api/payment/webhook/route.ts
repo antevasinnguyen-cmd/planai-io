@@ -100,16 +100,17 @@ export async function POST(request: NextRequest) {
         payment = payment1;
         console.log(`[${webhookId}] Found by transaction_id:`, orderCode);
       } else {
-        // Thử 2: Tìm theo payos_payment_id
+        // Thử 2: Tìm theo metadata->payos_order_code (vì cột payos_payment_id không tồn tại)
         const { data: payment2 } = await adminSupabase
           .from('payments')
           .select('*')
-          .eq('payos_payment_id', orderCode)
+          .eq('metadata->>payos_order_code', orderCode)
+          .eq('status', 'pending')
           .maybeSingle();
         
         if (payment2) {
           payment = payment2;
-          console.log(`[${webhookId}] Found by payos_payment_id:`, orderCode);
+          console.log(`[${webhookId}] Found by metadata.payos_order_code:`, orderCode);
         } else {
           // Thử 3: Tìm theo partial match
           const { data: payment3 } = await adminSupabase
