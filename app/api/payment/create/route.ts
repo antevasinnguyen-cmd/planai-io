@@ -334,6 +334,8 @@ export async function POST(request: NextRequest) {
         })
 
         // Tạo URL xử lý thanh toán với PayOS payment URL
+        // QUAN TRỌNG: payosOrderCode phải là số nguyên từ payosPayment.orderCode
+        // vì PayOS webhook sẽ gửi số này, không phải transactionId gốc
         paymentUrl = `${baseUrl}/payment/processing?${new URLSearchParams({
           order: transactionId,
           amount: amount.toString(),
@@ -344,7 +346,7 @@ export async function POST(request: NextRequest) {
           name: payosPayment.accountName || '',
           bank: 'MB Bank',
           timestamp: Date.now().toString(),
-          payosOrderCode: orderCode,
+          payosOrderCode: payosPayment.orderCode, // Số nguyên đã gửi đến PayOS
           paymentUrl: payosPayment.paymentUrl || ''
         })}`
 

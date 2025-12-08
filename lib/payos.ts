@@ -98,9 +98,11 @@ export const createPaymentLink = async (
       qrCode = `https://img.vietqr.io/image/${bankCode}-${paymentData.accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(orderCode)}&accountName=${encodeURIComponent(paymentData.accountName)}`
     }
 
+    // QUAN TRỌNG: Trả về orderCodeNumber (số nguyên) vì PayOS webhook sẽ gửi số này
+    // Không trả về orderCode (string gốc) vì sẽ không khớp với webhook
     return {
       id: paymentData.paymentLinkId,
-      orderCode,
+      orderCode: orderCodeNumber.toString(), // Trả về orderCodeNumber đã gửi đến PayOS
       amount,
       description,
       status: PaymentStatus.PENDING,

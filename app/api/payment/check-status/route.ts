@@ -80,6 +80,12 @@ export async function GET(request: NextRequest) {
     // Hàm chung để cập nhật subscription khi thanh toán thành công
     const updateSubscriptionOnSuccess = async (paymentRecord: any) => {
       if (paymentRecord && paymentRecord.status !== 'completed') {
+        console.log('=== UPDATING SUBSCRIPTION ON SUCCESS ===', {
+          paymentId: paymentRecord.id,
+          userId: paymentRecord.user_id,
+          tier: paymentRecord.subscription_tier
+        })
+        
         // Cập nhật payment status
         await supabase
           .from('payments')
@@ -92,6 +98,11 @@ export async function GET(request: NextRequest) {
         // Tính toán ngày kết thúc (30 ngày từ bây giờ)
         const now = new Date()
         const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+        
+        // Get subscription limits
+        const { getSubscriptionLimits } = await import('@/lib/supabase')
+        const limits = getSubscriptionLimits(paymentRecord.subscription_tier)
+        console.log('Subscription limits:', limits)
 
         // Cập nhật hoặc tạo subscription record
         const { data: existingSub } = await supabase
@@ -102,27 +113,34 @@ export async function GET(request: NextRequest) {
           .single()
 
         if (existingSub) {
-          // Cập nhật subscription hiện tại
+          // Cập nhật subscription hiện tại - bao gồm limits
           await supabase
             .from('subscriptions')
             .update({
               tier: paymentRecord.subscription_tier,
+              plan_limit: limits.plans,
+              chat_limit: limits.chats,
+              current_period_start: now.toISOString(),
               current_period_end: endDate.toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: now.toISOString()
             })
             .eq('id', existingSub.id)
+          console.log('Subscription updated:', existingSub.id)
         } else {
-          // Tạo subscription mới
+          // Tạo subscription mới - bao gồm limits
           await supabase
             .from('subscriptions')
             .insert({
               user_id: paymentRecord.user_id,
               tier: paymentRecord.subscription_tier,
               status: 'active',
+              plan_limit: limits.plans,
+              chat_limit: limits.chats,
               current_period_start: now.toISOString(),
               current_period_end: endDate.toISOString(),
               created_at: now.toISOString()
             })
+          console.log('New subscription created for user:', paymentRecord.user_id)
         }
 
         // Cập nhật subscription cho user
@@ -141,11 +159,18 @@ export async function GET(request: NextRequest) {
     // Nếu provider là PayOS, kiểm tra với PayOS API
     if (provider === 'payos' && payment && PAYOS_API_KEY && PAYOS_CLIENT_ID) {
       try {
-        const paymentId = payment.payos_payment_id || payment.id
-        console.log('Checking PayOS status for payment:', paymentId)
+        // PayOS API cần orderCode (số nguyên) - lấy từ payos_payment_id hoặc transaction_id
+        // payos_payment_id thường là orderCode đã được lưu khi tạo payment
+        const orderCode = payment.payos_payment_id || payment.transaction_id?.replace(/[^0-9]/g, '').slice(0, 9)
+        console.log('=== PAYOS API CHECK ===', {
+          orderId,
+          orderCode,
+          payos_payment_id: payment.payos_payment_id,
+          transaction_id: payment.transaction_id
+        })
 
         const response = await axios.get(
-          `${PAYOS_API_URL}/v2/payment-requests/${paymentId}`,
+          `${PAYOS_API_URL}/v2/payment-requests/${orderCode}`,
           {
             headers: {
               'x-client-id': PAYOS_CLIENT_ID,
