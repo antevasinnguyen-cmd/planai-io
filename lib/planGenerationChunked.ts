@@ -411,19 +411,18 @@ function cleanSectionContent(text: string, sectionTitle: string): string {
   cleaned = cleaned.replace(/VALIDATION[^\n]*/gi, '')
   cleaned = cleaned.replace(/Kiểm tra lần[^\n]*/gi, '')
 
-  // Remove Mermaid blocks and code blocks
+  // Remove Mermaid blocks and code blocks (keep markdown tables for display)
   cleaned = cleaned.replace(/```mermaid[\s\S]*?```/gi, '')
   cleaned = cleaned.replace(/```json[\s\S]*?```/gi, '')
-  cleaned = cleaned.replace(/```[\s\S]*?```/gi, '')
+  cleaned = cleaned.replace(/```(?:javascript|typescript|python|bash|sh|sql)[\s\S]*?```/gi, '')
   
-  // Remove raw JSON objects
+  // Remove raw JSON objects (but keep markdown tables)
   cleaned = cleaned.replace(/\{[\s\S]*?"roadmap"[\s\S]*?\}/gi, '')
   cleaned = cleaned.replace(/\{[\s\S]*?"actions"[\s\S]*?\}/gi, '')
-  cleaned = cleaned.replace(/\[\s*\{[\s\S]*?\}\s*\]/gi, '')
+  cleaned = cleaned.replace(/\[\s*\{[\s\S]*?"[a-zA-Z_]+"[\s\S]*?\}\s*\]/gi, '')
   
-  // Remove markdown tables
-  cleaned = cleaned.replace(/^\|.*$/gm, '')
-  cleaned = cleaned.replace(/^[-|:]+$/gm, '')
+  // NOTE: Keep markdown tables - they are useful for display
+  // Tables are rendered properly by PlanRenderer component
 
   // Remove "Kết luận" sections at end of each part
   cleaned = cleaned.replace(/\n+(?:#{1,4}\s*)?Kết luận\s*\n[\s\S]*$/gi, '')
