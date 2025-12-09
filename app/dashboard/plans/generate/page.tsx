@@ -247,12 +247,16 @@ export default function GeneratePlanPage() {
   }, [jobStatus, error])
 
   const startPlanGeneration = async () => {
-    // CRITICAL: Prevent duplicate generation
+    // CRITICAL: Prevent duplicate generation - set flag FIRST before any async operation
     if (generationStartedRef.current) {
       console.log('=== GENERATE: Already started, skipping duplicate call ===')
       return
     }
+    // Set flag immediately to prevent race condition
     generationStartedRef.current = true
+    
+    // Double-check with a small delay to catch React Strict Mode double-invoke
+    await new Promise(resolve => setTimeout(resolve, 50))
     
     console.log('=== GENERATE: Function called ===', { user: user?.id })
     const userId = user?.id || 'anonymous'
@@ -959,9 +963,16 @@ export default function GeneratePlanPage() {
           
           // AUTO-CONTINUE: If job is stuck in processing for >30 seconds, try to continue it
           // This handles cases where SSE stream closed before frontend received progress event
-          if (elapsed > 30 && !continueInProgressRef.current) {
-            console.log('=== AUTO-CONTINUE: Job stuck in processing, attempting to continue ===')
+          // CRITICAL: Set flag BEFORE check to prevent race condition
+          if (elapsed > 30) {
+            // Use atomic check-and-set pattern
+            if (continueInProgressRef.current) {
+              console.log('=== AUTO-CONTINUE: Already in progress, skipping ===')
+              return
+            }
+            // Set flag immediately before any async operation
             continueInProgressRef.current = true
+            console.log('=== AUTO-CONTINUE: Job stuck in processing, attempting to continue ===')
             if (pollIntervalRef.current) {
               clearInterval(pollIntervalRef.current)
             }

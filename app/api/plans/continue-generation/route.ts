@@ -100,6 +100,16 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // CRITICAL: Check if plan already exists for this job to prevent duplicate
+    if (job.plan_id) {
+      logger.info('CONTINUE_GEN_PLAN_EXISTS', { jobId, planId: job.plan_id })
+      return NextResponse.json({ 
+        status: 'completed', 
+        plan_id: job.plan_id,
+        message: 'Plan already created'
+      })
+    }
+
     // Get current progress from job metadata
     const metadata = job.metadata || {}
     const currentSectionIndex = metadata.currentSectionIndex || 0
@@ -152,6 +162,22 @@ export async function POST(request: NextRequest) {
     if (result.isComplete) {
       // All sections generated - save the plan
       const planContent = result.fullPlanContent || ''
+      
+      // CRITICAL: Re-check job status to prevent race condition duplicate insert
+      const { data: freshJob } = await admin
+        .from('plan_jobs')
+        .select('status, plan_id')
+        .eq('id', jobId)
+        .single()
+      
+      if (freshJob?.plan_id || freshJob?.status === 'completed') {
+        logger.info('CONTINUE_GEN_RACE_PREVENTED', { jobId, existingPlanId: freshJob?.plan_id })
+        return NextResponse.json({ 
+          status: 'completed', 
+          plan_id: freshJob.plan_id,
+          message: 'Plan already created (race condition prevented)'
+        })
+      }
       
       // Save plan to database
       const { data: planData, error: planError } = await admin

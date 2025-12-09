@@ -329,6 +329,20 @@ export async function POST(request: NextRequest) {
             // All sections generated in first batch (unlikely but possible for very short plans)
             const planContent = result.fullPlanContent || ''
             
+            // CRITICAL: Re-check job status to prevent race condition duplicate insert
+            const { data: freshJob } = await admin
+              .from('plan_jobs')
+              .select('status, plan_id')
+              .eq('id', jobId)
+              .single()
+            
+            if (freshJob?.plan_id || freshJob?.status === 'completed') {
+              logger.info('BG_RACE_PREVENTED', { jobId, existingPlanId: freshJob?.plan_id })
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'completed', job_id: jobId, plan_id: freshJob.plan_id })}\n\n`))
+              controller.close()
+              return
+            }
+            
             // Save plan
             const { data: planData, error: planError } = await (admin || rhSupabase)
               .from('plans')
@@ -597,6 +611,19 @@ async function processJobInBackground(
     // Do not inject CTA or legacy text
 
     // No QA rewriter pass in background route
+
+    // CRITICAL: Re-check job status to prevent race condition duplicate insert
+    const client = admin || supabase
+    const { data: freshJob } = await client
+      .from('plan_jobs')
+      .select('status, plan_id')
+      .eq('id', jobId)
+      .single()
+    
+    if (freshJob?.plan_id || freshJob?.status === 'completed') {
+      logger.info('BG_PROCESS_RACE_PREVENTED', { jobId, existingPlanId: freshJob?.plan_id })
+      return { planId: freshJob.plan_id }
+    }
 
     // Save plan (RLS first, fallback admin)
     let planData: any = null
