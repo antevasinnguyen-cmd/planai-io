@@ -414,15 +414,23 @@ Phân tích chiến lược đầu tư và quản lý rủi ro:
 **Lưu ý:** KHÔNG được viết "Tóm tắt tình hình tài chính của bạn" trong phần này.
 
 ## XIV. MÔ HÌNH KINH DOANH
-3-5 mô hình kinh doanh cá nhân hóa:
+Trình bày 3-5 mô hình kinh doanh cá nhân hóa DƯỚI DẠNG BẢNG MARKDOWN, liền mạch với các phần khác (không chèn thêm heading/meta dư thừa).
 
-**Mô hình 1:** [Tên mô hình]
-- Mô tả: [Chi tiết]
-- Vốn cần: [Số tiền]
-- Thời gian hoàn vốn: [X tháng]
-- Tiềm năng thu nhập: [Số tiền/tháng]
+Bảng BẮT BUỘC dùng đúng cấu trúc sau và **KHÔNG có cột "Trạng thái"**:
+| STT | Tên mô hình / Hành động chính | Ghi chú chi tiết |
+| --- | -------------------------------- | ----------------- |
 
-**Lưu ý:** KHÔNG sử dụng ký tự "---" hoặc "- - -" nếu không có nội dung. Để trống hoặc ghi "Chưa xác định" thay vì dùng gạch ngang.
+Trong đó:
+- Cột "STT": đánh số 1, 2, 3, 4, ...
+- Cột "Tên mô hình / Hành động chính": ghi rõ tên mô hình và hành động nổi bật nhất cần thực hiện.
+- Cột "Ghi chú chi tiết": mô tả CỤ THỂ cách triển khai, rủi ro, điều kiện, ví dụ số liệu tại thị trường Việt Nam.
+
+QUY TẮC BẮT BUỘC RIÊNG CHO PHẦN XIV:
+- KHÔNG được tạo cột "Trạng thái" hoặc bất kỳ cột nào liên quan tới trạng thái.
+- KHÔNG dùng các ký tự "---", "- - -", "—" hoặc ký hiệu tương tự để lấp chỗ trống.
+- KHÔNG sinh dòng hoặc ô chỉ để ghi "Chưa xác định", "N/A" hoặc nội dung mơ hồ tương tự.
+- Chỉ tạo những dòng mà nội dung hành động và ghi chú có thể viết RÕ RÀNG; nếu thiếu dữ liệu thì **KHÔNG tạo dòng đó**.
+- Nội dung trong bảng phải là các hành động và ghi chú THỰC SỰ cụ thể, không viết chung chung.
 
 ## XV. KẾ HOẠCH THEO KHUNG THỜI GIAN
 **Năm thứ nhất:** [Mục tiêu chính]
@@ -519,13 +527,14 @@ QUY TẮC CHẤT LƯỢNG VÀ ĐỘ TIN CẬY:
 ✅ Không tự tạo giả định trừ khi ghi rõ "Giả định" và giải thích vì sao.
 
 ⚠️ QUY TẮC HIỂN THỊ BẮT BUỘC:
-✅ KHÔNG sử dụng bảng Markdown - nếu cần hiển thị dữ liệu dạng bảng, chuyển sang dạng danh sách văn bản
+✅ KHÔNG sử dụng bảng Markdown ở CÁC PHẦN KHÁC, NGOẠI TRỪ những phần được yêu cầu cụ thể trong prompt (ví dụ: PHẦN XIV phải trình bày dước dạng bảng)
 ✅ KHÔNG sử dụng Mermaid hoặc bất kỳ biểu đồ nào - mô tả bằng văn bản thay thế
 ✅ KHÔNG sử dụng ngày/tháng cụ thể - luôn dùng "tháng thứ nhất", "tháng thứ hai", "quý thứ nhất", "năm thứ nhất", v.v.
 ✅ KHÔNG sử dụng bất kỳ cú pháp đặc biệt nào có thể gây lỗi hiển thị
 ✅ MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản (tiêu đề, đậm, nghiêng, danh sách)
 ✅ KHÔNG viết "Tổng quan kế hoạch & Hồ sơ cá nhân" - đây là tiêu đề cũ, không sử dụng
 ✅ KHÔNG viết "1. Tóm tắt tình hình tài chính của bạn" trong phần XIII hoặc bất kỳ phần nào khác
+✅ KHÔNG sử dụng ký tự "---", "- - -", "—" hoặc ký hiệu tương tự để lấp chỗ trống.
 ✅ KHÔNG sử dụng ký tự "---" hoặc "- - -" hoặc "—" nếu không có nội dung. Để trống hoặc ghi "Chưa xác định"
 ✅ Đánh số các mục lớn bằng SỐ LA MÃ (I, II, III, IV, V...), các mục nhỏ bằng số thường (1, 2, 3...)
 
