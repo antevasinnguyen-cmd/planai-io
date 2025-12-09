@@ -457,8 +457,122 @@ Worst case / Base case / Best case
 ## XX. GIẢM THIỂU RỦI RO
 Diversification + Insurance + Legal
 
-## XXI. TỬ VI & THẦN SỐ HỌC
-Phân tích theo ngày sinh, nhấn mạnh tài chính
+## XXI. TỬ VI & THẦN SỐ HỌC - LUẬN GIẢI VẬN MỆNH CHUYÊN SÂU
+
+⚠️ CHỈ THỰC HIỆN PHẦN NÀY KHI USER CUNG CẤP ĐẦY ĐỦ: Họ tên, Giới tính, Ngày tháng năm sinh, Giờ sinh, Khu vực sinh sống.
+Nếu thiếu thông tin, ghi rõ "Chưa đủ dữ liệu để luận giải tử vi" và bỏ qua phần này.
+
+📜 HỆ THỐNG LUẬN GIẢI VẬN MỆNH NÂNG CẤP:
+
+### A. PHÂN TÍCH TỬ VI (Lá số Tử Vi Huyền Học)
+Dựa trên thông tin user cung cấp, phân tích CHI TIẾT:
+
+**1. Xác định Lá số Tử vi:**
+- Mệnh cung, Thân cung
+- Các sao chủ đạo trong cung Mệnh
+- Can Chi năm sinh, tháng sinh, ngày sinh, giờ sinh
+
+**2. Phân tích Công Danh - Sự Nghiệp:**
+- Cung Quan Lộc: Đường công danh, sự nghiệp
+- Các sao tốt/xấu ảnh hưởng đến sự nghiệp
+- Thời điểm thăng tiến trong sự nghiệp
+- Ngành nghề phù hợp với mệnh cách
+
+**3. Phân tích Tài Lộc - Tài Vận:**
+- Cung Tài Bạch: Khả năng kiếm tiền, giữ tiền
+- Các sao ảnh hưởng đến tài vận
+- Nguồn tài lộc chính (làm công, kinh doanh, đầu tư)
+- Thời điểm tài vận hanh thông
+
+**4. Mối Quan Hệ Xã Hội & Quý Nhân:**
+- Cung Thiên Di: Quan hệ xã hội, quý nhân phù trợ
+- Cung Nô Bộc: Cấp dưới, đối tác
+- Ai là quý nhân trong sự nghiệp
+
+**5. Nghiệp Quả & Cộng Nghiệp:**
+- Phân tích nghiệp quả từ tiền kiếp
+- Cộng nghiệp với gia đình, tổ tiên
+- Cách hóa giải nghiệp xấu
+
+### B. PHÂN TÍCH THẦN SỐ HỌC (Tách biệt với Tử Vi)
+
+**1. Con số Chủ đạo (Life Path Number):**
+- Tính từ ngày tháng năm sinh
+- Ý nghĩa con số với sự nghiệp và tài chính
+
+**2. Con số Linh hồn & Con số Biểu đạt:**
+- Tính từ họ tên đầy đủ
+- Khả năng ẩn giấu và năng lực bề ngoài
+
+**3. Con số Vận mệnh năm hiện tại:**
+- Chu kỳ 9 năm
+- Năm nay nên làm gì để phát triển tài chính
+
+**4. Kim tự tháp Thần số học:**
+- Đỉnh cao sự nghiệp
+- Các giai đoạn quan trọng trong đời
+
+### C. DỰ BÁO VẬN HẠN
+
+**1. Đại Vận (chu kỳ 10 năm):**
+- Đại vận hiện tại đang chạy
+- Sao chủ đạo đại vận
+- Cơ hội và thách thức trong đại vận này
+- Dự báo các đại vận tiếp theo
+
+**2. Tiểu Vận (chu kỳ 1 năm):**
+- Tiểu vận năm hiện tại
+- Các tháng tốt/xấu trong năm
+- Thời điểm nên khởi nghiệp, đầu tư
+- Cảnh báo những tháng cần cẩn trọng
+
+**3. Nguyệt Vận (các tháng quan trọng):**
+- Phân tích từng quý trong năm
+- Tháng thuận lợi cho công việc, tài chính
+
+### D. CÁCH CẢI VẬN & TĂNG TÀI LỘC
+
+**1. Hóa giải vận hạn xấu:**
+- Phương pháp hóa giải cụ thể
+- Vật phẩm phong thủy phù hợp mệnh
+- Màu sắc may mắn
+- Hướng tốt cho làm việc, kinh doanh
+
+**2. Tăng cường tài lộc:**
+- Bài trí không gian làm việc theo phong thủy
+- Thời điểm tốt để ký hợp đồng, giao dịch
+- Nghề nghiệp phát huy tối đa tiềm năng số mệnh
+- Đối tác kinh doanh phù hợp (theo cung mệnh)
+
+**3. Hành động cụ thể:**
+- 5 việc nên làm ngay để cải vận
+- 5 việc cần tránh theo số mệnh
+- Thói quen hàng ngày để thu hút tài lộc
+
+### E. TỔNG HỢP & KẾT LUẬN VẬN MỆNH
+
+**1. Điểm mạnh của số mệnh:**
+- Liệt kê 3-5 điểm mạnh nổi bật
+
+**2. Điểm yếu cần khắc phục:**
+- Liệt kê 3-5 điểm yếu và cách khắc phục
+
+**3. Thời kỳ quan trọng:**
+- Thời kỳ thăng tiến mạnh nhất
+- Thời kỳ cần cẩn trọng
+
+**4. Nghề nghiệp & Đầu tư phù hợp nhất:**
+- Top 3 ngành nghề phù hợp mệnh
+- Loại hình đầu tư phù hợp
+
+**5. Hành động NGAY trong 24 giờ tới:**
+- 1 việc cụ thể để bắt đầu cải vận
+
+⚠️ QUY TẮC KIỂM CHỨNG CHÉO (BẮT BUỘC):
+- Mỗi bước phân tích phải liên kết chặt chẽ với bước trước
+- Đối chiếu kết quả Tử vi với Thần số học để xác nhận
+- Nếu có mâu thuẫn, giải thích lý do và đưa ra kết luận cuối
+- Không được bỏ sót bất kỳ yếu tố nào trong hệ thống luận giải
 
 ## XXII. TÓM TẮT TOÀN BỘ
 10 key points summary
@@ -574,12 +688,23 @@ export function getUserContextV4(collectedInfo: any) {
 
 👤 **THÔNG TIN CÁ NHÂN:**
 - Họ tên: ${collectedInfo.full_name || 'Chưa cung cấp'}
+- Giới tính: ${collectedInfo.gender || 'Chưa cung cấp'}
 - Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
+- Ngày tháng năm sinh: ${collectedInfo.birth_date || 'Chưa cung cấp'}
+- Giờ sinh: ${collectedInfo.birth_time || 'Chưa cung cấp'}
 - Nơi sống: ${collectedInfo.location || 'Chưa cung cấp'}
 - Nghề nghiệp: ${collectedInfo.occupation || 'Chưa cung cấp'}
 - Dự án hiện tại: ${collectedInfo.project || collectedInfo.current_project || 'Chưa cung cấp'}
 - Kỹ năng: ${(Array.isArray(collectedInfo.skills) ? collectedInfo.skills.join(', ') : (collectedInfo.skills || 'Chưa cung cấp'))}
 - Risk tolerance: ${collectedInfo.risk_tolerance || 'Chưa cung cấp'}
+
+🔮 **THÔNG TIN TỬ VI (Dùng cho phân tích Phần XXI):**
+- Họ tên đầy đủ: ${collectedInfo.full_name || 'Chưa cung cấp'}
+- Giới tính: ${collectedInfo.gender || 'Chưa cung cấp'}
+- Ngày tháng năm sinh: ${collectedInfo.birth_date || 'Chưa cung cấp'}
+- Giờ sinh: ${collectedInfo.birth_time || 'Chưa cung cấp'}
+- Khu vực sinh sống: ${collectedInfo.location || 'Chưa cung cấp'}
+⚠️ Nếu đủ 5 thông tin trên, thực hiện luận giải TỬ VI & THẦN SỐ HỌC chi tiết tại Phần XXI.
 
 ⚠️ LƯU Ý QUAN TRỌNG:
 1. Thu nhập HIỆN TẠI ≠ Thu nhập MỤC TIÊU
