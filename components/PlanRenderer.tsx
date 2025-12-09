@@ -2,9 +2,24 @@
 
 import { useState, useMemo, lazy, Suspense } from 'react'
 import { Copy, Download, Table2, FileSpreadsheet, Check } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
+
+// Custom components for ReactMarkdown - make all links open in new tab
+const markdownComponents: Components = {
+  a: ({ href, children, ...props }) => (
+    <a 
+      href={href} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline"
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+}
 
 // Lazy load RoadmapDiagram to avoid SSR issues with ReactFlow
 const RoadmapDiagram = lazy(() => import('./RoadmapDiagram'))
@@ -51,7 +66,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     // Add separator row if missing
     const missingSeparatorRegex = /(^\|(?:[^|\n]+\|)+\s*$)\n(?!^\|[-\s|:]+\|$)(^\|(?:[^|\n]+\|)+\s*$)/gm
     fixed = fixed.replace(missingSeparatorRegex, (_m, headerLine, firstDataLine) => {
-      const headerCells = headerLine.split('|').filter(c => c.trim().length > 0)
+      const headerCells = headerLine.split('|').filter((c: string) => c.trim().length > 0)
       const colCount = headerCells.length
       const separator = '|' + Array(colCount).fill('---').join('|') + '|'
       return `${headerLine}\n${separator}\n${firstDataLine}`
@@ -167,13 +182,24 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
   const mainContent = ctaContent ? fixedContent.replace(ctaRegex, '') : fixedContent
 
   // --- PHÂN TÁCH SECTION & RENDER THEO QUYỀN ---
-  // Regex khớp nhiều format: "## Phần 1", "## PHẦN 1:", "##1.", "## 1.", etc.
-  const sectionRegex = /(^|\n)(##\s*(?:PHẦN|Phần|phần)?\s*(\d+)[^\n]*)/gi;
+  // Regex khớp nhiều format: "## I.", "## II.", "## Phần 1", "## PHẦN 1:", "##1.", "## 1.", etc.
+  // Support both Arabic (1,2,3) and Roman numerals (I, II, III, IV, V, VI, VII, VIII, IX, X...)
+  const romanToArabic = (roman: string): number => {
+    const romanMap: { [key: string]: number } = {
+      'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10,
+      'XI': 11, 'XII': 12, 'XIII': 13, 'XIV': 14, 'XV': 15, 'XVI': 16, 'XVII': 17, 'XVIII': 18, 'XIX': 19, 'XX': 20,
+      'XXI': 21, 'XXII': 22, 'XXIII': 23, 'XXIV': 24
+    };
+    return romanMap[roman.toUpperCase()] || 0;
+  };
+  
+  // Match both Arabic and Roman numeral sections
+  const sectionRegex = /(^|\n)(##\s*(?:PHẦN|Phần|phần)?\s*((?:[IVXLCDM]+|\d+))\.?[^\n]*)/gi;
   const splitSections = (text: string) => {
     const result: { title: string, content: string, index: number, sectionNum: number | null }[] = [];
     let lastIndex = 0;
     let sectionIdx = 0;
-    const matches = [...text.matchAll(sectionRegex)];
+    const matches = Array.from(text.matchAll(sectionRegex));
     if (matches.length === 0) {
       // Không có section rõ ràng, trả về nguyên content
       return [{ title: '', content: text, index: 0, sectionNum: null }];
@@ -181,13 +207,18 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     for (let i = 0; i < matches.length; i++) {
       const start = matches[i].index!;
       const title = matches[i][2];
-      const sectionNum = parseInt(matches[i][3], 10);
+      const numStr = matches[i][3];
+      // Try parsing as Arabic first, then Roman
+      let sectionNum = parseInt(numStr, 10);
+      if (isNaN(sectionNum)) {
+        sectionNum = romanToArabic(numStr);
+      }
       const next = matches[i + 1]?.index ?? text.length;
       if (start > lastIndex) {
         // Đoạn đầu trước section đầu tiên
         result.push({ title: '', content: text.slice(lastIndex, start), index: sectionIdx++, sectionNum: null });
       }
-      result.push({ title, content: text.slice(start, next), index: sectionIdx++, sectionNum });
+      result.push({ title, content: text.slice(start, next), index: sectionIdx++, sectionNum: sectionNum || null });
       lastIndex = next;
     }
     if (lastIndex < text.length) {
@@ -219,7 +250,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       const roadmapData = parseRoadmapContent(section.content);
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{section.content}</ReactMarkdown>
           
           {/* Interactive Roadmap Diagram */}
           {roadmapData.length > 0 && (
@@ -248,7 +279,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
     if (sn === 15 && userTier !== 'free') {
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{section.content}</ReactMarkdown>
           
           {/* Google Sheets Export Button */}
           <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
@@ -293,7 +324,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       // Paid hoặc các phần được xem full
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{section.content}</ReactMarkdown>
         </div>
       );
     } else if ([4,5,6,7].includes(sn)) {
@@ -305,7 +336,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       const hidden = lines.slice(cutoff).join('\n');
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{visible}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{visible}</ReactMarkdown>
           {hidden && (
             <>
               {/* Phần nội dung bị làm mờ */}
@@ -332,7 +363,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       // Các section khác (không xác định): render bình thường
       return (
         <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{section.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{section.content}</ReactMarkdown>
         </div>
       );
     }

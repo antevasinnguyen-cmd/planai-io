@@ -182,20 +182,26 @@ export default function PlanViewEnhanced() {
           credentials: 'include',
           body: JSON.stringify({ planId: plan.id })
         });
+        const json = await res.json().catch(() => ({}));
+        
         if (!res.ok) {
-          let errMsg = 'Export failed';
-          try { errMsg = (await res.json())?.error || errMsg; } catch {}
-          throw new Error(errMsg);
+          // Check if it's a "requires auth" error
+          if (json?.requiresAuth || res.status === 400) {
+            alert(json?.message || 'Tính năng xuất Google Sheets đang được phát triển. Vui lòng sử dụng tính năng xuất PDF hoặc Word.');
+            return;
+          }
+          throw new Error(json?.error || 'Export failed');
         }
-        const json = await res.json();
+        
         if (json?.url) {
           window.open(json.url, '_blank');
           return;
         }
-        alert(json?.message || 'Không thể xuất sang Google Sheets');
+        alert(json?.message || 'Không thể xuất sang Google Sheets. Vui lòng thử xuất PDF hoặc Word.');
         return;
-      } catch (err) {
-        alert('Có lỗi khi xuất sang Google Sheets');
+      } catch (err: any) {
+        console.error('Google Sheets export error:', err);
+        alert(err?.message || 'Tính năng xuất Google Sheets đang được phát triển. Vui lòng sử dụng tính năng xuất PDF hoặc Word.');
         return;
       }
     }

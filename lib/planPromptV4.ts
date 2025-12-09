@@ -81,7 +81,7 @@ Trước khi viết mỗi phần phân tích số liệu, BẠN PHẢI TỰ KI�
 ❌ KHÔNG được dùng số liệu mơ hồ khi đã có số cụ thể
 ❌ MỌI phép tính phải dựa trên SỐ LIỆU THẬT từ thông tin user
 
-## 🏦 PHẦN 1: CHÂN DUNG TÀI CHÍNH CÁ NHÂN (600-800 từ)
+## I. CHÂN DUNG TÀI CHÍNH CÁ NHÂN (600-800 từ)
 
 **Phân tích chuyên sâu về bản thân bạn:**
 
@@ -101,7 +101,7 @@ ${financeSummary ? `\n💰 **Tình hình tài chính:**\n${financeSummary}` : ''
 
 > Lưu ý: Tất cả phân tích phải dựa trên dữ liệu thật user cung cấp, không giả định.
 
-## 🎯 PHẦN 2: PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH (700-900 từ)
+## II. PHÂN TÍCH SWOT - BỨC TRANH TOÀN CẢNH (700-900 từ)
 
 *Phân tích SWOT chuyên sâu và CÁ NHÂN HÓA hoàn toàn dựa trên thông tin của bạn:*
 
@@ -134,7 +134,7 @@ ${financeSummary ? `\n💰 **Tình hình tài chính:**\n${financeSummary}` : ''
   + Thách thức cá nhân (dòng tiền, kinh nghiệm, network...)
 - MỖI thách thức có đề xuất cách ứng phó
 
-## 💎 PHẦN 3: PHÂN TÍCH MỤC TIÊU - LỘ TRÌNH ĐẾN THÀNH CÔNG
+## III. PHÂN TÍCH MỤC TIÊU - LỘ TRÌNH ĐẾN THÀNH CÔNG
 
 *Chỉ dựa trên dữ liệu bạn đã cung cấp. Không dùng placeholder. Nếu thiếu số dư tiết kiệm hiện có, **giả định 0 VNĐ để ước tính ban đầu** và ghi chú rõ ràng đây là giả định.*
 
@@ -171,10 +171,10 @@ Viết 500-600 từ với các mục sau, có số liệu rõ ràng:
 **4. Thứ tự ưu tiên thông minh:**
 - Sắp xếp theo tiêu chí: Impact (tác động) / Cost (chi phí) / Time (thời gian). Không suy đoán nếu thiếu dữ liệu.
 
-## PHẦN 4: YẾU TỐ KHÁCH QUAN & CHỦ QUAN
+## IV. YẾU TỐ KHÁCH QUAN & CHỦ QUAN
 Viết 300-400 từ, CHỈ nêu các yếu tố ảnh hưởng TRỰC TIẾP tới mục tiêu đã cung cấp (ví dụ: lãi suất vay khi mục tiêu là mua nhà). Tránh nhận định chung chung. Nếu thiếu dữ liệu về mục tiêu, ghi rõ hạn chế.
 
-## PHẦN 5: KỸ NĂNG & KINH NGHIỆM CẦN CÓ + MÔ HÌNH KINH DOANH GỢI Ý (600-800 từ)
+## V. KỸ NĂNG & KINH NGHIỆM CẦN CÓ + MÔ HÌNH KINH DOANH GỢI Ý (600-800 từ)
 
 ### 📚 **Kỹ năng/kinh nghiệm cốt lõi cần có (5-6 kỹ năng):**
 Dựa trên mục tiêu tài chính và dự án hiện tại của user, phân tích chi tiết:
@@ -194,14 +194,14 @@ Dựa trên kỹ năng, kinh nghiệm, dự án hiện tại của user để g�
   + Ví dụ giá bán và biên lợi nhuận tại thị trường VN (VD: "SaaS B2B giá 500K-2M/tháng, biên lợi nhuận 70-80%")
   + Case study thực tế từ VN nếu có
 
-## PHẦN 6: LỘ TRÌNH CHI TIẾT
+## VI. LỘ TRÌNH CHI TIẾT
 Linh hoạt theo thời gian mục tiêu người dùng nêu ra:
 - Nếu timeline là ≤ 3 tháng: chia theo THÁNG, mỗi tháng chia tiếp theo TUẦN (Tuần 1 → Tuần 4). Mỗi tuần nêu 2–3 hành động cụ thể, có tiêu chí hoàn thành.
 - Nếu timeline là 4–12 tháng: chia THEO THÁNG. Mỗi tháng 2–3 hành động cụ thể gắn với ngân sách và KPI.
 - Nếu timeline là ≥ 2 năm: BẮT BUỘC có "Năm thứ nhất" và "Năm thứ hai" (nếu 2 năm), mỗi năm chia THEO QUÝ (Q1–Q4). Mỗi quý nêu mục tiêu và 3–5 hành động chính. Không được thiếu năm/quý.
 - Nếu là khoảng (ví dụ: 2–3 năm): trình bày đủ tối thiểu 2 năm theo Năm → Quý; phần thời gian còn lại tóm lược có cấu trúc.
 
-## 📅 PHẦN 7: HÀNH ĐỘNG CHI TIẾT THEO THỜI GIAN MỤC TIÊU
+## VII. HÀNH ĐỘNG CHI TIẾT THEO THỜI GIAN MỤC TIÊU
 
 Tùy theo timeline người dùng:
 - ≤ 3 tháng: liệt kê HÀNH ĐỘNG THEO TUẦN cho toàn bộ số tháng (mỗi tuần 3 hành động rõ ràng, có tiêu chí hoàn thành, ngân sách ước tính).
@@ -209,7 +209,7 @@ Tùy theo timeline người dùng:
 - ≥ 2 năm: liệt kê HÀNH ĐỘNG THEO QUÝ cho toàn bộ thời gian (mỗi quý 3–5 hành động). Nếu là khoảng 2–3 năm, ưu tiên đủ 2 năm theo quý, phần còn lại tóm lược.
 Không chèn câu hướng dẫn meta; chỉ đưa nội dung hành động cụ thể.
 
-## 📚 PHẦN 8: TÀI LIỆU HỌC TẬP KỸ NĂNG (10-12 tài liệu chi tiết)
+## VIII. TÀI LIỆU HỌC TẬP KỸ NĂNG (10-12 tài liệu chi tiết)
 
 **YÊU CẦU BẮT BUỘC: 10-12 tài liệu, KHÔNG được thiếu**
 
@@ -236,7 +236,7 @@ Phân loại theo nhóm kỹ năng liên quan đến mục tiêu của user:
 
 **Lưu ý:** Mỗi tài liệu phải là GỢI Ý CỤ THỂ, có link thật (hoặc tên cụ thể để user tự tìm), KHÔNG viết chung chung kiểu "Tìm khóa học về..."
 
-## 🎯 PHẦN 9: KẾT LUẬN & HÀNH ĐỘNG NGAY (400-500 từ)
+## IX. KẾT LUẬN & HÀNH ĐỘNG NGAY (400-500 từ)
 
 ### 📋 **Tóm tắt 3 điểm chính:**
 1. **Điểm mạnh lớn nhất:** [Dựa trên phân tích SWOT, nêu cụ thể điểm mạnh user có thể tận dụng ngay]
@@ -293,10 +293,10 @@ Bạn là đội ngũ chuyên gia tài chính hàng đầu, viết EBOOK PREMIUM
 
 NHIỆM VỤ: Tạo kế hoạch ${tier.toUpperCase()} với 24 phần sau:
 
-## 1. TIÊU ĐỀ SÁNG TẠO
+## I. TIÊU ĐỀ SÁNG TẠO
 Tạo tiêu đề hấp dẫn, cá nhân hóa
 
-## 2. TỔNG QUAN KẾ HOẠCH
+## II. HỒ SƠ TÀI CHÍNH CÁ NHÂN
 Executive summary + Hồ sơ chi tiết:
 - Họ tên: ${userInfo.full_name}
 - Ngày sinh: ${userInfo.birth_date}
@@ -305,7 +305,7 @@ Executive summary + Hồ sơ chi tiết:
 - Tiết kiệm: ${userInfo.savings}
 - Mục tiêu: ${userInfo.goal}
 
-## 3. PHÂN TÍCH SWOT NÂNG CAO
+## III. PHÂN TÍCH SWOT NÂNG CAO
 Phân tích SWOT dước dạng văn bản, không dùng bảng:
 
 **Điểm mạnh:**
@@ -328,14 +328,14 @@ Phân tích SWOT dước dạng văn bản, không dùng bảng:
 - [Thách thức 2]
 - [Thách thức 3]
 
-## 4. MỤC TIÊU SMART
+## IV. MỤC TIÊU SMART
 Specific, Measurable, Achievable, Relevant, Time-bound
 Với sensitivity analysis ±20%
 
-## 5. CHIẾN LƯỢC TÀI CHÍNH
+## V. CHIẾN LƯỢC TÀI CHÍNH
 Portfolio approach, risk-return optimization
 
-## 6. LỘ TRÌNH CHI TIẾT
+## VI. LỘ TRÌNH CHI TIẾT
 Lộ trình chi tiết dước dạng văn bản:
 
 **Năm thứ nhất:**
@@ -348,7 +348,7 @@ Lộ trình chi tiết dước dạng văn bản:
 - **Quý 1:**
   - *Tháng thứ nhất:* [Mục tiêu và hành động]
 
-## 7. KẾ HOẠCH THỜI GIAN
+## VII. KẾ HOẠCH THỜI GIAN
 Kế hoạch thởi gian chi tiết dước dạng văn bản:
 
 **Năm thứ nhất:**
@@ -357,7 +357,7 @@ Kế hoạch thởi gian chi tiết dước dạng văn bản:
   - *Tháng thứ hai:* [Hành động cụ thể]
   - *Tháng thứ ba:* [Hành động cụ thể]
 
-## PHẦN 7: CHIẾN LƯỢC HÀNH ĐỘNG CHI TIẾT
+## VIII. CHIẾN LƯỢC HÀNH ĐỘNG CHI TIẾT
 Viết 600-800 từ chi tiết về chiến lược thực hiện từng mục tiêu cụ thể:
 
 ### 🎯 **Chiến lược Mục tiêu 1:** [Tên mục tiêu]
@@ -370,7 +370,7 @@ Viết 600-800 từ chi tiết về chiến lược thực hiện từng mục t
 - **Kế hoạch hành động:** [200 từ]
 - **Rủi ro và giải pháp:** [100 từ]
 
-## 9. PHÂN LOẠI ƯU TIÊN
+## IX. PHÂN LOẠI ƯU TIÊN
 Phân loại ưu tiên dước dạng văn bản:
 
 **Ưu tiên cao và khẩn cấp:**
@@ -389,56 +389,76 @@ Phân loại ưu tiên dước dạng văn bản:
 - [Hành động 1]
 - [Hành động 2]
 
-## 10. YẾU TỐ THÀNH CÔNG
+## X. YẾU TỐ THÀNH CÔNG
 Hard factors + Soft factors
 
-## 11. KỸ NĂNG ROADMAP
+## XI. KỸ NĂNG ROADMAP
 Skill acquisition plan với ROI
 
-## 12. TÍCH LŨY TÀI SẢN
+## XII. TÍCH LŨY TÀI SẢN
 Asset accumulation strategy
 
-## 13. ĐẦU TƯ & RỦI RO
-Investment portfolio + Risk management
+## XIII. ĐẦU TƯ & RỦI RO
+Phân tích chiến lược đầu tư và quản lý rủi ro:
 
-## 14. MÔ HÌNH KINH DOANH
-3-5 personalized business models
+**Chiến lược đầu tư:**
+- Phân bổ tài sản theo mục tiêu
+- Các kênh đầu tư phù hợp
+- Tỷ lệ phân bổ khuyến nghị
 
-## 15. KẾ HOẠCH THEO KHUNG THỜI GIAN
+**Quản lý rủi ro:**
+- Rủi ro chính và cách giảm thiểu
+- Kế hoạch dự phòng
+- Bảo hiểm cần thiết
+
+**Lưu ý:** KHÔNG được viết "Tóm tắt tình hình tài chính của bạn" trong phần này.
+
+## XIV. MÔ HÌNH KINH DOANH
+3-5 mô hình kinh doanh cá nhân hóa:
+
+**Mô hình 1:** [Tên mô hình]
+- Mô tả: [Chi tiết]
+- Vốn cần: [Số tiền]
+- Thời gian hoàn vốn: [X tháng]
+- Tiềm năng thu nhập: [Số tiền/tháng]
+
+**Lưu ý:** KHÔNG sử dụng ký tự "---" hoặc "- - -" nếu không có nội dung. Để trống hoặc ghi "Chưa xác định" thay vì dùng gạch ngang.
+
+## XV. KẾ HOẠCH THEO KHUNG THỜI GIAN
 **Năm thứ nhất:** [Mục tiêu chính]
 **Quý thứ nhất:** [Mục tiêu quý]
 **Tháng thứ nhất:** [Mục tiêu tháng]
 **Tuần thứ nhất:** [Mục tiêu tuần]
 **Hàng ngày:** [Thói quen hàng ngày]
 
-## 16. DANH SÁCH HÀNH ĐỘNG
+## XVI. DANH SÁCH HÀNH ĐỘNG
 **Hành động 1:** [Mô tả] - Hoàn thành trong tháng thứ nhất
 **Hành động 2:** [Mô tả] - Hoàn thành trong tháng thứ hai
 **Hành động 3:** [Mô tả] - Hoàn thành trong tháng thứ ba
 (và các hành động khác...)
 
-## 17. GOOGLE SHEETS (${tier === 'pro' || tier === 'premium' ? 'CÓ' : 'Nâng cấp để có'})
+## XVII. GOOGLE SHEETS (${tier === 'pro' || tier === 'premium' ? 'CÓ' : 'Nâng cấp để có'})
 7 sheets: Dashboard, Roadmap, Checklist, Savings, Income, Business, Skills
 
-## 18. TÀI LIỆU HỌC TẬP
+## XVIII. TÀI LIỆU HỌC TẬP
 ${tier === 'basic' ? '25' : tier === 'pro' ? '45' : '60'} resources
 
-## 19. DỰ BÁO 3 KỊCH BẢN
+## XIX. DỰ BÁO 3 KỊCH BẢN
 Worst case / Base case / Best case
 
-## 20. GIẢM THIỂU RỦI RO
+## XX. GIẢM THIỂU RỦI RO
 Diversification + Insurance + Legal
 
-## 21. TỬ VI & THẦN SỐ HỌC
+## XXI. TỬ VI & THẦN SỐ HỌC
 Phân tích theo ngày sinh, nhấn mạnh tài chính
 
-## 22. TÓM TẮT TOÀN BỘ
+## XXII. TÓM TẮT TOÀN BỘ
 10 key points summary
 
-## 23. HƯỚNG DẪN SỬ DỤNG
+## XXIII. HƯỚNG DẪN SỬ DỤNG
 Cách dùng kế hoạch hiệu quả
 
-## 24. KẾT LUẬN & ĐỘNG LỰC
+## XXIV. KẾT LUẬN & ĐỘNG LỰC
 Lời khuyên cuối + First action in 24h
 
 **🚀 BẠN ĐÃ LÀ THÀNH VIÊN ${tier.toUpperCase()}!**
@@ -504,9 +524,13 @@ QUY TẮC CHẤT LƯỢNG VÀ ĐỘ TIN CẬY:
 ✅ KHÔNG sử dụng ngày/tháng cụ thể - luôn dùng "tháng thứ nhất", "tháng thứ hai", "quý thứ nhất", "năm thứ nhất", v.v.
 ✅ KHÔNG sử dụng bất kỳ cú pháp đặc biệt nào có thể gây lỗi hiển thị
 ✅ MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản (tiêu đề, đậm, nghiêng, danh sách)
+✅ KHÔNG viết "Tổng quan kế hoạch & Hồ sơ cá nhân" - đây là tiêu đề cũ, không sử dụng
+✅ KHÔNG viết "1. Tóm tắt tình hình tài chính của bạn" trong phần XIII hoặc bất kỳ phần nào khác
+✅ KHÔNG sử dụng ký tự "---" hoặc "- - -" hoặc "—" nếu không có nội dung. Để trống hoặc ghi "Chưa xác định"
+✅ Đánh số các mục lớn bằng SỐ LA MÃ (I, II, III, IV, V...), các mục nhỏ bằng số thường (1, 2, 3...)
 
 CHECKLIST HOÀN THIỆN (BẮT BUỘC):
-- Có đủ: PHẦN 1, PHẦN 2, PHẦN 3, PHẦN 4, PHẦN 5, PHẦN 6, PHẦN 7, PHẦN 8, PHẦN 9
+- Có đủ: PHẦN I, PHẦN II, PHẦN III, PHẦN IV, PHẦN V, PHẦN VI, PHẦN VII, PHẦN VIII, PHẦN IX
 - Timeline ≥ 2 năm phải có Năm thứ nhất và Năm thứ hai, mỗi năm đủ Q1–Q4
 - Phần 5 phải có cả kỹ năng/kinh nghiệm và 3–5 mô hình tăng thu nhập
 - Phần 7 liệt kê hành động trọn vẹn cho toàn bộ timeline

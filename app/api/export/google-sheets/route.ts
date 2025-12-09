@@ -48,6 +48,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
     }
     
+    // Check if refresh token is provided
+    if (!refreshToken) {
+      // Return a message indicating OAuth is required
+      return NextResponse.json({ 
+        error: 'Cần xác thực Google để xuất Google Sheets',
+        message: 'Tính năng xuất Google Sheets đang được phát triển. Vui lòng sử dụng tính năng xuất PDF hoặc Word.',
+        requiresAuth: true
+      }, { status: 400 });
+    }
+    
     // Export to Google Sheets with raw content; helper handles markdown/tables
     const sheetUrl = await exportToGoogleSheets(
       plan.title,

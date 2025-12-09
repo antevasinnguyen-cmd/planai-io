@@ -33,13 +33,17 @@ interface RoadmapDiagramProps {
 // Custom node styles based on type and status
 const getNodeStyle = (type?: string, status?: string) => {
   const baseStyle = {
-    padding: '12px 20px',
-    borderRadius: '8px',
-    fontSize: '14px',
+    padding: '16px 20px',
+    borderRadius: '12px',
+    fontSize: '13px',
     fontWeight: 500,
     border: '2px solid',
-    minWidth: '150px',
+    minWidth: '180px',
+    maxWidth: '220px',
     textAlign: 'center' as const,
+    wordWrap: 'break-word' as const,
+    whiteSpace: 'normal' as const,
+    lineHeight: '1.4',
   }
 
   // Status colors
@@ -218,15 +222,16 @@ export default function RoadmapDiagram({ data, title, direction = 'TB' }: Roadma
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
   return (
-    <div className="w-full h-[600px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      {title && (
-        <div className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <span>🗺️</span> {title}
-          </h3>
-        </div>
-      )}
-      <ReactFlow
+    <div className="w-full">
+      <div className="h-[600px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {title && (
+          <div className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span>🗺️</span> {title}
+            </h3>
+          </div>
+        )}
+        <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -244,22 +249,23 @@ export default function RoadmapDiagram({ data, title, direction = 'TB' }: Roadma
           }}
           className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
         />
-      </ReactFlow>
+        </ReactFlow>
+      </div>
       
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg border border-gray-200 dark:border-gray-700">
+      {/* Legend - positioned outside ReactFlow container to prevent overlap */}
+      <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg border border-gray-200 dark:border-gray-700">
         <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Chú thích:</p>
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-blue-100 border-2 border-blue-500"></div>
+        <div className="flex flex-wrap gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-500"></div>
             <span className="text-gray-600 dark:text-gray-300">Giai đoạn</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-amber-100 border-2 border-amber-500"></div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-amber-100 border-2 border-amber-500"></div>
             <span className="text-gray-600 dark:text-gray-300">Mốc quan trọng</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-green-100 border-2 border-green-500"></div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-green-100 border-2 border-green-500"></div>
             <span className="text-gray-600 dark:text-gray-300">Hoàn thành</span>
           </div>
         </div>
