@@ -54,17 +54,28 @@ export default function CreatePlanV2() {
   
   // Khai báo hàm initializeNewChat ở phạm vi component
   const initializeNewChat = () => {
-    console.log('Khởi tạo chat mới với các tin nhắn chào mừng')
+    console.log('Khởi tạo chat mới - Xóa toàn bộ dữ liệu cũ')
+    
+    // Reset AI Memory System
     resetAIMemory()
     
-    // Xóa dữ liệu cũ trước khi tạo mới
+    // Xóa TOÀN BỘ dữ liệu cũ từ localStorage
     if (user?.id) {
       const userId = user.id
       localStorage.removeItem(`planai_chat_messages_${userId}`)
+      localStorage.removeItem(`planai_collected_info_${userId}`)
       localStorage.removeItem(`pending_plan_${userId}`)
     }
-    // Also clear the stable fallback key
-    try { localStorage.removeItem('pending_plan_latest') } catch {}
+    // Also clear the stable fallback keys
+    try { 
+      localStorage.removeItem('pending_plan_latest')
+      localStorage.removeItem('planai_chat_messages_anonymous')
+      localStorage.removeItem('planai_collected_info_anonymous')
+    } catch {}
+    
+    // Reset state về trạng thái ban đầu
+    setCollectedInfo({})
+    setInput('')
     
     // Auto-start conversation with sequential messages
     const welcomeMessage1: Message = {
@@ -98,7 +109,7 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     
     // Đặt tin nhắn vào state
     setMessages([welcomeMessage1, welcomeMessage2, welcomeMessage3])
-    console.log('Khởi tạo 3 tin nhắn chào mừng thành công')
+    console.log('✅ Đã xóa toàn bộ dữ liệu cũ và khởi tạo chat mới')
   }
 
   useEffect(() => {
@@ -615,13 +626,13 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
             </div>
             <button
               onClick={async () => {
-                if (confirm('Bạn có chắc muốn xóa toàn bộ cuộc trò chuyện và bắt đầu lại?')) {
+                if (confirm('⚠️ Bạn có chắc muốn xóa toàn bộ cuộc trò chuyện và bắt đầu lại?\n\nToàn bộ thông tin chat trước đó sẽ bị xóa hoàn toàn và không thể khôi phục.')) {
                   initializeNewChat()
                 }
               }}
-              className="text-xs flex items-center space-x-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
             >
-              <Sparkles className="w-3 h-3" />
+              <Sparkles className="w-4 h-4" />
               <span>Bắt đầu lại</span>
             </button>
           </div>
