@@ -621,8 +621,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tạo kế hoạch tài chính</h1>
-              <span className="bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-primary-900 dark:text-primary-300">AI</span>
+              <h1 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Tạo kế hoạch tài chính</h1>
+              <span className="bg-primary-100 text-primary-800 text-[10px] md:text-xs font-medium px-2 py-0.5 rounded dark:bg-primary-900 dark:text-primary-300">AI</span>
             </div>
             <button
               onClick={async () => {
@@ -630,9 +630,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
                   initializeNewChat()
                 }
               }}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-[11px] md:text-xs font-medium shadow-sm hover:shadow-md transition-colors duration-200 whitespace-nowrap"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3 h-3" />
               <span>Bắt đầu lại</span>
             </button>
           </div>
