@@ -141,6 +141,12 @@ export default function GeneratePlanPage() {
   }
 
   useEffect(() => {
+    // CRITICAL: Wait for user to be loaded before starting generation
+    if (!user) {
+      console.log('=== GENERATE: Waiting for user to load ===')
+      return
+    }
+    
     // Do not force redirect immediately; attempt to proceed using cookies if available
     const userId = user?.id || 'anonymous'
     // Check both user-specific and stable fallback keys
