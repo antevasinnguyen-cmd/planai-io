@@ -620,9 +620,8 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         {/* Progress */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <h1 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Tạo kế hoạch tài chính</h1>
-              <span className="bg-primary-100 text-primary-800 text-[10px] md:text-xs font-medium px-2 py-0.5 rounded dark:bg-primary-900 dark:text-primary-300">AI</span>
+            <div className="flex items-center">
+              <h1 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Tạo kế hoạch tài chính</h1>
             </div>
             <button
               onClick={async () => {
