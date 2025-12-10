@@ -621,7 +621,10 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <h1 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Tạo kế hoạch tài chính</h1>
+              <h1 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white leading-tight">
+                <span className="block">Tạo kế hoạch</span>
+                <span className="block">tài chính</span>
+              </h1>
             </div>
             <button
               onClick={async () => {
