@@ -340,12 +340,31 @@ export default function GeneratePlanPage() {
       startTimeRef.current = Date.now()
       setProgress(10)
 
-      // Get auth token with validation
+      // Get auth token with validation and retry
       const { supabase } = await import('@/lib/supabase')
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      let sessionData
+      let sessionError
+      
+      // Try to get session, retry once if failed (session might be refreshing)
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const result = await supabase.auth.getSession()
+        sessionData = result.data
+        sessionError = result.error
+        
+        if (sessionData?.session?.access_token) {
+          break // Success
+        }
+        
+        // If first attempt failed, wait and try refresh
+        if (attempt === 0) {
+          console.log('=== GENERATE: Session not found, attempting refresh ===')
+          await supabase.auth.refreshSession()
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+      }
       
       if (sessionError || !sessionData?.session?.access_token) {
-        console.error('=== GENERATE: Auth token missing ===', { sessionError })
+        console.error('=== GENERATE: Auth token missing after retry ===', { sessionError })
         setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
         return
       }
