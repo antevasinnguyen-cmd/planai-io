@@ -340,16 +340,19 @@ export default function GeneratePlanPage() {
       startTimeRef.current = Date.now()
       setProgress(10)
 
-      // Get auth token
+      // Get auth token with validation
       const { supabase } = await import('@/lib/supabase')
-      const { data: sessionData } = await supabase.auth.getSession()
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
       
-      const headers: any = { 
-        'Content-Type': 'application/json'
+      if (sessionError || !sessionData?.session?.access_token) {
+        console.error('=== GENERATE: Auth token missing ===', { sessionError })
+        setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
+        return
       }
       
-      if (sessionData?.session?.access_token) {
-        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+      const headers: any = { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionData.session.access_token}`
       }
 
       // Determine which route to use based on tier
@@ -418,61 +421,91 @@ export default function GeneratePlanPage() {
       })
       
       let res
-      try {
-        res = await fetch(apiRoute, {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify({
-            planName: finalPlanName || 'Kế hoạch tài chính',
-            goals: finalGoals || '',
-            collectedInfo: data.collectedInfo || {},
-            messages: Array.isArray(data?.messages) ? data.messages : undefined
+      let retries = 0
+      const maxRetries = 2
+      
+      while (retries <= maxRetries) {
+        try {
+          // Set 65 second timeout (Vercel Pro/Enterprise max is 60s, add buffer)
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 65000)
+          
+          res = await fetch(apiRoute, {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+            signal: controller.signal,
+            body: JSON.stringify({
+              planName: finalPlanName || 'Kế hoạch tài chính',
+              goals: finalGoals || '',
+              collectedInfo: data.collectedInfo || {},
+              messages: Array.isArray(data?.messages) ? data.messages : undefined
+            })
           })
-        })
-        
-        console.log('=== GENERATE: API response received ===', { 
-          status: res.status, 
-          statusText: res.statusText,
-          ok: res.ok,
-          contentType: res.headers.get('content-type')
-        })
-      } catch (fetchError) {
-        console.error('=== GENERATE: Network/Fetch Error ===', { 
-          error: fetchError,
-          message: fetchError instanceof Error ? fetchError.message : String(fetchError),
-          apiRoute
-        })
-        setError('Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.')
-        return
+          
+          clearTimeout(timeoutId)
+          
+          console.log('=== GENERATE: API response received ===', { 
+            status: res.status, 
+            statusText: res.statusText,
+            ok: res.ok,
+            contentType: res.headers.get('content-type'),
+            attempt: retries + 1
+          })
+          break // Success, exit retry loop
+        } catch (fetchError) {
+          retries++
+          const isTimeout = fetchError instanceof Error && fetchError.name === 'AbortError'
+          const isNetworkError = fetchError instanceof TypeError
+          
+          console.error('=== GENERATE: Network/Fetch Error ===', { 
+            error: fetchError,
+            message: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            apiRoute,
+            isTimeout,
+            isNetworkError,
+            attempt: retries,
+            maxRetries
+          })
+          
+          if (retries > maxRetries) {
+            setError('Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.')
+            return
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retries))
+        }
       }
 
-      if (!res.ok) {
-        console.error('Error starting plan generation:', res.status)
-        const result = await res.json().catch(() => ({}))
+      if (!res || !res.ok) {
+        console.error('Error starting plan generation:', res?.status)
+        const result = res ? await res.json().catch(() => ({})) : {}
         
         // Log chi tiết lỗi
         console.error('=== GENERATE: API Error Details ===', { 
-          status: res.status, 
-          statusText: res.statusText,
+          status: res?.status, 
+          statusText: res?.statusText,
           error: result,
           route: apiRoute,
           tier
         })
         
         // Handle specific error codes
-        if (res.status === 503) {
-          // Lỗi AI generation failed
-          const errorMsg = result.message || result.error || 'Hệ thống AI tạm thời không khả dụng. Vui lòng thử lại sau 1-2 phút.'
-          setError(errorMsg)
-          console.error('503 AI Error:', errorMsg)
-        } else if (res.status === 504) {
-          setError(result.message || 'Hệ thống AI mất quá lâu để xử lý. Vui lòng thử lại sau.')
-        } else if (res.status === 429 && result?.upgradeRequired) {
+        if (res?.status === 401) {
+          setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
+        } else if (res?.status === 403) {
+          setError('Bạn không có quyền thực hiện hành động này. Vui lòng đăng nhập lại.')
+        } else if (res?.status === 429 && result?.upgradeRequired) {
           setUpgradeRequired(true)
           setError(result.message || 'Bạn đã đạt giới hạn của gói hiện tại. Vui lòng nâng cấp để tiếp tục.')
+        } else if (res?.status === 503) {
+          const errorMsg = result.message || result.error || 'Hệ thống AI tạm thời không khả dụng. Vui lòng thử lại sau 1-2 phút.'
+          setError(errorMsg)
+        } else if (res?.status === 504) {
+          setError(result.message || 'Hệ thống AI mất quá lâu để xử lý. Vui lòng thử lại sau.')
         } else {
-          setError(result.error || result.message || `Lỗi ${res.status}: Không thể tạo kế hoạch`)
+          setError(result.error || result.message || `Lỗi ${res?.status || 'không xác định'}: Không thể tạo kế hoạch`)
         }
         return
       }
@@ -583,13 +616,16 @@ export default function GeneratePlanPage() {
           }
         } catch (streamError) {
           console.error('Stream reading error:', streamError)
+          const isTimeout = streamError instanceof Error && streamError.name === 'AbortError'
+          
           // Don't show error immediately - job might still be running
           // Check job status via polling
           const savedJobId = sessionStorage.getItem(`plan_job_${userId}`)
           if (savedJobId) {
+            console.log('Job is running in background, resuming polling:', savedJobId)
             pollJobStatus(savedJobId)
           } else {
-            setError('Mất kết nối với server. Vui lòng kiểm tra lại sau.')
+            setError(isTimeout ? 'Yêu cầu hết thời gian chờ. Kế hoạch đang được xử lý trong nền. Vui lòng quay lại sau.' : 'Mất kết nối với server. Vui lòng kiểm tra lại sau.')
           }
         }
         return
