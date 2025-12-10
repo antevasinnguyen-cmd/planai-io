@@ -347,7 +347,10 @@ export default function GeneratePlanPage() {
       setProgress(10)
 
       // Get auth token with validation and retry
-      const { supabase } = await import('@/lib/supabase')
+      // CRITICAL: Use createClientComponentClient to get session from cookies
+      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+      const supabase = createClientComponentClient()
+      
       let sessionData
       let sessionError
       
@@ -356,6 +359,12 @@ export default function GeneratePlanPage() {
         const result = await supabase.auth.getSession()
         sessionData = result.data
         sessionError = result.error
+        
+        console.log('=== GENERATE: Session attempt ===', {
+          attempt: attempt + 1,
+          hasToken: !!sessionData?.session?.access_token,
+          sessionError: sessionError?.message
+        })
         
         if (sessionData?.session?.access_token) {
           break // Success
@@ -370,7 +379,11 @@ export default function GeneratePlanPage() {
       }
       
       if (sessionError || !sessionData?.session?.access_token) {
-        console.error('=== GENERATE: Auth token missing after retry ===', { sessionError })
+        console.error('=== GENERATE: Auth token missing after retry ===', { 
+          sessionError,
+          hasSession: !!sessionData?.session,
+          hasToken: !!sessionData?.session?.access_token
+        })
         setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
         return
       }
