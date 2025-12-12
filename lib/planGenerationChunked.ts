@@ -341,7 +341,28 @@ function buildPrompts(goal: string, income: string, savings: string, timeline: s
     
     time_roadmap: `Xây dựng lộ trình chi tiết theo thời gian ${timeline} để đạt ${goal}. NĂM 1: Mục tiêu năm, chia theo 4 quý. MỖI QUÝ: Mục tiêu quý, chia theo 3 tháng. MỖI THÁNG: 3-5 hành động chính. TUẦN MẪU: Lịch trình tuần điển hình. NGÀY MẪU: Thói quen hàng ngày cần xây dựng.`,
     
-    checklist: `Tạo checklist hành động định kỳ để theo dõi tiến độ đạt ${goal}. CHECKLIST HÀNG NGÀY (5-7 items). CHECKLIST HÀNG TUẦN (7-10 items). CHECKLIST HÀNG THÁNG (5-7 items). Mỗi item: Hành động cụ thể, Thời gian thực hiện, Kết quả mong đợi.`,
+    checklist: `Tạo CHECKLIST HÀNH ĐỘNG ĐỊNH KỲ chi tiết để theo dõi tiến độ đạt ${goal}.
+
+TRÌNH BÀY DƯỚI DẠNG BẢNG MARKDOWN với 3 cột:
+| Hành động | Thời gian thực hiện | Kết quả mong đợi |
+
+⚠️ QUY TẮC BẮT BUỘC:
+- KHÔNG có cột "Ngày/Tháng" hoặc "Trạng thái"
+- KHÔNG dùng "---", "- - -", "—" để lấp chỗ trống
+- KHÔNG sinh dòng với nội dung trống hoặc "Chưa xác định"
+- CHỈ tạo dòng khi có nội dung CỤ THỂ và CHI TIẾT
+- Mỗi hành động phải MÔ TẢ RÕ RÀNG việc cần làm
+
+📋 CHECKLIST HÀNG QUÝ (4-6 items):
+Các mục tiêu lớn cần đạt được mỗi quý, review tiến độ tổng thể
+
+📋 CHECKLIST HÀNG THÁNG (8-10 items):
+Các công việc quan trọng cần hoàn thành trong tháng
+
+📋 CHECKLIST HÀNG TUẦN (10-12 items):
+Các nhiệm vụ cụ thể cần thực hiện mỗi tuần
+
+Mỗi bảng phải có TỐI THIỂU số dòng như yêu cầu, nội dung THỰC SỰ CỤ THỂ và ÁP DỤNG ĐƯỢC NGAY.`,
     
     sheets_tracking: `Mô tả cấu trúc Google Sheets theo dõi kế hoạch ${goal}. 7 SHEETS: (1) Dashboard - Biểu đồ thu nhập/chi tiêu/tài sản ròng, (2) Roadmap - Timeline ${timeline} với milestones, (3) Checklist - Checkbox tự động tính % hoàn thành, (4) Tiết kiệm - Theo dõi tiết kiệm hàng tháng, (5) Thu nhập - Các nguồn thu, (6) Business Metrics - MRR/Churn/CAC/LTV, (7) Kỹ năng - Link tài liệu học. Hướng dẫn cách sử dụng từng sheet.`,
     

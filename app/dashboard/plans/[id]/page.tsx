@@ -182,26 +182,40 @@ export default function PlanViewEnhanced() {
           credentials: 'include',
           body: JSON.stringify({ planId: plan.id })
         });
-        const json = await res.json().catch(() => ({}));
         
         if (!res.ok) {
-          // Check if it's a "requires auth" error
-          if (json?.requiresAuth || res.status === 400) {
-            alert(json?.message || 'Tính năng xuất Google Sheets đang được phát triển. Vui lòng sử dụng tính năng xuất PDF hoặc Word.');
-            return;
-          }
+          const json = await res.json().catch(() => ({}));
           throw new Error(json?.error || 'Export failed');
         }
         
+        // Check if response is a file (Excel) or JSON
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('spreadsheetml') || contentType.includes('octet-stream')) {
+          // Download Excel file
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ke-hoach-tai-chinh-${plan.id.slice(0, 8)}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          alert('✅ File Excel đã được tải xuống! Bạn có thể mở file này trong Google Sheets bằng cách:\n\n1. Vào Google Drive (drive.google.com)\n2. Nhấn "Mới" → "Tải tệp lên"\n3. Chọn file vừa tải\n4. Nhấp chuột phải → "Mở bằng" → "Google Trang tính"');
+          return;
+        }
+        
+        // Handle JSON response (legacy)
+        const json = await res.json().catch(() => ({}));
         if (json?.url) {
           window.open(json.url, '_blank');
           return;
         }
-        alert(json?.message || 'Không thể xuất sang Google Sheets. Vui lòng thử xuất PDF hoặc Word.');
+        alert(json?.message || 'Không thể xuất file. Vui lòng thử lại.');
         return;
       } catch (err: any) {
         console.error('Google Sheets export error:', err);
-        alert(err?.message || 'Tính năng xuất Google Sheets đang được phát triển. Vui lòng sử dụng tính năng xuất PDF hoặc Word.');
+        alert(err?.message || 'Có lỗi khi xuất file. Vui lòng thử lại.');
         return;
       }
     }

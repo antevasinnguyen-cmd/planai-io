@@ -289,10 +289,10 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
               </div>
               <div className="flex-1">
                 <h4 className="text-lg font-bold text-green-800 dark:text-green-200">
-                  📊 Tạo Google Sheets theo dõi kế hoạch
+                  📊 Tải file Excel theo dõi kế hoạch
                 </h4>
                 <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                  Tự động tạo bảng tính Google Sheets với 7 sheets: Dashboard, Roadmap, Checklist, Tiết kiệm, Thu nhập, Business Metrics, Kỹ năng. Bạn có thể xem và chỉnh sửa trực tiếp.
+                  Tải file Excel chứa các bảng từ kế hoạch. Bạn có thể mở file này trong Google Sheets hoặc Excel để theo dõi và chỉnh sửa.
                 </p>
               </div>
               <button
@@ -308,7 +308,7 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
                 ) : (
                   <>
                     <FileSpreadsheet className="w-5 h-5" />
-                    <span>Xuất Google Sheets</span>
+                    <span>Tải Excel</span>
                   </>
                 )}
               </button>
