@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { getSubscriptionLimits } from '@/lib/supabase'
+import { exportToGoogleSheets } from '@/lib/export/googleSheets';
 import * as XLSX from 'xlsx'
 
 export const dynamic = 'force-dynamic'
@@ -107,79 +108,104 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
     }
     
-    // Create Excel workbook
-    const workbook = XLSX.utils.book_new()
-    
-    // Add summary sheet
-    const summaryData = createSummarySheet(plan.content, plan.title)
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Tổng quan')
-    
-    // Parse and add tables from plan content
-    const tables = parseMarkdownTables(plan.content)
-    const usedNames = new Set(['Tổng quan'])
-    
-    for (const table of tables) {
-      // Ensure unique sheet name
-      let sheetName = table.name
-      let counter = 1
-      while (usedNames.has(sheetName)) {
-        sheetName = `${table.name.slice(0, 28)}_${counter}`
-        counter++
+    // Check if user has Google Sheets token
+    const { data: tokenData, error: tokenError } = await rh
+      .from('user_google_tokens')
+      .select('refresh_token, access_token, expires_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (tokenError || !tokenData?.refresh_token) {
+      console.log('No Google token found, returning auth URL');
+      return NextResponse.json({
+        error: 'Google Sheets authorization required',
+        requiresAuth: true,
+        authUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google`,
+        message: 'Vui lòng cấp quyền truy cập Google Sheets để xuất kế hoạch'
+      }, { status: 401 });
+    }
+
+    // Check if token is expired
+    const expiresAt = new Date(tokenData.expires_at);
+    const isExpired = expiresAt < new Date();
+
+    let accessToken = tokenData.access_token;
+
+    // Refresh token if expired
+    if (isExpired && tokenData.refresh_token) {
+      console.log('Token expired, refreshing...');
+      try {
+        const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            refresh_token: tokenData.refresh_token,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (refreshRes.ok) {
+          const newTokens = await refreshRes.json();
+          accessToken = newTokens.access_token;
+
+          // Update token in database
+          await rh.from('user_google_tokens').update({
+            access_token: newTokens.access_token,
+            expires_at: new Date(Date.now() + newTokens.expires_in * 1000).toISOString(),
+          }).eq('user_id', userId);
+        } else {
+          console.error('Token refresh failed');
+          return NextResponse.json({
+            error: 'Token refresh failed',
+            requiresAuth: true,
+            authUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google`,
+          }, { status: 401 });
+        }
+      } catch (err) {
+        console.error('Token refresh error:', err);
+        return NextResponse.json({
+          error: 'Token refresh error',
+          requiresAuth: true,
+          authUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google`,
+        }, { status: 401 });
       }
-      usedNames.add(sheetName)
-      
-      const sheet = XLSX.utils.aoa_to_sheet(table.data)
-      
-      // Set column widths
-      const colWidths = table.data[0].map((_, colIndex) => {
-        const maxLen = Math.max(...table.data.map(row => (row[colIndex] || '').length))
-        return { wch: Math.min(50, Math.max(10, maxLen + 2)) }
-      })
-      sheet['!cols'] = colWidths
-      
-      XLSX.utils.book_append_sheet(workbook, sheet, sheetName)
     }
-    
-    // If no tables found, create a basic checklist sheet
-    if (tables.length === 0) {
-      const checklistData = [
-        ['Hành động', 'Thời gian', 'Kết quả mong đợi', 'Hoàn thành'],
-        ['Xem lại mục tiêu tài chính', 'Hàng tuần', 'Hiểu rõ tiến độ', ''],
-        ['Cập nhật thu chi', 'Hàng ngày', 'Kiểm soát tài chính', ''],
-        ['Review kế hoạch', 'Hàng tháng', 'Điều chỉnh chiến lược', ''],
-      ]
-      const checklistSheet = XLSX.utils.aoa_to_sheet(checklistData)
-      XLSX.utils.book_append_sheet(workbook, checklistSheet, 'Checklist')
-    }
-    
-    // Generate Excel buffer
-    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
-    
-    // Update plan metadata with export info
-    await rh
-      .from('plans')
-      .update({
-        metadata: {
-          ...plan.metadata,
-          exports: {
-            ...(plan.metadata?.exports || {}),
-            excel: {
-              exportedAt: new Date().toISOString()
+
+    // Export to Google Sheets
+    try {
+      const sheetUrl = await exportToGoogleSheets(
+        plan.title,
+        plan.content,
+        tokenData.refresh_token
+      );
+
+      // Update plan metadata with export info
+      await rh
+        .from('plans')
+        .update({
+          metadata: {
+            ...plan.metadata,
+            exports: {
+              ...(plan.metadata?.exports || {}),
+              googleSheets: {
+                url: sheetUrl,
+                exportedAt: new Date().toISOString()
+              }
             }
           }
-        }
-      })
-      .eq('id', planId);
-    
-    // Return Excel file
-    return new NextResponse(excelBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="ke-hoach-tai-chinh-${planId.slice(0, 8)}.xlsx"`,
-      }
-    })
+        })
+        .eq('id', planId);
+
+      return NextResponse.json({ success: true, url: sheetUrl });
+    } catch (exportError) {
+      console.error('Google Sheets export error:', exportError);
+      return NextResponse.json({
+        error: 'Failed to create Google Sheets',
+        message: exportError instanceof Error ? exportError.message : 'Unknown error'
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error('Google Sheets export error:', error);
     return NextResponse.json(

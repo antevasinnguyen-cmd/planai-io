@@ -183,39 +183,32 @@ export default function PlanViewEnhanced() {
           body: JSON.stringify({ planId: plan.id })
         });
         
-        if (!res.ok) {
-          const json = await res.json().catch(() => ({}));
-          throw new Error(json?.error || 'Export failed');
-        }
-        
-        // Check if response is a file (Excel) or JSON
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('spreadsheetml') || contentType.includes('octet-stream')) {
-          // Download Excel file
-          const blob = await res.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `ke-hoach-tai-chinh-${plan.id.slice(0, 8)}.xlsx`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          alert('✅ File Excel đã được tải xuống! Bạn có thể mở file này trong Google Sheets bằng cách:\n\n1. Vào Google Drive (drive.google.com)\n2. Nhấn "Mới" → "Tải tệp lên"\n3. Chọn file vừa tải\n4. Nhấp chuột phải → "Mở bằng" → "Google Trang tính"');
-          return;
-        }
-        
-        // Handle JSON response (legacy)
         const json = await res.json().catch(() => ({}));
+        
+        if (!res.ok) {
+          // Check if authorization is required
+          if (json?.requiresAuth && json?.authUrl) {
+            const confirmed = confirm('Cần cấp quyền truy cập Google Sheets. Bạn có muốn tiếp tục không?');
+            if (confirmed) {
+              window.location.href = json.authUrl;
+            }
+            return;
+          }
+          throw new Error(json?.message || json?.error || 'Export failed');
+        }
+        
+        // Success - open Google Sheets URL
         if (json?.url) {
           window.open(json.url, '_blank');
+          alert('✅ Google Sheets đã được tạo thành công! File sẽ mở trong tab mới.');
           return;
         }
-        alert(json?.message || 'Không thể xuất file. Vui lòng thử lại.');
+        
+        alert(json?.message || 'Không thể tạo Google Sheets. Vui lòng thử lại.');
         return;
       } catch (err: any) {
         console.error('Google Sheets export error:', err);
-        alert(err?.message || 'Có lỗi khi xuất file. Vui lòng thử lại.');
+        alert(err?.message || 'Có lỗi khi tạo Google Sheets. Vui lòng thử lại.');
         return;
       }
     }
