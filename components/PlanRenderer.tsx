@@ -6,6 +6,41 @@ import ReactMarkdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
 
+// Mermaid diagram component
+const MermaidDiagram = ({ code }: { code: string }) => {
+  const [svg, setSvg] = useState<string>('')
+  const [error, setError] = useState<string>('')
+
+  useMemo(() => {
+    const renderDiagram = async () => {
+      try {
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' })
+        const { svg: generatedSvg } = await mermaid.render('mermaid-diagram', code)
+        setSvg(generatedSvg)
+        setError('')
+      } catch (err) {
+        console.error('Mermaid render error:', err)
+        setError('Không thể render sơ đồ')
+      }
+    }
+    renderDiagram()
+  }, [code])
+
+  if (error) {
+    return <div className="text-red-500 p-4 bg-red-50 dark:bg-red-900/20 rounded">{error}</div>
+  }
+
+  return (
+    <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
+      {svg ? (
+        <div dangerouslySetInnerHTML={{ __html: svg }} className="flex justify-center" />
+      ) : (
+        <div className="text-center py-8 text-gray-500">Đang tải sơ đồ...</div>
+      )}
+    </div>
+  )
+}
+
 // Custom components for ReactMarkdown - make all links open in new tab
 const markdownComponents: Components = {
   a: ({ href, children, ...props }) => (
@@ -19,6 +54,23 @@ const markdownComponents: Components = {
       {children}
     </a>
   ),
+  code: ({ inline, className, children, ...props }: any) => {
+    const match = (className || '').match(/language-(\w+)/)
+    const lang = match ? match[1] : ''
+
+    // Render Mermaid diagrams
+    if (lang === 'mermaid' && !inline) {
+      const code = String(children).replace(/\n$/, '')
+      return <MermaidDiagram code={code} />
+    }
+
+    // Default code rendering
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    )
+  },
 }
 
 // Lazy load RoadmapDiagram to avoid SSR issues with ReactFlow
@@ -409,106 +461,6 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       </div>
 
       {/* Các phần Table Export Cards, CTA, ... giữ nguyên như cũ nếu có */}
-    </div>
-  )
-}
-
-// Mermaid diagram renderer component
-function MermaidDiagram({ code }: { code: string }) {
-  const [svg, setSvg] = useState<string>('')
-  const [error, setError] = useState<string>('')
-  const [img, setImg] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(false)
-  const [genErr, setGenErr] = useState<string>('')
-
-  useMemo(() => {
-    const renderMermaid = async () => {
-      try {
-        mermaid.initialize({ startOnLoad: true, theme: 'default' })
-        const { svg: renderedSvg } = await mermaid.render('mermaid-diagram', code)
-        setSvg(renderedSvg)
-        setError('')
-      } catch (err) {
-        setError('Không thể render sơ đồ')
-        console.error('Mermaid render error:', err)
-      }
-    }
-    renderMermaid()
-  }, [code])
-
-  if (error) {
-    return (
-      <div className="my-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto">
-          {code}
-        </pre>
-      </div>
-    )
-  }
-
-  if (!svg) {
-    return (
-      <div className="my-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg animate-pulse">
-        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="my-6 p-4 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
-      <div dangerouslySetInnerHTML={{ __html: svg }} className="flex justify-center" />
-      <div className="mt-4">
-        <button
-          onClick={async () => {
-            try {
-              setLoading(true)
-              setGenErr('')
-              setImg('')
-              const res = await fetch('/api/images/mindmap', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ mermaid: code })
-              })
-              const data = await res.json().catch(() => ({}))
-              if (!res.ok || data?.error) {
-                throw new Error(data?.error || `HTTP ${res.status}`)
-              }
-              setImg(data?.image || '')
-            } catch (e) {
-              setGenErr('Không thể tạo ảnh. Vui lòng thử lại.')
-            } finally {
-              setLoading(false)
-            }
-          }}
-          disabled={loading}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            loading
-              ? 'bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-300 cursor-not-allowed'
-              : 'bg-primary-600 hover:bg-primary-700 text-white'
-          }`}
-        >
-          {loading ? 'Đang tạo ảnh...' : 'Tạo ảnh minh họa (AI)'}
-        </button>
-        {genErr && (
-          <p className="text-sm text-red-600 dark:text-red-400 mt-2">{genErr}</p>
-        )}
-        {img && (
-          <div className="mt-4">
-            <img src={img} alt="Mindmap" className="max-w-full h-auto rounded border border-gray-200 dark:border-gray-700" />
-            <div className="mt-2">
-              <a
-                href={img}
-                download={`mindmap-${Date.now()}.png`}
-                className="inline-flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-              >
-                Tải ảnh
-              </a>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

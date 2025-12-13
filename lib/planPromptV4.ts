@@ -655,7 +655,7 @@ QUY TẮC CHẤT LƯỢNG VÀ ĐỘ TIN CẬY:
 
 ⚠️ QUY TẮC HIỂN THỊ BẮT BUỘC:
 ✅ KHÔNG sử dụng bảng Markdown ở CÁC PHẦN KHÁC, NGOẠI TRỪ: Phần 9 (Kỹ năng), Phần 13 (Đầu tư & Rủi ro), Phần 14 (Mô hình kinh doanh)
-✅ KHÔNG sử dụng Mermaid hoặc bất kỳ biểu đồ nào - mô tả bằng văn bản thay thế
+✅ CHỈ sử dụng Mermaid diagram cho Phần 5 (Lộ trình) - dùng sequenceDiagram để vẽ flow lộ trình. KHÔNG dùng Mermaid ở các phần khác
 ✅ KHÔNG sử dụng ngày/tháng cụ thể - luôn dùng "tháng thứ nhất", "tháng thứ hai", "quý thứ nhất", "năm thứ nhất", v.v.
 ✅ KHÔNG sử dụng bất kỳ cú pháp đặc biệt nào có thể gây lỗi hiển thị
 ✅ MỌI nội dung phải ở dạng văn bản thuần với Markdown cơ bản (tiêu đề, đậm, nghiêng, danh sách)
