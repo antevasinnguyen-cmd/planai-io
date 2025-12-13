@@ -34,23 +34,42 @@ export async function exportToGoogleSheets(
     // Create Google Sheets client
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
     
-    // Create a new spreadsheet
+    // Parse tables from markdown content
+    const tables = parseMarkdownTables(typeof content === 'string' ? content : JSON.stringify(content));
+    
+    // Create sheets array with parsed tables
+    const sheetsList = [
+      {
+        properties: {
+          title: 'Overview',
+          gridProperties: {
+            rowCount: 1000,
+            columnCount: 26
+          }
+        }
+      }
+    ];
+
+    // Add sheets for each parsed table
+    for (const table of tables) {
+      sheetsList.push({
+        properties: {
+          title: table.name,
+          gridProperties: {
+            rowCount: Math.max(100, table.rows.length + 5),
+            columnCount: table.headers.length
+          }
+        }
+      });
+    }
+
+    // Create a new spreadsheet with all sheets
     const spreadsheet = await sheets.spreadsheets.create({
       requestBody: {
         properties: {
           title: `PlanAI: ${title} - ${new Date().toLocaleDateString()}`
         },
-        sheets: [
-          {
-            properties: {
-              title: 'Financial Plan',
-              gridProperties: {
-                rowCount: 1000,
-                columnCount: 26
-              }
-            }
-          }
-        ]
+        sheets: sheetsList
       }
     });
 
@@ -59,18 +78,33 @@ export async function exportToGoogleSheets(
       throw new Error('Failed to create spreadsheet');
     }
 
-    // Prepare data for the spreadsheet
+    // Update Overview sheet with main data
     const sheetData = prepareSheetData(content);
-
-    // Update spreadsheet with data
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: 'Financial Plan!A1',
+      range: 'Overview!A1',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: sheetData
       }
     });
+
+    // Update each table sheet
+    for (const table of tables) {
+      const sheetValues = [
+        table.headers,
+        ...table.rows
+      ];
+      
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${table.name}!A1`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: sheetValues
+        }
+      });
+    }
 
     // Format the spreadsheet
     await formatSpreadsheet(sheets, spreadsheetId);
@@ -81,6 +115,48 @@ export async function exportToGoogleSheets(
     console.error('Google Sheets export error:', error);
     throw new Error('Failed to export to Google Sheets');
   }
+}
+
+/**
+ * Parse markdown tables from plan content
+ */
+function parseMarkdownTables(content: string): { name: string; headers: string[]; rows: string[][] }[] {
+  const tables: { name: string; headers: string[]; rows: string[][] }[] = [];
+  
+  // Split content by sections
+  const sections = content.split(/^##\s+/m);
+  
+  for (const section of sections) {
+    // Find section title
+    const titleMatch = section.match(/^(.+?)(?:\n|$)/);
+    const sectionTitle = titleMatch ? titleMatch[1].trim().slice(0, 31) : 'Sheet';
+    
+    // Find markdown tables in this section
+    const tableRegex = /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g;
+    let match;
+    
+    while ((match = tableRegex.exec(section)) !== null) {
+      const headerRow = match[1].split('|').map(cell => cell.trim()).filter(Boolean);
+      const bodyRows = match[2].trim().split('\n').map(row => 
+        row.split('|').map(cell => cell.trim()).filter(Boolean)
+      );
+      
+      // Skip rows with only "---" placeholders
+      const cleanRows = bodyRows.filter(row => 
+        !row.every(cell => /^-{2,}$/.test(cell) || cell === '')
+      );
+      
+      if (headerRow.length > 0 && cleanRows.length > 0) {
+        tables.push({
+          name: sectionTitle.replace(/[\\\/\?\*\[\]]/g, '').slice(0, 31),
+          headers: headerRow,
+          rows: cleanRows
+        });
+      }
+    }
+  }
+  
+  return tables;
 }
 
 /**
