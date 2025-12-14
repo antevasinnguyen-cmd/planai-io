@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      // Redirect to login if not authenticated
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?redirect=/dashboard&error=auth_required`);
     }
 
     // Build OAuth URL
@@ -33,12 +34,12 @@ export async function GET(req: NextRequest) {
       authUrl: authUrl.split('?')[0] + '?...',
     });
 
-    return NextResponse.json({ authUrl });
+    // FIXED: Redirect directly to Google OAuth instead of returning JSON
+    // This allows the browser to navigate to Google's consent screen
+    return NextResponse.redirect(authUrl);
   } catch (error) {
     console.error('Google auth error:', error);
-    return NextResponse.json(
-      { error: 'Failed to initiate Google auth' },
-      { status: 500 }
-    );
+    // Redirect to dashboard with error instead of returning JSON
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?sheets_error=auth_failed`);
   }
 }

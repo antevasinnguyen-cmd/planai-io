@@ -256,12 +256,22 @@ export class AIMemorySystem {
       this.collectedFields.add('age')
     }
     
-    // Calculate from birth year
+    // Calculate from birth year - FIXED: Account for whether birthday has passed
     const yearPattern = /(?:sinh|born)\s*(?:năm)?\s*(\d{4})/i
     const yearMatch = text.match(yearPattern)
     if (yearMatch) {
       const birthYear = parseInt(yearMatch[1])
-      this.profile.age = new Date().getFullYear() - birthYear
+      const today = new Date()
+      const currentYear = today.getFullYear()
+      // If we have birth_date, use it for accurate age calculation
+      if (this.profile.birth_date) {
+        const [day, month] = this.profile.birth_date.split('/').map(Number)
+        const birthDateThisYear = new Date(currentYear, month - 1, day)
+        this.profile.age = today < birthDateThisYear ? currentYear - birthYear - 1 : currentYear - birthYear
+      } else {
+        // Default: assume birthday has passed
+        this.profile.age = currentYear - birthYear
+      }
       this.collectedFields.add('age')
     }
   }
@@ -284,10 +294,15 @@ export class AIMemorySystem {
         this.profile.birth_date = `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`
         this.collectedFields.add('birth_date')
         
-        // Also calculate age if not set
+        // Also calculate age if not set - FIXED: Account for whether birthday has passed
         if (!this.profile.age) {
           const birthYear = parseInt(year)
-          this.profile.age = new Date().getFullYear() - birthYear
+          const today = new Date()
+          const currentYear = today.getFullYear()
+          const birthMonth = parseInt(month) - 1 // JS months are 0-indexed
+          const birthDay = parseInt(day)
+          const birthDateThisYear = new Date(currentYear, birthMonth, birthDay)
+          this.profile.age = today < birthDateThisYear ? currentYear - birthYear - 1 : currentYear - birthYear
           this.collectedFields.add('age')
         }
         break

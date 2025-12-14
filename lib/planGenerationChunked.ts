@@ -315,7 +315,20 @@ function buildPrompts(goal: string, income: string, savings: string, timeline: s
     conclusion: `Tóm tắt ngắn gọn 3-5 điểm chính của kế hoạch và liệt kê 5 hành động cần làm NGAY trong tuần đầu tiên.`,
     
     // PAID TIER 24 sections - Personalized & In-depth
-    overview: `Viết phần Tổng quan kế hoạch và Hồ sơ cá nhân CHI TIẾT. Bao gồm: Mục tiêu chính (${goal}), Hồ sơ cá nhân (Thu nhập ${income}, Tiết kiệm ${savings}, Kỹ năng ${skillsStr}), Bối cảnh (Timeline ${timeline}), Tóm tắt executive 3-5 câu về chiến lược tổng thể. Trình bày rõ ràng, cá nhân hoá dựa trên dữ liệu thực từ user.`,
+    overview: `Viết phần Tổng quan kế hoạch và Hồ sơ cá nhân CHI TIẾT. 
+
+**BẮT BUỘC bao gồm các mục sau trong phần "Hồ sơ cá nhân":**
+- Tuổi (tính chính xác từ ngày sinh nếu có)
+- Nghề nghiệp hiện tại
+- Thu nhập hiện tại: ${income}
+- Tiết kiệm hiện có: ${savings}
+- Kỹ năng: ${skillsStr}
+- **MỤC TIÊU TÀI CHÍNH (QUAN TRỌNG NHẤT):** ${goal}
+- Timeline thực hiện: ${timeline}
+
+**Tóm tắt executive:** 3-5 câu về chiến lược tổng thể để đạt mục tiêu.
+
+Trình bày rõ ràng, cá nhân hoá dựa trên dữ liệu thực từ user. KHÔNG được bỏ sót mục tiêu tài chính.`,
     
     swot: `Phân tích SWOT CÁ NHÂN chi tiết dựa trên thông tin user và bối cảnh Việt Nam. ĐIỂM MẠNH (5-7 điểm): Kỹ năng ${skillsStr}, kinh nghiệm, lợi thế. ĐIỂM YẾU (5-7 điểm): Hạn chế về vốn, thời gian, kỹ năng thiếu. CƠ HỘI (5-7 điểm): Xu hướng thị trường VN, ngành tiềm năng. THÁCH THỨC (5-7 điểm): Cạnh tranh, rủi ro kinh tế, thay đổi công nghệ.`,
     
@@ -323,7 +336,30 @@ function buildPrompts(goal: string, income: string, savings: string, timeline: s
     
     financial_strategy: `Phân tích mục tiêu tài chính ${goal} và xây dựng chiến lược tổng quan. Tính toán: Gap = Mục tiêu - Tiết kiệm hiện tại (${savings}). Đề xuất 3-5 trụ cột chiến lược: Tăng thu, Tối ưu chi, Đầu tư, Kinh doanh. Mỗi trụ cột có mục tiêu số cụ thể.`,
     
-    roadmap_mindmap: `Viết lộ trình tổng quan đến mục tiêu ${goal} trong ${timeline}. Chia thành 3-4 giai đoạn lớn. Mỗi giai đoạn: Tên giai đoạn, Thời gian, Mục tiêu chính, Trọng tâm hành động, Kết quả mong đợi. Trình bày dạng văn bản rõ ràng, dễ theo dõi.`,
+    roadmap_mindmap: `Viết SƠ ĐỒ LỘ TRÌNH ĐẾN MỤC TIÊU ${goal} trong ${timeline}.
+
+**TRÌNH BÀY DƯỚI DẠNG FLOW DIAGRAM (BẮT BUỘC):**
+
+Sử dụng format sau để tạo sơ đồ lộ trình trực quan:
+
+\`\`\`
+[Giai đoạn 1: Tên] ──► [Giai đoạn 2: Tên] ──► [Giai đoạn 3: Tên] ──► [Kết quả mong đợi]
+     │                      │                      │
+     ▼                      ▼                      ▼
+  Hành động 1           Hành động 1           Hành động 1
+  Hành động 2           Hành động 2           Hành động 2
+  Hành động 3           Hành động 3           Hành động 3
+\`\`\`
+
+**CHI TIẾT TỪNG GIAI ĐOẠN:**
+
+Với mỗi giai đoạn (3-5 giai đoạn), trình bày:
+- **Tên giai đoạn:** [Tên ngắn gọn, súc tích]
+- **Thời gian:** [VD: Tháng 1-3, Quý 1, Năm 1...]
+- **Trọng tâm hành động:** 3-5 hành động cụ thể
+- **Kết quả mong đợi:** Milestone cụ thể, đo lường được
+
+Lộ trình phải logic, có tính kế thừa giữa các giai đoạn, và phù hợp với timeline ${timeline}.`,
     
     core_strategies: `Đề xuất ĐÚNG 10 CHIẾN LƯỢC HÀNH ĐỘNG TRỌNG TÂM (xương sống) để đạt ${goal}. Mỗi chiến lược: Tên chiến lược, Mô tả ngắn (2-3 câu), Tại sao quan trọng, Kết quả mong đợi, Ưu tiên (Cao/Trung bình). Các chiến lược phải cá nhân hoá theo kỹ năng ${skillsStr} và thu nhập ${income}.`,
     
@@ -343,26 +379,31 @@ function buildPrompts(goal: string, income: string, savings: string, timeline: s
     
     checklist: `Tạo CHECKLIST HÀNH ĐỘNG ĐỊNH KỲ chi tiết để theo dõi tiến độ đạt ${goal}.
 
-TRÌNH BÀY DƯỚI DẠNG BẢNG MARKDOWN với 3 cột:
+⚠️⚠️⚠️ QUY TẮC TUYỆT ĐỐI - VI PHẠM SẼ BỊ TỪ CHỐI:
+1. TUYỆT ĐỐI KHÔNG dùng "---", "- - -", "—", "..." để lấp chỗ trống trong bảng
+2. TUYỆT ĐỐI KHÔNG tạo dòng trống hoặc dòng chỉ có dấu gạch
+3. MỖI DÒNG trong bảng PHẢI có nội dung CỤ THỂ, CHI TIẾT
+4. Nếu không có đủ nội dung, KHÔNG tạo thêm dòng trống
+
+**TRÌNH BÀY DƯỚI DẠNG BẢNG MARKDOWN với 3 cột:**
+
 | Hành động | Thời gian thực hiện | Kết quả mong đợi |
+|-----------|---------------------|------------------|
+| [Mô tả hành động cụ thể] | [Tuần X / Tháng X / Quý X] | [Kết quả đo lường được] |
 
-⚠️ QUY TẮC BẮT BUỘC:
-- KHÔNG có cột "Ngày/Tháng" hoặc "Trạng thái"
-- KHÔNG dùng "---", "- - -", "—" để lấp chỗ trống
-- KHÔNG sinh dòng với nội dung trống hoặc "Chưa xác định"
-- CHỈ tạo dòng khi có nội dung CỤ THỂ và CHI TIẾT
-- Mỗi hành động phải MÔ TẢ RÕ RÀNG việc cần làm
+**📋 PHÂN BỔ THEO QUÝ (1 năm = 4 quý):**
 
-📋 CHECKLIST HÀNG QUÝ (4-6 items):
-Các mục tiêu lớn cần đạt được mỗi quý, review tiến độ tổng thể
+**Quý 1 (Tháng 1-3):** 4-5 hành động cụ thể
+**Quý 2 (Tháng 4-6):** 4-5 hành động cụ thể  
+**Quý 3 (Tháng 7-9):** 4-5 hành động cụ thể
+**Quý 4 (Tháng 10-12):** 4-5 hành động cụ thể
 
-📋 CHECKLIST HÀNG THÁNG (8-10 items):
-Các công việc quan trọng cần hoàn thành trong tháng
+Mỗi hành động phải:
+- Mô tả RÕ RÀNG việc cần làm (không chung chung)
+- Có thời gian thực hiện cụ thể (Tuần/Tháng/Quý)
+- Có kết quả mong đợi đo lường được
 
-📋 CHECKLIST HÀNG TUẦN (10-12 items):
-Các nhiệm vụ cụ thể cần thực hiện mỗi tuần
-
-Mỗi bảng phải có TỐI THIỂU số dòng như yêu cầu, nội dung THỰC SỰ CỤ THỂ và ÁP DỤNG ĐƯỢC NGAY.`,
+TỔNG: 16-20 hành động cụ thể, KHÔNG có dòng trống hay dấu "---".`,
     
     sheets_tracking: `Mô tả cấu trúc Google Sheets theo dõi kế hoạch ${goal}. 7 SHEETS: (1) Dashboard - Biểu đồ thu nhập/chi tiêu/tài sản ròng, (2) Roadmap - Timeline ${timeline} với milestones, (3) Checklist - Checkbox tự động tính % hoàn thành, (4) Tiết kiệm - Theo dõi tiết kiệm hàng tháng, (5) Thu nhập - Các nguồn thu, (6) Business Metrics - MRR/Churn/CAC/LTV, (7) Kỹ năng - Link tài liệu học. Hướng dẫn cách sử dụng từng sheet.`,
     
@@ -456,6 +497,16 @@ function cleanSectionContent(text: string, sectionTitle: string): string {
   // This is tricky - we'll convert "1. " to "• " to avoid confusion with section numbers
   cleaned = cleaned.replace(/^(\d+)\.\s+/gm, '• ')
 
+  // CRITICAL: Remove "---" placeholder rows from markdown tables
+  // Pattern: rows that only contain "---" or "- - -" or similar in cells
+  cleaned = cleaned.replace(/\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|/g, '') // Remove rows with only dashes
+  cleaned = cleaned.replace(/\|\s*-\s*-\s*-\s*\|\s*-\s*-\s*-\s*\|\s*-\s*-\s*-\s*\|/g, '') // Remove "- - -" rows
+  cleaned = cleaned.replace(/\|\s*—+\s*\|\s*—+\s*\|\s*—+\s*\|/g, '') // Remove em-dash rows
+  cleaned = cleaned.replace(/\|\s*\.{3,}\s*\|\s*\.{3,}\s*\|\s*\.{3,}\s*\|/g, '') // Remove "..." rows
+  
+  // Clean up any resulting empty table rows (lines with just pipes)
+  cleaned = cleaned.replace(/^\|\s*\|\s*\|\s*\|$/gm, '')
+  
   // Remove empty lines
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
 
