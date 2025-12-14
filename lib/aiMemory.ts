@@ -6,6 +6,8 @@ export interface UserProfile {
   full_name: string
   age: number | null
   birth_date: string | null
+  birth_time: string | null  // Giờ sinh (dùng cho lá số tử vi)
+  gender: string | null       // Giới tính (Nam/Nữ)
   occupation: string
   location: string
   family_status?: string
@@ -59,6 +61,8 @@ export class AIMemorySystem {
       full_name: '',
       age: null,
       birth_date: null,
+      birth_time: null,
+      gender: null,
       occupation: '',
       location: '',
       family_status: '',
@@ -101,6 +105,8 @@ export class AIMemorySystem {
     this.extractName(message)
     this.extractAge(message)
     this.extractBirthDate(message)
+    this.extractBirthTime(message)
+    this.extractGender(message)
     this.extractOccupation(message)
     this.extractLocation(message)
     this.extractIncome(message)
@@ -123,20 +129,121 @@ export class AIMemorySystem {
   }
   
   private extractName(text: string) {
-    // Pattern: "Tên tôi là..." or "Tôi là..." or "Mình tên..."
+    // IMPROVED: More flexible patterns for Vietnamese names
+    // Pattern: "Họ tên: Nguyễn Văn A" or "Tên tôi là..." or "Tôi là..." or "Mình tên..."
     const patterns = [
-      /(?:tên|gọi)\s+(?:tôi|mình|em|anh|chị)\s+là\s+([A-Za-zÀ-ỹ\s]+)/i,
-      /(?:tôi|mình|em)\s+(?:tên|là)\s+([A-Za-zÀ-ỹ\s]+)/i,
-      /(?:tôi|mình)\s+là\s+([A-Za-zÀ-ỹ\s]+),?\s+(?:\d+\s+tuổi|năm nay)/i
+      // "Họ tên: Nguyễn Thị Khánh Huyền" - explicit label
+      /(?:họ\s*tên|full\s*name|tên\s*đầy\s*đủ)[:\s]+([A-Za-zÀ-ỹ\s]{2,50})/i,
+      // "Tên tôi là Nguyễn Văn A"
+      /(?:tên|gọi)\s+(?:tôi|mình|em|anh|chị)\s+là\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+      // "Tôi tên Nguyễn Văn A" or "Mình tên là Nguyễn Văn A"
+      /(?:tôi|mình|em)\s+(?:tên|là)\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+      // "Tôi là Nguyễn Văn A, 25 tuổi"
+      /(?:tôi|mình)\s+là\s+([A-Za-zÀ-ỹ\s]{2,50}),?\s+(?:\d+\s+tuổi|năm nay)/i,
+      // "Tên là Nguyễn Văn A" - without subject
+      /tên\s+là\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+      // "Tên: Nguyễn Văn A" - with colon
+      /tên[:\s]+([A-Za-zÀ-ỹ\s]{2,50})/i
     ]
     
     for (const pattern of patterns) {
       const match = text.match(pattern)
       if (match && match[1]) {
-        this.profile.full_name = match[1].trim()
-        this.collectedFields.add('full_name')
+        // Clean up the name - remove trailing punctuation and extra spaces
+        let name = match[1].trim()
+        // Remove common trailing words that might be captured
+        name = name.replace(/\s+(là|và|có|\d+|tuổi|năm).*$/i, '').trim()
+        // Only accept if it looks like a valid name (2-5 words, each starting with uppercase)
+        const words = name.split(/\s+/)
+        if (words.length >= 2 && words.length <= 6) {
+          this.profile.full_name = name
+          this.collectedFields.add('full_name')
+          break
+        }
+      }
+    }
+  }
+  
+  private extractBirthTime(text: string) {
+    // CRITICAL: Extract birth time for Tu Vi analysis
+    // Patterns: "Sinh vào 4h sáng", "giờ sinh: 14:30", "sinh lúc 3 giờ chiều"
+    const patterns = [
+      // "Sinh vào 4h sáng" or "sinh lúc 4 giờ sáng"
+      /(?:sinh|born)\s*(?:vào|lúc)?\s*(\d{1,2})\s*(?:h|giờ|:)?\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+      // "Giờ sinh: 14:30" or "giờ sinh là 4h"
+      /(?:giờ\s*sinh|birth\s*time)[:\s]+(?:là\s*)?(\d{1,2})\s*(?:h|giờ|:)?\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+      // "4h sáng" or "14:30" standalone with context
+      /(?:lúc|vào)\s*(\d{1,2})\s*(?:h|giờ|:)\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+      // "4 giờ sáng" format
+      /(\d{1,2})\s*giờ\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa)?/i
+    ]
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern)
+      if (match && match[1]) {
+        let hour = parseInt(match[1])
+        const minute = match[2] ? parseInt(match[2]) : 0
+        const period = (match[3] || '').toLowerCase()
+        
+        // Convert to 24h format if period is specified
+        if (period === 'chiều' || period === 'tối' || period === 'pm') {
+          if (hour < 12) hour += 12
+        } else if (period === 'sáng' || period === 'am') {
+          if (hour === 12) hour = 0
+        } else if (period === 'đêm') {
+          // Đêm usually means late night (after midnight or before dawn)
+          if (hour >= 1 && hour <= 5) hour = hour // Keep as is (early morning)
+          else if (hour >= 6 && hour <= 11) hour += 12 // Late night
+        } else if (period === 'trưa') {
+          if (hour < 12) hour = 12
+        }
+        
+        // Format as HH:MM
+        const formattedTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+        this.profile.birth_time = formattedTime
+        this.collectedFields.add('birth_time')
         break
       }
+    }
+  }
+  
+  private extractGender(text: string) {
+    // CRITICAL: Extract gender for Tu Vi analysis
+    // Patterns: "Giới tính: Nam", "tôi là nữ", "nam giới", "nữ giới"
+    const textLower = text.toLowerCase()
+    
+    // Check for explicit gender labels first
+    const explicitPatterns = [
+      /(?:giới\s*tính|gender)[:\s]+(?:là\s*)?(nam|nữ|male|female)/i,
+      /(?:tôi|mình|em)\s+là\s+(nam|nữ|nam\s*giới|nữ\s*giới)/i
+    ]
+    
+    for (const pattern of explicitPatterns) {
+      const match = text.match(pattern)
+      if (match && match[1]) {
+        const genderText = match[1].toLowerCase()
+        if (genderText.includes('nam') || genderText === 'male') {
+          this.profile.gender = 'Nam'
+          this.collectedFields.add('gender')
+          return
+        } else if (genderText.includes('nữ') || genderText === 'female') {
+          this.profile.gender = 'Nữ'
+          this.collectedFields.add('gender')
+          return
+        }
+      }
+    }
+    
+    // Check for implicit gender mentions
+    if (textLower.includes('nam giới') || textLower.includes('nam,') || /\bnam\b/.test(textLower)) {
+      // Make sure it's not part of another word like "việt nam"
+      if (!textLower.includes('việt nam') && !textLower.includes('vietnam')) {
+        this.profile.gender = 'Nam'
+        this.collectedFields.add('gender')
+      }
+    } else if (textLower.includes('nữ giới') || textLower.includes('nữ,') || /\bnữ\b/.test(textLower)) {
+      this.profile.gender = 'Nữ'
+      this.collectedFields.add('gender')
     }
   }
   

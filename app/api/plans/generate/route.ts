@@ -437,6 +437,8 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
     timeline: '',
     risk_tolerance: 'medium',
     birth_date: null,
+    birth_time: null,  // CRITICAL: Giờ sinh cho tử vi
+    gender: null,       // CRITICAL: Giới tính cho tử vi
     savings: null,
     location: '',
     readiness: '',
@@ -573,6 +575,82 @@ function extractUserProfile(messages: any[], collectedInfo: Record<string, boole
   const birthDateMatches = allUserMessages.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/)
   if (birthDateMatches) {
     userProfile.birth_date = birthDateMatches[0]
+  }
+  
+  // CRITICAL: Extract full name for Tu Vi analysis
+  const fullNamePatterns = [
+    /(?:họ\s*tên|full\s*name|tên\s*đầy\s*đủ)[:\s]+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /(?:tên|gọi)\s+(?:tôi|mình|em|anh|chị)\s+là\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /(?:tôi|mình|em)\s+(?:tên|là)\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /tên\s+là\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /tên[:\s]+([A-Za-zÀ-ỹ\s]{2,50})/i
+  ]
+  for (const pattern of fullNamePatterns) {
+    const match = allUserMessages.match(pattern)
+    if (match && match[1]) {
+      let name = match[1].trim().replace(/\s+(là|và|có|\d+|tuổi|năm).*$/i, '').trim()
+      const words = name.split(/\s+/)
+      if (words.length >= 2 && words.length <= 6) {
+        userProfile.full_name = name
+        break
+      }
+    }
+  }
+  
+  // CRITICAL: Extract birth time for Tu Vi analysis
+  const birthTimePatterns = [
+    /(?:sinh|born)\s*(?:vào|lúc)?\s*(\d{1,2})\s*(?:h|giờ|:)?\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+    /(?:giờ\s*sinh|birth\s*time)[:\s]+(?:là\s*)?(\d{1,2})\s*(?:h|giờ|:)?\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+    /(?:lúc|vào)\s*(\d{1,2})\s*(?:h|giờ|:)\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+    /(\d{1,2})\s*giờ\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa)?/i
+  ]
+  for (const pattern of birthTimePatterns) {
+    const match = allUserMessages.match(pattern)
+    if (match && match[1]) {
+      let hour = parseInt(match[1])
+      const minute = match[2] ? parseInt(match[2]) : 0
+      const period = (match[3] || '').toLowerCase()
+      if (period === 'chiều' || period === 'tối' || period === 'pm') {
+        if (hour < 12) hour += 12
+      } else if (period === 'sáng' || period === 'am') {
+        if (hour === 12) hour = 0
+      } else if (period === 'đêm') {
+        if (hour >= 6 && hour <= 11) hour += 12
+      } else if (period === 'trưa') {
+        if (hour < 12) hour = 12
+      }
+      userProfile.birth_time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+      break
+    }
+  }
+  
+  // CRITICAL: Extract gender for Tu Vi analysis
+  const genderPatterns = [
+    /(?:giới\s*tính|gender)[:\s]+(?:là\s*)?(nam|nữ|male|female)/i,
+    /(?:tôi|mình|em)\s+là\s+(nam|nữ|nam\s*giới|nữ\s*giới)/i
+  ]
+  for (const pattern of genderPatterns) {
+    const match = allUserMessages.match(pattern)
+    if (match && match[1]) {
+      const genderText = match[1].toLowerCase()
+      if (genderText.includes('nam') || genderText === 'male') {
+        userProfile.gender = 'Nam'
+        break
+      } else if (genderText.includes('nữ') || genderText === 'female') {
+        userProfile.gender = 'Nữ'
+        break
+      }
+    }
+  }
+  // Fallback: check for implicit gender mentions
+  if (!userProfile.gender) {
+    if (contentLower.includes('nam giới') || /\bnam\b/.test(contentLower)) {
+      if (!contentLower.includes('việt nam') && !contentLower.includes('vietnam')) {
+        userProfile.gender = 'Nam'
+      }
+    } else if (contentLower.includes('nữ giới') || /\bnữ\b/.test(contentLower)) {
+      userProfile.gender = 'Nữ'
+    }
   }
   
   // Extract current savings (CRITICAL: Only "hiện có X tiết kiệm", NOT "có tài khoản tiết kiệm X")

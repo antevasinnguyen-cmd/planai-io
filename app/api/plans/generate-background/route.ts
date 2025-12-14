@@ -60,6 +60,94 @@ function extractSavingsVndFromText(text: string): number | null {
   }
   return null
 }
+
+// CRITICAL: Extract Tu Vi info (full_name, birth_time, gender) from chat summary
+function extractTuViInfoFromChat(text: string): { full_name: string | null, birth_time: string | null, gender: string | null } {
+  const result: { full_name: string | null, birth_time: string | null, gender: string | null } = {
+    full_name: null,
+    birth_time: null,
+    gender: null
+  }
+  
+  // Extract full name
+  const fullNamePatterns = [
+    /(?:họ\s*tên|full\s*name|tên\s*đầy\s*đủ)[:\s]+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /(?:tên|gọi)\s+(?:tôi|mình|em|anh|chị)\s+là\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /(?:tôi|mình|em)\s+(?:tên|là)\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /tên\s+là\s+([A-Za-zÀ-ỹ\s]{2,50})/i,
+    /tên[:\s]+([A-Za-zÀ-ỹ\s]{2,50})/i
+  ]
+  for (const pattern of fullNamePatterns) {
+    const match = text.match(pattern)
+    if (match && match[1]) {
+      let name = match[1].trim().replace(/\s+(là|và|có|\d+|tuổi|năm).*$/i, '').trim()
+      const words = name.split(/\s+/)
+      if (words.length >= 2 && words.length <= 6) {
+        result.full_name = name
+        break
+      }
+    }
+  }
+  
+  // Extract birth time
+  const birthTimePatterns = [
+    /(?:sinh|born)\s*(?:vào|lúc)?\s*(\d{1,2})\s*(?:h|giờ|:)?\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+    /(?:giờ\s*sinh|birth\s*time)[:\s]+(?:là\s*)?(\d{1,2})\s*(?:h|giờ|:)?\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+    /(?:lúc|vào)\s*(\d{1,2})\s*(?:h|giờ|:)\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa|am|pm)?/i,
+    /(\d{1,2})\s*giờ\s*(\d{0,2})?\s*(sáng|chiều|tối|đêm|trưa)?/i
+  ]
+  for (const pattern of birthTimePatterns) {
+    const match = text.match(pattern)
+    if (match && match[1]) {
+      let hour = parseInt(match[1])
+      const minute = match[2] ? parseInt(match[2]) : 0
+      const period = (match[3] || '').toLowerCase()
+      if (period === 'chiều' || period === 'tối' || period === 'pm') {
+        if (hour < 12) hour += 12
+      } else if (period === 'sáng' || period === 'am') {
+        if (hour === 12) hour = 0
+      } else if (period === 'đêm') {
+        if (hour >= 6 && hour <= 11) hour += 12
+      } else if (period === 'trưa') {
+        if (hour < 12) hour = 12
+      }
+      result.birth_time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+      break
+    }
+  }
+  
+  // Extract gender
+  const textLower = text.toLowerCase()
+  const genderPatterns = [
+    /(?:giới\s*tính|gender)[:\s]+(?:là\s*)?(nam|nữ|male|female)/i,
+    /(?:tôi|mình|em)\s+là\s+(nam|nữ|nam\s*giới|nữ\s*giới)/i
+  ]
+  for (const pattern of genderPatterns) {
+    const match = text.match(pattern)
+    if (match && match[1]) {
+      const genderText = match[1].toLowerCase()
+      if (genderText.includes('nam') || genderText === 'male') {
+        result.gender = 'Nam'
+        break
+      } else if (genderText.includes('nữ') || genderText === 'female') {
+        result.gender = 'Nữ'
+        break
+      }
+    }
+  }
+  // Fallback: check for implicit gender mentions
+  if (!result.gender) {
+    if (textLower.includes('nam giới') || /\bnam\b/.test(textLower)) {
+      if (!textLower.includes('việt nam') && !textLower.includes('vietnam')) {
+        result.gender = 'Nam'
+      }
+    } else if (textLower.includes('nữ giới') || /\bnữ\b/.test(textLower)) {
+      result.gender = 'Nữ'
+    }
+  }
+  
+  return result
+}
 /**
  * Background Job API - Starts plan generation in background
  * Returns immediately with job_id, AI processes in background
@@ -170,6 +258,9 @@ export async function POST(request: NextRequest) {
       route: 'generate-background'
     })
     
+    // CRITICAL: Extract full_name, birth_time, gender for Tu Vi analysis
+    const extractedTuViInfo = extractTuViInfoFromChat(fullChatSummary)
+    
     const enrichedCollectedInfo = { 
       ...(collectedInfo || {}), 
       maxWords: tierLimits.words, 
@@ -177,8 +268,19 @@ export async function POST(request: NextRequest) {
       chat_summary: fullChatSummary,
       messages: messages, // Pass full messages array for AI context
       skills: extractSkillsFromText(fullChatSummary) || (collectedInfo as any)?.skills || undefined,
-      current_savings: (collectedInfo as any)?.current_savings || extractSavingsVndFromText(fullChatSummary) || undefined
+      current_savings: (collectedInfo as any)?.current_savings || extractSavingsVndFromText(fullChatSummary) || undefined,
+      // CRITICAL: Tu Vi fields - extracted from chat summary and collectedInfo
+      full_name: extractedTuViInfo.full_name || (collectedInfo as any)?.full_name || (collectedInfo as any)?.userProfile?.full_name || undefined,
+      birth_time: extractedTuViInfo.birth_time || (collectedInfo as any)?.birth_time || (collectedInfo as any)?.userProfile?.birth_time || undefined,
+      gender: extractedTuViInfo.gender || (collectedInfo as any)?.gender || (collectedInfo as any)?.userProfile?.gender || undefined
     }
+    
+    logger.info('BG_GENERATE_TUVI_INFO', {
+      full_name: enrichedCollectedInfo.full_name,
+      birth_time: enrichedCollectedInfo.birth_time,
+      gender: enrichedCollectedInfo.gender,
+      userId: user.id
+    })
 
     const caps = getServerCapsByTier(tier)
 

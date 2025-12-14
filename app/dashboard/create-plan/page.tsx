@@ -378,6 +378,9 @@ Thông tin đưa càng chi tiết, kế hoạch được tạo ra càng chính x
     if (collectedFields.includes('current_income')) newInfo['income'] = true
     if (collectedFields.includes('occupation')) newInfo['occupation'] = true
     if (collectedFields.includes('birth_date')) newInfo['birth_date'] = true
+    if (collectedFields.includes('birth_time')) newInfo['birth_time'] = true  // CRITICAL: Giờ sinh cho tử vi
+    if (collectedFields.includes('gender')) newInfo['gender'] = true          // CRITICAL: Giới tính cho tử vi
+    if (collectedFields.includes('full_name')) newInfo['full_name'] = true    // CRITICAL: Họ tên cho tử vi
     if (collectedFields.includes('timeline')) newInfo['timeline'] = true
     if (collectedFields.includes('savings')) newInfo['savings'] = true
     if (collectedFields.includes('location')) newInfo['location'] = true
