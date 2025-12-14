@@ -680,7 +680,7 @@ export default function PlanViewEnhanced() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:col-span-1 lg:justify-self-end lg:max-w-[320px] w-full">
             {/* Spiritual Analysis */}
             {spiritualEnabled && plan.spiritual_data && (
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
