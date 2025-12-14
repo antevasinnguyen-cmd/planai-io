@@ -15,7 +15,7 @@ import {
   Zap,
   Sparkles
 } from 'lucide-react'
-import { getTierName, getUserSubscription, getUserUsageStats, getSubscriptionLimits, getPlanById } from '@/lib/supabase'
+import { getTierName, getSubscriptionLimits, getPlanById, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import GoalSummary from '@/components/analytics/GoalSummary'
 
@@ -97,32 +97,52 @@ export default function AnalyticsPage() {
       const newErrors: string[] = []
 
       try {
-        const [subscriptionRes, usageRes] = await Promise.all([
-          getUserSubscription(user.id),
-          getUserUsageStats(user.id)
+        // Fetch subscription tier via API endpoint (server-side admin client)
+        const fetchWithFallback = async <T,>(url: string, fallbackValue: T): Promise<T> => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            const headers: Record<string, string> = {}
+            if (session?.access_token) {
+              headers['Authorization'] = `Bearer ${session.access_token}`
+            }
+            const res = await fetch(url, { credentials: 'include', headers })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) {
+              console.error(`API ${url} failed:`, data?.error || res.status)
+              return fallbackValue
+            }
+            return data as T
+          } catch (err) {
+            console.error(`Fetch ${url} error:`, err)
+            return fallbackValue
+          }
+        }
+
+        const [tierData, usageData] = await Promise.all([
+          fetchWithFallback<{ tier: string }>('/api/user/tier', { tier: 'free' }),
+          fetchWithFallback<{ usage?: { plans: number; chats: number; words: number } }>('/api/usage/stats', { usage: { plans: 0, chats: 0, words: 0 } })
         ])
 
         if (!cancelled) {
-          if (subscriptionRes.error) {
-            console.error('Failed to load subscription:', subscriptionRes.error)
-            newErrors.push('Không thể tải thông tin gói hiện tại. Đang hiển thị giới hạn mặc định.')
-          }
-          setSubscription(subscriptionRes.data)
+          // Set subscription from tier endpoint
+          setSubscription({ tier: tierData.tier || 'free' })
 
-          if (usageRes.error) {
-            console.error('Failed to load usage stats:', usageRes.error)
-            newErrors.push('Không thể tải thống kê sử dụng. Các chỉ số sẽ hiển thị 0.')
-          }
+          // Set usage from stats endpoint
           setUsage({
-            plans: usageRes.plans || 0,
-            chats: usageRes.chats || 0,
-            words: usageRes.words || 0
+            plans: usageData.usage?.plans || 0,
+            chats: usageData.usage?.chats || 0,
+            words: usageData.usage?.words || 0
           })
         }
 
         const loadJson = async <T,>(url: string, errorMessage: string): Promise<T | null> => {
           try {
-            const res = await fetch(url, { credentials: 'include' })
+            const { data: { session } } = await supabase.auth.getSession()
+            const headers: Record<string, string> = {}
+            if (session?.access_token) {
+              headers['Authorization'] = `Bearer ${session.access_token}`
+            }
+            const res = await fetch(url, { credentials: 'include', headers })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || data?.error) {
               throw new Error(data?.error || `Request failed with status ${res.status}`)

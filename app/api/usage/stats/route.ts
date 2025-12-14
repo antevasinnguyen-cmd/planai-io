@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/supabase'
+import { getCurrentUser, getAdminClient } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import { cookies } from 'next/headers'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
@@ -102,12 +102,60 @@ export async function GET(request: NextRequest) {
     const finalChatCount = Math.max(0, Math.floor(chatCount || 0))
     const finalWords = Math.max(0, Math.floor(words || 0))
 
+    // If any RLS errors, try admin client fallback
     if (plansError || chatsError || wordsError) {
-      logger.warn('API_USAGE_STATS_PARTIAL', {
+      logger.warn('API_USAGE_STATS_RLS_ISSUES', {
         plansError: plansError?.message,
         chatsError: chatsError?.message,
         wordsError: wordsError?.message
       })
+      
+      // Try admin client fallback
+      const admin = getAdminClient()
+      if (admin) {
+        try {
+          const adminPlanRes = await admin
+            .from('plans')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', usageStartDate.toISOString())
+          
+          const adminChatRes = await admin
+            .from('chat_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('type', 'user')
+            .gte('created_at', usageStartDate.toISOString())
+          
+          const adminWordsRes = await admin
+            .from('plans')
+            .select('word_count')
+            .eq('user_id', user.id)
+            .gte('created_at', usageStartDate.toISOString())
+          
+          if (!adminPlanRes.error && !adminChatRes.error && !adminWordsRes.error) {
+            const adminPlanCount = Math.max(0, Math.floor(adminPlanRes.count || 0))
+            const adminChatCount = Math.max(0, Math.floor(adminChatRes.count || 0))
+            const adminWords = (adminWordsRes.data || []).reduce((sum: number, r: any) => sum + (r?.word_count || 0), 0)
+            
+            logger.info('API_USAGE_STATS_ADMIN_FALLBACK_SUCCESS', {
+              userId: user.id,
+              plans: adminPlanCount,
+              chats: adminChatCount,
+              words: adminWords
+            })
+            
+            return NextResponse.json({
+              success: true,
+              usage: { plans: adminPlanCount, chats: adminChatCount, words: adminWords }
+            })
+          }
+        } catch (adminErr) {
+          logger.error('API_USAGE_STATS_ADMIN_FALLBACK_ERROR', {
+            error: adminErr instanceof Error ? adminErr.message : String(adminErr)
+          })
+        }
+      }
     }
 
     logger.info('API_USAGE_STATS_SUCCESS', {
