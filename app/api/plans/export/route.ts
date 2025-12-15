@@ -166,9 +166,25 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
       }
     case 'pdf': {
       try {
-        // Use jsPDF instead of pdfkit - it works in serverless without external font files
+        // Use jsPDF with a Unicode font (Noto Sans) loaded at runtime to render Vietnamese correctly
         const { jsPDF } = await import('jspdf')
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+        // Load Noto Sans font from a public source and register it with jsPDF's virtual file system
+        try {
+          const fontUrl = 'https://github.com/google/fonts/raw/main/ofl/notosans/NotoSans-Regular.ttf'
+          const res = await fetch(fontUrl)
+          if (!res.ok) {
+            logger.error('EXPORT_PDF_FONT_DOWNLOAD_ERROR', { status: res.status })
+          } else {
+            const arrayBuffer = await res.arrayBuffer()
+            const fontBase64 = Buffer.from(arrayBuffer).toString('base64')
+            ;(doc as any).addFileToVFS('NotoSans-Regular.ttf', fontBase64)
+            ;(doc as any).addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal')
+          }
+        } catch (fontError) {
+          logger.error('EXPORT_PDF_FONT_ERROR', { error: String(fontError) })
+        }
 
         const title = String(plan.title || 'Kế hoạch tài chính')
         const content = String(plan.content || '')
@@ -183,6 +199,7 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
           if (yPos + height > pageHeight - margin) {
             doc.addPage()
             yPos = margin
+            doc.setFont('NotoSans', 'normal')
           }
         }
 
@@ -195,18 +212,19 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
             .trim()
         }
 
+        // Make sure our Unicode font is the active font
+        doc.setFont('NotoSans', 'normal')
+
         // Title
         doc.setFontSize(20)
-        doc.setFont('helvetica', 'bold')
         const titleLines = doc.splitTextToSize(title, maxWidth)
         doc.text(titleLines, pageWidth / 2, yPos, { align: 'center' })
         yPos += titleLines.length * 8 + 5
 
         // Date
         doc.setFontSize(10)
-        doc.setFont('helvetica', 'normal')
         doc.setTextColor(100, 100, 100)
-        doc.text(`Ngay tao: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}`, pageWidth / 2, yPos, { align: 'center' })
+        doc.text(`Ngày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}`, pageWidth / 2, yPos, { align: 'center' })
         yPos += 10
         doc.setTextColor(0, 0, 0)
 
@@ -226,7 +244,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
             checkNewPage(15)
             yPos += 5
             doc.setFontSize(16)
-            doc.setFont('helvetica', 'bold')
             const h1Lines = doc.splitTextToSize(cleanText(trimmed.slice(2)), maxWidth)
             doc.text(h1Lines, margin, yPos)
             yPos += h1Lines.length * 7 + 3
@@ -238,7 +255,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
             checkNewPage(12)
             yPos += 4
             doc.setFontSize(14)
-            doc.setFont('helvetica', 'bold')
             const h2Lines = doc.splitTextToSize(cleanText(trimmed.slice(3)), maxWidth)
             doc.text(h2Lines, margin, yPos)
             yPos += h2Lines.length * 6 + 2
@@ -250,7 +266,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
             checkNewPage(10)
             yPos += 3
             doc.setFontSize(12)
-            doc.setFont('helvetica', 'bold')
             const h3Lines = doc.splitTextToSize(cleanText(trimmed.slice(4)), maxWidth)
             doc.text(h3Lines, margin, yPos)
             yPos += h3Lines.length * 5 + 2
@@ -261,7 +276,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
           if (trimmed.startsWith('#### ')) {
             checkNewPage(8)
             doc.setFontSize(11)
-            doc.setFont('helvetica', 'bold')
             const h4Lines = doc.splitTextToSize(cleanText(trimmed.slice(5)), maxWidth)
             doc.text(h4Lines, margin, yPos)
             yPos += h4Lines.length * 5 + 1
@@ -272,7 +286,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
           if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
             checkNewPage(8)
             doc.setFontSize(10)
-            doc.setFont('helvetica', 'normal')
             const bulletText = cleanText(trimmed.slice(2))
             const bulletLines = doc.splitTextToSize('  • ' + bulletText, maxWidth - 5)
             doc.text(bulletLines, margin + 3, yPos)
@@ -283,7 +296,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
           // Regular paragraph
           checkNewPage(8)
           doc.setFontSize(10)
-          doc.setFont('helvetica', 'normal')
           const paraLines = doc.splitTextToSize(cleanText(trimmed), maxWidth)
           doc.text(paraLines, margin, yPos)
           yPos += paraLines.length * 4 + 1
@@ -293,9 +305,8 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         checkNewPage(15)
         yPos += 10
         doc.setFontSize(8)
-        doc.setFont('helvetica', 'italic')
         doc.setTextColor(128, 128, 128)
-        doc.text('Duoc tao boi PlanAI.io.vn - Tro ly tai chinh AI thong minh', pageWidth / 2, yPos, { align: 'center' })
+        doc.text('Được tạo bởi PlanAI.io.vn - Trợ lý tài chính AI thông minh', pageWidth / 2, yPos, { align: 'center' })
 
         // Get PDF as buffer
         const pdfOutput = doc.output('arraybuffer')
@@ -311,7 +322,7 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         })
       } catch (pdfError) {
         logger.error('EXPORT_PDF_ERROR', { error: String(pdfError), planId, userId })
-        return NextResponse.json({ error: 'Failed to generate PDF', message: 'Co loi khi tao file PDF. Vui long thu lai sau.' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to generate PDF', message: 'Có lỗi khi tạo file PDF. Vui lòng thử lại sau.' }, { status: 500 })
       }
     }
     
