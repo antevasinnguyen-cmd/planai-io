@@ -6,10 +6,10 @@ const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 const GOOGLE_SHEETS_TEMPLATE_ID = process.env.GOOGLE_SHEETS_TEMPLATE_ID
 
-// Initialize Google Sheets API client
+// Initialize Google Sheets API client with Service Account
 const getGoogleSheetsClient = () => {
   if (!GOOGLE_CLIENT_EMAIL || !GOOGLE_PRIVATE_KEY) {
-    throw new Error('Google API credentials not configured')
+    throw new Error('Google Service Account credentials not configured. Please set GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY.')
   }
 
   const auth = new JWT({
@@ -21,36 +21,98 @@ const getGoogleSheetsClient = () => {
   return google.sheets({ version: 'v4', auth })
 }
 
-// Create a new spreadsheet from template
+// Get Google Drive client for file operations
+const getGoogleDriveClient = () => {
+  if (!GOOGLE_CLIENT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+    throw new Error('Google Service Account credentials not configured.')
+  }
+
+  const auth = new JWT({
+    email: GOOGLE_CLIENT_EMAIL,
+    key: GOOGLE_PRIVATE_KEY,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'],
+  })
+
+  return google.drive({ version: 'v3', auth })
+}
+
+// Create a new spreadsheet - either from template or from scratch
+// Always makes it publicly accessible (anyone with link can edit)
 export const createSpreadsheetFromTemplate = async (title: string): Promise<string> => {
   try {
-    const auth = getGoogleSheetsClient().context._options.auth
-    const drive = google.drive({ version: 'v3', auth })
+    const drive = getGoogleDriveClient()
+    const sheets = getGoogleSheetsClient()
     
-    // Copy the template spreadsheet
-    const response = await drive.files.copy({
-      fileId: GOOGLE_SHEETS_TEMPLATE_ID,
-      requestBody: {
-        name: title,
-      },
-    })
-
-    if (!response.data.id) {
-      throw new Error('Failed to create spreadsheet from template')
+    let spreadsheetId: string
+    
+    // Try to copy from template if available
+    if (GOOGLE_SHEETS_TEMPLATE_ID) {
+      try {
+        const response = await drive.files.copy({
+          fileId: GOOGLE_SHEETS_TEMPLATE_ID,
+          requestBody: {
+            name: title,
+          },
+        })
+        
+        if (response.data.id) {
+          spreadsheetId = response.data.id
+          console.log('Created spreadsheet from template:', spreadsheetId)
+        } else {
+          throw new Error('No ID returned from template copy')
+        }
+      } catch (templateError) {
+        console.warn('Failed to copy template, creating new spreadsheet:', templateError)
+        // Fall through to create new spreadsheet
+        spreadsheetId = ''
+      }
+    } else {
+      spreadsheetId = ''
+    }
+    
+    // If no template or template copy failed, create new spreadsheet from scratch
+    if (!spreadsheetId) {
+      const newSpreadsheet = await sheets.spreadsheets.create({
+        requestBody: {
+          properties: {
+            title: title,
+          },
+          sheets: [
+            { properties: { title: 'Overview' } },
+            { properties: { title: 'Tóm tắt' } },
+            { properties: { title: 'Phân tích' } },
+            { properties: { title: 'Lộ trình' } },
+            { properties: { title: 'Ngân sách' } },
+            { properties: { title: 'Timeline' } },
+            { properties: { title: 'Checklist' } },
+            { properties: { title: 'Rủi ro' } },
+            { properties: { title: 'Lời khuyên' } },
+          ]
+        }
+      })
+      
+      if (!newSpreadsheet.data.spreadsheetId) {
+        throw new Error('Failed to create new spreadsheet')
+      }
+      
+      spreadsheetId = newSpreadsheet.data.spreadsheetId
+      console.log('Created new spreadsheet from scratch:', spreadsheetId)
     }
 
-    // Make the spreadsheet accessible to anyone with the link (can edit)
+    // CRITICAL: Make the spreadsheet publicly accessible - anyone with link can EDIT
     await drive.permissions.create({
-      fileId: response.data.id,
+      fileId: spreadsheetId,
       requestBody: {
-        role: 'writer',  // Changed from 'reader' to allow editing without login
-        type: 'anyone',
+        role: 'writer',  // Anyone can edit
+        type: 'anyone',  // No login required
       },
     })
+    
+    console.log('Set public permissions for spreadsheet:', spreadsheetId)
 
-    return response.data.id
+    return spreadsheetId
   } catch (error) {
-    console.error('Error creating spreadsheet from template:', error)
+    console.error('Error creating spreadsheet:', error)
     throw error
   }
 }
@@ -328,6 +390,7 @@ const parsePlanContent = (content: string): Record<string, string> => {
 }
 
 // Function to check if Google Sheets API is configured
+// Only requires Service Account credentials - template is optional (can create from scratch)
 export const isGoogleSheetsConfigured = (): boolean => {
-  return Boolean(GOOGLE_CLIENT_EMAIL && GOOGLE_PRIVATE_KEY && GOOGLE_SHEETS_TEMPLATE_ID)
+  return Boolean(GOOGLE_CLIENT_EMAIL && GOOGLE_PRIVATE_KEY)
 }

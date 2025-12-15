@@ -1,70 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { getSubscriptionLimits } from '@/lib/supabase'
-import { exportToGoogleSheets } from '@/lib/export/googleSheets';
-import * as XLSX from 'xlsx'
+import { getAdminClient, getSubscriptionLimits } from '@/lib/supabase'
+import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets';
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
-
-// Parse markdown tables from plan content
-function parseMarkdownTables(content: string): { name: string; data: string[][] }[] {
-  const sheets: { name: string; data: string[][] }[] = []
-  
-  // Split content by sections
-  const sections = content.split(/(?=^##?\s+)/m)
-  
-  for (const section of sections) {
-    // Find section title
-    const titleMatch = section.match(/^##?\s+(?:Phần\s+\d+\.?\s*)?(.+?)(?:\n|$)/i)
-    const sectionTitle = titleMatch ? titleMatch[1].trim().slice(0, 31) : 'Sheet'
-    
-    // Find markdown tables in this section
-    const tableRegex = /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g
-    let match
-    
-    while ((match = tableRegex.exec(section)) !== null) {
-      const headerRow = match[1].split('|').map(cell => cell.trim()).filter(Boolean)
-      const bodyRows = match[2].trim().split('\n').map(row => 
-        row.split('|').map(cell => cell.trim()).filter(Boolean)
-      )
-      
-      // Skip rows with only "---" placeholders
-      const cleanRows = bodyRows.filter(row => 
-        !row.every(cell => /^-{2,}$/.test(cell) || cell === '')
-      )
-      
-      if (headerRow.length > 0 && cleanRows.length > 0) {
-        sheets.push({
-          name: sectionTitle.replace(/[\\\/\?\*\[\]]/g, '').slice(0, 31),
-          data: [headerRow, ...cleanRows]
-        })
-      }
-    }
-  }
-  
-  return sheets
-}
-
-// Create summary sheet from plan content
-function createSummarySheet(content: string, title: string): string[][] {
-  const data: string[][] = [
-    ['KẾ HOẠCH TÀI CHÍNH CÁ NHÂN'],
-    [''],
-    ['Tiêu đề:', title],
-    ['Ngày tạo:', new Date().toLocaleDateString('vi-VN')],
-    [''],
-    ['HƯỚNG DẪN SỬ DỤNG:'],
-    ['1. Mở file này trong Google Sheets hoặc Excel'],
-    ['2. Xem các sheet khác nhau để theo dõi từng phần'],
-    ['3. Cập nhật tiến độ hàng tuần/tháng'],
-    ['4. Đánh dấu các mục đã hoàn thành'],
-    [''],
-    ['CÁC SHEET TRONG FILE:'],
-  ]
-  
-  return data
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,144 +14,142 @@ export async function POST(req: NextRequest) {
     
     // Authenticate user via route handler client (RLS cookies)
     const cookieStore = cookies()
-    const rh = createRouteHandlerClient({ cookies: () => cookieStore })
-    const { data: auth } = await rh.auth.getUser()
-    if (!auth?.user) {
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const admin = getAdminClient()
+    
+    // Try cookie auth first
+    let userId: string | null = null
+    const { data: auth } = await supabase.auth.getUser()
+    if (auth?.user) {
+      userId = auth.user.id
+    }
+    
+    // Also try Authorization header if cookies fail
+    if (!userId) {
+      const authHeader = req.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const { data: tokenData } = await supabase.auth.getUser(token)
+        if (tokenData?.user) {
+          userId = tokenData.user.id
+        }
+      }
+    }
+    
+    if (!userId) {
+      logger.error('SHEETS_AUTH_FAILED', { planId })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const userId = auth.user.id
     
-    // Gate by tier: only paid tiers can export to Google Sheets
-    const { data: subs } = await rh
-      .from('subscriptions')
-      .select('tier,status,created_at')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1)
+    // Gate by tier: only pro_max can export to Google Sheets
+    const { data: subs } = admin 
+      ? await admin
+          .from('subscriptions')
+          .select('tier,status,created_at')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+      : await supabase
+          .from('subscriptions')
+          .select('tier,status,created_at')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+    
     const subscription: any = Array.isArray(subs) ? subs[0] : subs
     const tier = subscription?.tier || 'free'
     const limits = getSubscriptionLimits(tier)
     if (!limits.allowSheets) {
-      return NextResponse.json({ error: 'Tính năng Google Sheets chỉ khả dụng cho gói trả phí' }, { status: 403 })
+      logger.info('SHEETS_TIER_BLOCKED', { userId, tier })
+      return NextResponse.json({ error: 'Tính năng Google Sheets chỉ khả dụng cho gói Pro Max' }, { status: 403 })
     }
     
-    // Get plan details
-    const { data: plan, error: planError } = await rh
+    // Check if Google Sheets Service Account is configured
+    if (!isGoogleSheetsConfigured()) {
+      logger.error('SHEETS_NOT_CONFIGURED', { userId })
+      return NextResponse.json({ 
+        error: 'Google Sheets API chưa được cấu hình', 
+        message: 'Vui lòng liên hệ quản trị viên để cấu hình Google Sheets Service Account.'
+      }, { status: 503 })
+    }
+    
+    // Get plan details - try RLS first, then admin fallback
+    let plan: any = null
+    const { data: planData, error: planError } = await supabase
       .from('plans')
       .select('*')
       .eq('id', planId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
       
-    if (planError || !plan) {
-      console.error('Plan retrieval error:', planError);
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
-    }
-    
-    // Check if user has Google Sheets token
-    const { data: tokenData, error: tokenError } = await rh
-      .from('user_google_tokens')
-      .select('refresh_token, access_token, expires_at')
-      .eq('user_id', userId)
-      .single();
-
-    if (tokenError || !tokenData?.refresh_token) {
-      console.log('No Google token found, returning auth URL');
-      return NextResponse.json({
-        error: 'Google Sheets authorization required',
-        requiresAuth: true,
-        authUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google`,
-        message: 'Vui lòng cấp quyền truy cập Google Sheets để xuất kế hoạch'
-      }, { status: 401 });
-    }
-
-    // Check if token is expired
-    const expiresAt = new Date(tokenData.expires_at);
-    const isExpired = expiresAt < new Date();
-
-    let accessToken = tokenData.access_token;
-
-    // Refresh token if expired
-    if (isExpired && tokenData.refresh_token) {
-      console.log('Token expired, refreshing...');
-      try {
-        const refreshRes = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: process.env.GOOGLE_CLIENT_ID,
-            client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            refresh_token: tokenData.refresh_token,
-            grant_type: 'refresh_token',
-          }),
-        });
-
-        if (refreshRes.ok) {
-          const newTokens = await refreshRes.json();
-          accessToken = newTokens.access_token;
-
-          // Update token in database
-          await rh.from('user_google_tokens').update({
-            access_token: newTokens.access_token,
-            expires_at: new Date(Date.now() + newTokens.expires_in * 1000).toISOString(),
-          }).eq('user_id', userId);
+    if (planError || !planData) {
+      logger.info('SHEETS_PLAN_RLS_FAIL', { planId, userId, error: planError?.message })
+      // Fallback to admin client
+      if (admin) {
+        const { data: adminPlan, error: adminError } = await admin
+          .from('plans')
+          .select('*')
+          .eq('id', planId)
+          .eq('user_id', userId)
+          .maybeSingle()
+        
+        if (!adminError && adminPlan) {
+          plan = adminPlan
+          logger.info('SHEETS_PLAN_ADMIN_OK', { planId, userId })
         } else {
-          console.error('Token refresh failed');
-          return NextResponse.json({
-            error: 'Token refresh failed',
-            requiresAuth: true,
-            authUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google`,
-          }, { status: 401 });
+          logger.error('SHEETS_PLAN_NOT_FOUND', { planId, userId })
+          return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
         }
-      } catch (err) {
-        console.error('Token refresh error:', err);
-        return NextResponse.json({
-          error: 'Token refresh error',
-          requiresAuth: true,
-          authUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google`,
-        }, { status: 401 });
+      } else {
+        return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
       }
+    } else {
+      plan = planData
     }
 
-    // Export to Google Sheets
+    // Export to Google Sheets using Service Account (NO user OAuth needed!)
+    // Sheet will be created publicly - anyone with link can view/edit
     try {
-      const sheetUrl = await exportToGoogleSheets(
-        plan.title,
-        plan.content,
-        tokenData.refresh_token
-      );
+      logger.info('SHEETS_EXPORT_START', { planId, userId, title: plan.title })
+      
+      const { spreadsheetId, spreadsheetUrl } = await exportPlanToGoogleSheets(plan, userId)
 
-      // Update plan metadata with export info
-      await rh
+      // Update plan metadata with export info using admin client for reliability
+      const updateClient = admin || supabase
+      await updateClient
         .from('plans')
         .update({
-          metadata: {
-            ...plan.metadata,
-            exports: {
-              ...(plan.metadata?.exports || {}),
-              googleSheets: {
-                url: sheetUrl,
-                exportedAt: new Date().toISOString()
-              }
-            }
-          }
+          exported_to_sheets: true,
+          sheets_url: spreadsheetUrl,
+          sheets_id: spreadsheetId,
+          last_exported_at: new Date().toISOString()
         })
-        .eq('id', planId);
+        .eq('id', planId)
 
-      return NextResponse.json({ success: true, url: sheetUrl });
+      logger.info('SHEETS_EXPORT_SUCCESS', { planId, userId, spreadsheetUrl })
+      return NextResponse.json({ 
+        success: true, 
+        url: spreadsheetUrl,
+        message: 'Đã tạo Google Sheets thành công! Bất kỳ ai có link đều có thể xem và chỉnh sửa.'
+      })
     } catch (exportError) {
-      console.error('Google Sheets export error:', exportError);
+      logger.error('SHEETS_EXPORT_ERROR', { 
+        planId, 
+        userId, 
+        error: exportError instanceof Error ? exportError.message : String(exportError)
+      })
       return NextResponse.json({
-        error: 'Failed to create Google Sheets',
-        message: exportError instanceof Error ? exportError.message : 'Unknown error'
-      }, { status: 500 });
+        error: 'Không thể tạo Google Sheets',
+        message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
+      }, { status: 500 })
     }
   } catch (error) {
-    console.error('Google Sheets export error:', error);
+    logger.error('SHEETS_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
-      { error: 'Export to Excel failed' },
+      { error: 'Có lỗi xảy ra', message: 'Vui lòng thử lại sau.' },
       { status: 500 }
-    );
+    )
   }
 }

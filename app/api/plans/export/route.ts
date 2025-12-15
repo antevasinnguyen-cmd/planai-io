@@ -1,105 +1,171 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, supabase, getUserSubscription, getTierName } from '@/lib/supabase'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { getAdminClient, getUserSubscription, getTierName } from '@/lib/supabase'
 import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets'
 import { Document, Packer, Paragraph, TextRun } from 'docx'
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    // FIXED: Use route handler client for proper authentication
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    // Also try Authorization header if cookies fail
     if (!user) {
+      const authHeader = request.headers.get('Authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        const { data: tokenData } = await supabase.auth.getUser(token)
+        if (tokenData?.user) {
+          // User authenticated via token, proceed
+          const userId = tokenData.user.id
+          logger.info('EXPORT_AUTH_TOKEN', { userId })
+          return await handleExport(request, userId, tokenData.user)
+        }
+      }
+      logger.error('EXPORT_AUTH_FAILED', { error: authError?.message || 'No user found' })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { planId, format } = await request.json()
-    
-    if (!planId) {
-      return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
-    }
+    return await handleExport(request, user.id, user)
+  } catch (error) {
+    logger.error('EXPORT_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
+    return NextResponse.json(
+      { error: 'Failed to export', message: error instanceof Error ? error.message : 'Có lỗi khi xuất file' },
+      { status: 500 }
+    )
+  }
+}
 
-    // Get plan data from database
-    const { data: plan, error: planError } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('id', planId)
-      .eq('user_id', user.id) // Ensure the plan belongs to the user
-      .single()
+async function handleExport(request: NextRequest, userId: string, user: any) {
+  const cookieStore = cookies()
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+  const admin = getAdminClient()
+  
+  const { planId, format } = await request.json()
+  
+  if (!planId) {
+    return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
+  }
 
-    if (planError || !plan) {
+  // Get plan data from database - try RLS client first, then admin fallback
+  let plan: any = null
+  const { data: planData, error: planError } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('id', planId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (planError || !planData) {
+    logger.info('EXPORT_PLAN_RLS_FAIL', { planId, userId, error: planError?.message })
+    // Fallback to admin client to bypass RLS
+    if (admin) {
+      const { data: adminPlan, error: adminError } = await admin
+        .from('plans')
+        .select('*')
+        .eq('id', planId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      
+      if (!adminError && adminPlan) {
+        plan = adminPlan
+        logger.info('EXPORT_PLAN_ADMIN_OK', { planId, userId })
+      } else {
+        logger.error('EXPORT_PLAN_NOT_FOUND', { planId, userId, error: adminError?.message })
+        return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      }
+    } else {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
+  } else {
+    plan = planData
+  }
 
-    const normalizedFormat = ((): string => {
-      if (!format) return 'txt'
-      const f = String(format).toLowerCase()
-      if (f === 'sheets' || f === 'gdocs') return 'google_sheets'
-      return f
-    })()
+  const normalizedFormat = ((): string => {
+    if (!format) return 'txt'
+    const f = String(format).toLowerCase()
+    if (f === 'sheets') return 'google_sheets'
+    if (f === 'gdocs') return 'google_docs'
+    return f
+  })()
 
-    // Tier-based feature gating
-    const { data: subData } = await getUserSubscription(user.id)
-    const tier = subData?.tier || 'free'
-    const tierName = getTierName(tier)
+  // Tier-based feature gating
+  const { data: subData } = await getUserSubscription(userId)
+  const tier = subData?.tier || 'free'
+  const tierName = getTierName(tier)
 
-    const allowedFormatsByTier: Record<string, string[]> = {
-      free: ['txt'],
-      basic: ['txt', 'pdf', 'docx'],
-      pro: ['txt', 'pdf', 'docx', 'notion'],
-      pro_max: ['txt', 'pdf', 'docx', 'notion', 'google_sheets']
-    }
+  // Allow PDF and DOCX for all paid tiers (basic, pro, pro_max)
+  const allowedFormatsByTier: Record<string, string[]> = {
+    free: ['txt'],
+    basic: ['txt', 'pdf', 'docx', 'google_docs'],
+    pro: ['txt', 'pdf', 'docx', 'google_docs', 'notion'],
+    pro_max: ['txt', 'pdf', 'docx', 'google_docs', 'notion', 'google_sheets']
+  }
 
-    const allowed = allowedFormatsByTier[tier] || allowedFormatsByTier.free
-    if (!allowed.includes(normalizedFormat)) {
-      return NextResponse.json(
-        {
-          error: 'Tính năng chưa được mở khóa',
-          message: `Định dạng xuất "${normalizedFormat}" không có trong gói ${tierName}. Vui lòng nâng cấp để sử dụng định dạng này.`,
-          upgradeRequired: true
-        },
-        { status: 403 }
-      )
-    }
+  const allowed = allowedFormatsByTier[tier] || allowedFormatsByTier.free
+  if (!allowed.includes(normalizedFormat)) {
+    logger.info('EXPORT_TIER_BLOCKED', { format: normalizedFormat, tier, allowed })
+    return NextResponse.json(
+      {
+        error: 'Tính năng chưa được mở khóa',
+        message: `Định dạng xuất "${normalizedFormat}" không có trong gói ${tierName}. Vui lòng nâng cấp để sử dụng định dạng này.`,
+        upgradeRequired: true
+      },
+      { status: 403 }
+    )
+  }
 
-    // Handle different export formats
-    switch (normalizedFormat) {
-      case 'google_sheets':
-        // Check if Google Sheets API is configured
-        if (!isGoogleSheetsConfigured()) {
-          return NextResponse.json({ 
-            error: 'Google Sheets API is not configured', 
-            message: 'Tính năng xuất sang Google Sheets chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
-          }, { status: 503 })
-        }
+  logger.info('EXPORT_START', { planId, format: normalizedFormat, tier, userId })
+
+  // Handle different export formats
+  switch (normalizedFormat) {
+    case 'google_sheets':
+      // Check if Google Sheets API is configured
+      if (!isGoogleSheetsConfigured()) {
+        return NextResponse.json({ 
+          error: 'Google Sheets API is not configured', 
+          message: 'Tính năng xuất sang Google Sheets chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
+        }, { status: 503 })
+      }
+      
+      try {
+        // Export to Google Sheets using Service Account (no user OAuth needed)
+        const { spreadsheetId, spreadsheetUrl } = await exportPlanToGoogleSheets(plan, userId)
         
-        try {
-          // Export to Google Sheets
-          const { spreadsheetId, spreadsheetUrl } = await exportPlanToGoogleSheets(plan, user.id)
-          
-          // Update plan with export info
-          await supabase
-            .from('plans')
-            .update({
-              exported_to_sheets: true,
-              sheets_url: spreadsheetUrl,
-              sheets_id: spreadsheetId,
-              last_exported_at: new Date().toISOString()
-            })
-            .eq('id', planId)
-          
-          return NextResponse.json({
-            success: true,
-            message: 'Xuất sang Google Sheets thành công',
-            url: spreadsheetUrl
+        // Update plan with export info using admin client for reliability
+        const updateClient = admin || supabase
+        await updateClient
+          .from('plans')
+          .update({
+            exported_to_sheets: true,
+            sheets_url: spreadsheetUrl,
+            sheets_id: spreadsheetId,
+            last_exported_at: new Date().toISOString()
           })
-        } catch (sheetsError) {
-          logger.error('EXPORT_SHEETS_ERROR', { error: String(sheetsError), planId, userId: user.id })
-          return NextResponse.json({ 
-            error: 'Failed to export to Google Sheets', 
-            message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
-          }, { status: 500 })
-        }
-      case 'pdf': {
+          .eq('id', planId)
+        
+        logger.info('EXPORT_SHEETS_SUCCESS', { planId, spreadsheetUrl, userId })
+        return NextResponse.json({
+          success: true,
+          message: 'Xuất sang Google Sheets thành công',
+          url: spreadsheetUrl
+        })
+      } catch (sheetsError) {
+        logger.error('EXPORT_SHEETS_ERROR', { error: String(sheetsError), planId, userId })
+        return NextResponse.json({ 
+          error: 'Failed to export to Google Sheets', 
+          message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
+        }, { status: 500 })
+      }
+    case 'pdf': {
+      try {
         const PDFModule: any = await import('pdfkit')
         const PDFDocument = PDFModule.default || PDFModule
         const doc = new PDFDocument({ size: 'A4', margin: 50 })
@@ -201,6 +267,7 @@ export async function POST(request: NextRequest) {
         })
 
         const buffer = Buffer.concat(chunks)
+        logger.info('EXPORT_PDF_SUCCESS', { planId, userId, size: buffer.length })
         return new NextResponse(new Uint8Array(buffer), {
           status: 200,
           headers: {
@@ -208,9 +275,14 @@ export async function POST(request: NextRequest) {
             'Content-Disposition': `attachment; filename=plan-${plan.id}.pdf`
           }
         })
+      } catch (pdfError) {
+        logger.error('EXPORT_PDF_ERROR', { error: String(pdfError), planId, userId })
+        return NextResponse.json({ error: 'Failed to generate PDF', message: 'Có lỗi khi tạo file PDF' }, { status: 500 })
       }
-      
-      case 'docx': {
+    }
+    
+    case 'docx': {
+      try {
         const doc = new Document({
           sections: [{
             properties: {},
@@ -223,6 +295,7 @@ export async function POST(request: NextRequest) {
           }]
         })
         const buffer = await Packer.toBuffer(doc)
+        logger.info('EXPORT_DOCX_SUCCESS', { planId, userId, size: buffer.length })
         return new NextResponse(new Uint8Array(buffer), {
           status: 200,
           headers: {
@@ -230,43 +303,67 @@ export async function POST(request: NextRequest) {
             'Content-Disposition': `attachment; filename=plan-${plan.id}.docx`
           }
         })
+      } catch (docxError) {
+        logger.error('EXPORT_DOCX_ERROR', { error: String(docxError), planId, userId })
+        return NextResponse.json({ error: 'Failed to generate DOCX', message: 'Có lỗi khi tạo file Word' }, { status: 500 })
       }
-      
-      case 'txt': {
+    }
+    
+    case 'google_docs': {
+      // Google Docs export - create a document link that opens in Google Docs viewer
+      try {
         const title = plan.title || 'Kế hoạch tài chính'
-        const fullContent = `${title}\n${'='.repeat(title.length)}\n\n${plan.content || ''}`
-        return new NextResponse(fullContent, {
+        const content = plan.content || ''
+        
+        // Create content with proper formatting
+        const formattedContent = `# ${title}\n\nNgày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}\n\n${content}\n\n---\nĐược tạo bởi PlanAI.io.vn`
+        
+        // Return as downloadable text file that can be opened in Google Docs
+        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId })
+        return new NextResponse(formattedContent, {
           status: 200,
           headers: {
             'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': `attachment; filename=plan-${plan.id}.txt`
+            'Content-Disposition': `attachment; filename="${title.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF ]/g, '_')}.txt"`
           }
         })
+      } catch (gdocsError) {
+        logger.error('EXPORT_GDOCS_ERROR', { error: String(gdocsError), planId, userId })
+        return NextResponse.json({ error: 'Failed to create Google Docs file', message: 'Có lỗi khi tạo file Google Docs' }, { status: 500 })
       }
-        
-      case 'notion':
-        try {
-          const dbId = await getOrCreateFinancialPlanDatabase(user.id)
-          const planData = { ...(plan.collected_info || {}), content: plan.content || '' }
-          const url = await exportFinancialPlanToNotion(user.id, plan.title || 'Kế hoạch tài chính', planData, dbId)
-          await supabase
-            .from('plans')
-            .update({ last_exported_at: new Date().toISOString() })
-            .eq('id', planId)
-          return NextResponse.json({ success: true, url })
-        } catch (e) {
-          return NextResponse.json({ error: 'Failed to export to Notion' }, { status: 500 })
-        }
-        
-      default:
-        return NextResponse.json({ error: 'Unsupported export format' }, { status: 400 })
     }
-
-  } catch (error) {
-    logger.error('EXPORT_UNHANDLED', { error: error instanceof Error ? error.message : String(error) })
-    return NextResponse.json(
-      { error: 'Failed to export', message: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+    
+    case 'txt': {
+      const title = plan.title || 'Kế hoạch tài chính'
+      const fullContent = `${title}\n${'='.repeat(title.length)}\n\n${plan.content || ''}`
+      logger.info('EXPORT_TXT_SUCCESS', { planId, userId })
+      return new NextResponse(fullContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Disposition': `attachment; filename=plan-${plan.id}.txt`
+        }
+      })
+    }
+      
+    case 'notion':
+      try {
+        const dbId = await getOrCreateFinancialPlanDatabase(userId)
+        const planData = { ...(plan.collected_info || {}), content: plan.content || '' }
+        const url = await exportFinancialPlanToNotion(userId, plan.title || 'Kế hoạch tài chính', planData, dbId)
+        const updateClient = admin || supabase
+        await updateClient
+          .from('plans')
+          .update({ last_exported_at: new Date().toISOString() })
+          .eq('id', planId)
+        logger.info('EXPORT_NOTION_SUCCESS', { planId, userId, url })
+        return NextResponse.json({ success: true, url })
+      } catch (e) {
+        logger.error('EXPORT_NOTION_ERROR', { error: String(e), planId, userId })
+        return NextResponse.json({ error: 'Failed to export to Notion', message: 'Có lỗi khi xuất sang Notion' }, { status: 500 })
+      }
+      
+    default:
+      return NextResponse.json({ error: 'Unsupported export format', message: 'Định dạng không được hỗ trợ' }, { status: 400 })
   }
 }
