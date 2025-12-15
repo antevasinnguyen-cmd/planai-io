@@ -125,20 +125,107 @@ function getFavorablePeriods(zodiacName: string): string[] {
   return periodMap[zodiacName] || ['Tháng 3-4', 'Mùa Xuân']
 }
 
-// Parse ngày sinh từ string
+// Parse ngày sinh từ string - HỖ TRỢ NHIỀU ĐỊNH DẠNG
 function parseBirthDate(dateStr: string): { day: number; month: number; year: number } | null {
   if (!dateStr) return null
   
-  // Hỗ trợ nhiều format: dd/mm/yyyy, dd-mm-yyyy, "14/07/1996 lúc 10:00"
-  const match = String(dateStr).match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/)
-  if (!match) return null
+  const input = String(dateStr).trim().toLowerCase()
+  console.log('=== PARSE_BIRTH_DATE: Input ===', { input })
   
-  const day = parseInt(match[1], 10)
-  const month = parseInt(match[2], 10)
-  const year = parseInt(match[3], 10)
+  let day: number | null = null
+  let month: number | null = null
+  let year: number | null = null
   
-  if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) return null
+  // Pattern 1: dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy, dd_mm_yyyy
+  // Ví dụ: 14/07/1996, 14-07-1996, 14.07.1996, 14_07_1996
+  const pattern1 = input.match(/(\d{1,2})[\/\-\.\_](\d{1,2})[\/\-\.\_](\d{4})/)
+  if (pattern1) {
+    day = parseInt(pattern1[1], 10)
+    month = parseInt(pattern1[2], 10)
+    year = parseInt(pattern1[3], 10)
+    console.log('=== PARSE_BIRTH_DATE: Pattern 1 matched ===', { day, month, year })
+  }
   
+  // Pattern 2: "ngày X tháng Y năm Z" hoặc "X ngày Y tháng Z năm"
+  // Ví dụ: "ngày 14 tháng 7 năm 1996", "14 ngày 7 tháng 1996 năm"
+  if (!day) {
+    const patternVN = input.match(/(?:ngày\s*)?(\d{1,2})\s*(?:ngày)?\s*(?:tháng\s*)?(\d{1,2})\s*(?:tháng)?\s*(?:năm\s*)?(\d{4})/)
+    if (patternVN) {
+      day = parseInt(patternVN[1], 10)
+      month = parseInt(patternVN[2], 10)
+      year = parseInt(patternVN[3], 10)
+      console.log('=== PARSE_BIRTH_DATE: Pattern VN matched ===', { day, month, year })
+    }
+  }
+  
+  // Pattern 3: "dd tháng mm năm yyyy" hoặc "dd thang mm nam yyyy"
+  // Ví dụ: "14 tháng 7 năm 1996"
+  if (!day) {
+    const patternVN2 = input.match(/(\d{1,2})\s*(?:tháng|thang)\s*(\d{1,2})\s*(?:năm|nam)\s*(\d{4})/)
+    if (patternVN2) {
+      day = parseInt(patternVN2[1], 10)
+      month = parseInt(patternVN2[2], 10)
+      year = parseInt(patternVN2[3], 10)
+      console.log('=== PARSE_BIRTH_DATE: Pattern VN2 matched ===', { day, month, year })
+    }
+  }
+  
+  // Pattern 4: yyyy-mm-dd (ISO format)
+  // Ví dụ: 1996-07-14
+  if (!day) {
+    const patternISO = input.match(/(\d{4})[\/\-\.\_](\d{1,2})[\/\-\.\_](\d{1,2})/)
+    if (patternISO) {
+      year = parseInt(patternISO[1], 10)
+      month = parseInt(patternISO[2], 10)
+      day = parseInt(patternISO[3], 10)
+      console.log('=== PARSE_BIRTH_DATE: Pattern ISO matched ===', { day, month, year })
+    }
+  }
+  
+  // Pattern 5: Chỉ có 3 số liên tiếp cách nhau bởi bất kỳ ký tự nào
+  // Ví dụ: "14 07 1996", "14, 7, 1996"
+  if (!day) {
+    const numbers = input.match(/\d+/g)
+    if (numbers && numbers.length >= 3) {
+      const n1 = parseInt(numbers[0], 10)
+      const n2 = parseInt(numbers[1], 10)
+      const n3 = parseInt(numbers[2], 10)
+      
+      // Xác định thứ tự: nếu số đầu > 31 thì là năm (yyyy-mm-dd), ngược lại là dd-mm-yyyy
+      if (n1 > 31) {
+        year = n1
+        month = n2
+        day = n3
+      } else {
+        day = n1
+        month = n2
+        year = n3
+      }
+      console.log('=== PARSE_BIRTH_DATE: Pattern numbers matched ===', { day, month, year })
+    }
+  }
+  
+  // Validate kết quả
+  if (!day || !month || !year) {
+    console.log('=== PARSE_BIRTH_DATE: No pattern matched ===')
+    return null
+  }
+  
+  // Validate ranges
+  if (day < 1 || day > 31) {
+    console.log('=== PARSE_BIRTH_DATE: Invalid day ===', { day })
+    return null
+  }
+  if (month < 1 || month > 12) {
+    console.log('=== PARSE_BIRTH_DATE: Invalid month ===', { month })
+    return null
+  }
+  if (year < 1900 || year > 2100) {
+    console.log('=== PARSE_BIRTH_DATE: Invalid year ===', { year })
+    return null
+  }
+  
+  console.log('=== PARSE_BIRTH_DATE: SUCCESS ===', { day, month, year })
   return { day, month, year }
 }
 

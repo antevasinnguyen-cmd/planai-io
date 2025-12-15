@@ -307,14 +307,21 @@ export default function PlanViewEnhanced() {
       return
     }
 
-    // Need to generate - check if we have VALID birth date (must be string in dd/mm/yyyy format)
+    // Need to generate - check if we have VALID birth date
     const rawBirthDate = plan.collected_info?.birth_date || plan.collected_info?.birthDate
     
-    // Validate: must be string and match date format (not boolean, not empty)
+    // Validate: must be string and contain at least 3 numbers (day, month, year)
+    // Backend sẽ parse nhiều định dạng khác nhau
     const isValidBirthDate = (val: any): boolean => {
       if (!val || typeof val !== 'string') return false
-      // Check if it matches dd/mm/yyyy or dd-mm-yyyy format
-      return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(val)
+      // Phải có ít nhất 3 số (ngày, tháng, năm)
+      const numbers = val.match(/\d+/g)
+      if (!numbers || numbers.length < 3) return false
+      // Số cuối cùng phải là năm (4 chữ số, từ 1900-2100)
+      const lastNum = parseInt(numbers[numbers.length - 1], 10)
+      const firstNum = parseInt(numbers[0], 10)
+      // Hoặc số đầu hoặc số cuối phải là năm (4 chữ số)
+      return (lastNum >= 1900 && lastNum <= 2100) || (firstNum >= 1900 && firstNum <= 2100)
     }
     
     if (!isValidBirthDate(rawBirthDate)) {
