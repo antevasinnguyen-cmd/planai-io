@@ -50,13 +50,14 @@ const getGoogleSheetsClient = () => {
     throw new Error('GOOGLE_PRIVATE_KEY is not in valid PEM format. It must start with -----BEGIN PRIVATE KEY-----')
   }
 
-  const auth = new JWT({
+  return google.sheets({ version: 'v4', auth: new JWT({
     email: GOOGLE_CLIENT_EMAIL,
     key: GOOGLE_PRIVATE_KEY,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'],
-  })
-
-  return google.sheets({ version: 'v4', auth })
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive'
+    ]
+  }) })
 }
 
 // Get Google Drive client for file operations
@@ -441,63 +442,37 @@ export const createGoogleDoc = async (plan: any, userId: string) => {
     email: GOOGLE_CLIENT_EMAIL,
     key: GOOGLE_PRIVATE_KEY,
     scopes: [
-      'https://www.googleapis.com/auth/documents',
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/drive.file'
     ]
   })
 
-  const docs = google.docs({ version: 'v1', auth })
   const drive = google.drive({ version: 'v3', auth })
 
   try {
-    // Create a new Google Doc
-    const docResponse = await docs.documents.create({
+    const title = plan.title || 'Kế hoạch tài chính'
+    const content = plan.content || ''
+    const createdDate = new Date(plan.created_at).toLocaleDateString('vi-VN')
+    const formattedContent = `# ${title}\n\nNgày tạo: ${createdDate}\n\n${content}\n\n---\nĐược tạo bởi PlanAI.io.vn`
+
+    // Create Google Doc via Drive API by uploading as text/plain and converting to Docs
+    const { data: file } = await drive.files.create({
       requestBody: {
-        title: plan.title || 'Kế hoạch tài chính'
-      }
+        name: title,
+        mimeType: 'application/vnd.google-apps.document'
+      },
+      media: {
+        mimeType: 'text/plain',
+        body: formattedContent
+      },
+      fields: 'id'
     })
 
-    const documentId = docResponse.data.documentId
+    const documentId = file.id
     if (!documentId) {
       throw new Error('Failed to create Google Doc - no document ID returned')
     }
 
-    // Prepare content for the document
-    const title = plan.title || 'Kế hoạch tài chính'
-    const content = plan.content || ''
-    const createdDate = new Date(plan.created_at).toLocaleDateString('vi-VN')
-
-    // Build requests to insert content into the document
-    const requests: any[] = [
-      {
-        insertText: {
-          text: `${title}\n\nNgày tạo: ${createdDate}\n\n${content}\n\n---\nĐược tạo bởi PlanAI.io.vn`
-        }
-      },
-      // Format title (first line) as heading
-      {
-        updateTextStyle: {
-          range: {
-            startIndex: 0,
-            endIndex: title.length
-          },
-          textStyle: {
-            fontSize: { pt: 24 },
-            bold: true
-          },
-          fields: 'fontSize,bold'
-        }
-      }
-    ]
-
-    // Update the document with content
-    await docs.documents.batchUpdate({
-      documentId,
-      requestBody: { requests }
-    })
-
-    // Make the document publicly accessible (anyone with link can view/edit)
     await drive.permissions.create({
       fileId: documentId,
       requestBody: {
@@ -506,13 +481,8 @@ export const createGoogleDoc = async (plan: any, userId: string) => {
       }
     })
 
-    // Get the document URL
     const docUrl = `https://docs.google.com/document/d/${documentId}/edit`
-
-    return {
-      documentId,
-      documentUrl: docUrl
-    }
+    return { documentId, documentUrl: docUrl }
   } catch (error) {
     throw new Error(`Failed to create Google Doc: ${error instanceof Error ? error.message : String(error)}`)
   }
