@@ -468,28 +468,21 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         // Create content with proper formatting
         const formattedContent = `# ${title}\n\nNgày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}\n\n${content}\n\n---\nĐược tạo bởi PlanAI.io.vn`
         
-        // Sanitize filename: keep alphanumeric + Vietnamese chars + spaces, replace others with underscore
-        const sanitizedTitle = title
-          .replace(/[^\w\s\u00C0-\u024F\u1E00-\u1EFF]/g, '_')  // Keep word chars, spaces, Vietnamese
-          .replace(/\s+/g, '_')  // Replace spaces with underscore
-          .substring(0, 100)  // Limit length
-          .trim()
-        
-        const filename = `${sanitizedTitle || 'plan'}.txt`
+        // Create ASCII-safe filename (no Unicode in HTTP headers to avoid conversion errors)
+        // Use plan ID + timestamp to ensure uniqueness
+        const timestamp = new Date(plan.created_at).toISOString().split('T')[0]  // YYYY-MM-DD
+        const filename = `plan-${planId.substring(0, 8)}-${timestamp}.txt`
         
         // Encode content as UTF-8 bytes to avoid Unicode conversion issues
         const encoder = new TextEncoder()
         const uint8Array = encoder.encode(formattedContent)
-        
-        // Use RFC 5987 encoding for filename with non-ASCII characters
-        const encodedFilename = encodeURIComponent(filename)
         
         logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: uint8Array.length })
         return new Response(uint8Array, {
           status: 200,
           headers: {
             'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}; filename="${filename}"`
+            'Content-Disposition': `attachment; filename="${filename}"`
           }
         })
       } catch (gdocsError) {
