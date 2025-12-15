@@ -307,16 +307,25 @@ export default function PlanViewEnhanced() {
       return
     }
 
-    // Need to generate - check if we have birth date
-    const existingBirthDate = plan.collected_info?.birth_date || plan.collected_info?.birthDate
-    if (!existingBirthDate) {
-      // Show modal to input birth date
+    // Need to generate - check if we have VALID birth date (must be string in dd/mm/yyyy format)
+    const rawBirthDate = plan.collected_info?.birth_date || plan.collected_info?.birthDate
+    
+    // Validate: must be string and match date format (not boolean, not empty)
+    const isValidBirthDate = (val: any): boolean => {
+      if (!val || typeof val !== 'string') return false
+      // Check if it matches dd/mm/yyyy or dd-mm-yyyy format
+      return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(val)
+    }
+    
+    if (!isValidBirthDate(rawBirthDate)) {
+      // Show modal to input birth date - existing value is invalid or missing
+      console.log('=== SPIRITUAL: Invalid birth date, showing modal ===', { rawBirthDate })
       setShowBirthDateModal(true)
       return
     }
 
-    // Generate spiritual analysis
-    await generateSpiritualAnalysis(existingBirthDate)
+    // Generate spiritual analysis with validated birth date
+    await generateSpiritualAnalysis(rawBirthDate as string)
   }
 
   const generateSpiritualAnalysis = async (birthDate: string) => {
