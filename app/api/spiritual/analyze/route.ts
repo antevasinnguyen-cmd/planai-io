@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/supabase'
-import { generateChatResponse } from '@/lib/openai'
+// NOTE: Không dùng AI nữa - tất cả tính toán đều deterministic
 
 // ============================================
 // DETERMINISTIC CALCULATIONS - KHÔNG PHỤ THUỘC AI
@@ -143,20 +143,36 @@ function parseBirthDate(dateStr: string): { day: number; month: number; year: nu
 }
 
 export async function POST(request: NextRequest) {
+  console.log('=== SPIRITUAL API: Request received ===')
+  
   try {
     // Authenticate user using request (cookies / Authorization header)
     const user = await getCurrentUser(request as unknown as Request)
     if (!user) {
+      console.log('=== SPIRITUAL API: Unauthorized ===')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    console.log('=== SPIRITUAL API: User authenticated ===', { userId: user.id })
 
-    const { planId, birthDate, birthTime, fullName } = await request.json()
+    let body
+    try {
+      body = await request.json()
+      console.log('=== SPIRITUAL API: Request body ===', body)
+    } catch (parseError) {
+      console.error('=== SPIRITUAL API: JSON parse error ===', parseError)
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    }
+
+    const { planId, birthDate, birthTime, fullName } = body
 
     if (!birthDate) {
+      console.log('=== SPIRITUAL API: Missing birthDate ===')
       return NextResponse.json({
         error: 'Cần ngày sinh để phân tích tử vi'
       }, { status: 400 })
     }
+
+    console.log('=== SPIRITUAL API: Processing birthDate ===', { birthDate, birthTime, fullName })
 
     // ============================================
     // TÍNH TOÁN DETERMINISTIC - KHÔNG PHỤ THUỘC AI
@@ -164,22 +180,34 @@ export async function POST(request: NextRequest) {
     const parsed = parseBirthDate(birthDate)
     
     if (!parsed) {
+      console.log('=== SPIRITUAL API: Invalid date format ===', { birthDate })
       return NextResponse.json({
-        error: 'Định dạng ngày sinh không hợp lệ. Vui lòng nhập theo format dd/mm/yyyy'
+        error: `Định dạng ngày sinh không hợp lệ: "${birthDate}". Vui lòng nhập theo format dd/mm/yyyy`
       }, { status: 400 })
     }
 
     const { day, month, year } = parsed
+    console.log('=== SPIRITUAL API: Parsed date ===', { day, month, year })
     
     // Tính toán tất cả các giá trị một cách deterministic
     const zodiac = calculateZodiac(day, month)
+    console.log('=== SPIRITUAL API: Zodiac calculated ===', { zodiac: zodiac.name })
+    
     const lifePath = calculateLifePath(day, month, year)
+    console.log('=== SPIRITUAL API: Life path calculated ===', { number: lifePath.number })
+    
     const luckyNumbers = calculateLuckyNumbers(day, month, year)
     const luckyColors = getLuckyColors(zodiac.name)
     const favorablePeriods = getFavorablePeriods(zodiac.name)
 
-    // Tạo lời khuyên dựa trên cung và số chủ đạo
-    const advice = `Với cung ${zodiac.name} và số chủ đạo ${lifePath.number}, bạn có tiềm năng tài chính đặc biệt. ${zodiac.description.split('.').slice(-2, -1)[0]}. ${lifePath.description.split('.').slice(-1)[0]}. Hãy tận dụng thời điểm thuận lợi trong ${favorablePeriods[0].split(':')[0]} để khởi động các dự án quan trọng. Màu ${luckyColors[0]} và số ${luckyNumbers[0]} sẽ mang lại may mắn cho bạn.`
+    // Tạo lời khuyên dựa trên cung và số chủ đạo - với null check
+    const zodiacParts = zodiac.description.split('.')
+    const lifePathParts = lifePath.description.split('.')
+    const zodiacAdvice = zodiacParts.length >= 2 ? zodiacParts[zodiacParts.length - 2] : zodiac.description
+    const lifePathAdvice = lifePathParts.length >= 1 ? lifePathParts[lifePathParts.length - 1] : lifePath.description
+    const periodAdvice = favorablePeriods[0]?.split(':')[0] || 'thời điểm thuận lợi'
+    
+    const advice = `Với cung ${zodiac.name} và số chủ đạo ${lifePath.number}, bạn có tiềm năng tài chính đặc biệt. ${zodiacAdvice}. ${lifePathAdvice}. Hãy tận dụng thời điểm thuận lợi trong ${periodAdvice} để khởi động các dự án quan trọng. Màu ${luckyColors[0] || 'may mắn'} và số ${luckyNumbers[0] || lifePath.number} sẽ mang lại may mắn cho bạn.`
 
     // Kết quả hoàn toàn deterministic
     const spiritualData = {
@@ -197,7 +225,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('=== SPIRITUAL ANALYSIS (DETERMINISTIC) ===', {
+    console.log('=== SPIRITUAL API: SUCCESS ===', {
       input: birthDate,
       parsed: { day, month, year },
       zodiac: zodiac.name,
@@ -209,10 +237,14 @@ export async function POST(request: NextRequest) {
       analysis: spiritualData
     })
 
-  } catch (error) {
-    console.error('Spiritual analysis error:', error)
+  } catch (error: any) {
+    console.error('=== SPIRITUAL API: CRITICAL ERROR ===', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    })
     return NextResponse.json(
-      { error: 'Failed to analyze' },
+      { error: `Lỗi phân tích: ${error?.message || 'Unknown error'}` },
       { status: 500 }
     )
   }
