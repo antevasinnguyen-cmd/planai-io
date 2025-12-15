@@ -169,50 +169,6 @@ export default function PlanViewEnhanced() {
   const handleExport = async (format: string) => {
     if (!plan) return;
 
-    if (format === 'sheets') {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const headers: any = { 'Content-Type': 'application/json' };
-        if (sessionData?.session?.access_token) {
-          headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
-        }
-        const res = await fetch('/api/export/google-sheets', {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify({ planId: plan.id })
-        });
-        
-        const json = await res.json().catch(() => ({}));
-        
-        if (!res.ok) {
-          // Check if authorization is required
-          if (json?.requiresAuth && json?.authUrl) {
-            const confirmed = confirm('Cần cấp quyền truy cập Google Sheets. Bạn có muốn tiếp tục không?');
-            if (confirmed) {
-              window.location.href = json.authUrl;
-            }
-            return;
-          }
-          throw new Error(json?.message || json?.error || 'Export failed');
-        }
-        
-        // Success - open Google Sheets URL
-        if (json?.url) {
-          window.open(json.url, '_blank');
-          alert('✅ Google Sheets đã được tạo thành công! File sẽ mở trong tab mới.');
-          return;
-        }
-        
-        alert(json?.message || 'Không thể tạo Google Sheets. Vui lòng thử lại.');
-        return;
-      } catch (err: any) {
-        console.error('Google Sheets export error:', err);
-        alert(err?.message || 'Có lỗi khi tạo Google Sheets. Vui lòng thử lại.');
-        return;
-      }
-    }
-
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const headers: any = { 'Content-Type': 'application/json' };
