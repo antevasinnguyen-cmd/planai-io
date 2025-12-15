@@ -322,7 +322,11 @@ export default function PlanViewEnhanced() {
   const generateSpiritualAnalysis = async (birthDate: string) => {
     if (!plan) return
     
+    // HIỂN THỊ POPUP LOADING NGAY LẬP TỨC
     setSpiritualLoading(true)
+    setShowBirthDateModal(false)
+    setShowSpiritualPopup(true) // Hiển thị popup với trạng thái loading
+    
     try {
       // Build full birth info string for better analysis
       const birthInfo = birthTimeInput 
@@ -378,11 +382,11 @@ export default function PlanViewEnhanced() {
         collected_info: updatedCollectedInfo
       })
       setSpiritualEnabled(true)
-      setShowBirthDateModal(false)
-      setShowSpiritualPopup(true) // Show result popup
+      // Popup đã hiển thị từ đầu, không cần set lại
     } catch (error) {
       console.error('Error generating spiritual analysis:', error)
       alert('Có lỗi khi phân tích tử vi. Vui lòng thử lại.')
+      setShowSpiritualPopup(false) // Chỉ đóng popup khi có lỗi
     } finally {
       setSpiritualLoading(false)
     }
@@ -942,108 +946,144 @@ export default function PlanViewEnhanced() {
         </div>
       )}
 
-      {/* Spiritual Analysis Result Popup - Gradient Border */}
-      {showSpiritualPopup && plan?.spiritual_data && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowSpiritualPopup(false)}>
+      {/* Spiritual Analysis Result Popup - KHÔNG TỰ ĐÓNG, CHỈ ĐÓNG KHI USER NHẤN X */}
+      {showSpiritualPopup && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
           <div 
             className="bg-white dark:bg-[#1a1a1a] rounded-2xl p-1 max-w-2xl mx-4 max-h-[85vh] overflow-hidden"
             style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #667eea 100%)'}}
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6 overflow-y-auto max-h-[calc(85vh-8px)]">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                    <Star className="w-6 h-6 text-white" />
+                    {spiritualLoading ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Star className="w-6 h-6 text-white" />
+                    )}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Phân tích Tử vi & Thần số học</h3>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {spiritualLoading ? 'Đang phân tích...' : 'Phân tích Tử vi & Thần số học'}
+                    </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {plan.collected_info?.spiritual_name || plan.collected_info?.full_name || 'Người dùng'} • {plan.collected_info?.birth_date}
+                      {spiritualLoading 
+                        ? 'Vui lòng đợi trong giây lát...'
+                        : `${plan?.collected_info?.spiritual_name || plan?.collected_info?.full_name || 'Người dùng'} • ${plan?.collected_info?.birth_date || ''}`
+                      }
                     </p>
                   </div>
                 </div>
+                {/* NÚT ĐÓNG - CHỈ CÁCH DUY NHẤT ĐỂ ĐÓNG POPUP */}
                 <button
                   onClick={() => setShowSpiritualPopup(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                  disabled={spiritualLoading}
+                  className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="text-gray-500">✕</span>
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="space-y-6">
-                {/* Cung hoàng đạo */}
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
-                  <h4 className="font-bold text-purple-800 dark:text-purple-300 mb-2 flex items-center gap-2">
-                    <span>🌟</span> Cung hoàng đạo
-                  </h4>
-                  <p className="text-gray-700 dark:text-gray-300">{plan.spiritual_data.zodiac || 'Đang phân tích...'}</p>
-                </div>
-
-                {/* Số mệnh */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl">
-                  <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-                    <span>🔢</span> Số chủ đạo (Life Path)
-                  </h4>
-                  <p className="text-gray-700 dark:text-gray-300">{plan.spiritual_data.lifePath || 'Đang phân tích...'}</p>
-                </div>
-
-                {/* Lời khuyên */}
-                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
-                  <h4 className="font-bold text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
-                    <span>💡</span> Lời khuyên tài chính & sự nghiệp
-                  </h4>
-                  <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{plan.spiritual_data.advice || 'Đang phân tích...'}</p>
-                </div>
-
-                {/* Số & màu may mắn */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
-                    <h4 className="font-bold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
-                      <span>🍀</span> Số may mắn
-                    </h4>
-                    <p className="text-gray-700 dark:text-gray-300">
-                      {Array.isArray(plan.spiritual_data.luckyNumbers) 
-                        ? plan.spiritual_data.luckyNumbers.join(', ') 
-                        : plan.spiritual_data.luckyNumbers || 'N/A'}
-                    </p>
+              {/* Loading State */}
+              {spiritualLoading && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl animate-pulse">
+                    <div className="h-4 bg-purple-200 dark:bg-purple-700 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-purple-100 dark:bg-purple-800 rounded w-full"></div>
+                    <div className="h-3 bg-purple-100 dark:bg-purple-800 rounded w-2/3 mt-2"></div>
                   </div>
-                  <div className="p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl">
-                    <h4 className="font-bold text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-2">
-                      <span>🎨</span> Màu may mắn
-                    </h4>
-                    <p className="text-gray-700 dark:text-gray-300">
-                      {Array.isArray(plan.spiritual_data.luckyColors) 
-                        ? plan.spiritual_data.luckyColors.join(', ') 
-                        : plan.spiritual_data.luckyColors || 'N/A'}
-                    </p>
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl animate-pulse">
+                    <div className="h-4 bg-blue-200 dark:bg-blue-700 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-blue-100 dark:bg-blue-800 rounded w-full"></div>
                   </div>
+                  <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl animate-pulse">
+                    <div className="h-4 bg-amber-200 dark:bg-amber-700 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-amber-100 dark:bg-amber-800 rounded w-full"></div>
+                    <div className="h-3 bg-amber-100 dark:bg-amber-800 rounded w-3/4 mt-2"></div>
+                  </div>
+                  <p className="text-center text-gray-500 dark:text-gray-400 text-sm">
+                    ⏳ Đang tính toán cung hoàng đạo và số chủ đạo...
+                  </p>
                 </div>
+              )}
 
-                {/* Thời điểm thuận lợi */}
-                {plan.spiritual_data.favorablePeriods && (
-                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 rounded-xl">
-                    <h4 className="font-bold text-indigo-800 dark:text-indigo-300 mb-2 flex items-center gap-2">
-                      <span>📅</span> Thời điểm thuận lợi
+              {/* Content - Chỉ hiển thị khi có data và không loading */}
+              {!spiritualLoading && plan?.spiritual_data && (
+                <div className="space-y-6">
+                  {/* Cung hoàng đạo */}
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+                    <h4 className="font-bold text-purple-800 dark:text-purple-300 mb-2 flex items-center gap-2">
+                      <span>🌟</span> Cung hoàng đạo
                     </h4>
-                    <p className="text-gray-700 dark:text-gray-300">
-                      {Array.isArray(plan.spiritual_data.favorablePeriods) 
-                        ? plan.spiritual_data.favorablePeriods.join(', ') 
-                        : plan.spiritual_data.favorablePeriods}
-                    </p>
+                    <p className="text-gray-700 dark:text-gray-300">{plan.spiritual_data.zodiac || 'Đang phân tích...'}</p>
                   </div>
-                )}
-              </div>
+
+                  {/* Số mệnh */}
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl">
+                    <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                      <span>🔢</span> Số chủ đạo (Life Path)
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300">{plan.spiritual_data.lifePath || 'Đang phân tích...'}</p>
+                  </div>
+
+                  {/* Lời khuyên */}
+                  <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
+                    <h4 className="font-bold text-amber-800 dark:text-amber-300 mb-2 flex items-center gap-2">
+                      <span>💡</span> Lời khuyên tài chính & sự nghiệp
+                    </h4>
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{plan.spiritual_data.advice || 'Đang phân tích...'}</p>
+                  </div>
+
+                  {/* Số & màu may mắn */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                      <h4 className="font-bold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
+                        <span>🍀</span> Số may mắn
+                      </h4>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {Array.isArray(plan.spiritual_data.luckyNumbers) 
+                          ? plan.spiritual_data.luckyNumbers.join(', ') 
+                          : plan.spiritual_data.luckyNumbers || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 rounded-xl">
+                      <h4 className="font-bold text-rose-800 dark:text-rose-300 mb-2 flex items-center gap-2">
+                        <span>🎨</span> Màu may mắn
+                      </h4>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {Array.isArray(plan.spiritual_data.luckyColors) 
+                          ? plan.spiritual_data.luckyColors.join(', ') 
+                          : plan.spiritual_data.luckyColors || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Thời điểm thuận lợi */}
+                  {plan.spiritual_data.favorablePeriods && (
+                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 rounded-xl">
+                      <h4 className="font-bold text-indigo-800 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                        <span>📅</span> Thời điểm thuận lợi
+                      </h4>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {Array.isArray(plan.spiritual_data.favorablePeriods) 
+                          ? plan.spiritual_data.favorablePeriods.join(', ') 
+                          : plan.spiritual_data.favorablePeriods}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Footer */}
               <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setShowSpiritualPopup(false)}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-bold transition-all"
+                  disabled={spiritualLoading}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Đóng
+                  {spiritualLoading ? 'Đang xử lý...' : 'Đóng'}
                 </button>
               </div>
             </div>

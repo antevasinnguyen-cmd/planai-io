@@ -44,7 +44,6 @@ function getFreeTierPromptSimplified(userInfo: any, constraints: any): string {
   const onlyIf = (label: string, value: string) => (value && value !== 'Chưa cung cấp') ? `• **${label}**: ${value}` : ''
   const personalSummary = [
     onlyIf('Họ tên', userInfo.full_name),
-    onlyIf('Độ tuổi', String(userInfo.age || '')),
     onlyIf('Nơi sinh sống', location),
     onlyIf('Nghề nghiệp', userInfo.occupation)
   ].filter(Boolean).join('\n')
@@ -730,7 +729,6 @@ export function getUserContextV4(collectedInfo: any) {
 👤 **THÔNG TIN CÁ NHÂN:**
 - Họ tên: ${collectedInfo.full_name || 'Chưa cung cấp'}
 - Giới tính: ${collectedInfo.gender || 'Chưa cung cấp'}
-- Tuổi: ${collectedInfo.age || 'Chưa cung cấp'}
 - Ngày tháng năm sinh: ${collectedInfo.birth_date || 'Chưa cung cấp'}
 - Giờ sinh: ${collectedInfo.birth_time || 'Chưa cung cấp'}
 - Nơi sống: ${collectedInfo.location || 'Chưa cung cấp'}

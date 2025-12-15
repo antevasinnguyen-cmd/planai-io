@@ -175,7 +175,6 @@ export async function generatePlanSection(
   const skills = Array.isArray(collectedInfo?.skills) ? collectedInfo.skills : []
   const fullName = collectedInfo?.full_name || ''
   const birthDate = collectedInfo?.birth_date || ''
-  const age = collectedInfo?.age || ''
   const location = collectedInfo?.location || ''
   const occupation = collectedInfo?.occupation || ''
   const previousOccupation = collectedInfo?.previous_occupation || ''
@@ -192,7 +191,6 @@ export async function generatePlanSection(
 **HỒ SƠ CÁ NHÂN:**
 ${fullName ? `- Họ tên: ${fullName}` : ''}
 ${birthDate ? `- Ngày sinh: ${birthDate}` : ''}
-${age ? `- Tuổi: ${age}` : ''}
 ${location ? `- Nơi sinh sống: ${location}` : ''}
 ${occupation ? `- Nghề nghiệp hiện tại: ${occupation}` : ''}
 ${previousOccupation ? `- Nghề nghiệp trước đây: ${previousOccupation}` : ''}
@@ -318,7 +316,6 @@ function buildPrompts(goal: string, income: string, savings: string, timeline: s
     overview: `Viết phần Tổng quan kế hoạch và Hồ sơ cá nhân CHI TIẾT. 
 
 **BẮT BUỘC bao gồm các mục sau trong phần "Hồ sơ cá nhân":**
-- Tuổi (tính chính xác từ ngày sinh nếu có)
 - Nghề nghiệp hiện tại
 - Thu nhập hiện tại: ${income}
 - Tiết kiệm hiện có: ${savings}
