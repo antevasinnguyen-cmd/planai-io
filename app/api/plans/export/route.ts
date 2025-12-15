@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { getAdminClient, getUserSubscription, getTierName } from '@/lib/supabase'
-import { exportPlanToGoogleSheets, isGoogleSheetsConfigured, createGoogleDoc } from '@/lib/googleSheets'
+import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets'
 import { Document, Packer, Paragraph, TextRun } from 'docx'
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
 import { logger } from '@/lib/logger'
@@ -104,9 +104,9 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
   // Allow PDF and DOCX for all paid tiers (basic, pro, pro_max)
   const allowedFormatsByTier: Record<string, string[]> = {
     free: ['txt'],
-    basic: ['txt', 'pdf', 'docx', 'google_docs'],
-    pro: ['txt', 'pdf', 'docx', 'google_docs', 'notion'],
-    pro_max: ['txt', 'pdf', 'docx', 'google_docs', 'notion', 'google_sheets']
+    basic: ['txt', 'pdf', 'docx'],
+    pro: ['txt', 'pdf', 'docx', 'notion'],
+    pro_max: ['txt', 'pdf', 'docx', 'notion', 'google_sheets']
   }
 
   const allowed = allowedFormatsByTier[tier] || allowedFormatsByTier.free
@@ -452,54 +452,6 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
       } catch (docxError) {
         logger.error('EXPORT_DOCX_ERROR', { error: String(docxError), planId, userId })
         return NextResponse.json({ error: 'Failed to generate DOCX', message: 'Co loi khi tao file Word. Vui long thu lai sau.' }, { status: 500 })
-      }
-    }
-    
-    case 'google_docs': {
-      // Google Docs export - create a Google Doc directly (like Google Sheets)
-      try {
-        // Check if Google API is configured
-        if (!isGoogleSheetsConfigured()) {
-          return NextResponse.json({ 
-            error: 'Google Docs API is not configured', 
-            message: 'Tính năng xuất sang Google Docs chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
-          }, { status: 503 })
-        }
-        
-        // Create Google Doc using Service Account
-        const { documentId, documentUrl } = await createGoogleDoc(plan, userId)
-        
-        // Update plan with export info using admin client for reliability
-        const updateClient = admin || supabase
-        await updateClient
-          .from('plans')
-          .update({
-            exported_to_docs: true,
-            docs_url: documentUrl,
-            docs_id: documentId,
-            last_exported_at: new Date().toISOString()
-          })
-          .eq('id', planId)
-        
-        logger.info('EXPORT_GDOCS_SUCCESS', { planId, documentUrl, userId })
-        return NextResponse.json({
-          success: true,
-          message: 'Xuất sang Google Docs thành công',
-          url: documentUrl
-        })
-      } catch (gdocsError) {
-        const errorMessage = gdocsError instanceof Error ? gdocsError.message : String(gdocsError)
-        logger.error('EXPORT_GDOCS_ERROR', { error: errorMessage, planId, userId })
-        if (errorMessage.toLowerCase().includes('storage quota')) {
-          return NextResponse.json({
-            error: 'Google Drive quota exceeded',
-            message: 'Không thể tạo Google Docs vì tài khoản Drive đã đầy. Vui lòng giải phóng dung lượng hoặc chọn tài khoản khác.',
-          }, { status: 409 })
-        }
-        return NextResponse.json({ 
-          error: 'Failed to export to Google Docs', 
-          message: 'Có lỗi khi xuất sang Google Docs. Vui lòng thử lại sau.'
-        }, { status: 500 })
       }
     }
     

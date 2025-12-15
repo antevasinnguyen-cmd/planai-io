@@ -534,13 +534,6 @@ export default function PlanViewEnhanced() {
                       <FileText className="w-4 h-4 text-blue-600" />
                       <span className="text-sm text-gray-700 dark:text-gray-300">Word (DOCX)</span>
                     </button>
-                    <button
-                      onClick={() => handleExport('gdocs')}
-                      className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <FileText className="w-4 h-4 text-blue-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Google Docs</span>
-                    </button>
                   </div>
                 )}
               </div>
