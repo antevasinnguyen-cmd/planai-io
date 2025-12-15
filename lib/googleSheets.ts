@@ -55,7 +55,8 @@ const getGoogleSheetsClient = () => {
     key: GOOGLE_PRIVATE_KEY,
     scopes: [
       'https://www.googleapis.com/auth/spreadsheets',
-      'https://www.googleapis.com/auth/drive'
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/drive.file'
     ]
   }) })
 }
@@ -73,7 +74,11 @@ const getGoogleDriveClient = () => {
   const auth = new JWT({
     email: GOOGLE_CLIENT_EMAIL,
     key: GOOGLE_PRIVATE_KEY,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'],
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/drive.file'
+    ],
   })
 
   return google.drive({ version: 'v3', auth })
