@@ -477,11 +477,9 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         
         const filename = `${sanitizedTitle || 'plan'}.txt`
         
-        // Create buffer with UTF-8 encoding
-        const buffer = Buffer.from(formattedContent, 'utf-8')
-        
-        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: buffer.length })
-        return new NextResponse(buffer, {
+        // Encode content as UTF-8 and return as Response (not NextResponse which has issues with Unicode)
+        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: formattedContent.length })
+        return new Response(formattedContent, {
           status: 200,
           headers: {
             'Content-Type': 'text/plain; charset=utf-8',
