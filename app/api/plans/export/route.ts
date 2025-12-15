@@ -456,26 +456,41 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
     }
     
     case 'google_docs': {
-      // Google Docs export - create a document link that opens in Google Docs viewer
+      // Google Docs export - create a text file that can be opened in Google Docs
       try {
-        const title = plan.title || 'Kế hoạch tài chính'
-        const content = plan.content || ''
+        const title = String(plan.title || 'Kế hoạch tài chính')
+        const content = String(plan.content || '')
+        
+        if (!title || !content) {
+          logger.warn('EXPORT_GDOCS_EMPTY', { planId, userId, hasTitle: !!title, hasContent: !!content })
+        }
         
         // Create content with proper formatting
         const formattedContent = `# ${title}\n\nNgày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}\n\n${content}\n\n---\nĐược tạo bởi PlanAI.io.vn`
         
-        // Return as downloadable text file that can be opened in Google Docs
-        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId })
-        return new NextResponse(formattedContent, {
+        // Sanitize filename: keep alphanumeric + Vietnamese chars + spaces, replace others with underscore
+        const sanitizedTitle = title
+          .replace(/[^\w\s\u00C0-\u024F\u1E00-\u1EFF]/g, '_')  // Keep word chars, spaces, Vietnamese
+          .replace(/\s+/g, '_')  // Replace spaces with underscore
+          .substring(0, 100)  // Limit length
+          .trim()
+        
+        const filename = `${sanitizedTitle || 'plan'}.txt`
+        
+        // Create buffer with UTF-8 encoding
+        const buffer = Buffer.from(formattedContent, 'utf-8')
+        
+        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: buffer.length })
+        return new NextResponse(buffer, {
           status: 200,
           headers: {
             'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': `attachment; filename="${title.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF ]/g, '_')}.txt"`
+            'Content-Disposition': `attachment; filename="${filename}"`
           }
         })
       } catch (gdocsError) {
         logger.error('EXPORT_GDOCS_ERROR', { error: String(gdocsError), planId, userId })
-        return NextResponse.json({ error: 'Failed to create Google Docs file', message: 'Có lỗi khi tạo file Google Docs' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to create Google Docs file', message: 'Có lỗi khi tạo file Google Docs. Vui lòng thử lại sau.' }, { status: 500 })
       }
     }
     
