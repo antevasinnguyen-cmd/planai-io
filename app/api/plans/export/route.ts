@@ -166,107 +166,141 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
       }
     case 'pdf': {
       try {
-        const PDFModule: any = await import('pdfkit')
-        const PDFDocument = PDFModule.default || PDFModule
-        const doc = new PDFDocument({ size: 'A4', margin: 50 })
+        // Use jsPDF instead of pdfkit - it works in serverless without external font files
+        const { jsPDF } = await import('jspdf')
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-        const chunks: Buffer[] = []
-        await new Promise<void>((resolve) => {
-          doc.on('data', (chunk: any) => chunks.push(chunk as Buffer))
-          doc.on('end', () => resolve())
+        const title = String(plan.title || 'Kế hoạch tài chính')
+        const content = String(plan.content || '')
+        const pageWidth = doc.internal.pageSize.getWidth()
+        const pageHeight = doc.internal.pageSize.getHeight()
+        const margin = 20
+        const maxWidth = pageWidth - margin * 2
+        let yPos = margin
 
-          const title = String(plan.title || 'Kế hoạch tài chính')
-          const content = String(plan.content || '')
+        // Helper function to add new page if needed
+        const checkNewPage = (height: number = 10) => {
+          if (yPos + height > pageHeight - margin) {
+            doc.addPage()
+            yPos = margin
+          }
+        }
 
-          // Title
-          doc.fontSize(24).font('Helvetica-Bold').text(title, { align: 'center' })
-          doc.moveDown(0.5)
-          doc.fontSize(10).font('Helvetica').fillColor('#666666').text(`Ngày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}`, { align: 'center' })
-          doc.moveDown(1.5)
-          doc.fillColor('#000000')
+        // Helper to clean markdown formatting for display
+        const cleanText = (text: string) => {
+          return text
+            .replace(/\*\*([^*]+)\*\*/g, '$1')  // Remove bold markers
+            .replace(/\*([^*]+)\*/g, '$1')      // Remove italic markers
+            .replace(/`([^`]+)`/g, '$1')        // Remove code markers
+            .trim()
+        }
 
-          // Parse and render markdown content
-          const lines = content.split('\n')
-          for (const line of lines) {
-            const trimmed = line.trim()
-            
-            // Skip empty lines
-            if (!trimmed) {
-              doc.moveDown(0.3)
-              continue
-            }
+        // Title
+        doc.setFontSize(20)
+        doc.setFont('helvetica', 'bold')
+        const titleLines = doc.splitTextToSize(title, maxWidth)
+        doc.text(titleLines, pageWidth / 2, yPos, { align: 'center' })
+        yPos += titleLines.length * 8 + 5
 
-            // H1: # Title
-            if (trimmed.startsWith('# ')) {
-              doc.moveDown(0.5)
-              doc.fontSize(20).font('Helvetica-Bold').fillColor('#1a1a1a').text(trimmed.slice(2))
-              doc.moveDown(0.3)
-              continue
-            }
+        // Date
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(100, 100, 100)
+        doc.text(`Ngay tao: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}`, pageWidth / 2, yPos, { align: 'center' })
+        yPos += 10
+        doc.setTextColor(0, 0, 0)
 
-            // H2: ## Section
-            if (trimmed.startsWith('## ')) {
-              doc.moveDown(0.5)
-              doc.fontSize(16).font('Helvetica-Bold').fillColor('#4a4a4a').text(trimmed.slice(3))
-              doc.moveDown(0.3)
-              continue
-            }
-
-            // H3: ### Subsection
-            if (trimmed.startsWith('### ')) {
-              doc.moveDown(0.3)
-              doc.fontSize(14).font('Helvetica-Bold').fillColor('#5a5a5a').text(trimmed.slice(4))
-              doc.moveDown(0.2)
-              continue
-            }
-
-            // H4: #### Sub-subsection
-            if (trimmed.startsWith('#### ')) {
-              doc.fontSize(12).font('Helvetica-Bold').text(trimmed.slice(5))
-              doc.moveDown(0.2)
-              continue
-            }
-
-            // Bullet points: - or • or *
-            if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
-              const bulletText = trimmed.slice(2)
-              // Handle bold text within bullet
-              const parts = bulletText.split(/\*\*([^*]+)\*\*/g)
-              doc.fontSize(11).font('Helvetica').fillColor('#000000')
-              doc.text('  • ', { continued: true })
-              for (let i = 0; i < parts.length; i++) {
-                if (i % 2 === 1) {
-                  doc.font('Helvetica-Bold').text(parts[i], { continued: i < parts.length - 1 })
-                } else if (parts[i]) {
-                  doc.font('Helvetica').text(parts[i], { continued: i < parts.length - 1 })
-                }
-              }
-              doc.text('') // End line
-              continue
-            }
-
-            // Regular paragraph - handle bold text
-            const parts = trimmed.split(/\*\*([^*]+)\*\*/g)
-            doc.fontSize(11).font('Helvetica').fillColor('#000000')
-            for (let i = 0; i < parts.length; i++) {
-              if (i % 2 === 1) {
-                doc.font('Helvetica-Bold').text(parts[i], { continued: i < parts.length - 1 })
-              } else if (parts[i]) {
-                doc.font('Helvetica').text(parts[i], { continued: i < parts.length - 1 })
-              }
-            }
-            doc.text('') // End line
+        // Parse and render markdown content
+        const lines = content.split('\n')
+        for (const line of lines) {
+          const trimmed = line.trim()
+          
+          // Skip empty lines
+          if (!trimmed) {
+            yPos += 3
+            continue
           }
 
-          // Footer
-          doc.moveDown(2)
-          doc.fontSize(9).font('Helvetica').fillColor('#888888')
-          doc.text('Được tạo bởi PlanAI.io.vn - Trợ lý tài chính AI thông minh', { align: 'center' })
+          // H1: # Title
+          if (trimmed.startsWith('# ')) {
+            checkNewPage(15)
+            yPos += 5
+            doc.setFontSize(16)
+            doc.setFont('helvetica', 'bold')
+            const h1Lines = doc.splitTextToSize(cleanText(trimmed.slice(2)), maxWidth)
+            doc.text(h1Lines, margin, yPos)
+            yPos += h1Lines.length * 7 + 3
+            continue
+          }
 
-          doc.end()
-        })
+          // H2: ## Section
+          if (trimmed.startsWith('## ')) {
+            checkNewPage(12)
+            yPos += 4
+            doc.setFontSize(14)
+            doc.setFont('helvetica', 'bold')
+            const h2Lines = doc.splitTextToSize(cleanText(trimmed.slice(3)), maxWidth)
+            doc.text(h2Lines, margin, yPos)
+            yPos += h2Lines.length * 6 + 2
+            continue
+          }
 
-        const buffer = Buffer.concat(chunks)
+          // H3: ### Subsection
+          if (trimmed.startsWith('### ')) {
+            checkNewPage(10)
+            yPos += 3
+            doc.setFontSize(12)
+            doc.setFont('helvetica', 'bold')
+            const h3Lines = doc.splitTextToSize(cleanText(trimmed.slice(4)), maxWidth)
+            doc.text(h3Lines, margin, yPos)
+            yPos += h3Lines.length * 5 + 2
+            continue
+          }
+
+          // H4: #### Sub-subsection
+          if (trimmed.startsWith('#### ')) {
+            checkNewPage(8)
+            doc.setFontSize(11)
+            doc.setFont('helvetica', 'bold')
+            const h4Lines = doc.splitTextToSize(cleanText(trimmed.slice(5)), maxWidth)
+            doc.text(h4Lines, margin, yPos)
+            yPos += h4Lines.length * 5 + 1
+            continue
+          }
+
+          // Bullet points: - or • or *
+          if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
+            checkNewPage(8)
+            doc.setFontSize(10)
+            doc.setFont('helvetica', 'normal')
+            const bulletText = cleanText(trimmed.slice(2))
+            const bulletLines = doc.splitTextToSize('  • ' + bulletText, maxWidth - 5)
+            doc.text(bulletLines, margin + 3, yPos)
+            yPos += bulletLines.length * 4 + 1
+            continue
+          }
+
+          // Regular paragraph
+          checkNewPage(8)
+          doc.setFontSize(10)
+          doc.setFont('helvetica', 'normal')
+          const paraLines = doc.splitTextToSize(cleanText(trimmed), maxWidth)
+          doc.text(paraLines, margin, yPos)
+          yPos += paraLines.length * 4 + 1
+        }
+
+        // Footer
+        checkNewPage(15)
+        yPos += 10
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(128, 128, 128)
+        doc.text('Duoc tao boi PlanAI.io.vn - Tro ly tai chinh AI thong minh', pageWidth / 2, yPos, { align: 'center' })
+
+        // Get PDF as buffer
+        const pdfOutput = doc.output('arraybuffer')
+        const buffer = Buffer.from(pdfOutput)
+        
         logger.info('EXPORT_PDF_SUCCESS', { planId, userId, size: buffer.length })
         return new NextResponse(new Uint8Array(buffer), {
           status: 200,
@@ -277,23 +311,124 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         })
       } catch (pdfError) {
         logger.error('EXPORT_PDF_ERROR', { error: String(pdfError), planId, userId })
-        return NextResponse.json({ error: 'Failed to generate PDF', message: 'Có lỗi khi tạo file PDF' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to generate PDF', message: 'Co loi khi tao file PDF. Vui long thu lai sau.' }, { status: 500 })
       }
     }
     
     case 'docx': {
       try {
+        const title = String(plan.title || 'Ke hoach tai chinh')
+        const content = String(plan.content || '')
+        
+        // Helper to clean markdown and create text runs
+        const createTextRuns = (text: string): TextRun[] => {
+          const runs: TextRun[] = []
+          // Split by bold markers
+          const parts = text.split(/\*\*([^*]+)\*\*/g)
+          for (let i = 0; i < parts.length; i++) {
+            if (parts[i]) {
+              runs.push(new TextRun({ 
+                text: parts[i], 
+                bold: i % 2 === 1,
+                size: 22 
+              }))
+            }
+          }
+          return runs.length > 0 ? runs : [new TextRun({ text: text, size: 22 })]
+        }
+
+        // Parse content into paragraphs
+        const paragraphs: Paragraph[] = [
+          // Title
+          new Paragraph({ 
+            children: [new TextRun({ text: title, bold: true, size: 48 })],
+            spacing: { after: 200 }
+          }),
+          // Date
+          new Paragraph({ 
+            children: [new TextRun({ text: `Ngay tao: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}`, size: 20, color: '666666' })],
+            spacing: { after: 400 }
+          })
+        ]
+
+        // Parse markdown content
+        const lines = content.split('\n')
+        for (const line of lines) {
+          const trimmed = line.trim()
+          
+          // Skip empty lines - add spacing
+          if (!trimmed) {
+            paragraphs.push(new Paragraph({ children: [], spacing: { after: 100 } }))
+            continue
+          }
+
+          // H1
+          if (trimmed.startsWith('# ')) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.slice(2), bold: true, size: 36 })],
+              spacing: { before: 300, after: 150 }
+            }))
+            continue
+          }
+
+          // H2
+          if (trimmed.startsWith('## ')) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.slice(3), bold: true, size: 32 })],
+              spacing: { before: 250, after: 120 }
+            }))
+            continue
+          }
+
+          // H3
+          if (trimmed.startsWith('### ')) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.slice(4), bold: true, size: 28 })],
+              spacing: { before: 200, after: 100 }
+            }))
+            continue
+          }
+
+          // H4
+          if (trimmed.startsWith('#### ')) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.slice(5), bold: true, size: 24 })],
+              spacing: { before: 150, after: 80 }
+            }))
+            continue
+          }
+
+          // Bullet points
+          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            paragraphs.push(new Paragraph({
+              children: createTextRuns(trimmed.slice(2)),
+              bullet: { level: 0 },
+              spacing: { after: 50 }
+            }))
+            continue
+          }
+
+          // Regular paragraph
+          paragraphs.push(new Paragraph({
+            children: createTextRuns(trimmed),
+            spacing: { after: 80 }
+          }))
+        }
+
+        // Footer
+        paragraphs.push(new Paragraph({ children: [], spacing: { after: 400 } }))
+        paragraphs.push(new Paragraph({
+          children: [new TextRun({ text: 'Duoc tao boi PlanAI.io.vn - Tro ly tai chinh AI thong minh', size: 18, color: '888888', italics: true })],
+          alignment: 'center' as any
+        }))
+
         const doc = new Document({
           sections: [{
             properties: {},
-            children: [
-              new Paragraph({ children: [new TextRun({ text: plan.title || 'Kế hoạch tài chính', bold: true, size: 32 })] }),
-              ...String(plan.content || '')
-                .split('\n')
-                .map((line: string) => new Paragraph({ children: [new TextRun({ text: line })] }))
-            ]
+            children: paragraphs
           }]
         })
+        
         const buffer = await Packer.toBuffer(doc)
         logger.info('EXPORT_DOCX_SUCCESS', { planId, userId, size: buffer.length })
         return new NextResponse(new Uint8Array(buffer), {
@@ -305,7 +440,7 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         })
       } catch (docxError) {
         logger.error('EXPORT_DOCX_ERROR', { error: String(docxError), planId, userId })
-        return NextResponse.json({ error: 'Failed to generate DOCX', message: 'Có lỗi khi tạo file Word' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to generate DOCX', message: 'Co loi khi tao file Word. Vui long thu lai sau.' }, { status: 500 })
       }
     }
     
