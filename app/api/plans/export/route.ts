@@ -477,13 +477,19 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         
         const filename = `${sanitizedTitle || 'plan'}.txt`
         
-        // Encode content as UTF-8 and return as Response (not NextResponse which has issues with Unicode)
-        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: formattedContent.length })
-        return new Response(formattedContent, {
+        // Encode content as UTF-8 bytes to avoid Unicode conversion issues
+        const encoder = new TextEncoder()
+        const uint8Array = encoder.encode(formattedContent)
+        
+        // Use RFC 5987 encoding for filename with non-ASCII characters
+        const encodedFilename = encodeURIComponent(filename)
+        
+        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: uint8Array.length })
+        return new Response(uint8Array, {
           status: 200,
           headers: {
             'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': `attachment; filename="${filename}"`
+            'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}; filename="${filename}"`
           }
         })
       } catch (gdocsError) {
