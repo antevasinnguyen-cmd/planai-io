@@ -488,7 +488,14 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
           url: documentUrl
         })
       } catch (gdocsError) {
-        logger.error('EXPORT_GDOCS_ERROR', { error: String(gdocsError), planId, userId })
+        const errorMessage = gdocsError instanceof Error ? gdocsError.message : String(gdocsError)
+        logger.error('EXPORT_GDOCS_ERROR', { error: errorMessage, planId, userId })
+        if (errorMessage.toLowerCase().includes('storage quota')) {
+          return NextResponse.json({
+            error: 'Google Drive quota exceeded',
+            message: 'Không thể tạo Google Docs vì tài khoản Drive đã đầy. Vui lòng giải phóng dung lượng hoặc chọn tài khoản khác.',
+          }, { status: 409 })
+        }
         return NextResponse.json({ 
           error: 'Failed to export to Google Docs', 
           message: 'Có lỗi khi xuất sang Google Docs. Vui lòng thử lại sau.'

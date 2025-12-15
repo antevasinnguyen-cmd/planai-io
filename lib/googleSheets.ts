@@ -450,6 +450,30 @@ export const createGoogleDoc = async (plan: any, userId: string) => {
   const drive = google.drive({ version: 'v3', auth })
 
   try {
+    // Auto-cleanup: Delete old Google Docs to free up storage (keep last 20 files)
+    try {
+      const { data: fileList } = await drive.files.list({
+        q: "mimeType='application/vnd.google-apps.document' and trashed=false",
+        orderBy: 'createdTime desc',
+        fields: 'files(id, name, createdTime)',
+        pageSize: 100
+      })
+
+      if (fileList.files && fileList.files.length > 20) {
+        // Delete files beyond the 20 most recent
+        const filesToDelete = fileList.files.slice(20)
+        for (const file of filesToDelete) {
+          try {
+            await drive.files.delete({ fileId: file.id! })
+          } catch (deleteError) {
+            // Ignore delete errors, continue with creation
+          }
+        }
+      }
+    } catch (cleanupError) {
+      // Ignore cleanup errors, continue with creation
+    }
+
     const title = plan.title || 'Kế hoạch tài chính'
     const content = plan.content || ''
     const createdDate = new Date(plan.created_at).toLocaleDateString('vi-VN')
