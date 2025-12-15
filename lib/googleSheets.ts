@@ -3,13 +3,51 @@ import { JWT } from 'google-auth-library'
 
 // Credentials for service account (should be stored in environment variables)
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+
+// Normalize private key so it works regardless of how it's entered in Vercel/.env
+// Handles both:
+// - Multiline PEM (with real newlines)
+// - Single-line with literal \n characters
+// - Values accidentally wrapped in single/double quotes
+const normalizePrivateKey = (raw?: string | null): string | undefined => {
+  if (!raw) return undefined
+
+  let key = raw
+
+  // Trim surrounding whitespace
+  key = key.trim()
+
+  // Remove wrapping single/double quotes if user copied with quotes
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith('\'') && key.endsWith('\''))) {
+    key = key.slice(1, -1).trim()
+  }
+
+  // Convert escaped newlines ("\n") to real newlines
+  if (key.includes('\\n')) {
+    key = key.replace(/\\n/g, '\n')
+  }
+
+  // Normalise CRLF/CR to LF
+  key = key.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+
+  // Final trim
+  key = key.trim()
+
+  return key || undefined
+}
+
+const GOOGLE_PRIVATE_KEY = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY)
 const GOOGLE_SHEETS_TEMPLATE_ID = process.env.GOOGLE_SHEETS_TEMPLATE_ID
 
 // Initialize Google Sheets API client with Service Account
 const getGoogleSheetsClient = () => {
   if (!GOOGLE_CLIENT_EMAIL || !GOOGLE_PRIVATE_KEY) {
     throw new Error('Google Service Account credentials not configured. Please set GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY.')
+  }
+
+  if (!GOOGLE_PRIVATE_KEY.includes('BEGIN PRIVATE KEY')) {
+    // Fail fast with clear error instead of opaque OpenSSL decoder error
+    throw new Error('GOOGLE_PRIVATE_KEY is not in valid PEM format. It must start with -----BEGIN PRIVATE KEY-----')
   }
 
   const auth = new JWT({
@@ -25,6 +63,10 @@ const getGoogleSheetsClient = () => {
 const getGoogleDriveClient = () => {
   if (!GOOGLE_CLIENT_EMAIL || !GOOGLE_PRIVATE_KEY) {
     throw new Error('Google Service Account credentials not configured.')
+  }
+
+  if (!GOOGLE_PRIVATE_KEY.includes('BEGIN PRIVATE KEY')) {
+    throw new Error('GOOGLE_PRIVATE_KEY is not in valid PEM format. It must start with -----BEGIN PRIVATE KEY-----')
   }
 
   const auth = new JWT({
