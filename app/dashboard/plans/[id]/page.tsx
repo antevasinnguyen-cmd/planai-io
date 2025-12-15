@@ -329,9 +329,17 @@ export default function PlanViewEnhanced() {
         ? `${birthDate} lúc ${birthTimeInput}` 
         : birthDate
 
+      // Include Authorization header and cookies for server auth
+      const { data: sessionData } = await supabase.auth.getSession()
+      const headers: any = { 'Content-Type': 'application/json' }
+      if (sessionData?.session?.access_token) {
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`
+      }
+
       const res = await fetch('/api/spiritual/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({
           planId: plan.id,
           birthDate: birthInfo,

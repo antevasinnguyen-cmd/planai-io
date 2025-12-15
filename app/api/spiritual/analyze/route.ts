@@ -4,7 +4,8 @@ import { generateChatResponse } from '@/lib/openai'
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser()
+    // Authenticate user using request (cookies / Authorization header)
+    const user = await getCurrentUser(request as unknown as Request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
