@@ -433,12 +433,41 @@ QUY TẮc BẮT BUỘC:
 - KHÔNG sinh dòng với nội dung "Chưa xác định" hoặc "N/A"
 - Chỉ tạo dòng khi có nội dung CỤ THỂ
 
-## Phần 15. KẾ HOẠCH THEO KHUNG THỜI GIAN
-**Năm thứ nhất:** [Mục tiêu chính]
-**Quý thứ nhất:** [Mục tiêu quý]
-**Tháng thứ nhất:** [Mục tiêu tháng]
-**Tuần thứ nhất:** [Mục tiêu tuần]
-**Hàng ngày:** [Thói quen hàng ngày]
+## Phần 15. HỆ THỐNG THEO DÕI & THỰC THI (KHÔNG CẦN GOOGLE SHEETS)
+
+Mục tiêu phần này: Biến các phân tích và lộ trình ở các phần trước thành một hệ thống hành động – theo dõi – cải tiến có nhịp điệu rõ ràng. KHÔNG lặp lại nội dung đã trình bày ở Phần 5–7; chỉ trích xuất mục tiêu/kết quả then chốt và định nghĩa cơ chế theo dõi.
+
+### 1) Xác định KPI cốt lõi (không trùng lặp mô tả chiến lược):
+- KPI kết quả (Lagging): Doanh thu/tháng, tiết kiệm ròng/tháng, tỷ lệ chi tiêu/thu nhập, nợ giảm ròng, mốc mục tiêu tài chính theo thời gian.
+- KPI dẫn dắt (Leading): Số giờ học/kỹ năng/tuần, số cơ hội bán hàng/tuần, số nội dung marketing/tuần, số cuộc gặp khách hàng/tuần, số tính năng/đầu việc hoàn thành/tuần.
+- Quy tắc: Mỗi KPI phải có mục tiêu số cụ thể theo “tháng thứ nhất/thứ hai…” (lấy mục tiêu từ Phần 6–7, KHÔNG lặp lại giải thích).
+
+### 2) Nhịp điều hành (cadence) – chỉ rõ việc gì, khi nào, ai:
+- Hàng ngày: 2–3 thói quen bắt buộc (ví dụ: 60 phút học kỹ năng trọng tâm; 30 phút chăm sóc pipeline; ghi sổ chi tiêu cá nhân).
+- Hàng tuần: 3 việc bắt buộc (ví dụ: tổng kết KPI tuần; chọn 3 ưu tiên tuần tới; review rủi ro và chặn đường, tạo ticket khắc phục).
+- Hàng tháng: 4 việc bắt buộc (ví dụ: đối chiếu KPI kết quả vs mục tiêu; cập nhật ngân sách; điều chỉnh lộ trình ở Phần 6–7 nếu lệch >20%; chốt 1 cải tiến quy trình).
+- Hàng quý: 3 việc bắt buộc (ví dụ: rà soát OKR quý; điều chỉnh chiến lược; xác nhận nguồn lực/kỹ năng cần bổ sung).
+
+### 3) OKR rút gọn theo quý (không sao chép lại lộ trình):
+- Mục tiêu quý (Objective): 1 câu súc tích, gắn trực tiếp mục tiêu tài chính.
+- Kết quả then chốt (Key Results): 3–5 KR đo được, liên kết KPI ở mục (1).
+- Sáng kiến trọng tâm: 3–5 sáng kiến lớn trong quý (tham chiếu Phần 6–7, KHÔNG chép lại nội dung chi tiết).
+
+### 4) Cơ chế kiểm soát sai lệch (variance control):
+- Ngưỡng cảnh báo: Nếu KPI kết quả lệch >20% so mục tiêu tháng → kích hoạt điều chỉnh.
+- Quy tắc điều chỉnh: Ưu tiên thay đổi Leading KPI trước (tăng số hoạt động/tuần, tăng giờ học/kỹ năng, tăng số cuộc hẹn) trước khi đổi mục tiêu kết quả.
+- Nhật ký quyết định: Ghi 3 quyết định chính mỗi tháng (lý do, tác động dự kiến, kết quả sau 30 ngày).
+
+### 5) Checklist tự theo dõi (tuân thủ quy tắc hiển thị – không dùng bảng):
+- [ ] Đã cập nhật KPI hàng ngày (5/7 ngày/tuần)
+- [ ] Đã tổng kết KPI tuần và chọn 3 ưu tiên tuần tới
+- [ ] Đã đối chiếu KPI tháng và điều chỉnh lộ trình nếu cần
+- [ ] Đã rà soát OKR quý và xác nhận sáng kiến trọng tâm
+- [ ] Đã ghi nhật ký 3 quyết định quan trọng trong tháng
+
+Lưu ý quan trọng:
+- Không chép lại nội dung đã phân tích ở Phần 5–7. Chỉ tham chiếu để lấy mục tiêu và chuyển hoá thành KPI/nhịp điều hành.
+- Không dùng bảng Markdown ở phần này. Chỉ sử dụng tiêu đề, danh sách gạch đầu dòng và checklist.
 
 ## Phần 16. DANH SÁCH HÀNH ĐỘNG
 **Hành động 1:** [Mô tả] - Hoàn thành trong tháng thứ nhất
