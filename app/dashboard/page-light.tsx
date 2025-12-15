@@ -193,13 +193,6 @@ export default function DashboardV2() {
                 <FileText className="w-5 h-5 text-gray-600 group-hover:text-primary-600" />
                 {sidebarOpen && <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Kế hoạch</span>}
               </Link>
-              <Link
-                href="/dashboard/analytics"
-                className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
-              >
-                <BarChart3 className="w-5 h-5 text-gray-600 group-hover:text-primary-600" />
-                {sidebarOpen && <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Phân tích</span>}
-              </Link>
             </div>
           </div>
 
