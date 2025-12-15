@@ -442,7 +442,8 @@ export const createGoogleDoc = async (plan: any, userId: string) => {
     key: GOOGLE_PRIVATE_KEY,
     scopes: [
       'https://www.googleapis.com/auth/documents',
-      'https://www.googleapis.com/auth/drive'
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/drive.file'
     ]
   })
 
