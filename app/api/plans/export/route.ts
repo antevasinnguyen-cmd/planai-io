@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { getAdminClient, getUserSubscription, getTierName } from '@/lib/supabase'
-import { exportPlanToGoogleSheets, isGoogleSheetsConfigured } from '@/lib/googleSheets'
+import { exportPlanToGoogleSheets, isGoogleSheetsConfigured, createGoogleDoc } from '@/lib/googleSheets'
 import { Document, Packer, Paragraph, TextRun } from 'docx'
 import { exportFinancialPlanToNotion, getOrCreateFinancialPlanDatabase } from '@/lib/notion'
 import { logger } from '@/lib/logger'
@@ -456,38 +456,43 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
     }
     
     case 'google_docs': {
-      // Google Docs export - create a text file that can be opened in Google Docs
+      // Google Docs export - create a Google Doc directly (like Google Sheets)
       try {
-        const title = String(plan.title || 'Kế hoạch tài chính')
-        const content = String(plan.content || '')
-        
-        if (!title || !content) {
-          logger.warn('EXPORT_GDOCS_EMPTY', { planId, userId, hasTitle: !!title, hasContent: !!content })
+        // Check if Google API is configured
+        if (!isGoogleSheetsConfigured()) {
+          return NextResponse.json({ 
+            error: 'Google Docs API is not configured', 
+            message: 'Tính năng xuất sang Google Docs chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
+          }, { status: 503 })
         }
         
-        // Create content with proper formatting
-        const formattedContent = `# ${title}\n\nNgày tạo: ${new Date(plan.created_at).toLocaleDateString('vi-VN')}\n\n${content}\n\n---\nĐược tạo bởi PlanAI.io.vn`
+        // Create Google Doc using Service Account
+        const { documentId, documentUrl } = await createGoogleDoc(plan, userId)
         
-        // Create ASCII-safe filename (no Unicode in HTTP headers to avoid conversion errors)
-        // Use plan ID + timestamp to ensure uniqueness
-        const timestamp = new Date(plan.created_at).toISOString().split('T')[0]  // YYYY-MM-DD
-        const filename = `plan-${planId.substring(0, 8)}-${timestamp}.txt`
+        // Update plan with export info using admin client for reliability
+        const updateClient = admin || supabase
+        await updateClient
+          .from('plans')
+          .update({
+            exported_to_docs: true,
+            docs_url: documentUrl,
+            docs_id: documentId,
+            last_exported_at: new Date().toISOString()
+          })
+          .eq('id', planId)
         
-        // Encode content as UTF-8 bytes to avoid Unicode conversion issues
-        const encoder = new TextEncoder()
-        const uint8Array = encoder.encode(formattedContent)
-        
-        logger.info('EXPORT_GDOCS_SUCCESS', { planId, userId, filename, size: uint8Array.length })
-        return new Response(uint8Array, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Content-Disposition': `attachment; filename="${filename}"`
-          }
+        logger.info('EXPORT_GDOCS_SUCCESS', { planId, documentUrl, userId })
+        return NextResponse.json({
+          success: true,
+          message: 'Xuất sang Google Docs thành công',
+          url: documentUrl
         })
       } catch (gdocsError) {
         logger.error('EXPORT_GDOCS_ERROR', { error: String(gdocsError), planId, userId })
-        return NextResponse.json({ error: 'Failed to create Google Docs file', message: 'Có lỗi khi tạo file Google Docs. Vui lòng thử lại sau.' }, { status: 500 })
+        return NextResponse.json({ 
+          error: 'Failed to export to Google Docs', 
+          message: 'Có lỗi khi xuất sang Google Docs. Vui lòng thử lại sau.'
+        }, { status: 500 })
       }
     }
     
