@@ -100,7 +100,7 @@ const cleanupAllFiles = async (drive: any): Promise<void> => {
       q: "trashed=false",
       spaces: 'drive',
       fields: 'files(id, name, createdTime, mimeType)',
-      pageSize: 100,
+      pageSize: 1000,
       orderBy: 'createdTime asc',
     } as any)
     
@@ -111,18 +111,11 @@ const cleanupAllFiles = async (drive: any): Promise<void> => {
     
     console.log('cleanupAllFiles: Found', response.data.files.length, 'total files')
     
-    // Delete ALL files except the most recent 5 (to be safe)
-    const filesToDelete = response.data.files.slice(0, Math.max(0, response.data.files.length - 5))
-    
-    if (filesToDelete.length === 0) {
-      console.log('cleanupAllFiles: Only 5 or fewer files exist, no cleanup needed')
-      return
-    }
-    
-    console.log('cleanupAllFiles: Deleting', filesToDelete.length, 'old files to free up quota')
+    // Delete ALL files (including folders) to free up quota
+    console.log('cleanupAllFiles: Deleting ALL files to free up quota')
     
     let deletedCount = 0
-    for (const file of filesToDelete) {
+    for (const file of response.data.files) {
       try {
         await drive.files.delete({ fileId: file.id } as any)
         deletedCount++
@@ -134,6 +127,15 @@ const cleanupAllFiles = async (drive: any): Promise<void> => {
     }
     
     console.log('cleanupAllFiles: Cleanup completed, deleted', deletedCount, 'files')
+    
+    // Also empty trash to completely free up quota
+    try {
+      console.log('cleanupAllFiles: Emptying trash')
+      await drive.files.emptyTrash()
+      console.log('cleanupAllFiles: Trash emptied successfully')
+    } catch (trashError) {
+      console.warn('cleanupAllFiles: Failed to empty trash:', trashError)
+    }
   } catch (error) {
     console.warn('cleanupAllFiles: Error during cleanup:', error)
     // Non-critical error - continue anyway
@@ -205,14 +207,14 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     const drive = getGoogleDriveClient()
     const sheets = getGoogleSheetsClient()
     
-    // Clean up old files to free up storage quota (non-blocking)
+    // Clean up old files to free up storage quota (BLOCKING - must complete before creating new file)
     console.log('createSpreadsheetFromTemplate: Starting cleanup of old files')
-    cleanupAllFiles(drive).catch((err: any) => {
-      console.warn('createSpreadsheetFromTemplate: Cleanup failed (non-critical):', err)
-    })
+    await cleanupAllFiles(drive)
+    console.log('createSpreadsheetFromTemplate: Cleanup completed, waiting 2 seconds for quota to update')
+    await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // Try to get or create PlanAI folder for better organization and permissions
-    const folderId = await getOrCreatePlanAIFolder(drive)
+    // Don't create folder - create files directly in root to avoid quota issues
+    const folderId = null
     
     let spreadsheetId: string
     
