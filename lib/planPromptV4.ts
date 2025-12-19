@@ -515,134 +515,95 @@ Worst case / Base case / Best case
 ## Phần 20. GIẢM THIỂU RỦI RO
 Diversification + Insurance + Legal
 
-## Phần 21. TỬ VI & THẦN SỐ HỌC - LUẬN GIẢI VẬN MỆNH CHUYÊN SÂU
+## Phần 21. LỜI KHUYÊN SỰ NGHIỆP & TÀI CHÍNH
 
-⚠️ CHỈ THỰC HIỆN PHẦN NÀY KHI USER CUNG CẤP ĐẦY ĐỦ: Họ tên, Giới tính, Ngày tháng năm sinh, Giờ sinh, Khu vực sinh sống.
-Nếu thiếu thông tin, ghi rõ "Chưa đủ dữ liệu để luận giải tử vi" và bỏ qua phần này.
+Mục tiêu phần này: Cung cấp lời khuyên thực tế, động lực và các quote truyền cảm hứng để user duy trì động lực thực hiện kế hoạch.
 
-📜 HỆ THỐNG LUẬN GIẢI VẬN MỆNH NÂNG CẤP:
+### 1. Những Quote Truyền Động Lực Về Sự Nghiệp
 
-### A. PHÂN TÍCH TỬ VI (Lá số Tử Vi Huyền Học)
-Dựa trên thông tin user cung cấp, phân tích CHI TIẾT:
+**Về khởi đầu và hành động:**
+- "Hành động nhỏ hôm nay sẽ tạo nên sự khác biệt lớn ngày mai. Bắt đầu từ bây giờ, không phải ngày mai." - James Clear
+- "Thành công không phải là điểm đích, mà là hành trình. Mỗi bước tiến là một chiến thắng." - Tony Robbins
+- "Những người thành công không bao giờ bỏ cuộc. Họ chỉ đơn giản là không dừng lại." - Zig Ziglar
 
-**1. Xác định Lá số Tử vi:**
-- Mệnh cung, Thân cung
-- Các sao chủ đạo trong cung Mệnh
-- Can Chi năm sinh, tháng sinh, ngày sinh, giờ sinh
+**Về vượt qua thách thức:**
+- "Thất bại là bước đệm để thành công. Mỗi lần ngã, bạn học được cách đứng dậy mạnh mẽ hơn." - Oprah Winfrey
+- "Khó khăn là cơ hội để chứng minh giá trị của bạn. Đừng sợ thách thức, hãy chào đón nó." - Steve Jobs
+- "Bạn không thể thay đổi quá khứ, nhưng bạn có thể tạo ra tương lai mà bạn muốn." - Unknown
 
-**2. Phân tích Công Danh - Sự Nghiệp:**
-- Cung Quan Lộc: Đường công danh, sự nghiệp
-- Các sao tốt/xấu ảnh hưởng đến sự nghiệp
-- Thời điểm thăng tiến trong sự nghiệp
-- Ngành nghề phù hợp với mệnh cách
+**Về tài chính và đầu tư:**
+- "Tiền không phải là mục tiêu, mà là công cụ để xây dựng cuộc sống tự do. Quản lý nó thông minh." - Robert Kiyosaki
+- "Đầu tư vào bản thân là khoản đầu tư tốt nhất. Kỹ năng và kiến thức không bao giờ bị mất." - Warren Buffett
+- "Giàu có không phải về kiếm được nhiều tiền, mà về chi tiêu ít hơn những gì bạn kiếm được." - David Ramsey
 
-**3. Phân tích Tài Lộc - Tài Vận:**
-- Cung Tài Bạch: Khả năng kiếm tiền, giữ tiền
-- Các sao ảnh hưởng đến tài vận
-- Nguồn tài lộc chính (làm công, kinh doanh, đầu tư)
-- Thời điểm tài vận hanh thông
+**Về kiên trì và tập trung:**
+- "Thành công là kết quả của chuỗi quyết định nhỏ hàng ngày. Hãy tập trung vào những gì bạn có thể kiểm soát." - James Clear
+- "Đừng so sánh tiến độ của bạn với người khác. Hãy so sánh bạn hôm nay với bạn hôm qua." - Unknown
+- "Nếu bạn không có kế hoạch, bạn sẽ trở thành một phần của kế hoạch của người khác." - Unknown
 
-**4. Mối Quan Hệ Xã Hội & Quý Nhân:**
-- Cung Thiên Di: Quan hệ xã hội, quý nhân phù trợ
-- Cung Nô Bộc: Cấp dưới, đối tác
-- Ai là quý nhân trong sự nghiệp
+### 2. Lời Khuyên Thực Tế Về Sự Nghiệp
 
-**5. Nghiệp Quả & Cộng Nghiệp:**
-- Phân tích nghiệp quả từ tiền kiếp
-- Cộng nghiệp với gia đình, tổ tiên
-- Cách hóa giải nghiệp xấu
+**Xây dựng nền tảng vững chắc:**
+- Hãy chuyên tâm vào 1-2 kỹ năng chính trước khi mở rộng. Sâu hơn là tốt hơn rộng.
+- Tìm một người cố vấn hoặc mentor trong lĩnh vực bạn muốn phát triển. Kinh nghiệm của họ sẽ giúp bạn tránh được nhiều sai lầm.
+- Xây dựng mạng lưới chuyên nghiệp từ sớm. Những mối quan hệ tốt sẽ mở ra nhiều cơ hội.
 
-### B. PHÂN TÍCH THẦN SỐ HỌC (Tách biệt với Tử Vi)
+**Tăng giá trị cá nhân:**
+- Liên tục học hỏi và cập nhật kiến thức. Thế giới thay đổi nhanh, bạn cần theo kịp.
+- Xây dựng danh tiếng tốt trong ngành. Uy tín là tài sản quý giá nhất.
+- Hãy sẵn sàng nhận lấy trách nhiệm và chủ động giải quyết vấn đề. Đó là cách bạn nổi bật.
 
-**1. Con số Chủ đạo (Life Path Number):**
+**Quản lý sự nghiệp chiến lược:**
+- Đặt mục tiêu rõ ràng cho mỗi năm, mỗi quý. Không có mục tiêu, không có hướng đi.
+- Định kỳ đánh giá tiến độ và điều chỉnh kế hoạch. Linh hoạt là chìa khóa thành công.
+- Đừng chỉ chạy theo tiền. Chọn công việc mà bạn yêu thích, tiền sẽ theo sau.
 
-⚠️ CÔNG THỨC TÍNH CHÍNH XÁC (BẮT BUỘC TUÂN THEO):
-- Bước 1: Cộng TẤT CẢ các chữ số trong ngày tháng năm sinh
-- Ví dụ: 14/07/1996 → 1+4+0+7+1+9+9+6 = 37
-- Bước 2: Cộng các chữ số của kết quả: 37 → 3+7 = 10
-- Bước 3: Tiếp tục cộng nếu kết quả > 9: 10 → 1+0 = 1
-- Kết quả: Số chủ đạo là 1
+### 3. Lời Khuyên Thực Tế Về Tài Chính
 
-⚠️ LƯU Ý QUAN TRỌNG:
-- Phải HIỂN THỊ ĐẦY ĐỦ các bước tính toán
-- Tiêu đề phải GHI ĐÚNG số cuối cùng sau khi rút gọn
-- Ví dụ SAI: Tiêu đề "Số 8" nhưng tính ra số 1 → PHẢI SỬa THÀNH "Số 1"
+**Quản lý tiền bạc thông minh:**
+- Lập ngân sách chi tiết và tuân thủ nó. Bạn không thể quản lý những gì bạn không theo dõi.
+- Tạo quỹ khẩn cấp (3-6 tháng chi phí sống). Đây là lưới an toàn của bạn.
+- Theo quy tắc 50/30/20: 50% nhu cầu, 30% muốn, 20% tiết kiệm/đầu tư.
 
-Ý nghĩa con số với sự nghiệp và tài chính
+**Đầu tư và tăng trưởng tài sản:**
+- Bắt đầu đầu tư sớm, ngay cả với số tiền nhỏ. Lợi suất kép là phép màu của thời gian.
+- Đa dạng hóa danh mục đầu tư. Đừng bỏ tất cả trứng vào một giỏ.
+- Hiểu rõ những gì bạn đầu tư vào. Đừng đầu tư vào thứ bạn không hiểu.
 
-**2. Con số Linh hồn & Con số Biểu đạt:**
-- Tính từ họ tên đầy đủ
-- Khả năng ẩn giấu và năng lực bề ngoài
+**Tránh những sai lầm phổ biến:**
+- Đừng vay tiền để tiêu xài. Nợ là kẻ thù của tự do tài chính.
+- Đừng theo đuổi "làm giàu nhanh". Hầu hết các cách như vậy đều là bẫy.
+- Đừng bỏ bê bảo hiểm. Một sự cố có thể phá hủy toàn bộ kế hoạch tài chính.
 
-**3. Con số Vận mệnh năm hiện tại:**
-- Chu kỳ 9 năm
-- Năm nay nên làm gì để phát triển tài chính
+### 4. Hành Động Cụ Thể Cho Tuần Này
 
-**4. Kim tự tháp Thần số học:**
-- Đỉnh cao sự nghiệp
-- Các giai đoạn quan trọng trong đời
+**Hôm nay:**
+- Đọc lại phần mục tiêu của kế hoạch này. Hãy để nó trở thành động lực của bạn.
+- Viết ra 3 lý do tại sao bạn muốn đạt được mục tiêu này. Hãy để chúng ở nơi bạn có thể nhìn thấy mỗi ngày.
 
-### C. DỰ BÁO VẬN HẠN
+**Tuần này:**
+- Thực hiện hành động đầu tiên trong kế hoạch. Đừng chờ đợi điều kiện hoàn hảo.
+- Liên hệ với 1 người có thể giúp bạn hoặc cung cấp lời khuyên.
+- Xem lại ngân sách và kế hoạch tài chính của bạn. Chuẩn bị cho những thay đổi sắp tới.
 
-**1. Đại Vận (chu kỳ 10 năm):**
-- Đại vận hiện tại đang chạy
-- Sao chủ đạo đại vận
-- Cơ hội và thách thức trong đại vận này
-- Dự báo các đại vận tiếp theo
+**Tháng này:**
+- Hoàn thành 3 hành động chính trong kế hoạch.
+- Đánh giá tiến độ và điều chỉnh nếu cần.
+- Chia sẻ mục tiêu của bạn với ít nhất 1 người tin tưởng. Sự hỗ trợ từ người khác rất quan trọng.
 
-**2. Tiểu Vận (chu kỳ 1 năm):**
-- Tiểu vận năm hiện tại
-- Các tháng tốt/xấu trong năm
-- Thời điểm nên khởi nghiệp, đầu tư
-- Cảnh báo những tháng cần cẩn trọng
+### 5. Tư Duy Thành Công
 
-**3. Nguyệt Vận (các tháng quan trọng):**
-- Phân tích từng quý trong năm
-- Tháng thuận lợi cho công việc, tài chính
+**Hãy nhớ:**
+- Bạn đã có kế hoạch chi tiết. Bây giờ hãy thực hiện nó.
+- Mỗi ngày bạn không hành động là một ngày bạn lỡ mất cơ hội.
+- Thành công không phải là may mắn, mà là kết quả của hành động liên tục.
+- Bạn xứng đáng với thành công. Hãy tin vào bản thân.
 
-### D. CÁCH CẢI VẬN & TĂNG TÀI LỘC
-
-**1. Hóa giải vận hạn xấu:**
-- Phương pháp hóa giải cụ thể
-- Vật phẩm phong thủy phù hợp mệnh
-- Màu sắc may mắn
-- Hướng tốt cho làm việc, kinh doanh
-
-**2. Tăng cường tài lộc:**
-- Bài trí không gian làm việc theo phong thủy
-- Thời điểm tốt để ký hợp đồng, giao dịch
-- Nghề nghiệp phát huy tối đa tiềm năng số mệnh
-- Đối tác kinh doanh phù hợp (theo cung mệnh)
-
-**3. Hành động cụ thể:**
-- 5 việc nên làm ngay để cải vận
-- 5 việc cần tránh theo số mệnh
-- Thói quen hàng ngày để thu hút tài lộc
-
-### E. TỔNG HỢP & KẾT LUẬN VẬN MỆNH
-
-**1. Điểm mạnh của số mệnh:**
-- Liệt kê 3-5 điểm mạnh nổi bật
-
-**2. Điểm yếu cần khắc phục:**
-- Liệt kê 3-5 điểm yếu và cách khắc phục
-
-**3. Thời kỳ quan trọng:**
-- Thời kỳ thăng tiến mạnh nhất
-- Thời kỳ cần cẩn trọng
-
-**4. Nghề nghiệp & Đầu tư phù hợp nhất:**
-- Top 3 ngành nghề phù hợp mệnh
-- Loại hình đầu tư phù hợp
-
-**5. Hành động NGAY trong 24 giờ tới:**
-- 1 việc cụ thể để bắt đầu cải vận
-
-⚠️ QUY TẮC KIỂM CHỨNG CHÉO (BẮT BUỘC):
-- Mỗi bước phân tích phải liên kết chặt chẽ với bước trước
-- Đối chiếu kết quả Tử vi với Thần số học để xác nhận
-- Nếu có mâu thuẫn, giải thích lý do và đưa ra kết luận cuối
-- Không được bỏ sót bất kỳ yếu tố nào trong hệ thống luận giải
+**Khi bạn cảm thấy mệt mỏi:**
+- Hãy nhớ lại lý do bạn bắt đầu. Đó là động lực mạnh nhất.
+- Hãy nhìn lại những tiến bộ bạn đã đạt được. Mỗi bước nhỏ đều quan trọng.
+- Hãy tìm kiếm sự hỗ trợ từ bạn bè, gia đình hoặc một cộng đồng cùng chí hướng.
+- Hãy nhớ rằng thất bại là một phần của quá trình. Những người thành công đều từng thất bại.
 
 ## Phần 22. TÓM TẮT TOÀN BỘ
 10 key points summary
