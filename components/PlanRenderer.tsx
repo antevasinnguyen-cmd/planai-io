@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, lazy, Suspense } from 'react'
-import { Copy, Download, Table2, FileSpreadsheet, Check } from 'lucide-react'
+import { Copy, Download, Table2, Check } from 'lucide-react'
 import ReactMarkdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import mermaid from 'mermaid'
@@ -91,7 +91,6 @@ interface PlanRendererProps {
 
 export default function PlanRenderer({ content, planId, onExport, userTier = 'free' }: PlanRendererProps) {
   const [exportingTable, setExportingTable] = useState<string | null>(null);
-  const [exportingAll, setExportingAll] = useState(false);
   const [copiedTableId, setCopiedTableId] = useState<string | null>(null)
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
   const [showFloatingCTA, setShowFloatingCTA] = useState(true)
@@ -281,18 +280,6 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
 
   const sections = useMemo(() => splitSections(mainContent), [mainContent]);
 
-  // Handler for Google Sheets export button in section 15
-  const handleSheetsExport = async () => {
-    if (onExport) {
-      setExportingAll(true);
-      try {
-        await onExport('sheets');
-      } finally {
-        setExportingAll(false);
-      }
-    }
-  };
-
   // Render từng section
   const renderSection = (section: { title: string, content: string, index: number, sectionNum: number | null }) => {
     const sn = section.sectionNum;
@@ -327,48 +314,6 @@ export default function PlanRenderer({ content, planId, onExport, userTier = 'fr
       );
     }
     
-    // Special handling for Section 15 (Google Sheets Tracking) - Add export button
-    if (sn === 15 && userTier !== 'free') {
-      return (
-        <div key={section.index} className="mb-8">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{section.content}</ReactMarkdown>
-          
-          {/* Google Sheets Export Button */}
-          <div className="mt-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500 rounded-lg">
-                <FileSpreadsheet className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-lg font-bold text-green-800 dark:text-green-200">
-                  📊 Tạo Google Sheets theo dõi kế hoạch
-                </h4>
-                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                  Tạo bảng tính Google Sheets với các bảng từ kế hoạch. Bạn có thể xem, chỉnh sửa và chia sẻ trực tiếp trên Google Drive.
-                </p>
-              </div>
-              <button
-                onClick={handleSheetsExport}
-                disabled={exportingAll}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {exportingAll ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Đang tạo...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileSpreadsheet className="w-5 h-5" />
-                    <span>Tạo Google Sheets</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
     
     // User trả phí: xem full tất cả
     // User Free: xem full phần 1,2,3,8,9; phần 4,5,6,7 chỉ 60% + CTA
