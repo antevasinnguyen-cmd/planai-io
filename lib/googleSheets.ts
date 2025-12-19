@@ -190,52 +190,64 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     // If no template or template copy failed, create new spreadsheet from scratch
     if (!spreadsheetId) {
       try {
-        console.log('createSpreadsheetFromTemplate: Creating new spreadsheet from scratch')
+        console.log('createSpreadsheetFromTemplate: Creating new spreadsheet from scratch via Drive API')
         
-        // Create with minimal properties first to avoid permission issues
-        const createRequest: any = {
+        // WORKAROUND: Create spreadsheet via Drive API instead of Sheets API
+        // This avoids permission issues with Service Account on Sheets API
+        const createFileRequest: any = {
           requestBody: {
-            properties: {
-              title: title,
-              locale: 'vi_VN',
-              autoRecalc: 'ON_CHANGE'
-            },
-            sheets: [
-              { properties: { title: 'Overview', sheetId: 0 } },
-              { properties: { title: 'Tóm tắt', sheetId: 1 } },
-              { properties: { title: 'Phân tích', sheetId: 2 } },
-              { properties: { title: 'Lộ trình', sheetId: 3 } },
-              { properties: { title: 'Ngân sách', sheetId: 4 } },
-              { properties: { title: 'Timeline', sheetId: 5 } },
-              { properties: { title: 'Checklist', sheetId: 6 } },
-              { properties: { title: 'Rủi ro', sheetId: 7 } },
-              { properties: { title: 'Lời khuyên', sheetId: 8 } },
+            name: title,
+            mimeType: 'application/vnd.google-apps.spreadsheet',
+          },
+          fields: 'id',
+        }
+        
+        // Add to folder if available
+        if (folderId) {
+          createFileRequest.requestBody.parents = [folderId]
+        }
+        
+        console.log('createSpreadsheetFromTemplate: Creating spreadsheet file via Drive API')
+        const newFile = await drive.files.create(createFileRequest)
+        
+        if (!newFile.data.id) {
+          throw new Error('Failed to create new spreadsheet - no ID returned from Drive API')
+        }
+        
+        spreadsheetId = newFile.data.id
+        console.log('createSpreadsheetFromTemplate: Created new spreadsheet via Drive API:', spreadsheetId)
+        
+        // Now populate the spreadsheet with sheets and data
+        try {
+          console.log('createSpreadsheetFromTemplate: Populating spreadsheet with sheets')
+          
+          // Add sheets to the spreadsheet
+          const batchUpdateRequest: any = {
+            requests: [
+              // Delete default Sheet0
+              { deleteSheet: { sheetId: 0 } },
+              // Add our custom sheets
+              { addSheet: { properties: { title: 'Overview', sheetId: 1 } } },
+              { addSheet: { properties: { title: 'Tóm tắt', sheetId: 2 } } },
+              { addSheet: { properties: { title: 'Phân tích', sheetId: 3 } } },
+              { addSheet: { properties: { title: 'Lộ trình', sheetId: 4 } } },
+              { addSheet: { properties: { title: 'Ngân sách', sheetId: 5 } } },
+              { addSheet: { properties: { title: 'Timeline', sheetId: 6 } } },
+              { addSheet: { properties: { title: 'Checklist', sheetId: 7 } } },
+              { addSheet: { properties: { title: 'Rủi ro', sheetId: 8 } } },
+              { addSheet: { properties: { title: 'Lời khuyên', sheetId: 9 } } },
             ]
           }
-        }
-        
-        const newSpreadsheet = await sheets.spreadsheets.create(createRequest)
-        
-        if (!newSpreadsheet.data.spreadsheetId) {
-          throw new Error('Failed to create new spreadsheet - no ID returned')
-        }
-        
-        spreadsheetId = newSpreadsheet.data.spreadsheetId
-        console.log('createSpreadsheetFromTemplate: Created new spreadsheet from scratch:', spreadsheetId)
-        
-        // Move spreadsheet to PlanAI folder if folder was created
-        if (folderId) {
-          try {
-            console.log('createSpreadsheetFromTemplate: Moving spreadsheet to PlanAI folder:', folderId)
-            await drive.files.update({
-              fileId: spreadsheetId,
-              addParents: folderId,
-              fields: 'id, parents',
-            } as any)
-            console.log('createSpreadsheetFromTemplate: Successfully moved spreadsheet to folder')
-          } catch (moveError) {
-            console.warn('createSpreadsheetFromTemplate: Failed to move spreadsheet to folder (non-critical):', moveError)
-          }
+          
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            requestBody: batchUpdateRequest,
+          } as any)
+          
+          console.log('createSpreadsheetFromTemplate: Successfully populated spreadsheet with sheets')
+        } catch (populateError) {
+          console.warn('createSpreadsheetFromTemplate: Failed to populate sheets (non-critical):', populateError)
+          // Continue anyway - spreadsheet was created
         }
       } catch (createError) {
         console.error('createSpreadsheetFromTemplate: Error creating spreadsheet:', createError)
