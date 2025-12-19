@@ -90,6 +90,52 @@ const getGoogleDriveClient = () => {
   return google.drive({ version: 'v3', auth })
 }
 
+// Helper: Clean up old spreadsheets to free up storage quota
+const cleanupOldSpreadsheets = async (drive: any): Promise<void> => {
+  try {
+    console.log('cleanupOldSpreadsheets: Starting cleanup of old spreadsheets')
+    
+    // List all spreadsheets in PlanAI folder, sorted by creation date (oldest first)
+    const response = await drive.files.list({
+      q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+      spaces: 'drive',
+      fields: 'files(id, name, createdTime)',
+      pageSize: 100,
+      orderBy: 'createdTime desc',
+    } as any)
+    
+    if (!response.data.files || response.data.files.length === 0) {
+      console.log('cleanupOldSpreadsheets: No spreadsheets found')
+      return
+    }
+    
+    // Keep only the 10 most recent spreadsheets, delete the rest
+    const filesToDelete = response.data.files.slice(10)
+    
+    if (filesToDelete.length === 0) {
+      console.log('cleanupOldSpreadsheets: Only', response.data.files.length, 'spreadsheets exist, no cleanup needed')
+      return
+    }
+    
+    console.log('cleanupOldSpreadsheets: Deleting', filesToDelete.length, 'old spreadsheets')
+    
+    for (const file of filesToDelete) {
+      try {
+        await drive.files.delete({ fileId: file.id } as any)
+        console.log('cleanupOldSpreadsheets: Deleted spreadsheet:', file.name, '(', file.id, ')')
+      } catch (deleteError) {
+        console.warn('cleanupOldSpreadsheets: Failed to delete spreadsheet:', file.id, deleteError)
+        // Continue with next file
+      }
+    }
+    
+    console.log('cleanupOldSpreadsheets: Cleanup completed')
+  } catch (error) {
+    console.warn('cleanupOldSpreadsheets: Error during cleanup:', error)
+    // Non-critical error - continue anyway
+  }
+}
+
 // Helper: Get or create a folder for PlanAI spreadsheets
 const getOrCreatePlanAIFolder = async (drive: any): Promise<string | null> => {
   try {
@@ -154,6 +200,12 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     
     const drive = getGoogleDriveClient()
     const sheets = getGoogleSheetsClient()
+    
+    // Clean up old spreadsheets to free up storage quota (non-blocking)
+    console.log('createSpreadsheetFromTemplate: Starting cleanup of old spreadsheets')
+    cleanupOldSpreadsheets(drive).catch(err => {
+      console.warn('createSpreadsheetFromTemplate: Cleanup failed (non-critical):', err)
+    })
     
     // Try to get or create PlanAI folder for better organization and permissions
     const folderId = await getOrCreatePlanAIFolder(drive)
