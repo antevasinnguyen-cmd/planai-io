@@ -164,6 +164,15 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
         const errorMessage = sheetsError instanceof Error ? sheetsError.message : String(sheetsError)
         logger.error('EXPORT_SHEETS_ERROR', { error: errorMessage, planId, userId })
         
+        // Check if it's a quota error
+        if (errorMessage.includes('quota') || errorMessage.includes('storageQuotaExceeded')) {
+          logger.warn('EXPORT_SHEETS_QUOTA_ERROR', { planId, userId })
+          return NextResponse.json({ 
+            error: 'Google Drive storage quota exceeded', 
+            message: 'Dung lượng Google Drive đã hết. Vui lòng thử lại sau vài phút.'
+          }, { status: 503 })
+        }
+        
         // Check if it's a permission error
         if (errorMessage.includes('permission') || errorMessage.includes('403')) {
           return NextResponse.json({ 

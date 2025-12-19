@@ -90,48 +90,52 @@ const getGoogleDriveClient = () => {
   return google.drive({ version: 'v3', auth })
 }
 
-// Helper: Clean up old spreadsheets to free up storage quota
-const cleanupOldSpreadsheets = async (drive: any): Promise<void> => {
+// Helper: Aggressively clean up ALL files to free up storage quota
+const cleanupAllFiles = async (drive: any): Promise<void> => {
   try {
-    console.log('cleanupOldSpreadsheets: Starting cleanup of old spreadsheets')
+    console.log('cleanupAllFiles: Starting aggressive cleanup of all files')
     
-    // List all spreadsheets in PlanAI folder, sorted by creation date (oldest first)
+    // List ALL files (not just spreadsheets), sorted by creation date (oldest first)
     const response = await drive.files.list({
-      q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+      q: "trashed=false",
       spaces: 'drive',
-      fields: 'files(id, name, createdTime)',
+      fields: 'files(id, name, createdTime, mimeType)',
       pageSize: 100,
-      orderBy: 'createdTime desc',
+      orderBy: 'createdTime asc',
     } as any)
     
     if (!response.data.files || response.data.files.length === 0) {
-      console.log('cleanupOldSpreadsheets: No spreadsheets found')
+      console.log('cleanupAllFiles: No files found')
       return
     }
     
-    // Keep only the 10 most recent spreadsheets, delete the rest
-    const filesToDelete = response.data.files.slice(10)
+    console.log('cleanupAllFiles: Found', response.data.files.length, 'total files')
+    
+    // Delete ALL files except the most recent 5 (to be safe)
+    const filesToDelete = response.data.files.slice(0, Math.max(0, response.data.files.length - 5))
     
     if (filesToDelete.length === 0) {
-      console.log('cleanupOldSpreadsheets: Only', response.data.files.length, 'spreadsheets exist, no cleanup needed')
+      console.log('cleanupAllFiles: Only 5 or fewer files exist, no cleanup needed')
       return
     }
     
-    console.log('cleanupOldSpreadsheets: Deleting', filesToDelete.length, 'old spreadsheets')
+    console.log('cleanupAllFiles: Deleting', filesToDelete.length, 'old files to free up quota')
     
+    let deletedCount = 0
     for (const file of filesToDelete) {
       try {
         await drive.files.delete({ fileId: file.id } as any)
-        console.log('cleanupOldSpreadsheets: Deleted spreadsheet:', file.name, '(', file.id, ')')
+        deletedCount++
+        console.log('cleanupAllFiles: Deleted file:', file.name, '(', file.mimeType, ')')
       } catch (deleteError) {
-        console.warn('cleanupOldSpreadsheets: Failed to delete spreadsheet:', file.id, deleteError)
+        console.warn('cleanupAllFiles: Failed to delete file:', file.id, deleteError)
         // Continue with next file
       }
     }
     
-    console.log('cleanupOldSpreadsheets: Cleanup completed')
+    console.log('cleanupAllFiles: Cleanup completed, deleted', deletedCount, 'files')
   } catch (error) {
-    console.warn('cleanupOldSpreadsheets: Error during cleanup:', error)
+    console.warn('cleanupAllFiles: Error during cleanup:', error)
     // Non-critical error - continue anyway
   }
 }
@@ -201,9 +205,9 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     const drive = getGoogleDriveClient()
     const sheets = getGoogleSheetsClient()
     
-    // Clean up old spreadsheets to free up storage quota (non-blocking)
-    console.log('createSpreadsheetFromTemplate: Starting cleanup of old spreadsheets')
-    cleanupOldSpreadsheets(drive).catch(err => {
+    // Clean up old files to free up storage quota (non-blocking)
+    console.log('createSpreadsheetFromTemplate: Starting cleanup of old files')
+    cleanupAllFiles(drive).catch((err: any) => {
       console.warn('createSpreadsheetFromTemplate: Cleanup failed (non-critical):', err)
     })
     
@@ -260,9 +264,40 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
         }
         
         console.log('createSpreadsheetFromTemplate: Creating spreadsheet file via Drive API')
-        const newFile = await drive.files.create(createFileRequest)
         
-        if (!newFile.data.id) {
+        let newFile: any = null
+        let retryCount = 0
+        const maxRetries = 3
+        
+        // Retry logic in case of quota errors
+        while (retryCount < maxRetries && !newFile) {
+          try {
+            newFile = await drive.files.create(createFileRequest)
+          } catch (createFileError: any) {
+            retryCount++
+            const errorMsg = createFileError?.message || String(createFileError)
+            
+            if (errorMsg.includes('quota') || errorMsg.includes('storageQuotaExceeded')) {
+              console.warn(`createSpreadsheetFromTemplate: Quota error on attempt ${retryCount}/${maxRetries}, retrying...`)
+              
+              if (retryCount < maxRetries) {
+                // Wait before retrying (cleanup might still be running)
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                
+                // Try cleanup again
+                console.log('createSpreadsheetFromTemplate: Attempting cleanup again before retry')
+                await cleanupAllFiles(drive)
+                await new Promise(resolve => setTimeout(resolve, 1000))
+              } else {
+                throw createFileError
+              }
+            } else {
+              throw createFileError
+            }
+          }
+        }
+        
+        if (!newFile || !newFile.data || !newFile.data.id) {
           throw new Error('Failed to create new spreadsheet - no ID returned from Drive API')
         }
         
