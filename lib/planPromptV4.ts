@@ -208,13 +208,14 @@ Tùy theo timeline người dùng:
 - ≥ 2 năm: liệt kê HÀNH ĐỘNG THEO QUÝ cho toàn bộ thởi gian (mỗi quý 3–5 hành động). Nếu là khoảng 2–3 năm, ưu tiên đủ 2 năm theo quý, phần còn lại tóm lược.
 Không chèn câu hướng dẫn meta; chỉ đưa nội dung hành động cụ thể.
 
-## Phần 8. TÀI LIỆU HỌC TẬP KỸ NĂNG (10-12 tài liệu chi tiết)
+## Phần 8. TÀI LIỆU HỌC TẬP KỸ NĂNG (30+ tài liệu chi tiết)
 
-**YÊU CẦU BẮT BUỘC: 10-12 tài liệu, KHÔNG được thiếu**
+**YÊU CẦU BẮT BUỘC: Tối thiểu 30 tài liệu, bao gồm 10+ video YouTube với từ khóa tìm kiếm chính xác**
 
 Phân loại theo nhóm kỹ năng liên quan đến mục tiêu của user:
 
-### 💰 **Nhóm 1: Kỹ năng tài chính cốt lõi (3-4 tài liệu):**
+### 💰 **Nhóm 1: Kỹ năng tài chính cốt lõi (8-10 tài liệu):**
+**Sách & Khóa học (4-5 tài liệu):**
 1. **[Tên sách/khóa học]**
    - Link: [URL cụ thể]
    - Mục tiêu: Học gì từ tài liệu này (cụ thể, không chung chung)
@@ -222,18 +223,59 @@ Phân loại theo nhóm kỹ năng liên quan đến mục tiêu của user:
    - Lý do chọn: Tại sao tài liệu này phù hợp với user
    - Cách áp dụng: Áp dụng vào dự án/mục tiêu như thế nào
 
-### 🚀 **Nhóm 2: Kỹ năng chuyên môn theo ngành (4-5 tài liệu):**
+**Video YouTube (4-5 video với từ khóa tìm kiếm):**
+1. **[Tiêu đề video cụ thể]**
+   - Từ khóa tìm kiếm: "[Từ khóa chính xác để tìm trên YouTube]"
+   - Kênh gợi ý: [Tên kênh YouTube phù hợp]
+   - Nội dung: [Tóm tắt nội dung video]
+   - Thời lượng: [X phút]
+   - Cách áp dụng: [Áp dụng kiến thức vào mục tiêu như thế nào]
+
+Ví dụ từ khóa tìm kiếm YouTube:
+- "Quản lý tài chính cá nhân cho người mới bắt đầu"
+- "Cách lập ngân sách chi tiêu hiệu quả"
+- "Đầu tư chứng khoán cơ bản cho người Việt"
+- "Passive income ideas 2024"
+- "Financial freedom roadmap"
+
+### 🚀 **Nhóm 2: Kỹ năng chuyên môn theo ngành (12-15 tài liệu):**
 (Dựa trên nghề nghiệp/dự án của user: VD nếu làm SaaS thì gợi ý về product development, marketing SaaS, pricing...)
+
+**Sách & Khóa học (6-8 tài liệu):**
 - Ưu tiên nguồn tiếng Việt và MIỄN PHÍ
-- Đa dạng: Sách, Khóa học, YouTube, Blog, Công cụ
+- Đa dạng: Sách, Khóa học, Blog, Công cụ
 - Mỗi tài liệu có đầy đủ: Tên, Link, Mục tiêu, Thời lượng, Lý do chọn, Cách áp dụng
 
-### 🎯 **Nhóm 3: Kỹ năng mềm & tư duy (3-4 tài liệu):**
+**Video YouTube (6-7 video với từ khóa tìm kiếm):**
+Dựa trên ngành nghề của user, gợi ý từ khóa tìm kiếm cụ thể. Ví dụ:
+- Nếu làm SaaS: "SaaS marketing strategies", "Product-led growth tutorial", "SaaS pricing models"
+- Nếu làm E-commerce: "Shopify dropshipping guide", "Facebook ads for ecommerce", "Product sourcing tips"
+- Nếu làm Content Creator: "YouTube SEO tutorial", "Content monetization strategies", "Video editing tips"
+- Nếu làm Freelancer: "Freelance pricing strategies", "Client acquisition tips", "Portfolio building guide"
+
+### 🎯 **Nhóm 3: Kỹ năng mềm & tư duy (10-12 tài liệu):**
 (Marketing, Sales, Leadership, Productivity... phù hợp với mục tiêu tài chính)
+
+**Sách & Khóa học (5-6 tài liệu):**
 - Format tương tự như trên
 - Liên kết rõ ràng với mục tiêu tăng thu nhập
 
-**Lưu ý:** Mỗi tài liệu phải là GỢI Ý CỤ THỂ, có link thật (hoặc tên cụ thể để user tự tìm), KHÔNG viết chung chung kiểu "Tìm khóa học về..."
+**Video YouTube (5-6 video với từ khóa tìm kiếm):**
+Ví dụ từ khóa:
+- "Time management techniques for entrepreneurs"
+- "Sales psychology and persuasion"
+- "Personal branding on LinkedIn"
+- "Productivity hacks for busy professionals"
+- "Negotiation skills for salary increase"
+- "Networking strategies for career growth"
+
+**QUAN TRỌNG - Hướng dẫn tìm video YouTube:**
+- Với mỗi video, cung cấp **từ khóa tìm kiếm chính xác** để user tự tìm trên YouTube
+- Gợi ý **tên kênh YouTube uy tín** trong lĩnh vực đó (VD: Ali Abdaal, Thomas Frank, Gary Vee, Spiderum, Toidicodedao...)
+- Mô tả **nội dung chính** của video và **cách áp dụng** vào mục tiêu của user
+- Ưu tiên video **tiếng Việt có phụ đề** hoặc **tiếng Anh có phụ đề Việt**
+
+**Lưu ý:** Mỗi tài liệu phải là GỢI Ý CỤ THỂ, có link thật hoặc từ khóa tìm kiếm chính xác. KHÔNG viết chung chung kiểu "Tìm khóa học về..."
 
 ## Phần 9. KẾT LUẬN & HÀNH ĐỘNG NGAY (400-500 từ)
 
@@ -264,12 +306,12 @@ Viết 3-4 câu động viên CÁ NHÂN HÓA dựa trên:
 **🎯 NÂNG CẤP GÓI TRẢ PHÍ NGAY!**
 Bản kế hoạch FREE này chỉ là khởi đầu. Với gói Premium, bạn sẽ nhận được:
 ✅ 24 phần phân tích chuyên sâu (gấp 3 lần)
-✅ Google Sheets tự động với 7 tabs tracking
-✅ Phân tích tử vi tài chính & thần số học
+✅ Phân tích tử vi tài chính & thần số học chuyên sâu
 ✅ 3-5 mô hình kinh doanh cá nhân hóa
-✅ 50+ tài liệu học tập premium
+✅ 70+ tài liệu học tập premium (sách, khóa học, video)
 ✅ Kế hoạch Ngày/Tuần/Tháng/Quý/Năm chi tiết
-✅ Dự báo 3 kịch bản & chiến lược rủi ro
+✅ Dự báo 3 kịch bản & chiến lược rủi ro toàn diện
+✅ Hệ thống thói quen & mindset thành công
 👉 Nâng cấp tại: https://planai.io.vn/pricing
 
 OUTPUT JSON:
@@ -432,41 +474,83 @@ QUY TẮc BẮT BUỘC:
 - KHÔNG sinh dòng với nội dung "Chưa xác định" hoặc "N/A"
 - Chỉ tạo dòng khi có nội dung CỤ THỂ
 
-## Phần 15. HỆ THỐNG THEO DÕI & THỰC THI (KHÔNG CẦN GOOGLE SHEETS)
+## Phần 15. HỆ THỐNG THÓI QUEN & MINDSET THÀNH CÔNG
 
-Mục tiêu phần này: Biến các phân tích và lộ trình ở các phần trước thành một hệ thống hành động – theo dõi – cải tiến có nhịp điệu rõ ràng. KHÔNG lặp lại nội dung đã trình bày ở Phần 5–7; chỉ trích xuất mục tiêu/kết quả then chốt và định nghĩa cơ chế theo dõi.
+Mục tiêu phần này: Xây dựng nền tảng tư duy và thói quen hàng ngày giúp user duy trì động lực, vượt qua thách thức và đạt được mục tiêu tài chính dài hạn. Tập trung vào mindset, thói quen và cách xử lý cảm xúc trong hành trình tài chính.
 
-### 1) Xác định KPI cốt lõi (không trùng lặp mô tả chiến lược):
-- KPI kết quả (Lagging): Doanh thu/tháng, tiết kiệm ròng/tháng, tỷ lệ chi tiêu/thu nhập, nợ giảm ròng, mốc mục tiêu tài chính theo thời gian.
-- KPI dẫn dắt (Leading): Số giờ học/kỹ năng/tuần, số cơ hội bán hàng/tuần, số nội dung marketing/tuần, số cuộc gặp khách hàng/tuần, số tính năng/đầu việc hoàn thành/tuần.
-- Quy tắc: Mỗi KPI phải có mục tiêu số cụ thể theo “tháng thứ nhất/thứ hai…” (lấy mục tiêu từ Phần 6–7, KHÔNG lặp lại giải thích).
+### 1) Mindset Tài Chính Thành Công (Financial Mindset):
+**Tư duy về tiền bạc:**
+- **Tiền là công cụ, không phải mục đích:** Hiểu rằng tiền giúp đạt mục tiêu cuộc sống (tự do, an toàn, đóng góp), không phải để tích trữ vô nghĩa.
+- **Tư duy dồi dào (Abundance Mindset):** Tin rằng luôn có cơ hội tạo ra giá trị và thu nhập mới, thay vì sợ hãi khan hiếm.
+- **Đầu tư vào bản thân là ROI cao nhất:** Mỗi đồng chi cho học tập, kỹ năng, sức khỏe sẽ sinh lời gấp nhiều lần trong tương lai.
 
-### 2) Nhịp điều hành (cadence) – chỉ rõ việc gì, khi nào, ai:
-- Hàng ngày: 2–3 thói quen bắt buộc (ví dụ: 60 phút học kỹ năng trọng tâm; 30 phút chăm sóc pipeline; ghi sổ chi tiêu cá nhân).
-- Hàng tuần: 3 việc bắt buộc (ví dụ: tổng kết KPI tuần; chọn 3 ưu tiên tuần tới; review rủi ro và chặn đường, tạo ticket khắc phục).
-- Hàng tháng: 4 việc bắt buộc (ví dụ: đối chiếu KPI kết quả vs mục tiêu; cập nhật ngân sách; điều chỉnh lộ trình ở Phần 6–7 nếu lệch >20%; chốt 1 cải tiến quy trình).
-- Hàng quý: 3 việc bắt buộc (ví dụ: rà soát OKR quý; điều chỉnh chiến lược; xác nhận nguồn lực/kỹ năng cần bổ sung).
+**Nguyên tắc hành động:**
+- **80/20 Rule:** Tập trung 80% năng lượng vào 20% hoạt động tạo ra 80% kết quả (kỹ năng cốt lõi, khách hàng chính, sản phẩm chủ lực).
+- **Compound Effect:** Những hành động nhỏ hàng ngày (học 30 phút, tiết kiệm 50k, networking 1 người) sẽ tạo ra kết quả khổng lồ sau 6-12 tháng.
+- **Fail Fast, Learn Faster:** Chấp nhận thất bại nhỏ, học hỏi nhanh, điều chỉnh và tiếp tục. Mỗi thất bại là một bài học giá trị.
 
-### 3) OKR rút gọn theo quý (không sao chép lại lộ trình):
-- Mục tiêu quý (Objective): 1 câu súc tích, gắn trực tiếp mục tiêu tài chính.
-- Kết quả then chốt (Key Results): 3–5 KR đo được, liên kết KPI ở mục (1).
-- Sáng kiến trọng tâm: 3–5 sáng kiến lớn trong quý (tham chiếu Phần 6–7, KHÔNG chép lại nội dung chi tiết).
+### 2) Thói Quen Hàng Ngày (Daily Habits):
+**Buổi sáng (Morning Routine - 30-60 phút):**
+- **5:30-6:00:** Thức dậy sớm, uống nước, vận động nhẹ 10 phút (yoga/chạy bộ)
+- **6:00-6:30:** Đọc sách/nghe podcast về tài chính, kỹ năng (15-30 phút)
+- **6:30-7:00:** Review mục tiêu ngày, viết 3 việc ưu tiên cao nhất (MIT - Most Important Tasks)
 
-### 4) Cơ chế kiểm soát sai lệch (variance control):
-- Ngưỡng cảnh báo: Nếu KPI kết quả lệch >20% so mục tiêu tháng → kích hoạt điều chỉnh.
-- Quy tắc điều chỉnh: Ưu tiên thay đổi Leading KPI trước (tăng số hoạt động/tuần, tăng giờ học/kỹ năng, tăng số cuộc hẹn) trước khi đổi mục tiêu kết quả.
-- Nhật ký quyết định: Ghi 3 quyết định chính mỗi tháng (lý do, tác động dự kiến, kết quả sau 30 ngày).
+**Trong ngày (Work Routine):**
+- **Deep Work Blocks:** 2-3 khung 90 phút tập trung cao độ (tắt thông báo, không check email/social media)
+- **Pomodoro Technique:** 25 phút làm việc + 5 phút nghỉ, lặp lại 4 lần rồi nghỉ 15-30 phút
+- **Ghi chép chi tiêu:** Mỗi khoản chi ngay khi phát sinh (dùng app hoặc sổ tay)
 
-### 5) Checklist tự theo dõi (tuân thủ quy tắc hiển thị – không dùng bảng):
-- [ ] Đã cập nhật KPI hàng ngày (5/7 ngày/tuần)
-- [ ] Đã tổng kết KPI tuần và chọn 3 ưu tiên tuần tới
-- [ ] Đã đối chiếu KPI tháng và điều chỉnh lộ trình nếu cần
-- [ ] Đã rà soát OKR quý và xác nhận sáng kiến trọng tâm
-- [ ] Đã ghi nhật ký 3 quyết định quan trọng trong tháng
+**Buổi tối (Evening Routine - 30 phút):**
+- **Review ngày:** Đã hoàn thành 3 MIT chưa? KPI nào đạt/chưa đạt?
+- **Chuẩn bị ngày mai:** Lên list 3 MIT cho ngày mai, chuẩn bị tài liệu/công cụ cần thiết
+- **Gratitude Journal:** Viết 3 điều biết ơn trong ngày (tập trung vào positive mindset)
 
-Lưu ý quan trọng:
-- Không chép lại nội dung đã phân tích ở Phần 5–7. Chỉ tham chiếu để lấy mục tiêu và chuyển hoá thành KPI/nhịp điều hành.
-- Không dùng bảng Markdown ở phần này. Chỉ sử dụng tiêu đề, danh sách gạch đầu dòng và checklist.
+### 3) Quản Lý Cảm Xúc & Stress:
+**Khi gặp khó khăn tài chính:**
+- **Pause & Breathe:** Dừng lại, thở sâu 5 lần, tránh quyết định cảm tính
+- **Break Down Problems:** Chia nhỏ vấn đề lớn thành các bước nhỏ có thể hành động ngay
+- **Seek Support:** Tìm mentor, cộng đồng hoặc bạn bè để chia sẻ và nhận góp ý
+
+**Khi mất động lực:**
+- **Revisit Your Why:** Nhắc lại lý do ban đầu tại sao bạn muốn đạt mục tiêu này
+- **Celebrate Small Wins:** Ăn mừng mỗi milestone nhỏ (hoàn thành khóa học, tiết kiệm đủ 1 tháng, đạt KPI tuần)
+- **Change Environment:** Thay đổi không gian làm việc, đi cafe/thư viện, gặp gỡ người mới
+
+### 4) Xây Dựng Network & Community:
+**Networking chiến lược:**
+- **Tham gia 1-2 cộng đồng chuyên môn:** Facebook groups, Slack/Discord communities, offline meetups
+- **Coffee Chat hàng tuần:** Gặp 1-2 người mới mỗi tuần để học hỏi, chia sẻ kinh nghiệm
+- **Give First Mentality:** Luôn sẵn sàng giúp đỡ người khác trước khi mong đợi nhận lại
+
+**Tìm mentor & accountability partner:**
+- **Mentor:** Người đã đạt được mục tiêu bạn đang hướng tới, học hỏi kinh nghiệm và tránh sai lầm
+- **Accountability Partner:** Bạn đồng hành cùng mục tiêu, check-in hàng tuần, động viên và nhắc nhở nhau
+
+### 5) Continuous Learning & Adaptation:
+**Học tập liên tục:**
+- **Đọc 1 cuốn sách/tháng:** Về tài chính, kỹ năng, mindset (ưu tiên sách bestseller, review cao)
+- **Học 1 kỹ năng mới/quý:** Online course, workshop, certification (liên quan trực tiếp đến mục tiêu thu nhập)
+- **Theo dõi 5-10 influencers/experts:** YouTube, Podcast, Blog về lĩnh vực của bạn
+
+**Đo lường & điều chỉnh:**
+- **Weekly Review:** Mỗi Chủ Nhật, review KPI tuần, điều chỉnh kế hoạch tuần tới
+- **Monthly Reflection:** Cuối tháng, đánh giá tiến độ, celebrate wins, học từ failures
+- **Quarterly Pivot:** Mỗi quý, rà soát lại chiến lược, có thể thay đổi hướng đi nếu cần (pivot)
+
+### 6) Checklist Thói Quen Hàng Ngày:
+- [ ] Thức dậy trước 6:00 sáng
+- [ ] Đọc sách/học tập 30 phút
+- [ ] Hoàn thành 3 MIT (Most Important Tasks)
+- [ ] Ghi chép mọi khoản chi tiêu
+- [ ] Deep work 2-3 khung 90 phút
+- [ ] Networking/Coffee chat với 1 người mới (ít nhất 1 lần/tuần)
+- [ ] Review ngày và chuẩn bị ngày mai
+- [ ] Viết Gratitude Journal (3 điều biết ơn)
+
+**Lưu ý quan trọng:**
+- Thói quen cần 21-66 ngày để hình thành. Hãy kiên nhẫn và nhất quán.
+- Không cần hoàn hảo 100%. Đạt 80% checklist mỗi ngày là thành công.
+- Điều chỉnh thói quen cho phù hợp với lịch trình và tính cách của bạn.
 
 ## Phần 16. DANH SÁCH HÀNH ĐỘNG
 **Hành động 1:** [Mô tả] - Hoàn thành trong tháng thứ nhất
@@ -474,11 +558,8 @@ Lưu ý quan trọng:
 **Hành động 3:** [Mô tả] - Hoàn thành trong tháng thứ ba
 (và các hành động khác...)
 
-## Phần 17. GOOGLE SHEETS (${tier === 'pro' || tier === 'premium' ? 'CÓ' : 'Nâng cấp để có'})
-7 sheets: Dashboard, Roadmap, Checklist, Savings, Income, Business, Skills
-
-## Phần 18. TÀI LIỆU HỌC TẬP
-${tier === 'basic' ? '25' : tier === 'pro' ? '45' : '60'} resources
+## Phần 17. TÀI LIỆU HỌC TẬP BỔ SUNG
+${tier === 'basic' ? '30+' : tier === 'pro' ? '50+' : '70+'} resources (bao gồm sách, khóa học, video YouTube)
 
 ## Phần 19. DỰ BÁO 3 KỊCH BẢN
 Worst case / Base case / Best case
