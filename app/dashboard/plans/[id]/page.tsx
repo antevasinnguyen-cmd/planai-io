@@ -622,7 +622,7 @@ export default function PlanViewEnhanced() {
                           <div className="flex items-start space-x-2">
                             <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
                             <span className="text-sm text-gray-700 dark:text-gray-300">
-                              <strong>Xuất file:</strong> PDF, Word, Google Docs để chia sẻ
+                              <strong>Xuất file:</strong> PDF để lưu trữ và chia sẻ
                             </span>
                           </div>
                           <div className="flex items-start space-x-2">
