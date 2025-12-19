@@ -102,10 +102,11 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
   const tierName = getTierName(tier)
 
   // Allow PDF and DOCX for all paid tiers (basic, pro, pro_max)
+  // Google Sheets available for basic and above (basic, pro, pro_max)
   const allowedFormatsByTier: Record<string, string[]> = {
     free: ['txt'],
-    basic: ['txt', 'pdf', 'docx'],
-    pro: ['txt', 'pdf', 'docx', 'notion'],
+    basic: ['txt', 'pdf', 'docx', 'google_sheets'],
+    pro: ['txt', 'pdf', 'docx', 'notion', 'google_sheets'],
     pro_max: ['txt', 'pdf', 'docx', 'notion', 'google_sheets']
   }
 
