@@ -119,7 +119,7 @@ const getPaidSections = () => [
   { key: 'business_models', title: '12. 10 Mô hình kinh doanh cá nhân hoá', weight: 4 },
   { key: 'time_roadmap', title: '13. Lộ trình theo thời gian: Năm-Quý-Tháng-Tuần-Ngày', weight: 4 },
   { key: 'checklist', title: '14. Checklist hành động định kỳ', weight: 3 },
-  { key: 'sheets_tracking', title: '15. Google Sheets theo dõi & tracking', weight: 3 },
+  { key: 'market_trends', title: '15. Xu hướng thị trường & tiềm năng kinh doanh', weight: 3 },
   { key: 'learning_resources', title: '16. Tài liệu học tập & kỹ năng (30+ nguồn)', weight: 4 },
   { key: 'scenarios', title: '17. Dự báo 3 kịch bản: Tệ-Trung bình-Tốt nhất', weight: 3 },
   { key: 'risk_reduction', title: '18. Chiến lược giảm rủi ro & phương án dự phòng', weight: 3 },
@@ -402,7 +402,34 @@ Mỗi hành động phải:
 
 TỔNG: 16-20 hành động cụ thể, KHÔNG có dòng trống hay dấu "---".`,
     
-    sheets_tracking: `Mô tả cấu trúc Google Sheets theo dõi kế hoạch ${goal}. 7 SHEETS: (1) Dashboard - Biểu đồ thu nhập/chi tiêu/tài sản ròng, (2) Roadmap - Timeline ${timeline} với milestones, (3) Checklist - Checkbox tự động tính % hoàn thành, (4) Tiết kiệm - Theo dõi tiết kiệm hàng tháng, (5) Thu nhập - Các nguồn thu, (6) Business Metrics - MRR/Churn/CAC/LTV, (7) Kỹ năng - Link tài liệu học. Hướng dẫn cách sử dụng từng sheet.`,
+    market_trends: `Phân tích XU HƯỚNG THỊ TRƯỜNG & TIỀM NĂNG KINH DOANH liên quan trực tiếp đến mục tiêu "${goal}" và nghề nghiệp/ngành hiện tại của user.
+
+QUY TẮC QUAN TRỌNG:
+- KHÔNG nêu mốc năm/thời gian cụ thể (KHÔNG ghi "2025", "2026", "Năm 1", "Năm 2"). Sử dụng cách diễn đạt chung: "trong thời gian tới", "ngắn hạn", "trung hạn", "dài hạn".
+- Không lặp lại nội dung từ các phần khác. Không viết lại lộ trình/tháng/quý.
+
+NỘI DUNG PHẢI CÓ:
+1) Bức tranh vĩ mô ngắn gọn (Việt Nam & quốc tế):
+   - Xu hướng tiêu dùng, công nghệ, chính sách ảnh hưởng đến ngành của user
+   - Cơ hội từ chuyển dịch hành vi (online hóa, AI, mobile-first, subscription, v.v.)
+
+2) Xu hướng theo ngành/ngách của user (cá nhân hóa theo occupation):
+   - 3–5 xu hướng nổi bật, kèm ví dụ thực tế tại VN/khu vực
+   - Rào cản gia nhập & lợi thế cạnh tranh có thể khai thác
+
+3) Cơ hội mô hình kinh doanh & unit economics:
+   - 3–5 cơ hội khả thi (nêu ngắn: đối tượng khách, đề xuất giá trị, kênh phân phối)
+   - Unit economics rút gọn (Doanh thu/đơn vị, chi phí chính, biên lợi nhuận mục tiêu)
+
+4) Rủi ro thị trường & phương án giảm thiểu:
+   - 3 rủi ro chính (quy định, cạnh tranh, xu hướng thay đổi)
+   - Cách giảm thiểu thực tế (pilot nhỏ, thử nghiệm giá, kênh thay thế)
+
+5) Actionable next steps (không nêu mốc năm):
+   - 3 bước thăm dò thị trường (customer interviews, landing page, MVP)
+   - 3 bước thử nghiệm kênh (content, ads ngân sách nhỏ, partnership)
+
+Giọng văn súc tích, thực tế, định hướng hành động.`,
     
     learning_resources: `Đề xuất TỐI THIỂU 30 TÀI LIỆU HỌC TẬP phù hợp với kỹ năng ${skillsStr} để đạt ${goal} (ưu tiên nội dung LIÊN QUAN TRỰC TIẾP tới những gì user cần học).
 
@@ -428,7 +455,7 @@ YÊU CẦU BẮT BUỘC:
     
     summary_actions: `Tóm tắt toàn bộ kế hoạch ${goal} trong 500-700 từ. Liệt kê 7-10 HÀNH ĐỘNG ƯU TIÊN NHẤT trong 30-90 ngày tới. Mỗi hành động: Mô tả cụ thể, Deadline, Kết quả mong đợi. Sắp xếp theo thứ tự ưu tiên.`,
     
-    how_to_use: `Hướng dẫn sử dụng bản Kế hoạch này hiệu quả nhất. Cách đọc và hiểu từng phần. Cách cập nhật kế hoạch khi có thay đổi. Cách sử dụng cùng Google Sheets tracking. Tần suất xem lại kế hoạch. Tips để duy trì động lực thực hiện.`,
+    how_to_use: `Hướng dẫn sử dụng bản Kế hoạch này hiệu quả nhất. Cách đọc và hiểu từng phần. Cách cập nhật kế hoạch khi có thay đổi. Gợi ý sử dụng checklist/nhật ký tiến độ để theo dõi. Tần suất xem lại kế hoạch. Tips để duy trì động lực thực hiện.`,
     
     closing: `Viết phần kết luận và lời động viên cho ${goal}. Tóm tắt 3-5 điểm quan trọng nhất. Lời khuyên tài chính cá nhân hoá. Lời động viên truyền cảm hứng. Kêu gọi hành động: "Bắt tay vào việc NGAY HÔM NAY với hành động đầu tiên là...". Kết thúc tích cực, tạo động lực.`
   }

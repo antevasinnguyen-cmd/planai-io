@@ -474,83 +474,31 @@ QUY TẮc BẮT BUỘC:
 - KHÔNG sinh dòng với nội dung "Chưa xác định" hoặc "N/A"
 - Chỉ tạo dòng khi có nội dung CỤ THỂ
 
-## Phần 15. HỆ THỐNG THÓI QUEN & MINDSET THÀNH CÔNG
+## Phần 15. XU HƯỚNG THỊ TRƯỜNG & TIỀM NĂNG KINH DOANH
 
-Mục tiêu phần này: Xây dựng nền tảng tư duy và thói quen hàng ngày giúp user duy trì động lực, vượt qua thách thức và đạt được mục tiêu tài chính dài hạn. Tập trung vào mindset, thói quen và cách xử lý cảm xúc trong hành trình tài chính.
+Mục tiêu phần này: Cập nhật bức tranh thị trường và chỉ ra các cơ hội kinh doanh có thể khai thác, bám sát nghề/ngành của user. Trình bày súc tích, định hướng hành động, KHÔNG nêu mốc năm cụ thể (chỉ dùng các cụm “trong thời gian tới”, “ngắn hạn”, “trung hạn”, “dài hạn”).
 
-### 1) Mindset Tài Chính Thành Công (Financial Mindset):
-**Tư duy về tiền bạc:**
-- **Tiền là công cụ, không phải mục đích:** Hiểu rằng tiền giúp đạt mục tiêu cuộc sống (tự do, an toàn, đóng góp), không phải để tích trữ vô nghĩa.
-- **Tư duy dồi dào (Abundance Mindset):** Tin rằng luôn có cơ hội tạo ra giá trị và thu nhập mới, thay vì sợ hãi khan hiếm.
-- **Đầu tư vào bản thân là ROI cao nhất:** Mỗi đồng chi cho học tập, kỹ năng, sức khỏe sẽ sinh lời gấp nhiều lần trong tương lai.
+### 1) Bức tranh vĩ mô (Việt Nam & quốc tế):
+- Xu hướng tiêu dùng, công nghệ, chính sách tác động đến ngành của user
+- Cơ hội từ chuyển dịch hành vi: online hóa, AI, mobile-first, subscription...
 
-**Nguyên tắc hành động:**
-- **80/20 Rule:** Tập trung 80% năng lượng vào 20% hoạt động tạo ra 80% kết quả (kỹ năng cốt lõi, khách hàng chính, sản phẩm chủ lực).
-- **Compound Effect:** Những hành động nhỏ hàng ngày (học 30 phút, tiết kiệm 50k, networking 1 người) sẽ tạo ra kết quả khổng lồ sau 6-12 tháng.
-- **Fail Fast, Learn Faster:** Chấp nhận thất bại nhỏ, học hỏi nhanh, điều chỉnh và tiếp tục. Mỗi thất bại là một bài học giá trị.
+### 2) Xu hướng theo ngành/ngách (cá nhân hóa theo occupation):
+- 3–5 xu hướng nổi bật, kèm ví dụ thực tế tại VN/khu vực
+- Rào cản gia nhập & lợi thế cạnh tranh có thể tận dụng
 
-### 2) Thói Quen Hàng Ngày (Daily Habits):
-**Buổi sáng (Morning Routine - 30-60 phút):**
-- **5:30-6:00:** Thức dậy sớm, uống nước, vận động nhẹ 10 phút (yoga/chạy bộ)
-- **6:00-6:30:** Đọc sách/nghe podcast về tài chính, kỹ năng (15-30 phút)
-- **6:30-7:00:** Review mục tiêu ngày, viết 3 việc ưu tiên cao nhất (MIT - Most Important Tasks)
+### 3) Cơ hội mô hình kinh doanh & unit economics rút gọn:
+- 3–5 cơ hội khả thi (đối tượng khách, đề xuất giá trị, kênh phân phối)
+- Unit economics: Doanh thu/đơn vị, chi phí chính, biên lợi nhuận mục tiêu
 
-**Trong ngày (Work Routine):**
-- **Deep Work Blocks:** 2-3 khung 90 phút tập trung cao độ (tắt thông báo, không check email/social media)
-- **Pomodoro Technique:** 25 phút làm việc + 5 phút nghỉ, lặp lại 4 lần rồi nghỉ 15-30 phút
-- **Ghi chép chi tiêu:** Mỗi khoản chi ngay khi phát sinh (dùng app hoặc sổ tay)
+### 4) Rủi ro thị trường & phương án giảm thiểu:
+- 3 rủi ro chính (quy định, cạnh tranh, xu hướng thay đổi)
+- Cách giảm thiểu: pilot nhỏ, A/B giá, đa kênh, hợp tác
 
-**Buổi tối (Evening Routine - 30 phút):**
-- **Review ngày:** Đã hoàn thành 3 MIT chưa? KPI nào đạt/chưa đạt?
-- **Chuẩn bị ngày mai:** Lên list 3 MIT cho ngày mai, chuẩn bị tài liệu/công cụ cần thiết
-- **Gratitude Journal:** Viết 3 điều biết ơn trong ngày (tập trung vào positive mindset)
+### 5) Next steps có thể làm ngay (không nêu mốc năm):
+- 3 bước thăm dò thị trường: customer interviews, landing page, MVP
+- 3 bước thử nghiệm kênh: content, ads ngân sách nhỏ, partnership
 
-### 3) Quản Lý Cảm Xúc & Stress:
-**Khi gặp khó khăn tài chính:**
-- **Pause & Breathe:** Dừng lại, thở sâu 5 lần, tránh quyết định cảm tính
-- **Break Down Problems:** Chia nhỏ vấn đề lớn thành các bước nhỏ có thể hành động ngay
-- **Seek Support:** Tìm mentor, cộng đồng hoặc bạn bè để chia sẻ và nhận góp ý
-
-**Khi mất động lực:**
-- **Revisit Your Why:** Nhắc lại lý do ban đầu tại sao bạn muốn đạt mục tiêu này
-- **Celebrate Small Wins:** Ăn mừng mỗi milestone nhỏ (hoàn thành khóa học, tiết kiệm đủ 1 tháng, đạt KPI tuần)
-- **Change Environment:** Thay đổi không gian làm việc, đi cafe/thư viện, gặp gỡ người mới
-
-### 4) Xây Dựng Network & Community:
-**Networking chiến lược:**
-- **Tham gia 1-2 cộng đồng chuyên môn:** Facebook groups, Slack/Discord communities, offline meetups
-- **Coffee Chat hàng tuần:** Gặp 1-2 người mới mỗi tuần để học hỏi, chia sẻ kinh nghiệm
-- **Give First Mentality:** Luôn sẵn sàng giúp đỡ người khác trước khi mong đợi nhận lại
-
-**Tìm mentor & accountability partner:**
-- **Mentor:** Người đã đạt được mục tiêu bạn đang hướng tới, học hỏi kinh nghiệm và tránh sai lầm
-- **Accountability Partner:** Bạn đồng hành cùng mục tiêu, check-in hàng tuần, động viên và nhắc nhở nhau
-
-### 5) Continuous Learning & Adaptation:
-**Học tập liên tục:**
-- **Đọc 1 cuốn sách/tháng:** Về tài chính, kỹ năng, mindset (ưu tiên sách bestseller, review cao)
-- **Học 1 kỹ năng mới/quý:** Online course, workshop, certification (liên quan trực tiếp đến mục tiêu thu nhập)
-- **Theo dõi 5-10 influencers/experts:** YouTube, Podcast, Blog về lĩnh vực của bạn
-
-**Đo lường & điều chỉnh:**
-- **Weekly Review:** Mỗi Chủ Nhật, review KPI tuần, điều chỉnh kế hoạch tuần tới
-- **Monthly Reflection:** Cuối tháng, đánh giá tiến độ, celebrate wins, học từ failures
-- **Quarterly Pivot:** Mỗi quý, rà soát lại chiến lược, có thể thay đổi hướng đi nếu cần (pivot)
-
-### 6) Checklist Thói Quen Hàng Ngày:
-- [ ] Thức dậy trước 6:00 sáng
-- [ ] Đọc sách/học tập 30 phút
-- [ ] Hoàn thành 3 MIT (Most Important Tasks)
-- [ ] Ghi chép mọi khoản chi tiêu
-- [ ] Deep work 2-3 khung 90 phút
-- [ ] Networking/Coffee chat với 1 người mới (ít nhất 1 lần/tuần)
-- [ ] Review ngày và chuẩn bị ngày mai
-- [ ] Viết Gratitude Journal (3 điều biết ơn)
-
-**Lưu ý quan trọng:**
-- Thói quen cần 21-66 ngày để hình thành. Hãy kiên nhẫn và nhất quán.
-- Không cần hoàn hảo 100%. Đạt 80% checklist mỗi ngày là thành công.
-- Điều chỉnh thói quen cho phù hợp với lịch trình và tính cách của bạn.
+Giọng văn súc tích, thực tế, định hướng hành động rõ ràng.
 
 ## Phần 16. DANH SÁCH HÀNH ĐỘNG
 **Hành động 1:** [Mô tả] - Hoàn thành trong tháng thứ nhất
@@ -706,11 +654,11 @@ Cách dùng kế hoạch hiệu quả
 Lời khuyên cuối + First action in 24h
 
 **🚀 BẠN ĐÃ LÀ THÀNH VIÊN ${tier.toUpperCase()}!**
-Chúc mừng! Bạn đang sở hữ bản kế hoạch chuyên sâu nhất với:
+Chúc mừng! Bạn đang sở hữu bản kế hoạch chuyên sâu nhất với:
 ✅ 24 phần phân tích chi tiết
-✅ ${tier === 'pro' || tier === 'premium' ? 'Google Sheets tự động' : 'Nội dung premium'}
-✅ ${constraints.max_resources} tài liệu chất lượng cao
-✅ Phân tích tử vi & thần số học
+✅ Phân tích tử vi & thần số học chuyên sâu
+✅ 70+ tài liệu học tập premium (sách, khóa học, video)
+✅ Hệ thống thói quen & mindset thành công
 ✅ Support 24/7 từ PlanAI team
 📧 Support: support@planai.io.vn
 

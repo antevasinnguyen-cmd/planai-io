@@ -325,12 +325,12 @@ export const generateLearningResources = async (
   const isAllowedVietnamese = (url: string) => url.includes('brandcamp.asia')
 
   try {
-    const prompt = `Tạo danh sách tài liệu học tập CHI TIẾT, CHỈ LẤY LINK THẬT, cho mục tiêu: ${goal}
+    const prompt = `Tạo danh sách tài liệu học tập CHI TIẾT (TỐI THIỂU 30 tài liệu), CHỈ LẤY LINK THẬT khi có, cho mục tiêu: ${goal}
 Ngành: ${occupation}
 
 QUAN TRỌNG:
-- Chỉ lấy link thật, KHÔNG lấy link chung chung (youtube.com, example.com, coursera.org, v.v.).
-- Link YouTube PHẢI là link kênh uy tín (≥10.000 sub, tiếng Anh, đúng kỹ năng, có tên kênh rõ ràng, KHÔNG dùng link video lẻ).
+- Chỉ lấy link thật, KHÔNG lấy link chung chung (example.com, coursera.org mơ hồ, v.v.).
+- MỤC YOUTUBE: KHÔNG cần link video. BẮT BUỘC cung cấp 10+ mục với TỪ KHOÁ TÌM KIẾM CHÍNH XÁC (để user gõ vào YouTube), kèm KÊNH GỢI Ý và NỘI DUNG CHÍNH.
 - Không gợi ý web Việt Nam trừ https://www.brandcamp.asia/.
 - ƯU TIÊN nguồn nước ngoài, tiếng Anh, web uy tín (Coursera, Google, LinkedIn Learning, Skillshare, TED, v.v.).
 - Nếu không có link thật, PHẢI ghi rõ từ khoá tìm kiếm (tối thiểu 5 từ khoá liên quan) và nền tảng uy tín để user tự tra cứu.
@@ -339,7 +339,7 @@ QUAN TRỌNG:
 
 Cấu trúc bắt buộc:
 
-## 📚 PHẦN 1: KỸ NĂNG TÀI CHÍNH CỐ LỖI
+## 📚 PHẦN 1: KỸ NĂNG TÀI CHÍNH CỐT LÕI
 1. [Tên khóa học]
    - Link: [URL đầy đủ hoặc ghi rõ TỪ KHOÁ TÌM KIẾM nếu không có link]
    - Mục tiêu: [Mô tả chi tiết]
@@ -353,8 +353,11 @@ Cấu trúc bắt buộc:
 ## 📖 PHẦN 3: SÁCH THAM KHẢO
 [Tương tự như trên]
 
-## 🎥 PHẦN 4: YOUTUBE CHANNELS
-[Tương tự như trên]
+## 🎥 PHẦN 4: YOUTUBE (TỪ KHOÁ TÌM KIẾM - 10+ MỤC)
+Mỗi mục ghi:
+- Từ khoá tìm kiếm chính xác (ví dụ: "Quản lý tài chính cá nhân cho người mới", "YouTube SEO tutorial for beginners")
+- Kênh gợi ý (nếu có)
+- Nội dung chính và cách áp dụng
 
 ## 💡 PHẦN 5: CÔNG CỤ HỖ TRỢ
 [Tương tự như trên]
