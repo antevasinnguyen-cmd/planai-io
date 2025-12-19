@@ -50,7 +50,7 @@ const getGoogleSheetsClient = () => {
     throw new Error('GOOGLE_PRIVATE_KEY is not in valid PEM format. It must start with -----BEGIN PRIVATE KEY-----')
   }
 
-  return google.sheets({ version: 'v4', auth: new JWT({
+  const auth = new JWT({
     email: GOOGLE_CLIENT_EMAIL,
     key: GOOGLE_PRIVATE_KEY,
     scopes: [
@@ -58,7 +58,9 @@ const getGoogleSheetsClient = () => {
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/drive.file'
     ]
-  }) })
+  })
+
+  return google.sheets({ version: 'v4', auth })
 }
 
 // Get Google Drive client for file operations
@@ -88,6 +90,11 @@ const getGoogleDriveClient = () => {
 // Always makes it publicly accessible (anyone with link can edit)
 export const createSpreadsheetFromTemplate = async (title: string): Promise<string> => {
   try {
+    console.log('createSpreadsheetFromTemplate: Starting with title:', title)
+    console.log('createSpreadsheetFromTemplate: GOOGLE_CLIENT_EMAIL:', GOOGLE_CLIENT_EMAIL)
+    console.log('createSpreadsheetFromTemplate: GOOGLE_PRIVATE_KEY exists:', !!GOOGLE_PRIVATE_KEY)
+    console.log('createSpreadsheetFromTemplate: GOOGLE_SHEETS_TEMPLATE_ID:', GOOGLE_SHEETS_TEMPLATE_ID)
+    
     const drive = getGoogleDriveClient()
     const sheets = getGoogleSheetsClient()
     
@@ -96,6 +103,7 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     // Try to copy from template if available
     if (GOOGLE_SHEETS_TEMPLATE_ID) {
       try {
+        console.log('createSpreadsheetFromTemplate: Attempting to copy template:', GOOGLE_SHEETS_TEMPLATE_ID)
         const response = await drive.files.copy({
           fileId: GOOGLE_SHEETS_TEMPLATE_ID,
           requestBody: {
@@ -105,62 +113,83 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
         
         if (response.data.id) {
           spreadsheetId = response.data.id
-          console.log('Created spreadsheet from template:', spreadsheetId)
+          console.log('createSpreadsheetFromTemplate: Created spreadsheet from template:', spreadsheetId)
         } else {
           throw new Error('No ID returned from template copy')
         }
       } catch (templateError) {
-        console.warn('Failed to copy template, creating new spreadsheet:', templateError)
+        console.warn('createSpreadsheetFromTemplate: Failed to copy template, creating new spreadsheet:', templateError)
         // Fall through to create new spreadsheet
         spreadsheetId = ''
       }
     } else {
+      console.log('createSpreadsheetFromTemplate: No template ID provided, will create from scratch')
       spreadsheetId = ''
     }
     
     // If no template or template copy failed, create new spreadsheet from scratch
     if (!spreadsheetId) {
-      const newSpreadsheet = await sheets.spreadsheets.create({
-        requestBody: {
-          properties: {
-            title: title,
-          },
-          sheets: [
-            { properties: { title: 'Overview' } },
-            { properties: { title: 'Tóm tắt' } },
-            { properties: { title: 'Phân tích' } },
-            { properties: { title: 'Lộ trình' } },
-            { properties: { title: 'Ngân sách' } },
-            { properties: { title: 'Timeline' } },
-            { properties: { title: 'Checklist' } },
-            { properties: { title: 'Rủi ro' } },
-            { properties: { title: 'Lời khuyên' } },
-          ]
+      try {
+        console.log('createSpreadsheetFromTemplate: Creating new spreadsheet from scratch')
+        
+        // Create with minimal properties first to avoid permission issues
+        const newSpreadsheet = await sheets.spreadsheets.create({
+          requestBody: {
+            properties: {
+              title: title,
+              locale: 'vi_VN',
+              autoRecalc: 'ON_CHANGE'
+            },
+            sheets: [
+              { properties: { title: 'Overview', sheetId: 0 } },
+              { properties: { title: 'Tóm tắt', sheetId: 1 } },
+              { properties: { title: 'Phân tích', sheetId: 2 } },
+              { properties: { title: 'Lộ trình', sheetId: 3 } },
+              { properties: { title: 'Ngân sách', sheetId: 4 } },
+              { properties: { title: 'Timeline', sheetId: 5 } },
+              { properties: { title: 'Checklist', sheetId: 6 } },
+              { properties: { title: 'Rủi ro', sheetId: 7 } },
+              { properties: { title: 'Lời khuyên', sheetId: 8 } },
+            ]
+          }
+        })
+        
+        if (!newSpreadsheet.data.spreadsheetId) {
+          throw new Error('Failed to create new spreadsheet - no ID returned')
         }
-      })
-      
-      if (!newSpreadsheet.data.spreadsheetId) {
-        throw new Error('Failed to create new spreadsheet')
+        
+        spreadsheetId = newSpreadsheet.data.spreadsheetId
+        console.log('createSpreadsheetFromTemplate: Created new spreadsheet from scratch:', spreadsheetId)
+      } catch (createError) {
+        console.error('createSpreadsheetFromTemplate: Error creating spreadsheet:', createError)
+        // Log full error details for debugging
+        if (createError instanceof Error) {
+          console.error('createSpreadsheetFromTemplate: Error message:', createError.message)
+          console.error('createSpreadsheetFromTemplate: Error stack:', createError.stack)
+        }
+        throw new Error(`Failed to create spreadsheet: ${createError instanceof Error ? createError.message : String(createError)}`)
       }
-      
-      spreadsheetId = newSpreadsheet.data.spreadsheetId
-      console.log('Created new spreadsheet from scratch:', spreadsheetId)
     }
 
     // CRITICAL: Make the spreadsheet publicly accessible - anyone with link can EDIT
-    await drive.permissions.create({
-      fileId: spreadsheetId,
-      requestBody: {
-        role: 'writer',  // Anyone can edit
-        type: 'anyone',  // No login required
-      },
-    })
-    
-    console.log('Set public permissions for spreadsheet:', spreadsheetId)
+    try {
+      console.log('createSpreadsheetFromTemplate: Setting public permissions for spreadsheet:', spreadsheetId)
+      await drive.permissions.create({
+        fileId: spreadsheetId,
+        requestBody: {
+          role: 'writer',  // Anyone can edit
+          type: 'anyone',  // No login required
+        },
+      })
+      console.log('createSpreadsheetFromTemplate: Set public permissions for spreadsheet:', spreadsheetId)
+    } catch (permError) {
+      console.warn('createSpreadsheetFromTemplate: Failed to set public permissions (non-critical):', permError)
+      // Non-critical error - spreadsheet was created successfully
+    }
 
     return spreadsheetId
   } catch (error) {
-    console.error('Error creating spreadsheet:', error)
+    console.error('createSpreadsheetFromTemplate: Error creating spreadsheet:', error)
     throw error
   }
 }

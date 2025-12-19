@@ -138,7 +138,9 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
       
       try {
         // Export to Google Sheets using Service Account (no user OAuth needed)
+        logger.info('EXPORT_SHEETS_STARTING', { planId, userId })
         const { spreadsheetId, spreadsheetUrl } = await exportPlanToGoogleSheets(plan, userId)
+        logger.info('EXPORT_SHEETS_CREATED', { planId, spreadsheetId, userId })
         
         // Update plan with export info using admin client for reliability
         const updateClient = admin || supabase
@@ -159,7 +161,17 @@ async function handleExport(request: NextRequest, userId: string, user: any) {
           url: spreadsheetUrl
         })
       } catch (sheetsError) {
-        logger.error('EXPORT_SHEETS_ERROR', { error: String(sheetsError), planId, userId })
+        const errorMessage = sheetsError instanceof Error ? sheetsError.message : String(sheetsError)
+        logger.error('EXPORT_SHEETS_ERROR', { error: errorMessage, planId, userId })
+        
+        // Check if it's a permission error
+        if (errorMessage.includes('permission') || errorMessage.includes('403')) {
+          return NextResponse.json({ 
+            error: 'Google Sheets API permission error', 
+            message: 'Service Account không có quyền tạo Google Sheets. Vui lòng liên hệ quản trị viên để kiểm tra cấu hình Google Cloud.'
+          }, { status: 503 })
+        }
+        
         return NextResponse.json({ 
           error: 'Failed to export to Google Sheets', 
           message: 'Có lỗi khi xuất sang Google Sheets. Vui lòng thử lại sau.'
