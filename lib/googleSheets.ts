@@ -57,7 +57,9 @@ const getGoogleSheetsClient = () => {
       'https://www.googleapis.com/auth/spreadsheets',
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/drive.file'
-    ]
+    ],
+    // Ensure JWT is properly authorized
+    projectId: 'planai-473203'
   })
 
   return google.sheets({ version: 'v4', auth })
@@ -81,9 +83,64 @@ const getGoogleDriveClient = () => {
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/drive.file'
     ],
+    // Ensure JWT is properly authorized
+    projectId: 'planai-473203'
   })
 
   return google.drive({ version: 'v3', auth })
+}
+
+// Helper: Get or create a folder for PlanAI spreadsheets
+const getOrCreatePlanAIFolder = async (drive: any): Promise<string | null> => {
+  try {
+    console.log('getOrCreatePlanAIFolder: Checking for existing PlanAI folder')
+    
+    // Try to find existing folder
+    const response = await drive.files.list({
+      q: "name='PlanAI Spreadsheets' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+      spaces: 'drive',
+      fields: 'files(id, name)',
+      pageSize: 1,
+    } as any)
+    
+    if (response.data.files && response.data.files.length > 0) {
+      const folderId = response.data.files[0].id
+      console.log('getOrCreatePlanAIFolder: Found existing folder:', folderId)
+      return folderId
+    }
+    
+    // Create new folder if not found
+    console.log('getOrCreatePlanAIFolder: Creating new PlanAI folder')
+    const folderResponse = await drive.files.create({
+      requestBody: {
+        name: 'PlanAI Spreadsheets',
+        mimeType: 'application/vnd.google-apps.folder',
+      },
+      fields: 'id',
+    } as any)
+    
+    const folderId = folderResponse.data.id
+    console.log('getOrCreatePlanAIFolder: Created new folder:', folderId)
+    
+    // Make folder public
+    try {
+      await drive.permissions.create({
+        fileId: folderId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone',
+        },
+      } as any)
+      console.log('getOrCreatePlanAIFolder: Made folder public')
+    } catch (permError) {
+      console.warn('getOrCreatePlanAIFolder: Failed to make folder public:', permError)
+    }
+    
+    return folderId
+  } catch (error) {
+    console.warn('getOrCreatePlanAIFolder: Error getting/creating folder:', error)
+    return null
+  }
 }
 
 // Create a new spreadsheet - either from template or from scratch
@@ -97,6 +154,9 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     
     const drive = getGoogleDriveClient()
     const sheets = getGoogleSheetsClient()
+    
+    // Try to get or create PlanAI folder for better organization and permissions
+    const folderId = await getOrCreatePlanAIFolder(drive)
     
     let spreadsheetId: string
     
@@ -133,7 +193,7 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
         console.log('createSpreadsheetFromTemplate: Creating new spreadsheet from scratch')
         
         // Create with minimal properties first to avoid permission issues
-        const newSpreadsheet = await sheets.spreadsheets.create({
+        const createRequest: any = {
           requestBody: {
             properties: {
               title: title,
@@ -152,7 +212,9 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
               { properties: { title: 'Lời khuyên', sheetId: 8 } },
             ]
           }
-        })
+        }
+        
+        const newSpreadsheet = await sheets.spreadsheets.create(createRequest)
         
         if (!newSpreadsheet.data.spreadsheetId) {
           throw new Error('Failed to create new spreadsheet - no ID returned')
@@ -160,12 +222,32 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
         
         spreadsheetId = newSpreadsheet.data.spreadsheetId
         console.log('createSpreadsheetFromTemplate: Created new spreadsheet from scratch:', spreadsheetId)
+        
+        // Move spreadsheet to PlanAI folder if folder was created
+        if (folderId) {
+          try {
+            console.log('createSpreadsheetFromTemplate: Moving spreadsheet to PlanAI folder:', folderId)
+            await drive.files.update({
+              fileId: spreadsheetId,
+              addParents: folderId,
+              fields: 'id, parents',
+            } as any)
+            console.log('createSpreadsheetFromTemplate: Successfully moved spreadsheet to folder')
+          } catch (moveError) {
+            console.warn('createSpreadsheetFromTemplate: Failed to move spreadsheet to folder (non-critical):', moveError)
+          }
+        }
       } catch (createError) {
         console.error('createSpreadsheetFromTemplate: Error creating spreadsheet:', createError)
         // Log full error details for debugging
         if (createError instanceof Error) {
           console.error('createSpreadsheetFromTemplate: Error message:', createError.message)
           console.error('createSpreadsheetFromTemplate: Error stack:', createError.stack)
+          
+          // Check if it's a permission error and provide helpful message
+          if (createError.message.includes('permission') || createError.message.includes('403')) {
+            console.error('createSpreadsheetFromTemplate: PERMISSION_ERROR - Service Account may not have proper access')
+          }
         }
         throw new Error(`Failed to create spreadsheet: ${createError instanceof Error ? createError.message : String(createError)}`)
       }
@@ -174,14 +256,36 @@ export const createSpreadsheetFromTemplate = async (title: string): Promise<stri
     // CRITICAL: Make the spreadsheet publicly accessible - anyone with link can EDIT
     try {
       console.log('createSpreadsheetFromTemplate: Setting public permissions for spreadsheet:', spreadsheetId)
-      await drive.permissions.create({
-        fileId: spreadsheetId,
-        requestBody: {
-          role: 'writer',  // Anyone can edit
-          type: 'anyone',  // No login required
-        },
-      })
-      console.log('createSpreadsheetFromTemplate: Set public permissions for spreadsheet:', spreadsheetId)
+      
+      // First, try to set public permissions
+      try {
+        await drive.permissions.create({
+          fileId: spreadsheetId,
+          requestBody: {
+            role: 'writer',  // Anyone can edit
+            type: 'anyone',  // No login required
+          },
+        } as any)
+        console.log('createSpreadsheetFromTemplate: Set public permissions for spreadsheet:', spreadsheetId)
+      } catch (permError) {
+        console.warn('createSpreadsheetFromTemplate: Failed to set public permissions, trying with supportsAllDrives:', permError)
+        
+        // Try with supportsAllDrives flag
+        try {
+          await drive.permissions.create({
+            fileId: spreadsheetId,
+            supportsAllDrives: true,
+            requestBody: {
+              role: 'writer',
+              type: 'anyone',
+            },
+          } as any)
+          console.log('createSpreadsheetFromTemplate: Set public permissions with supportsAllDrives:', spreadsheetId)
+        } catch (permError2) {
+          console.warn('createSpreadsheetFromTemplate: Failed to set public permissions even with supportsAllDrives:', permError2)
+          // Non-critical error - spreadsheet was created successfully
+        }
+      }
     } catch (permError) {
       console.warn('createSpreadsheetFromTemplate: Failed to set public permissions (non-critical):', permError)
       // Non-critical error - spreadsheet was created successfully
