@@ -733,15 +733,11 @@ export default function PlanViewEnhanced() {
                       </li>
                       <li className="flex items-start gap-1">
                         <span className="text-green-500">✓</span>
-                        <span className="text-gray-700 dark:text-gray-300">Google Sheets tự động</span>
-                      </li>
-                      <li className="flex items-start gap-1">
-                        <span className="text-green-500">✓</span>
                         <span className="text-gray-700 dark:text-gray-300">Phân tích tử vi & thần số học</span>
                       </li>
                       <li className="flex items-start gap-1">
                         <span className="text-green-500">✓</span>
-                        <span className="text-gray-700 dark:text-gray-300">50+ tài liệu premium</span>
+                        <span className="text-gray-700 dark:text-gray-300">30+ tài liệu premium</span>
                       </li>
                     </ul>
                     <Link
@@ -816,8 +812,8 @@ export default function PlanViewEnhanced() {
                       <li>• Phân tích sâu hơn và chi tiết hơn</li>
                       <li>• Nhiều checklist (tuần/tháng/năm)</li>
                       <li>• Phân tích tử vi kết hợp</li>
-                      <li>• 40+ tài liệu chuyên sâu</li>
-                      <li>• Xuất file PDF, Word, Google Docs</li>
+                      <li>• 30+ tài liệu chuyên sâu</li>
+                      <li>• Xuất file PDF</li>
                       <li>• Và nhiều tính năng khác...</li>
                     </ul>
                     <Link
