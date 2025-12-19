@@ -120,7 +120,7 @@ const getPaidSections = () => [
   { key: 'time_roadmap', title: '13. Lộ trình theo thời gian: Năm-Quý-Tháng-Tuần-Ngày', weight: 4 },
   { key: 'checklist', title: '14. Checklist hành động định kỳ', weight: 3 },
   { key: 'sheets_tracking', title: '15. Google Sheets theo dõi & tracking', weight: 3 },
-  { key: 'learning_resources', title: '16. Tài liệu học tập & kỹ năng (20+ nguồn)', weight: 4 },
+  { key: 'learning_resources', title: '16. Tài liệu học tập & kỹ năng (30+ nguồn)', weight: 4 },
   { key: 'scenarios', title: '17. Dự báo 3 kịch bản: Tệ-Trung bình-Tốt nhất', weight: 3 },
   { key: 'risk_reduction', title: '18. Chiến lược giảm rủi ro & phương án dự phòng', weight: 3 },
   { key: 'kpis', title: '19. KPIs & chỉ số theo dõi tiến độ', weight: 3 },
@@ -404,7 +404,17 @@ TỔNG: 16-20 hành động cụ thể, KHÔNG có dòng trống hay dấu "---"
     
     sheets_tracking: `Mô tả cấu trúc Google Sheets theo dõi kế hoạch ${goal}. 7 SHEETS: (1) Dashboard - Biểu đồ thu nhập/chi tiêu/tài sản ròng, (2) Roadmap - Timeline ${timeline} với milestones, (3) Checklist - Checkbox tự động tính % hoàn thành, (4) Tiết kiệm - Theo dõi tiết kiệm hàng tháng, (5) Thu nhập - Các nguồn thu, (6) Business Metrics - MRR/Churn/CAC/LTV, (7) Kỹ năng - Link tài liệu học. Hướng dẫn cách sử dụng từng sheet.`,
     
-    learning_resources: `Đề xuất TỐI THIỂU 25 TÀI LIỆU HỌC TẬP phù hợp với kỹ năng ${skillsStr} để đạt ${goal}. SÁCH (7+): Tên, Tác giả, Lý do đọc. KHOÁ HỌC ONLINE (7+): Tên, Nền tảng (Udemy/Coursera/Skillshare), Thời lượng. YOUTUBE (5+): Tên kênh, Nội dung chính. PODCAST (3+): Tên, Nền tảng. WEBSITE/BLOG (3+): Tên, URL mô tả.`,
+    learning_resources: `Đề xuất TỐI THIỂU 30 TÀI LIỆU HỌC TẬP phù hợp với kỹ năng ${skillsStr} để đạt ${goal} (ưu tiên nội dung LIÊN QUAN TRỰC TIẾP tới những gì user cần học).
+
+SÁCH (8+): Tên, Tác giả, Lý do đọc.
+KHOÁ HỌC ONLINE (8+): Tên, Nền tảng (Udemy/Coursera/Skillshare/LinkedIn Learning), Thời lượng.
+YOUTUBE (10+): Cho MỖI video/kênh phải ghi rõ: Tên kênh hoặc tiêu đề video, NỘI DUNG CHÍNH, và TỪ KHOÁ TÌM KIẾM CHÍNH XÁC để user tra cứu trên YouTube (ví dụ: "Quản lý tài chính cá nhân cho người mới", "YouTube SEO tutorial for beginners").
+PODCAST (3+): Tên, Nền tảng.
+WEBSITE/BLOG (3+): Tên, URL mô tả.
+
+YÊU CẦU BẮT BUỘC:
+- Với phần YOUTUBE, phải có ÍT NHẤT 10 mục và MỖI MỤC kèm 1-2 từ khoá tìm kiếm chính xác, sát với kỹ năng cần học của user.
+- Không liệt kê chung chung. Mỗi tài liệu cần mô tả ngắn gọn cách áp dụng vào mục tiêu ${goal}.`,
     
     scenarios: `Dự báo 3 kịch bản cho mục tiêu ${goal} trong ${timeline}. KỊCH BẢN TỆ NHẤT: Kết quả, Nguyên nhân, Xác suất, Tín hiệu nhận biết. KỊCH BẢN TRUNG BÌNH: Kết quả, Điều kiện, Xác suất. KỊCH BẢN TỐT NHẤT: Kết quả, Điều kiện cần, Xác suất. Mỗi kịch bản có số liệu cụ thể.`,
     
